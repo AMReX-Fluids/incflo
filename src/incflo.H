@@ -264,13 +264,14 @@ private:
     // Resize arrays to fit (up to) max_level + 1 AMR levels
 	void ResizeArrays();
 
-    // Post-initialization: set BCs, apply ICs, initial velocity projection, pressure iterations
+    // Post-initialization: set BCs, apply ICs, initial velocity projection, pressure iterations, level_mask
 	void PostInit(int restart_flag);
 	void SetBCTypes();
     void InitFluid();
 	void SetBackgroundPressure();
 	void InitialProjection();
     void InitialIterations();
+    void setup_level_mask();
 
     // Member variables for initial conditions
     int probtype = 0;
@@ -371,7 +372,6 @@ private:
 
     void ComputeDrag();
     
-    void setup_level_mask();//fixme move and describe
     double ComputeKineticEnergy();
 
     //////////////////////////////////////////////////////////////////////////////////////////////

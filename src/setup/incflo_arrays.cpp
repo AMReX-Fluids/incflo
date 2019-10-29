@@ -8,8 +8,6 @@ void incflo::AllocateArrays(int lev)
     // Cell-based arrays
     // ********************************************************************************
 
-//    level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], 1, 0, MFInfo(), *ebfactory[lev]));
-    // can't use ebfactory here for some reason? fixme delete
     level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], 1, 0, MFInfo() /*, default factory*/));
     level_mask[lev]->setVal(1);
     
@@ -176,12 +174,9 @@ void incflo::RegridArrays(int lev)
     // After calling copy() with dst_ngrow set to ng, we do not need to call
     // FillBoundary().
     //
-  
-//   std::unique_ptr<iMultiFab> level_mask_new(new iMultiFab(grids[lev], dmap[lev], level_mask[lev]->nComp(), level_mask[lev]->nGrow(0), MFInfo() /* default factory*/ ));
-//   level_mask_new->setVal(1);
-//   level_mask[lev] = std::move(level_mask_new);fixme delete
 
-    // since we don't need to copy we can just reset which deletes old level_mask and makes a new one
+   // since we don't need to copy we can just reset which deletes old level_mask and makes a new one
+   // setup_level_mask is called in Evolve under regrid if statement
    level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], level_mask[lev]->nComp(), level_mask[lev]->nGrow(0), MFInfo() /*, default factory*/));
    level_mask[lev]->setVal(1);
 

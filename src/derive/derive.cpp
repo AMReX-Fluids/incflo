@@ -9,7 +9,7 @@ void incflo::ComputeDivU(Real time_in)
     int extrap_dir_bcs = 0;
     incflo_set_velocity_bcs(time_in, vel, extrap_dir_bcs);
 
-    nodal_projector->computeRHS(divu,vel);
+    nodal_projector->computeRHS(GetVecOfPtrs(divu),GetVecOfPtrs(vel));
 }
 
 void incflo::ComputeStrainrate(Real time_in)
@@ -220,8 +220,6 @@ void incflo::ComputeStrainrate(Real time_in)
 }
 
 
-
-
 Real incflo::ComputeKineticEnergy()
 {
     BL_PROFILE("incflo::ComputeKineticEnergy");
@@ -260,9 +258,9 @@ Real incflo::ComputeKineticEnergy()
         });
     }
     
-    // total volume of grid using level 0
-    Real total_vol = (geom[0].ProbHi(0)-geom[0].ProbLo(0))*(geom[0].ProbHi(1)-geom[0].ProbLo(1))*(geom[0].ProbHi(2)-geom[0].ProbLo(2));
-
+    // total volume of grid on level 0
+    Real total_vol = geom[0].ProbDomain().volume();
+    
     KE *= 0.5/total_vol;
 
     ParallelDescriptor::ReduceRealSum(KE);
@@ -270,111 +268,6 @@ Real incflo::ComputeKineticEnergy()
     return KE;
     
 }
-
-
-//Real incflo::ComputeKineticEnergy()
-//{
-//    BL_PROFILE("incflo::ComputeKineticEnergy");
-//
-//    // integrated total Kinetic energy
-//    Real KE = 0.0;
-//
-//    for(int lev = 0; lev <= finest_level; lev++)
-//    {
-//
-//        // box array to hold coarsened fine levels for checking if covered
-//        BoxArray baf;
-//
-//        // if not the finest level copy over lev+1 velocity boxArray
-//        if (lev < finest_level)
-//        {
-//            baf = vel[lev+1]->boxArray();
-//            baf.coarsen(2);//fixme should be fine_ratio or coarsening ratio? what happens if can't coarsen by 2? does this number get set in amrex?
-//        }
-//
-////        Box domain(geom[lev].Domain());// do I need this?
-//
-//        // more work than multiplying by entire fab volume but need to account for masking anyways
-//        Real cell_vol = geom[lev].CellSize()[0]*geom[lev].CellSize()[1]*geom[lev].CellSize()[2];
-//
-//#ifdef _OPENMP
-//#pragma omp parallel if (Gpu::notInLaunchRegion())
-//#endif
-//        for(MFIter mfi(*vel[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-//        {
-//            const EBFArrayBox& den_fab = static_cast<EBFArrayBox const&>((*density[lev])[mfi]);
-//            const EBFArrayBox& vel_fab = static_cast<EBFArrayBox const&>((*vel[lev])[mfi]);
-//            const EBCellFlagFab& flags = vel_fab.getEBCellFlagFab();
-//
-//            const Box& bx = mfi.tilebox();
-//
-//            // create and fill mask with cell volume
-//            FArrayBox volmask(bx,1);
-//            volmask.setVal(cell_vol);
-//
-//            // find intersects with lev+1 grids and set volmask to zero
-//            std::vector< std::pair<int,Box> > isects;
-//            if(lev < finest_level){
-//                baf.intersections(bx,isects);
-//                for (int ii = 0, N = isects.size(); ii < N; ii++){
-//                    volmask.setVal(0.0,isects[ii].second,0,volmask.nComp());
-//                    (*level_mask[lev])[mfi].setVal(0,isects[ii].second,0,level_mask[lev]->array(mfi).nComp());
-//                }
-//            }
-//
-//            switch (flags.getType(bx)){
-//                case FabType::regular:
-//                    break;
-//                default:
-//                    amrex::Abort("EB Kinetic Energy not implemented yet \n");
-//                    break;
-//            }
-//
-//
-//            if (flags.getType(bx) == FabType::covered)
-//            {
-//                volmask.setVal(1.2345e200,bx,0,volmask.nComp());
-//            }
-//            else if(flags.getType(bx) == FabType::regular)
-//            {
-//
-//
-//                Real KE_Fab = 0.0;
-//                const auto& den_arr = den_fab.const_array();
-//                const auto& vel_arr = vel_fab.const_array();
-//                const auto& volmask_arr = volmask.const_array();
-//
-//                AMREX_GPU_HOST_DEVICE
-//                amrex::Loop(bx,[=,&KE_Fab] (int i, int j, int k) noexcept
-//                {
-//                 KE_Fab += volmask_arr(i,j,k)*den_arr(i,j,k)*(  vel_arr(i,j,k,0)*vel_arr(i,j,k,0)
-//                                                              + vel_arr(i,j,k,1)*vel_arr(i,j,k,1)
-//                                                              + vel_arr(i,j,k,2)*vel_arr(i,j,k,2));
-//
-//                });
-//
-//                KE += KE_Fab;
-//
-//            }
-//            else
-//            {
-//              amrex::Abort("EB Kinetic Energy not implemented yet \n");
-//            }
-//        } // MFIter
-//    } // Loop over levels
-//
-//
-//    // total volume of grid using level 0
-//    Real total_vol = (geom[0].ProbHi(0)-geom[0].ProbLo(0))*(geom[0].ProbHi(1)-geom[0].ProbLo(1))*(geom[0].ProbHi(2)-geom[0].ProbLo(2));
-//
-//    KE *= 0.5/total_vol;
-//
-//    ParallelDescriptor::ReduceRealSum(KE);
-//
-//    return KE;
-//}
-
-
 
 void incflo::ComputeVorticity(Real time_in)
 {
