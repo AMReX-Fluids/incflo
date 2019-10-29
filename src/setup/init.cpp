@@ -33,6 +33,8 @@ void incflo::ReadParameters()
 	pp.query("plot_int", plot_int);
 	pp.query("plot_per", plot_per);
 
+    pp.query("KE_int", KE_int);
+
         // Which variables to write to plotfile
         pltVarCount = 0;
 

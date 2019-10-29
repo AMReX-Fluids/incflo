@@ -370,6 +370,7 @@ private:
     //////////////////////////////////////////////////////////////////////////////////////////////
 
     void ComputeDrag();
+    double ComputeKineticEnergy();
 
     //////////////////////////////////////////////////////////////////////////////////////////////
     //
@@ -484,6 +485,7 @@ private:
 
     int check_int = -1;
     int last_chk = -1;
+    int KE_int = -1;
     std::string check_file{"chk"};
     std::string restart_file{""};
 
