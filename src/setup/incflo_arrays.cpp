@@ -8,6 +8,11 @@ void incflo::AllocateArrays(int lev)
     // Cell-based arrays
     // ********************************************************************************
 
+//    level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], 1, 0, MFInfo(), *ebfactory[lev]));
+    // can't use ebfactory here for some reason? fixme delete
+    level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], 1, 0, MFInfo() /*, default factory*/));
+    level_mask[lev]->setVal(1);
+    
     // Current Density
     density[lev].reset(new MultiFab(grids[lev], dmap[lev], 1, nghost, MFInfo(), *ebfactory[lev]));
     density[lev]->setVal(0.);
@@ -171,6 +176,14 @@ void incflo::RegridArrays(int lev)
     // After calling copy() with dst_ngrow set to ng, we do not need to call
     // FillBoundary().
     //
+  
+//   std::unique_ptr<iMultiFab> level_mask_new(new iMultiFab(grids[lev], dmap[lev], level_mask[lev]->nComp(), level_mask[lev]->nGrow(0), MFInfo() /* default factory*/ ));
+//   level_mask_new->setVal(1);
+//   level_mask[lev] = std::move(level_mask_new);fixme delete
+
+    // since we don't need to copy we can just reset which deletes old level_mask and makes a new one
+   level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], level_mask[lev]->nComp(), level_mask[lev]->nGrow(0), MFInfo() /*, default factory*/));
+   level_mask[lev]->setVal(1);
 
    // Density
    std::unique_ptr<MultiFab> density_new(new MultiFab(grids[lev], dmap[lev], 1, nghost, 
@@ -506,6 +519,8 @@ void incflo::ResizeArrays()
 
     // EB factory
     ebfactory.resize(max_level + 1);
+    
+    level_mask.resize(max_level + 1);
 }
 
 void incflo::MakeBCArrays()

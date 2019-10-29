@@ -204,6 +204,10 @@ void incflo::Evolve()
                     incflo_setup_solvers();
                 }
             }
+         
+            // setup the level_mask again for all levels since regridArrays set it all to 1
+            setup_level_mask();
+
         }*/
 
         // Advance to time t + dt

@@ -370,6 +370,8 @@ private:
     //////////////////////////////////////////////////////////////////////////////////////////////
 
     void ComputeDrag();
+    
+    void setup_level_mask();//fixme move and describe
     double ComputeKineticEnergy();
 
     //////////////////////////////////////////////////////////////////////////////////////////////
@@ -590,6 +592,10 @@ private:
     Vector<std::unique_ptr<MultiFab>> m_u_mac;
     Vector<std::unique_ptr<MultiFab>> m_v_mac;
     Vector<std::unique_ptr<MultiFab>> m_w_mac;
+    
+    // integer MultiFab specifying if a finer level exists above
+    // value is 1 if a finer level is not above and 0 otherwise
+    Vector<std::unique_ptr<iMultiFab>> level_mask;
 
     //////////////////////////////////////////////////////////////////////////////////////////////
     //
