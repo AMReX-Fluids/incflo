@@ -231,26 +231,21 @@ Real incflo::ComputeKineticEnergy()
     {
         Real cell_vol = geom[lev].CellSize()[0]*geom[lev].CellSize()[1]*geom[lev].CellSize()[2];
 
-//        KE += amrex::ReduceSum(*density[lev],*vel[lev],*level_mask[lev],0,
-//        [=] AMREX_GPU_HOST_DEVICE (Box const& bx, EBFArrayBox const& densityfab, EBFArrayBox const& velfab, IArrayBox const& level_maskfab) -> Real
- 
-        KE += amrex::ReduceSum(*vel[lev],*level_mask[lev],0,
-        [=] AMREX_GPU_HOST_DEVICE (Box const& bx,FArrayBox const& velfab, IArrayBox const& maskfab) -> Real
+        KE += amrex::ReduceSum(*density[lev],*vel[lev],*level_mask[lev],0,
+        [=] AMREX_GPU_HOST_DEVICE (Box const& bx, FArrayBox const& denfab, FArrayBox const& velfab, IArrayBox const& maskfab) -> Real
         {
             Real KE_Fab = 0.0;
 
-//            const auto& den_arr = denfab.const_array();
+            const auto& den_arr = denfab.const_array();
             const auto& vel_arr = velfab.const_array();
             const auto& mask_arr = maskfab.const_array();
 
             amrex::Loop(bx, [=,&KE_Fab] (int i, int j, int k) noexcept
             {
-//                KE_Fab += cell_vol*mask_arr(i,j,k)*den_arr(i,j,k)*(vel_arr(i,j,k,0)*vel_arr(i,j,k,0)
-//                                                                   +vel_arr(i,j,k,1)*vel_arr(i,j,k,1)
-//                                                                   +vel_arr(i,j,k,2)*vel_arr(i,j,k,2));
-                KE_Fab += cell_vol*mask_arr(i,j,k)*(vel_arr(i,j,k,0)*vel_arr(i,j,k,0)
-                                                    +vel_arr(i,j,k,1)*vel_arr(i,j,k,1)
-                                                    +vel_arr(i,j,k,2)*vel_arr(i,j,k,2));
+                KE_Fab += cell_vol*mask_arr(i,j,k)*den_arr(i,j,k)*(vel_arr(i,j,k,0)*vel_arr(i,j,k,0)
+                                                                   +vel_arr(i,j,k,1)*vel_arr(i,j,k,1)
+                                                                   +vel_arr(i,j,k,2)*vel_arr(i,j,k,2));
+
                 return KE_Fab;
             });
             return KE_Fab;
@@ -261,7 +256,7 @@ Real incflo::ComputeKineticEnergy()
     // total volume of grid on level 0
     Real total_vol = geom[0].ProbDomain().volume();
     
-    KE *= 0.5/total_vol;
+    KE *= 0.5/total_vol/ro_0;
 
     ParallelDescriptor::ReduceRealSum(KE);
 
