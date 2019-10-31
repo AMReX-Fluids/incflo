@@ -9,7 +9,7 @@ void incflo::AllocateArrays(int lev)
     // ********************************************************************************
 
     if(lev < finest_level){
-        level_mask[lev].reset(new iMultiFab(makeFineMask(grids[lev],dmap[lev], grids[lev+1], IntVect(2), 0, 1)));
+        level_mask[lev].reset(new iMultiFab(makeFineMask(grids[lev],dmap[lev], grids[lev+1], IntVect(2), 1, 0)));
     } else {
         level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], 1, 0, MFInfo() /*, default factory*/));
         level_mask[lev]->setVal(1);
@@ -180,7 +180,7 @@ void incflo::RegridArrays(int lev)
     //
 
     if(lev < finest_level){
-        level_mask[lev].reset(new iMultiFab(makeFineMask(grids[lev],dmap[lev], grids[lev+1], IntVect(2), 0, 1)));
+        level_mask[lev].reset(new iMultiFab(makeFineMask(grids[lev],dmap[lev], grids[lev+1], IntVect(2), 1, 0)));
     } else {
         level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], 1, 0, MFInfo() /*, default factory*/));
         level_mask[lev]->setVal(1);
