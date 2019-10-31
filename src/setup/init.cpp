@@ -249,9 +249,6 @@ void incflo::PostInit(int restart_flag)
     {
         InitFluid();
     }
-
-    // fill level_mask IFabArray on all levels
-    setup_level_mask();
     
     // Set the background pressure and gradients in "DELP" cases
     SetBackgroundPressure();
@@ -479,41 +476,4 @@ void incflo::InitialProjection()
         amrex::Print() << "After initial projection:" << std::endl;
         PrintMaxValues(time);
     }
-}
-
-void incflo::setup_level_mask()
-{
-    BL_PROFILE("incflo::setup_level_mask");
-
-    for(int lev = 0; lev <= finest_level; lev++)
-    {
-        // box array to hold coarsened fine levels for checking if covered
-        BoxArray baf;
-        
-        // if not the finest level copy over lev+1 velocity boxArray
-        if (lev < finest_level)
-        {
-            baf = vel[lev+1]->boxArray();
-            baf.coarsen(2);//fixme should be fine_ratio or coarsening ratio? what happens if can't coarsen by 2? does this number get set in amrex?
-        }
-
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-        for(MFIter mfi(*vel[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-        {
-            const Box& bx = mfi.tilebox();
-            
-            // find intersects with lev+1 grids and set volmask to zero
-            std::vector< std::pair<int,Box> > isects;
-            if(lev < finest_level){
-                baf.intersections(bx,isects);
-                for (int ii = 0, N = isects.size(); ii < N; ii++){
-                    (*level_mask[lev])[mfi].setVal(0,isects[ii].second,0,level_mask[lev]->array(mfi).nComp());
-                }
-            }
-        } // MFIter
-    } // Loop over levels
-  
-    return;
 }

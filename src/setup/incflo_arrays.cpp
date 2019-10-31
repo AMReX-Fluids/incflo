@@ -8,8 +8,12 @@ void incflo::AllocateArrays(int lev)
     // Cell-based arrays
     // ********************************************************************************
 
-    level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], 1, 0, MFInfo() /*, default factory*/));
-    level_mask[lev]->setVal(1);
+    if(lev < finest_level){
+        level_mask[lev].reset(new iMultiFab(makeFineMask(grids[lev],dmap[lev], grids[lev+1], IntVect(2), 0, 1)));
+    } else {
+        level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], 1, 0, MFInfo() /*, default factory*/));
+        level_mask[lev]->setVal(1);
+    }
     
     // Current Density
     density[lev].reset(new MultiFab(grids[lev], dmap[lev], 1, nghost, MFInfo(), *ebfactory[lev]));
@@ -175,11 +179,13 @@ void incflo::RegridArrays(int lev)
     // FillBoundary().
     //
 
-   // since we don't need to copy we can just reset which deletes old level_mask and makes a new one
-   // setup_level_mask is called in Evolve under regrid if statement
-   level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], level_mask[lev]->nComp(), level_mask[lev]->nGrow(0), MFInfo() /*, default factory*/));
-   level_mask[lev]->setVal(1);
-
+    if(lev < finest_level){
+        level_mask[lev].reset(new iMultiFab(makeFineMask(grids[lev],dmap[lev], grids[lev+1], IntVect(2), 0, 1)));
+    } else {
+        level_mask[lev].reset(new iMultiFab(grids[lev], dmap[lev], 1, 0, MFInfo() /*, default factory*/));
+        level_mask[lev]->setVal(1);
+    }
+    
    // Density
    std::unique_ptr<MultiFab> density_new(new MultiFab(grids[lev], dmap[lev], 1, nghost, 
                                                       MFInfo(), *ebfactory[lev]));

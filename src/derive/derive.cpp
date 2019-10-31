@@ -232,21 +232,19 @@ Real incflo::ComputeKineticEnergy()
         Real cell_vol = geom[lev].CellSize()[0]*geom[lev].CellSize()[1]*geom[lev].CellSize()[2];
 
         KE += amrex::ReduceSum(*density[lev],*vel[lev],*level_mask[lev],0,
-        [=] AMREX_GPU_HOST_DEVICE (Box const& bx, FArrayBox const& denfab, FArrayBox const& velfab, IArrayBox const& maskfab) -> Real
+        [=] AMREX_GPU_HOST_DEVICE (Box const& bx,
+                                   Array4<Real const> const& den_arr,
+                                   Array4<Real const> const& vel_arr,
+                                   Array4<int const>  const& mask_arr) -> Real
         {
             Real KE_Fab = 0.0;
 
-            const auto& den_arr = denfab.const_array();
-            const auto& vel_arr = velfab.const_array();
-            const auto& mask_arr = maskfab.const_array();
-
             amrex::Loop(bx, [=,&KE_Fab] (int i, int j, int k) noexcept
             {
-                KE_Fab += cell_vol*mask_arr(i,j,k)*den_arr(i,j,k)*(vel_arr(i,j,k,0)*vel_arr(i,j,k,0)
+                KE_Fab += cell_vol*mask_arr(i,j,k)*den_arr(i,j,k)*( vel_arr(i,j,k,0)*vel_arr(i,j,k,0)
                                                                    +vel_arr(i,j,k,1)*vel_arr(i,j,k,1)
                                                                    +vel_arr(i,j,k,2)*vel_arr(i,j,k,2));
 
-                return KE_Fab;
             });
             return KE_Fab;
             
