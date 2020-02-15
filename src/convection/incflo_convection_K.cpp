@@ -39,6 +39,11 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         amrex::ParallelFor(ubx, [vcc,extdir_ilo,extdir_ihi,domain_ilo,domain_ihi,u]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real upls = vcc(i,j,k,0) - 0.5 * incflo_xslope_extdir
                 (i,j,k,0,vcc, extdir_ilo, extdir_ihi, domain_ilo, domain_ihi);
             Real umns = vcc(i-1,j,k,0) + 0.5 * incflo_xslope_extdir
@@ -47,7 +52,7 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
                 u(i,j,k) = 0.0;
             } else {
                 Real avg = 0.5 * (upls + umns);
-                if (std::abs(avg) < small) {
+                if (abs(avg) < small) {
                     u(i,j,k) = 0.0;
                 } else if (avg > 0.0) {
                     u(i,j,k) = umns;
@@ -68,13 +73,18 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         amrex::ParallelFor(ubx, [vcc,u]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real upls = vcc(i  ,j,k,0) - 0.5 * incflo_xslope(i  ,j,k,0,vcc);
             Real umns = vcc(i-1,j,k,0) + 0.5 * incflo_xslope(i-1,j,k,0,vcc);
             if (umns < 0.0 and upls > 0.0) {
                 u(i,j,k) = 0.0;
             } else {
                 Real avg = 0.5 * (upls + umns);
-                if (std::abs(avg) < small) {
+                if (abs(avg) < small) {
                     u(i,j,k) = 0.0;
                 } else if (avg > 0.0) {
                     u(i,j,k) = umns;
@@ -91,6 +101,11 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         amrex::ParallelFor(vbx, [vcc,extdir_jlo,extdir_jhi,domain_jlo,domain_jhi,v]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real vpls = vcc(i,j,k,1) - 0.5 * incflo_yslope_extdir
                 (i,j,k,1,vcc, extdir_jlo, extdir_jhi, domain_jlo, domain_jhi);
             Real vmns = vcc(i,j-1,k,1) + 0.5 * incflo_yslope_extdir
@@ -99,7 +114,7 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
                 v(i,j,k) = 0.0;
             } else {
                 Real avg = 0.5 * (vpls + vmns);
-                if (std::abs(avg) < small) {
+                if (abs(avg) < small) {
                     v(i,j,k) = 0.0;
                 } else if (avg > 0.0) {
                     v(i,j,k) = vmns;
@@ -120,13 +135,18 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         amrex::ParallelFor(vbx, [vcc,v]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real vpls = vcc(i,j  ,k,1) - 0.5 * incflo_yslope(i,j  ,k,1,vcc);
             Real vmns = vcc(i,j-1,k,1) + 0.5 * incflo_yslope(i,j-1,k,1,vcc);
             if (vmns < 0.0 and vpls > 0.0) {
                 v(i,j,k) = 0.0;
             } else {
                 Real avg = 0.5 * (vpls + vmns);
-                if (std::abs(avg) < small) {
+                if (abs(avg) < small) {
                     v(i,j,k) = 0.0;
                 } else if (avg > 0.0) {
                     v(i,j,k) = vmns;
@@ -143,6 +163,11 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         amrex::ParallelFor(wbx, [vcc,extdir_klo,extdir_khi,domain_klo,domain_khi,w]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real wpls = vcc(i,j,k,2) - 0.5 * incflo_zslope_extdir
                 (i,j,k,2,vcc, extdir_klo, extdir_khi, domain_klo, domain_khi);
             Real wmns = vcc(i,j,k-1,2) + 0.5 * incflo_zslope_extdir(
@@ -151,7 +176,7 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
                 w(i,j,k) = 0.0;
             } else {
                 Real avg = 0.5 * (wpls + wmns);
-                if (std::abs(avg) < small) {
+                if (abs(avg) < small) {
                     w(i,j,k) = 0.0;
                 } else if (avg > 0.0) {
                     w(i,j,k) = wmns;
@@ -172,13 +197,18 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         amrex::ParallelFor(wbx, [vcc,w]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real wpls = vcc(i,j,k  ,2) - 0.5 * incflo_zslope(i,j,k  ,2,vcc);
             Real wmns = vcc(i,j,k-1,2) + 0.5 * incflo_zslope(i,j,k-1,2,vcc);
             if (wmns < 0.0 and wpls > 0.0) {
                 w(i,j,k) = 0.0;
             } else {
                 Real avg = 0.5 * (wpls + wmns);
-                if (std::abs(avg) < small) {
+                if (abs(avg) < small) {
                     w(i,j,k) = 0.0;
             } else if (avg > 0.0) {
                     w(i,j,k) = wmns;
@@ -258,17 +288,24 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     amrex::ParallelFor(ubx, [flag,upls,umns,fcx,u,vcc,domain_ilo,domain_ihi,small,extdir_ilo,extdir_ihi]
     AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+        using sycl::copysign;
+#else
+        using std::abs;
+        using std::copysign
+#endif
         if (flag(i,j,k).isConnected(-1,0,0)) {
             Real upls_on_centroid, umns_on_centroid;
             if (flag(i,j,k).isRegular() or flag(i-1,j,k).isRegular()) {
                 upls_on_centroid = upls(i,j,k);
                 umns_on_centroid = umns(i,j,k);
             } else {
-                int jj = j + static_cast<int>(std::copysign(1.0, fcx(i,j,k,0)));
-                int kk = k + static_cast<int>(std::copysign(1.0, fcx(i,j,k,1)));
+                int jj = j + static_cast<int>(copysign(1.0, fcx(i,j,k,0)));
+                int kk = k + static_cast<int>(copysign(1.0, fcx(i,j,k,1)));
 
-                Real fracy = std::abs(fcx(i,j,k,0));
-                Real fracz = std::abs(fcx(i,j,k,1));
+                Real fracy = abs(fcx(i,j,k,0));
+                Real fracz = abs(fcx(i,j,k,1));
 
                 upls_on_centroid = (1.0-fracy)*(1.0-fracz)*upls(i, j,k )+
                                         fracy *(1.0-fracz)*upls(i,jj,k )+
@@ -284,7 +321,7 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                 u(i,j,k) = 0.0;
             } else {
                 Real avg = 0.5 * (upls_on_centroid + umns_on_centroid);
-                if (std::abs(avg) < small) {
+                if (abs(avg) < small) {
                     u(i,j,k) = 0.0;
                 } else if (avg > 0.0) {
                     u(i,j,k) = umns_on_centroid;
@@ -331,17 +368,24 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     amrex::ParallelFor(vbx, [flag,vpls,vmns,fcy,v,vcc,domain_jlo,domain_jhi,small,extdir_jlo,extdir_jhi]
     AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+        using sycl::copysign;
+#else
+        using std::abs;
+        using std::copysign;
+#endif
         if (flag(i,j,k).isConnected(0,-1,0)) {
             Real vpls_on_centroid, vmns_on_centroid;
             if (flag(i,j,k).isRegular() or flag(i,j-1,k).isRegular()) {
                 vpls_on_centroid = vpls(i,j,k);
                 vmns_on_centroid = vmns(i,j,k);
             } else {
-                int ii = i + static_cast<int>(std::copysign(1.0,fcy(i,j,k,0)));
-                int kk = k + static_cast<int>(std::copysign(1.0,fcy(i,j,k,1)));
+                int ii = i + static_cast<int>(copysign(1.0,fcy(i,j,k,0)));
+                int kk = k + static_cast<int>(copysign(1.0,fcy(i,j,k,1)));
 
-                Real fracx = std::abs(fcy(i,j,k,0));
-                Real fracz = std::abs(fcy(i,j,k,1));
+                Real fracx = abs(fcy(i,j,k,0));
+                Real fracz = abs(fcy(i,j,k,1));
 
                 vpls_on_centroid = (1.0-fracx)*(1.0-fracz)*vpls(i ,j,k )+
                                         fracx *(1.0-fracz)*vpls(ii,j,k )+
@@ -357,7 +401,7 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                 v(i,j,k) = 0.0;
             } else {
                 Real avg = 0.5 * (vpls_on_centroid + vmns_on_centroid);
-                if (std::abs(avg) < small) {
+                if (abs(avg) < small) {
                     v(i,j,k) = 0.0;
                 } else if (avg > 0.0) {
                     v(i,j,k) = vmns_on_centroid;
@@ -404,17 +448,24 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     amrex::ParallelFor(wbx, [flag,wpls,wmns,fcz,w,vcc,domain_klo,domain_khi,small,extdir_klo,extdir_khi]
     AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+        using sycl::copysign;
+#else
+        using std::abs;
+        using std::copysign;
+#endif
         if (flag(i,j,k).isConnected(0,0,-1)) {
             Real wpls_on_centroid, wmns_on_centroid;
             if (flag(i,j,k).isRegular() or flag(i,j,k-1).isRegular()) {
                 wpls_on_centroid = wpls(i,j,k);
                 wmns_on_centroid = wmns(i,j,k);
             } else {
-                int ii = i + static_cast<int>(std::copysign(1.0,fcz(i,j,k,0)));
-                int jj = j + static_cast<int>(std::copysign(1.0,fcz(i,j,k,1)));
+                int ii = i + static_cast<int>(copysign(1.0,fcz(i,j,k,0)));
+                int jj = j + static_cast<int>(copysign(1.0,fcz(i,j,k,1)));
 
-                Real fracx = std::abs(fcz(i,j,k,0));
-                Real fracy = std::abs(fcz(i,j,k,1));
+                Real fracx = abs(fcz(i,j,k,0));
+                Real fracy = abs(fcz(i,j,k,1));
 
                 wpls_on_centroid = (1.0-fracx)*(1.0-fracy)*wpls(i ,j ,k)+
                                         fracx *(1.0-fracy)*wpls(ii,j ,k)+
@@ -430,7 +481,7 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                 w(i,j,k) = 0.0;
             } else {
                 Real avg = 0.5 * (wpls_on_centroid + wmns_on_centroid);
-                if (std::abs(avg) < small) {
+                if (abs(avg) < small) {
                     w(i,j,k) = 0.0;
                 } else if (avg > 0.0) {
                     w(i,j,k) = wmns_on_centroid;

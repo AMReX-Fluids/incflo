@@ -85,8 +85,13 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(
         xebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real uad = umac(i,j,k);
-            Real fux = (std::abs(uad) < 1e-06)? 0. : 1.;
+            Real fux = (abs(uad) < 1e-06)? 0. : 1.;
             bool uval = uad >= 0.; 
             auto bc = pbc[n];  
             Real cons1 = (iconserv[n]) ? -0.5*l_dt*q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
@@ -109,8 +114,13 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         },
         yebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real vad = vmac(i,j,k);
-            Real fuy = (std::abs(vad) < 1e-06)? 0. : 1.;
+            Real fuy = (abs(vad) < 1e-06)? 0. : 1.;
             bool vval = vad >= 0.;
             auto bc = pbc[n];
             Real cons1 = (iconserv[n]) ? -0.5*l_dt*q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
@@ -133,8 +143,13 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         },
         zebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real wad = wmac(i,j,k);
-            Real fuz = (std::abs(wad) < 1e-06) ? 0. : 1.;
+            Real fuz = (abs(wad) < 1e-06) ? 0. : 1.;
             bool wval = wad >= 0.; 
             auto bc = pbc[n];
             Real cons1 = (iconserv[n]) ? -0.5*l_dt*q(i,j,k-1,n)*divu(i,j,k-1) : 0.;
@@ -173,6 +188,11 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     Box(zylo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+#else
+        using std::abs;
+#endif
         const auto bc = pbc[n]; 
         Real l_zylo, l_zyhi;
         Godunov_corner_couple_zy(l_zylo, l_zyhi,
@@ -189,12 +209,17 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
-        Real fu = (std::abs(wad) < eps) ? 0.0 : 1.0;
+        Real fu = (abs(wad) < eps) ? 0.0 : 1.0;
         zylo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_zyhi + l_zylo);
     },
     Box(yzlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+#else
+        using std::abs;
+#endif
         const auto bc = pbc[n];
         Real l_yzlo, l_yzhi;
         Godunov_corner_couple_yz(l_yzlo, l_yzhi,
@@ -211,7 +236,7 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
-        Real fu = (std::abs(vad) < eps) ? 0.0 : 1.0;
+        Real fu = (abs(vad) < eps) ? 0.0 : 1.0;
         yzlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_yzhi + l_yzlo);
     });
     //
@@ -219,6 +244,11 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(xbx, ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+#else
+        using std::abs;
+#endif
         Real stl, sth;
         auto bc = pbc[n]; 
         if (iconserv[n]) {
@@ -250,7 +280,7 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         Godunov_cc_xbc(i, j, k, n, q, stl, sth, umac, bc.lo(0), bc.hi(0), dlo.x, dhi.x);
 
         Real temp = (umac(i,j,k) >= 0.) ? stl : sth; 
-        temp = (std::abs(umac(i,j,k)) < 1.e-06) ? 0.5*(stl + sth) : temp;
+        temp = (abs(umac(i,j,k)) < 1.e-06) ? 0.5*(stl + sth) : temp;
         qx(i,j,k,n) = temp;
     }); 
 
@@ -264,6 +294,11 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     Box(xzlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+#else
+        using std::abs;
+#endif
         const auto bc = pbc[n];
         Real l_xzlo, l_xzhi;
         Godunov_corner_couple_xz(l_xzlo, l_xzhi,
@@ -280,12 +315,17 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
-        Real fu = (std::abs(uad) < eps) ? 0.0 : 1.0;
+        Real fu = (abs(uad) < eps) ? 0.0 : 1.0;
         xzlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_xzhi + l_xzlo);
     },
     Box(zxlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+#else
+        using std::abs;
+#endif
         const auto bc = pbc[n];
         Real l_zxlo, l_zxhi;
         Godunov_corner_couple_zx(l_zxlo, l_zxhi,
@@ -302,7 +342,7 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
-        Real fu = (std::abs(wad) < eps) ? 0.0 : 1.0;
+        Real fu = (abs(wad) < eps) ? 0.0 : 1.0;
         zxlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_zxhi + l_zxlo);
     });
     //
@@ -310,6 +350,11 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(ybx, ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+#else
+        using std::abs;
+#endif
         Real stl, sth;
         auto bc = pbc[n];
         if (iconserv[n]){
@@ -341,7 +386,7 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         Godunov_cc_ybc(i, j, k, n, q, stl, sth, vmac, bc.lo(1), bc.hi(1), dlo.y, dhi.y);
 
         Real temp = (vmac(i,j,k) >= 0.) ? stl : sth; 
-        temp = (std::abs(vmac(i,j,k)) < 1e-06) ? 0.5*(stl + sth) : temp; 
+        temp = (abs(vmac(i,j,k)) < 1e-06) ? 0.5*(stl + sth) : temp; 
         qy(i,j,k,n) = temp;
     });
 
@@ -355,6 +400,11 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     Box(xylo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+#else
+        using std::abs;
+#endif
         const auto bc = pbc[n];
         Real l_xylo, l_xyhi;
         Godunov_corner_couple_xy(l_xylo, l_xyhi,
@@ -371,12 +421,17 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
-        Real fu = (std::abs(uad) < eps) ? 0.0 : 1.0;
+        Real fu = (abs(uad) < eps) ? 0.0 : 1.0;
         xylo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_xyhi + l_xylo);
     },
     Box(yxlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+#else
+        using std::abs;
+#endif
         const auto bc = pbc[n];
         Real l_yxlo, l_yxhi;
         Godunov_corner_couple_yx(l_yxlo, l_yxhi,
@@ -393,7 +448,7 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
-        Real fu = (std::abs(vad) < eps) ? 0.0 : 1.0;
+        Real fu = (abs(vad) < eps) ? 0.0 : 1.0;
         yxlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_yxhi + l_yxlo);
     });
     //
@@ -401,6 +456,11 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(zbx, ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+#else
+        using std::abs;
+#endif
         Real stl, sth;
         auto bc = pbc[n]; 
         if (iconserv[n]) {
@@ -432,7 +492,7 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         Godunov_cc_zbc(i, j, k, n, q, stl, sth, wmac, bc.lo(2), bc.hi(2), dlo.z, dhi.z);
 
         Real temp = (wmac(i,j,k) >= 0.) ? stl : sth; 
-        temp = (std::abs(wmac(i,j,k)) < 1e-06) ? 0.5*(stl + sth) : temp; 
+        temp = (abs(wmac(i,j,k)) < 1e-06) ? 0.5*(stl + sth) : temp; 
         qz(i,j,k,n) = temp;
     });
 

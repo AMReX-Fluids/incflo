@@ -283,16 +283,23 @@ void incflo::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
 
     amrex::ParallelFor(xbx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+        using sycl::copysign;
+#else
+        using std::abs;
+        using std::copysign;
+#endif
         if (flag(i,j,k).isConnected(-1,0,0)) {
             Real qcent;
             if (flag(i,j,k).isRegular() or flag(i-1,j,k).isRegular()) {
                 qcent = qface(i,j,k,n);
             } else {
-                int jj = j + static_cast<int>(std::copysign(1.0, fcx(i,j,k,0)));
-                int kk = k + static_cast<int>(std::copysign(1.0, fcx(i,j,k,1)));
+                int jj = j + static_cast<int>(copysign(1.0, fcx(i,j,k,0)));
+                int kk = k + static_cast<int>(copysign(1.0, fcx(i,j,k,1)));
 
-                Real fracy = std::abs(fcx(i,j,k,0));
-                Real fracz = std::abs(fcx(i,j,k,1));
+                Real fracy = abs(fcx(i,j,k,0));
+                Real fracz = abs(fcx(i,j,k,1));
 
                 qcent = (1.0-fracy)*(1.0-fracz)*qface(i, j,k ,n)+
                              fracy *(1.0-fracz)*qface(i,jj,k ,n)+
@@ -360,16 +367,23 @@ void incflo::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
 
     amrex::ParallelFor(ybx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+        using sycl::copysign;
+#else
+        using std::abs;
+        using std::copysign;
+#endif
         if (flag(i,j,k).isConnected(0,-1,0)) {
             Real qcent;
             if (flag(i,j,k).isRegular() or flag(i,j-1,k).isRegular()) {
                 qcent = qface(i,j,k,n);
             } else {
-                int ii = i + static_cast<int>(std::copysign(1.0,fcy(i,j,k,0)));
-                int kk = k + static_cast<int>(std::copysign(1.0,fcy(i,j,k,1)));
+                int ii = i + static_cast<int>(copysign(1.0,fcy(i,j,k,0)));
+                int kk = k + static_cast<int>(copysign(1.0,fcy(i,j,k,1)));
 
-                Real fracx = std::abs(fcy(i,j,k,0));
-                Real fracz = std::abs(fcy(i,j,k,1));
+                Real fracx = abs(fcy(i,j,k,0));
+                Real fracz = abs(fcy(i,j,k,1));
 
                 qcent = (1.0-fracx)*(1.0-fracz)*qface(i ,j,k ,n)+
                              fracx *(1.0-fracz)*qface(ii,j,k ,n)+
@@ -438,16 +452,23 @@ void incflo::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
 
     amrex::ParallelFor(zbx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+#ifdef AMREX_USE_DPCPP
+        using sycl::abs;
+        using sycl::copysign;
+#else
+        using std::abs;
+        using std::copysign;
+#endif
         if (flag(i,j,k).isConnected(0,0,-1)) {
             Real qcent;
             if (flag(i,j,k).isRegular() or flag(i,j,k-1).isRegular()) {
                 qcent = qface(i,j,k,n);
             } else {
-                int ii = i + static_cast<int>(std::copysign(1.0,fcz(i,j,k,0)));
-                int jj = j + static_cast<int>(std::copysign(1.0,fcz(i,j,k,1)));
+                int ii = i + static_cast<int>(copysign(1.0,fcz(i,j,k,0)));
+                int jj = j + static_cast<int>(copysign(1.0,fcz(i,j,k,1)));
 
-                Real fracx = std::abs(fcz(i,j,k,0));
-                Real fracy = std::abs(fcz(i,j,k,1));
+                Real fracx = abs(fcz(i,j,k,0));
+                Real fracy = abs(fcz(i,j,k,1));
 
                 qcent = (1.0-fracx)*(1.0-fracy)*qface(i ,j ,k,n)+
                              fracx *(1.0-fracy)*qface(ii,j ,k,n)+

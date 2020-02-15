@@ -263,9 +263,14 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
     {
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real x = (i+0.5) * dx[0];
             Real y = (j+0.5) * dx[1];
-            vel(i,j,k,0) = std::tanh(30.0*(0.25-std::abs(y-0.5)));
+            vel(i,j,k,0) = std::tanh(30.0*(0.25-abs(y-0.5)));
             vel(i,j,k,1) = 0.05*std::sin(twopi*x);
             vel(i,j,k,2) = 0.0;
         });
@@ -274,9 +279,14 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
     {
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real y = (j+0.5) * dx[1];
             Real z = (k+0.5) * dx[2];
-            vel(i,j,k,1) = std::tanh(30.0*(0.25-std::abs(z-0.5)));
+            vel(i,j,k,1) = std::tanh(30.0*(0.25-abs(z-0.5)));
             vel(i,j,k,2) = 0.05*std::sin(twopi*y);
             vel(i,j,k,0) = 0.0;
         });
@@ -285,9 +295,14 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
     {
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+#ifdef AMREX_USE_DPCPP
+            using sycl::abs;
+#else
+            using std::abs;
+#endif
             Real x = (i+0.5) * dx[0];
             Real z = (k+0.5) * dx[2];
-            vel(i,j,k,2) = std::tanh(30.0*(0.25-std::abs(x-0.5)));
+            vel(i,j,k,2) = std::tanh(30.0*(0.25-abs(x-0.5)));
             vel(i,j,k,0) = 0.05*std::sin(twopi*z);
             vel(i,j,k,1) = 0.0;
         });
