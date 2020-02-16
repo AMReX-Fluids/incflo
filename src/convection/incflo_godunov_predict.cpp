@@ -123,11 +123,6 @@ void incflo::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box
     amrex::ParallelFor(xbx, ybx, zbx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         // We only care about x-velocity on x-faces here
         constexpr int n = 0;
 
@@ -148,16 +143,11 @@ void incflo::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box
         constexpr Real eps = 1e-6;
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (abs(lo+hi) < eps) );
+        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < eps) );
         u_ad(i,j,k) = ltm ? 0. : st;
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         // We only care about y-velocity on y-faces here
         constexpr int n = 1;
 
@@ -178,16 +168,11 @@ void incflo::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box
         constexpr Real eps = 1e-6;
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (abs(lo+hi) < eps) );
+        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < eps) );
         v_ad(i,j,k) = ltm ? 0. : st;
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         // We only care about z-velocity on z-faces here
         constexpr int n = 2;
 
@@ -209,7 +194,7 @@ void incflo::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box
         constexpr Real eps = 1e-6;
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (abs(lo+hi) < eps) );
+        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < eps) );
         w_ad(i,j,k) = ltm ? 0. : st;
     });
 }
@@ -263,11 +248,6 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(
         xebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-#ifdef AMREX_USE_DPCPP
-            using sycl::abs;
-#else
-            using std::abs;
-#endif
             Real lo, hi;
             if (l_use_forces_in_trans) {
                 lo = Ipx(i-1,j,k,n) + 0.5*l_dt*f(i-1,j,k,n);
@@ -290,16 +270,11 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
             constexpr Real eps = 1e-6;
 
             Real st = (uad >= 0.) ? lo : hi;
-            Real fu = (abs(uad) < eps) ? 0.0 : 1.0;
+            Real fu = (amrex::Math::abs(uad) < eps) ? 0.0 : 1.0;
             Imx(i, j, k, n) = fu*st + (1.0 - fu) *0.5 * (hi + lo); // store xedge
         },
         yebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-#ifdef AMREX_USE_DPCPP
-            using sycl::abs;
-#else
-            using std::abs;
-#endif
             Real lo, hi;
             if (l_use_forces_in_trans) {
                 lo = Ipy(i,j-1,k,n) + 0.5*l_dt*f(i,j-1,k,n);
@@ -322,16 +297,11 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
             constexpr Real eps = 1e-6;
 
             Real st = (vad >= 0.) ? lo : hi;
-            Real fu = (abs(vad) < eps) ? 0.0 : 1.0;
+            Real fu = (amrex::Math::abs(vad) < eps) ? 0.0 : 1.0;
             Imy(i, j, k, n) = fu*st + (1.0 - fu)*0.5*(hi + lo); // store yedge
         },
         zebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-#ifdef AMREX_USE_DPCPP
-            using sycl::abs;
-#else
-            using std::abs;
-#endif
             Real lo, hi;
             if (l_use_forces_in_trans) {
                 lo = Ipz(i,j,k-1,n) + 0.5*l_dt*f(i,j,k-1,n);
@@ -354,7 +324,7 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
             constexpr Real eps = 1e-6;
 
             Real st = (wad >= 0.) ? lo : hi;
-            Real fu = (abs(wad) < eps) ? 0.0 : 1.0;
+            Real fu = (amrex::Math::abs(wad) < eps) ? 0.0 : 1.0;
             Imz(i, j, k, n) = fu*st + (1.0 - fu)*0.5*(hi + lo); // store zedge
         });
 
@@ -382,11 +352,6 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(Box(zylo), Box(yzlo),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         constexpr int n = 0;
         const auto bc = pbc[n]; 
         Real l_zylo, l_zyhi;
@@ -404,16 +369,11 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
-        Real fu = (abs(wad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(wad) < eps) ? 0.0 : 1.0;
         zylo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_zyhi + l_zylo);
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         constexpr int n = 0;
         const auto bc = pbc[n];
         Real l_yzlo, l_yzhi;
@@ -431,17 +391,12 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
-        Real fu = (abs(vad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(vad) < eps) ? 0.0 : 1.0;
         yzlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_yzhi + l_yzlo);
     });
     //
     amrex::ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         constexpr int n = 0;
         auto bc = pbc[n];
         Real stl = xlo(i,j,k,n) - (0.25*l_dt/dy)*(v_ad(i-1,j+1,k)+v_ad(i-1,j,k))*
@@ -463,7 +418,7 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1e-6;
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (abs(stl+sth) < eps) );
+        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < eps) );
         qx(i,j,k) = ltm ? 0. : st;
     });
 
@@ -481,11 +436,6 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(Box(xzlo), Box(zxlo),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         constexpr int n = 1;
         const auto bc = pbc[n];
         Real l_xzlo, l_xzhi;
@@ -503,16 +453,11 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
-        Real fu = (abs(uad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(uad) < eps) ? 0.0 : 1.0;
         xzlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_xzhi + l_xzlo);
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         constexpr int n = 1;
         const auto bc = pbc[n];
         Real l_zxlo, l_zxhi;
@@ -530,17 +475,12 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
-        Real fu = (abs(wad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(wad) < eps) ? 0.0 : 1.0;
         zxlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_zxhi + l_zxlo);
     });
     //
     amrex::ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         constexpr int n = 1;
         auto bc = pbc[n];
         Real stl = ylo(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j-1,k)+u_ad(i,j-1,k))*
@@ -562,7 +502,7 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1e-6;
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (abs(stl+sth) < eps) );
+        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < eps) );
         qy(i,j,k) = ltm ? 0. : st;
     });
 
@@ -580,11 +520,6 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(Box(xylo), Box(yxlo),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         constexpr int n = 2;
         const auto bc = pbc[n];
         Real l_xylo, l_xyhi;
@@ -602,16 +537,11 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
-        Real fu = (abs(uad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(uad) < eps) ? 0.0 : 1.0;
         xylo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_xyhi + l_xylo);
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         constexpr int n = 2;
         const auto bc = pbc[n];
         Real l_yxlo, l_yxhi;
@@ -629,17 +559,12 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1.e-6;
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
-        Real fu = (abs(vad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(vad) < eps) ? 0.0 : 1.0;
         yxlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_yxhi + l_yxlo);
     });
     //
     amrex::ParallelFor(zbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
         constexpr int n = 2;
         auto bc = pbc[n];
         Real stl = zlo(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j,k-1)+u_ad(i,j,k-1))*
@@ -661,7 +586,7 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
         constexpr Real eps = 1e-6;
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (abs(stl+sth) < eps) );
+        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < eps) );
         qz(i,j,k) = ltm ? 0. : st;
     });
 }

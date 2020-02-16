@@ -18,17 +18,11 @@ namespace {
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real c)
 {   
-#ifdef AMREX_USE_DPCPP
-    using sycl::abs;
-    using sycl::copysign;
-#else
-    using std::abs;
-    using std::copysign;
-#endif
     amrex::Real dsc = 0.5e0*(b - c);
     amrex::Real dsl = 2.e0*(a - c);
     amrex::Real dsr = 2.e0*(b - a);
-    return (dsl*dsr > 0.)? copysign(1., dsc) * amrex::min(abs(dsc), abs(dsl), abs(dsr)) : 0.;
+    return (dsl*dsr > 0.)? amrex::Math::copysign(1., dsc)*amrex::min(amrex::Math::abs(dsc),
+                                 amrex::min(amrex::Math::abs(dsl), amrex::Math::abs(dsr))) : 0.;
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
@@ -40,11 +34,6 @@ void Godunov_ppm_xbc(const int i, const int j, const int k, const int n,
                            const int domlo, const int domhi)
 {
     using namespace amrex;
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
 
         if(bclo == BCType::ext_dir || bclo == BCType::hoextrap){
             if(i == domlo){
@@ -67,10 +56,10 @@ void Godunov_ppm_xbc(const int i, const int j, const int k, const int n,
                     sp = s(domlo+1,j,k,n);
                     sm = s(domlo+1,j,k,n);
                 }
-                else if(abs(sp - s(domlo+1,j,k,n)) >= 2.*abs(sm - s(domlo+1,j,k,n))){
+                else if(amrex::Math::abs(sp - s(domlo+1,j,k,n)) >= 2.*amrex::Math::abs(sm - s(domlo+1,j,k,n))){
                     sp = 3.*s(domlo+1,j,k,n) - 2.*sm;
                 }
-                else if(abs(sm - s(domlo+1,j,k,n)) >= 2.*abs(sp - s(domlo+1,j,k,n))){
+                else if(amrex::Math::abs(sm - s(domlo+1,j,k,n)) >= 2.*amrex::Math::abs(sp - s(domlo+1,j,k,n))){
                     sm = 3.*s(domlo+1,j,k,n) - 2.*sp;
                 } 
             }
@@ -97,10 +86,10 @@ void Godunov_ppm_xbc(const int i, const int j, const int k, const int n,
                     sp = s(domhi-1,j,k,n);
                     sm = s(domhi-1,j,k,n);
                 }
-                else if(abs(sp - s(domhi-1,j,k,n)) >= 2.*abs(sm - s(domhi-1,j,k,n))){
+                else if(amrex::Math::abs(sp - s(domhi-1,j,k,n)) >= 2.*amrex::Math::abs(sm - s(domhi-1,j,k,n))){
                     sp = 3.*s(domhi-1,j,k,n) - 2.*sm;
                 }
-                else if(abs(sm - s(domhi-1,j,k,n)) >= 2.*abs(sp - s(domhi-1,j,k,n))){
+                else if(amrex::Math::abs(sm - s(domhi-1,j,k,n)) >= 2.*amrex::Math::abs(sp - s(domhi-1,j,k,n))){
                     sm = 3.*s(domhi-1,j,k,n) - 2.*sp;
                 } 
     
@@ -117,12 +106,6 @@ void Godunov_ppm_ybc(const int i, const int j, const int k, const int n,
                            const int domlo, const int domhi)
 {
     using namespace amrex;
-
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
 
         if(bclo == BCType::ext_dir || bclo == BCType::hoextrap){
             if(j == domlo){
@@ -145,10 +128,10 @@ void Godunov_ppm_ybc(const int i, const int j, const int k, const int n,
                     sp = s(i,domlo+1,k,n);
                     sm = s(i,domlo+1,k,n);
                 }
-                else if(abs(sp - s(i,domlo+1,k,n)) >= 2.*abs(sm - s(i,domlo+1,k,n))){
+                else if(amrex::Math::abs(sp - s(i,domlo+1,k,n)) >= 2.*amrex::Math::abs(sm - s(i,domlo+1,k,n))){
                     sp = 3.*s(i,domlo+1,k,n) - 2.*sm;
                 }
-                else if(abs(sm - s(i,domlo+1,k,n)) >= 2.*abs(sp - s(i,domlo+1,k,n))){
+                else if(amrex::Math::abs(sm - s(i,domlo+1,k,n)) >= 2.*amrex::Math::abs(sp - s(i,domlo+1,k,n))){
                     sm = 3.*s(i,domlo+1,k,n) - 2.*sp;
                 } 
             }
@@ -175,10 +158,10 @@ void Godunov_ppm_ybc(const int i, const int j, const int k, const int n,
                     sp = s(i,domhi-1,k,n);
                     sm = s(i,domhi-1,k,n);
                 }
-                else if(abs(sp - s(i,domhi-1,k,n)) >= 2.*abs(sm - s(i,domhi-1,k,n))){
+                else if(amrex::Math::abs(sp - s(i,domhi-1,k,n)) >= 2.*amrex::Math::abs(sm - s(i,domhi-1,k,n))){
                     sp = 3.*s(i,domhi-1,k,n) - 2.*sm;
                 }
-                else if(abs(sm - s(i,domhi-1,k,n)) >= 2.*abs(sp - s(i,domhi-1,k,n))){
+                else if(amrex::Math::abs(sm - s(i,domhi-1,k,n)) >= 2.*amrex::Math::abs(sp - s(i,domhi-1,k,n))){
                     sm = 3.*s(i,domhi-1,k,n) - 2.*sp;
                 } 
     
@@ -195,12 +178,6 @@ void Godunov_ppm_zbc(const int i, const int j, const int k, const int n,
                            const int domlo, const int domhi)
 {
     using namespace amrex;
-
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
 
         if(bclo == BCType::ext_dir || bclo == BCType::hoextrap){
             if(k == domlo){
@@ -223,10 +200,10 @@ void Godunov_ppm_zbc(const int i, const int j, const int k, const int n,
                     sp = s(i,j,domlo+1,n);
                     sm = s(i,j,domlo+1,n);
                 }
-                else if(abs(sp - s(i,j,domlo+1,n)) >= 2.*abs(sm - s(i,j,domlo+1,n))){
+                else if(amrex::Math::abs(sp - s(i,j,domlo+1,n)) >= 2.*amrex::Math::abs(sm - s(i,j,domlo+1,n))){
                     sp = 3.*s(i,j,domlo+1,n) - 2.*sm;
                 }
-                else if(abs(sm - s(i,j,domlo+1,n)) >= 2.*abs(sp - s(i,j,domlo+1,n))){
+                else if(amrex::Math::abs(sm - s(i,j,domlo+1,n)) >= 2.*amrex::Math::abs(sp - s(i,j,domlo+1,n))){
                     sm = 3.*s(i,j,domlo+1,n) - 2.*sp;
                 } 
             }
@@ -253,10 +230,10 @@ void Godunov_ppm_zbc(const int i, const int j, const int k, const int n,
                     sp = s(i,j,domhi-1,n);
                     sm = s(i,j,domhi-1,n);
                 }
-                else if(abs(sp - s(i,j,domhi-1,n)) >= 2.*abs(sm - s(i,j,domhi-1,n))){
+                else if(amrex::Math::abs(sp - s(i,j,domhi-1,n)) >= 2.*amrex::Math::abs(sm - s(i,j,domhi-1,n))){
                     sp = 3.*s(i,j,domhi-1,n) - 2.*sm;
                 }
-                else if(abs(sm - s(i,j,domhi-1,n)) >= 2.*abs(sp - s(i,j,domhi-1,n))){
+                else if(amrex::Math::abs(sm - s(i,j,domhi-1,n)) >= 2.*amrex::Math::abs(sp - s(i,j,domhi-1,n))){
                     sm = 3.*s(i,j,domhi-1,n) - 2.*sp;
                 } 
     
@@ -277,12 +254,6 @@ void Godunov_ppm_pred_x(const int i, const int j, const int k, const int n,
                              const amrex::BCRec bc, const int domlo, const int domhi)
 {
     using namespace amrex;
-
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
 
     amrex::Real sedge1, sedge2, sp, sm;
     amrex::Real s1 = S(i,j,k,n);
@@ -311,14 +282,14 @@ void Godunov_ppm_pred_x(const int i, const int j, const int k, const int n,
             sp = S(i,j,k,n);
             sm = S(i,j,k,n);
         }
-        else if (abs(sp-S(i,j,k,n)) >= 2.e0*abs(sm-S(i,j,k,n)))
+        else if (amrex::Math::abs(sp-S(i,j,k,n)) >= 2.e0*amrex::Math::abs(sm-S(i,j,k,n)))
             sp = 3.e0*S(i,j,k,n) - 2.e0*sedge1;
-        else if (abs(sm-S(i,j,k,n)) >=  2.e0*abs(sp-S(i,j,k,n))) 
+        else if (amrex::Math::abs(sm-S(i,j,k,n)) >=  2.e0*amrex::Math::abs(sp-S(i,j,k,n))) 
             sm = 3.e0*S(i,j,k,n) - 2.e0*sedge2;
         
         Godunov_ppm_xbc(i, j, k, n, sm, sp, sedge1,sedge2, S, bc.lo(0), bc.hi(0), domlo, domhi);
         amrex::Real s6 = 6.e0*s2- 3.e0*(sm + sp);
-        amrex::Real sigma = abs(vel(i,j,k,0))*dt/dx;
+        amrex::Real sigma = amrex::Math::abs(vel(i,j,k,0))*dt/dx;
 
         if (vel(i,j,k,0) > eps)
         {
@@ -345,12 +316,6 @@ void Godunov_ppm_pred_y(const int i, const int j, const int k, const int n,
                              const amrex::BCRec bc, const int domlo, const int domhi)
 {
     using namespace amrex;
-
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
 
     amrex::Real sedge1, sedge2, sp, sm;
     amrex::Real s1 = S(i,j,k,n);
@@ -380,15 +345,15 @@ void Godunov_ppm_pred_y(const int i, const int j, const int k, const int n,
             sp = S(i,j,k,n);
             sm = S(i,j,k,n);
         }
-        else if (abs(sedge2-S(i,j,k,n)) >= 2.e0*abs(sedge1-S(i,j,k,n)))
+        else if (amrex::Math::abs(sedge2-S(i,j,k,n)) >= 2.e0*amrex::Math::abs(sedge1-S(i,j,k,n)))
             sp = 3.e0*S(i,j,k,n) - 2.e0*sedge1;
-        else if (abs(sedge1-S(i,j,k,n)) >=  2.e0*abs(sedge2-S(i,j,k,n))) 
+        else if (amrex::Math::abs(sedge1-S(i,j,k,n)) >=  2.e0*amrex::Math::abs(sedge2-S(i,j,k,n))) 
             sm = 3.e0*S(i,j,k,n) - 2.e0*sedge2;
         Godunov_ppm_ybc(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(1), bc.hi(1), domlo, domhi);
 
         amrex::Real s6 = 6.e0*S(i,j,k,n)- 3.e0*(sm + sp);
 
-        amrex::Real sigma = abs(vel(i,j,k,1))*dt/dx;
+        amrex::Real sigma = amrex::Math::abs(vel(i,j,k,1))*dt/dx;
 
         if(vel(i,j,k,1) > eps)
         {
@@ -415,12 +380,6 @@ void Godunov_ppm_pred_z(const int i, const int j, const int k, const int n,
                              const amrex::BCRec bc, const int domlo, const int domhi)
 {
     using namespace amrex;
-
-#ifdef AMREX_USE_DPCPP
-        using sycl::abs;
-#else
-        using std::abs;
-#endif
 
     amrex::Real sedge1, sedge2, sp, sm;
     amrex::Real s1 = S(i,j,k,n);
@@ -452,15 +411,15 @@ void Godunov_ppm_pred_z(const int i, const int j, const int k, const int n,
             sp = S(i,j,k,n);
             sm = S(i,j,k,n);
         }
-        else if (abs(sp-S(i,j,k,n)) >= 2.e0*abs(sm-S(i,j,k,n)))
+        else if (amrex::Math::abs(sp-S(i,j,k,n)) >= 2.e0*amrex::Math::abs(sm-S(i,j,k,n)))
             sp = 3.e0*S(i,j,k,n) - 2.e0*sm;
-        else if (abs(sm-S(i,j,k,n)) >=  2.e0*abs(sp-S(i,j,k,n))) 
+        else if (amrex::Math::abs(sm-S(i,j,k,n)) >=  2.e0*amrex::Math::abs(sp-S(i,j,k,n))) 
             sm = 3.e0*S(i,j,k,n) - 2.e0*sp;
 
         Godunov_ppm_zbc(i, j, k, n, sm, sp, sedge1, sedge2,S, bc.lo(2), bc.hi(2), domlo, domhi);
 
         amrex::Real s6 = 6.e0*S(i,j,k,n)- 3.e0*(sm + sp);
-        amrex::Real sigma = abs(vel(i,j,k,2))*dt/dx;
+        amrex::Real sigma = amrex::Math::abs(vel(i,j,k,2))*dt/dx;
 
         if(vel(i,j,k,2) > eps)
         { 
@@ -491,12 +450,6 @@ void Godunov_ppm_fpu_x (const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
 
-#ifdef AMREX_USE_DPCPP
-    using sycl::abs;
-#else
-    using std::abs;
-#endif
-
     amrex::Real sedge1, sedge2, sp, sm;
     amrex::Real s1 = S(i,j,k,n);
     
@@ -523,15 +476,15 @@ void Godunov_ppm_fpu_x (const int i, const int j, const int k, const int n,
             sp = S(i,j,k,n);
             sm = S(i,j,k,n);
         }
-        else if (abs(sp-S(i,j,k,n)) >= 2.e0*abs(sm-S(i,j,k,n)))
+        else if (amrex::Math::abs(sp-S(i,j,k,n)) >= 2.e0*amrex::Math::abs(sm-S(i,j,k,n)))
             sp = 3.e0*S(i,j,k,n) - 2.e0*sedge1;
-        else if (abs(sm-S(i,j,k,n)) >=  2.e0*abs(sp-S(i,j,k,n))) 
+        else if (amrex::Math::abs(sm-S(i,j,k,n)) >=  2.e0*amrex::Math::abs(sp-S(i,j,k,n))) 
             sm = 3.e0*S(i,j,k,n) - 2.e0*sedge2;
         
         Godunov_ppm_xbc(i, j, k, n, sm, sp, sedge1,sedge2, S, bc.lo(0), bc.hi(0), domlo, domhi);
         amrex::Real s6 = 6.e0*s2- 3.e0*(sm + sp);
-        amrex::Real sigmap = abs(vel_edge(i+1,j,k))*dt/dx;
-        amrex::Real sigmam = abs(vel_edge(i,j,k))*dt/dx;
+        amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
+        amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k))*dt/dx;
 
         if(vel_edge(i+1,j,k) > 1.e-06){
             Ip = sp - (0.5*sigmap)*((sp - sm)
@@ -558,12 +511,6 @@ void Godunov_ppm_fpu_y (const int i, const int j, const int k, const int n,
                         const int domlo, const int domhi)
 {
     using namespace amrex;
-
-#ifdef AMREX_USE_DPCPP
-    using sycl::abs;
-#else
-    using std::abs;
-#endif
 
     amrex::Real sedge1, sedge2, sp, sm;
     amrex::Real s1 = S(i,j,k,n);
@@ -592,15 +539,15 @@ void Godunov_ppm_fpu_y (const int i, const int j, const int k, const int n,
             sp = S(i,j,k,n);
             sm = S(i,j,k,n);
         }
-        else if (abs(sedge2-S(i,j,k,n)) >= 2.e0*abs(sedge1-S(i,j,k,n)))
+        else if (amrex::Math::abs(sedge2-S(i,j,k,n)) >= 2.e0*amrex::Math::abs(sedge1-S(i,j,k,n)))
             sp = 3.e0*S(i,j,k,n) - 2.e0*sedge1;
-        else if (abs(sedge1-S(i,j,k,n)) >=  2.e0*abs(sedge2-S(i,j,k,n))) 
+        else if (amrex::Math::abs(sedge1-S(i,j,k,n)) >=  2.e0*amrex::Math::abs(sedge2-S(i,j,k,n))) 
             sm = 3.e0*S(i,j,k,n) - 2.e0*sedge2;
         Godunov_ppm_ybc(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(1), bc.hi(1), domlo, domhi);
 
         amrex::Real s6 = 6.e0*S(i,j,k,n)- 3.e0*(sm + sp);
-        amrex::Real sigmap = abs(vel_edge(i,j+1,k))*dt/dx;
-        amrex::Real sigmam = abs(vel_edge(i,j,k))*dt/dx;
+        amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
+        amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k))*dt/dx;
         if(vel_edge(i,j+1,k) > 1.e-06)
             Ip = sp - (0.5*sigmap)*((sp - sm)
                              - (1.e0 -2.e0/3.e0*sigmap)*s6);
@@ -626,12 +573,6 @@ void Godunov_ppm_fpu_z (const int i, const int j, const int k, const int n,
                         const int domlo, const int domhi)
 {
     using namespace amrex;
-
-#ifdef AMREX_USE_DPCPP
-    using sycl::abs;
-#else
-    using std::abs;
-#endif
 
     amrex::Real sedge1, sedge2, sp, sm;
     amrex::Real s1 = S(i,j,k,n);
@@ -662,16 +603,16 @@ void Godunov_ppm_fpu_z (const int i, const int j, const int k, const int n,
             sp = S(i,j,k,n);
             sm = S(i,j,k,n);
         }
-        else if (abs(sp-S(i,j,k,n)) >= 2.e0*abs(sm-S(i,j,k,n)))
+        else if (amrex::Math::abs(sp-S(i,j,k,n)) >= 2.e0*amrex::Math::abs(sm-S(i,j,k,n)))
             sp = 3.e0*S(i,j,k,n) - 2.e0*sm;
-        else if (abs(sm-S(i,j,k,n)) >=  2.e0*abs(sp-S(i,j,k,n))) 
+        else if (amrex::Math::abs(sm-S(i,j,k,n)) >=  2.e0*amrex::Math::abs(sp-S(i,j,k,n))) 
             sm = 3.e0*S(i,j,k,n) - 2.e0*sp;
 
         Godunov_ppm_zbc(i, j, k, n, sm, sp, sedge1, sedge2,S, bc.lo(2), bc.hi(2), domlo, domhi);
 
         amrex::Real s6 = 6.e0*S(i,j,k,n)- 3.e0*(sm + sp);
-        amrex::Real sigmap = abs(vel_edge(i,j,k+1))*dt/dx;
-        amrex::Real sigmam = abs(vel_edge(i,j,k))*dt/dx;
+        amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
+        amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k))*dt/dx;
         if(vel_edge(i,j,k+1) > 1.e-06)
             Ip = sp - (0.5*sigmap)*((sp - sm)
                              - (1.e0 -2.e0/3.e0*sigmap)*s6);

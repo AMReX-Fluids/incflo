@@ -50,15 +50,10 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                            Real mx = -1.0;
                            amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                            {
-#ifdef AMREX_USE_DPCPP
-                               using sycl::abs;
-#else
-                               using std::abs;
-#endif
                                if (!f(i,j,k).isCovered()) {
-                                   mx = amrex::max(abs(v(i,j,k,0))*dxinv[0],
-                                                   abs(v(i,j,k,1))*dxinv[1],
-                                                   abs(v(i,j,k,2))*dxinv[2], mx);
+                                   mx = amrex::max(amrex::Math::abs(v(i,j,k,0))*dxinv[0],
+                                                   amrex::Math::abs(v(i,j,k,1))*dxinv[1],
+                                                   amrex::Math::abs(v(i,j,k,2))*dxinv[2], mx);
                                }
                            });
                            return mx;
@@ -90,14 +85,9 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                            Real mx = -1.0;
                            amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                            {
-#ifdef AMREX_USE_DPCPP
-                               using sycl::abs;
-#else
-                               using std::abs;
-#endif
-                               mx = amrex::max(abs(v(i,j,k,0))*dxinv[0],
-                                               abs(v(i,j,k,1))*dxinv[1],
-                                               abs(v(i,j,k,2))*dxinv[2], mx);
+                               mx = amrex::max(amrex::Math::abs(v(i,j,k,0))*dxinv[0],
+                                               amrex::Math::abs(v(i,j,k,1))*dxinv[1],
+                                               amrex::Math::abs(v(i,j,k,2))*dxinv[2], mx);
                            });
                            return mx;
                        });
@@ -134,12 +124,12 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
 
     // Forcing term
     const auto dxinv_finest = Geom(finest_level).InvCellSizeArray();
-    Real forc_cfl = std::abs(m_gravity[0] - std::abs(m_gp0[0])) * dxinv_finest[0]
-                  + std::abs(m_gravity[1] - std::abs(m_gp0[1])) * dxinv_finest[1]
-                  + std::abs(m_gravity[2] - std::abs(m_gp0[2])) * dxinv_finest[2];
+    Real forc_cfl = amrex::Math::abs(m_gravity[0] - amrex::Math::abs(m_gp0[0])) * dxinv_finest[0]
+                  + amrex::Math::abs(m_gravity[1] - amrex::Math::abs(m_gp0[1])) * dxinv_finest[1]
+                  + amrex::Math::abs(m_gravity[2] - amrex::Math::abs(m_gp0[2])) * dxinv_finest[2];
 
     // Combined CFL conditioner
-    Real comb_cfl = cd_cfl + std::sqrt(cd_cfl*cd_cfl + 4.0 * forc_cfl);
+    Real comb_cfl = cd_cfl + amrex::Math::sqrt(cd_cfl*cd_cfl + 4.0 * forc_cfl);
 
     // Update dt
     Real dt_new = 2.0 * m_cfl / comb_cfl;

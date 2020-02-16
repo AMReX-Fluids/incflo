@@ -64,21 +64,16 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
             [tag_rho,tag_gradrho,rhoerr,gradrhoerr,tagval,rho,tag]
             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-#ifdef AMREX_USE_DPCPP
-                using sycl::abs;
-#else
-                using std::abs;
-#endif
                 if (tag_rho and rho(i,j,k) > rhoerr) {
                     tag(i,j,k) = tagval;
                 }
                 if (tag_gradrho) {
-                    Real ax = abs(rho(i+1,j,k) - rho(i,j,k));
-                    Real ay = abs(rho(i,j+1,k) - rho(i,j,k));
-                    Real az = abs(rho(i,j,k+1) - rho(i,j,k));
-                    ax = amrex::max(ax,abs(rho(i,j,k) - rho(i-1,j,k)));
-                    ay = amrex::max(ay,abs(rho(i,j,k) - rho(i,j-1,k)));
-                    az = amrex::max(az,abs(rho(i,j,k) - rho(i,j,k-1)));
+                    Real ax = amrex::Math::abs(rho(i+1,j,k) - rho(i,j,k));
+                    Real ay = amrex::Math::abs(rho(i,j+1,k) - rho(i,j,k));
+                    Real az = amrex::Math::abs(rho(i,j,k+1) - rho(i,j,k));
+                    ax = amrex::max(ax,amrex::Math::abs(rho(i,j,k) - rho(i-1,j,k)));
+                    ay = amrex::max(ay,amrex::Math::abs(rho(i,j,k) - rho(i,j-1,k)));
+                    az = amrex::max(az,amrex::Math::abs(rho(i,j,k) - rho(i,j,k-1)));
                     if (amrex::max(ax,ay,az) >= gradrhoerr) {
                         tag(i,j,k) = tagval;
                     }

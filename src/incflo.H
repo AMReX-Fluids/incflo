@@ -6,6 +6,7 @@
 #include <AMReX_ParmParse.H>
 #include <AMReX_iMultiFab.H>
 #include <AMReX_NodalProjector.H>
+#include <AMReX_Math.H>
 
 #ifdef AMREX_USE_EB
 #include <AMReX_EBMultiFabUtil.H>

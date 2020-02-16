@@ -9,7 +9,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real expterm (amrex::Real nu) noexcept
 {
     return (nu < 1.e-9) ? (1.0-0.5*nu+nu*nu*(1.0/6.0)-(nu*nu*nu)*(1./24.))
-                        : -std::expm1(-nu)/nu;
+                        : -amrex::Math::expm1(-nu)/nu;
 }
 
 struct NonNewtonianViscosity
@@ -23,7 +23,7 @@ struct NonNewtonianViscosity
         {
         case incflo::FluidModel::powerlaw:
         {
-            return mu * std::pow(sr,n_flow-1.0);
+            return mu * amrex::Math::pow(sr,n_flow-1.0);
         }
         case incflo::FluidModel::Bingham:
         {
@@ -31,11 +31,11 @@ struct NonNewtonianViscosity
         }
         case incflo::FluidModel::HerschelBulkley:
         {
-            return (mu*std::pow(sr,n_flow)+tau_0)*expterm(sr/papa_reg)/papa_reg;
+            return (mu*amrex::Math::pow(sr,n_flow)+tau_0)*expterm(sr/papa_reg)/papa_reg;
         }
         case incflo::FluidModel::deSouzaMendesDutra:
         {
-            return (mu*std::pow(sr,n_flow)+tau_0)*expterm(sr*(eta_0/tau_0))*(eta_0/tau_0);
+            return (mu*amrex::Math::pow(sr,n_flow)+tau_0)*expterm(sr*(eta_0/tau_0))*(eta_0/tau_0);
         }
         default:
         {
