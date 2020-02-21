@@ -120,8 +120,8 @@ void incflo::init_taylor_green (Box const& vbx, Box const& gbx,
         Real x = (i+0.5)*dx[0];
         Real y = (j+0.5)*dx[1];
         constexpr Real twopi = 2.*3.1415926535897932;
-        vel(i,j,k,0) =  amrex::Math::sin(twopi*x) * amrex::Math::cos(twopi*y);
-        vel(i,j,k,1) = -amrex::Math::cos(twopi*x) * amrex::Math::sin(twopi*y);
+        vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y);
+        vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y);
         vel(i,j,k,2) = 0.0;
     });
 }
@@ -142,8 +142,8 @@ void incflo::init_taylor_green3d (Box const& vbx, Box const& gbx,
         Real y = (j+0.5)*dx[1];
         Real z = (k+0.5)*dx[2];
         constexpr Real twopi = 2.*3.1415926535897932;
-        vel(i,j,k,0) =  amrex::Math::sin(twopi*x) * amrex::Math::cos(twopi*y) *amrex::Math::cos(twopi*z);
-        vel(i,j,k,1) = -amrex::Math::cos(twopi*x) * amrex::Math::sin(twopi*y) *amrex::Math::cos(twopi*z);
+        vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y) *std::cos(twopi*z);
+        vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y) *std::cos(twopi*z);
         vel(i,j,k,2) = 0.0;
     });
 }
@@ -190,9 +190,9 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& gbx,
         Real x = problo[0] + (i+0.5)*dx[0];
         Real y = problo[1] + (j+0.5)*dx[1];
         Real z = problo[2] + (k+0.5)*dx[2];
-        const Real r2d = amrex::min(amrex::Math::hypot((x-splitx),(y-splity)), 0.5*L_x);
-        const Real pertheight = 0.5 - 0.01*amrex::Math::cos(2.0*pi*r2d/L_x);
-        density(i,j,k) = rho_1 + ((rho_2-rho_1)/2.0)*(1.0+amrex::Math::tanh((z-pertheight)/0.005));
+        const Real r2d = amrex::min(std::hypot((x-splitx),(y-splity)), 0.5*L_x);
+        const Real pertheight = 0.5 - 0.01*std::cos(2.0*pi*r2d/L_x);
+        density(i,j,k) = rho_1 + ((rho_2-rho_1)/2.0)*(1.0+std::tanh((z-pertheight)/0.005));
         vel(i,j,k,0) = 0.0;
         vel(i,j,k,1) = 0.0;
         vel(i,j,k,2) = 0.0;
@@ -242,9 +242,9 @@ void incflo::init_periodic_tracer (Box const& vbx, Box const& gbx,
         Real y = (j+0.5)*dx[1];
         Real z = (k+0.5)*dx[2];
         vel(i,j,k,0) = 1.0;
-        vel(i,j,k,1) = 0.1*(amrex::Math::sin(C*(x+z) - 0.00042) + 1.0) * amrex::Math::exp(y);
-        vel(i,j,k,2) = 0.1*(amrex::Math::sin(C*(x+y) - 0.00042) + 1.0) * amrex::Math::exp(z);
-        tracer(i,j,k) = A *(amrex::Math::sin(C*(y+z) - 0.00042) + 1.0) * amrex::Math::exp(x);
+        vel(i,j,k,1) = 0.1*(std::sin(C*(x+z) - 0.00042) + 1.0) * std::exp(y);
+        vel(i,j,k,2) = 0.1*(std::sin(C*(x+y) - 0.00042) + 1.0) * std::exp(z);
+        tracer(i,j,k) = A *(std::sin(C*(y+z) - 0.00042) + 1.0) * std::exp(x);
     });
 }
 
@@ -265,8 +265,8 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
         {
             Real x = (i+0.5) * dx[0];
             Real y = (j+0.5) * dx[1];
-            vel(i,j,k,0) = amrex::Math::tanh(30.0*(0.25-amrex::Math::abs(y-0.5)));
-            vel(i,j,k,1) = 0.05*amrex::Math::sin(twopi*x);
+            vel(i,j,k,0) = std::tanh(30.0*(0.25-amrex::Math::abs(y-0.5)));
+            vel(i,j,k,1) = 0.05*std::sin(twopi*x);
             vel(i,j,k,2) = 0.0;
         });
     }
@@ -276,8 +276,8 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
         {
             Real y = (j+0.5) * dx[1];
             Real z = (k+0.5) * dx[2];
-            vel(i,j,k,1) = amrex::Math::tanh(30.0*(0.25-amrex::Math::abs(z-0.5)));
-            vel(i,j,k,2) = 0.05*amrex::Math::sin(twopi*y);
+            vel(i,j,k,1) = std::tanh(30.0*(0.25-amrex::Math::abs(z-0.5)));
+            vel(i,j,k,2) = 0.05*std::sin(twopi*y);
             vel(i,j,k,0) = 0.0;
         });
     }
@@ -287,8 +287,8 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
         {
             Real x = (i+0.5) * dx[0];
             Real z = (k+0.5) * dx[2];
-            vel(i,j,k,2) = amrex::Math::tanh(30.0*(0.25-amrex::Math::abs(x-0.5)));
-            vel(i,j,k,0) = 0.05*amrex::Math::sin(twopi*z);
+            vel(i,j,k,2) = std::tanh(30.0*(0.25-amrex::Math::abs(x-0.5)));
+            vel(i,j,k,0) = 0.05*std::sin(twopi*z);
             vel(i,j,k,1) = 0.0;
         });
     }

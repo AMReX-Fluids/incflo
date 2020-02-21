@@ -129,7 +129,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                   + amrex::Math::abs(m_gravity[2] - amrex::Math::abs(m_gp0[2])) * dxinv_finest[2];
 
     // Combined CFL conditioner
-    Real comb_cfl = cd_cfl + amrex::Math::sqrt(cd_cfl*cd_cfl + 4.0 * forc_cfl);
+    Real comb_cfl = cd_cfl + std::sqrt(cd_cfl*cd_cfl + 4.0 * forc_cfl);
 
     // Update dt
     Real dt_new = 2.0 * m_cfl / comb_cfl;
