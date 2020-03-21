@@ -371,7 +371,10 @@ void incflo::ApplyCorrector()
     {
         const int ng_diffusion = 1;
         for (int lev = 0; lev <= finest_level; ++lev)  
+        {
             fillphysbc_velocity(lev, new_time, m_leveldata[lev]->velocity, ng_diffusion);
+            fillphysbc_density (lev, new_time, m_leveldata[lev]->density , ng_diffusion);
+        {
 
         Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
         get_diffusion_tensor_op()->diffuse_velocity(get_velocity_new(),
