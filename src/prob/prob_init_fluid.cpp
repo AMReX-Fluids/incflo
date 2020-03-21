@@ -194,21 +194,27 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& gbx,
     static constexpr Real pi = 3.1415926535897932;
     static constexpr Real rho_1 = 0.5;
     static constexpr Real rho_2 = 2.0;
+    static constexpr Real tra_1 = 0.0;
+    static constexpr Real tra_2 = 1.0;
     const Real splitx = 0.5*(problo[0] + probhi[0]);
     const Real splity = 0.5*(problo[1] + probhi[1]);
     const Real L_x = probhi[0] - problo[0];
 
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        Real x = problo[0] + (i+0.5)*dx[0];
-        Real y = problo[1] + (j+0.5)*dx[1];
-        Real z = problo[2] + (k+0.5)*dx[2];
-        const Real r2d = amrex::min(std::hypot((x-splitx),(y-splity)), 0.5*L_x);
-        const Real pertheight = 0.5 - 0.01*std::cos(2.0*pi*r2d/L_x);
-        density(i,j,k) = rho_1 + ((rho_2-rho_1)/2.0)*(1.0+std::tanh((z-pertheight)/0.005));
         vel(i,j,k,0) = 0.0;
         vel(i,j,k,1) = 0.0;
         vel(i,j,k,2) = 0.0;
+
+        Real x = problo[0] + (i+0.5)*dx[0];
+        Real y = problo[1] + (j+0.5)*dx[1];
+        Real z = problo[2] + (k+0.5)*dx[2];
+
+        const Real r2d = amrex::min(std::hypot((x-splitx),(y-splity)), 0.5*L_x);
+        const Real pertheight = 0.5 - 0.01*std::cos(2.0*pi*r2d/L_x);
+
+        density(i,j,k) = rho_1 + ((rho_2-rho_1)/2.0)*(1.0+std::tanh((z-pertheight)/0.005));
+        tracer(i,j,k)  = tra_1 + ((tra_2-tra_1)/2.0)*(1.0+std::tanh((z-pertheight)/0.005));
     });
 }
 
