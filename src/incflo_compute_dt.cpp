@@ -68,7 +68,8 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                               amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                               {
                                   if (!f(i,j,k).isCovered()) {
-                                      mx = amrex::max(1.0/r(i,j,k), mx);
+                                      Real rho_inv = 1.0/r(i,j,k);
+                                      mx = amrex::max(rho_inv, mx);
                                   }
                               });
                               return mx;
@@ -99,7 +100,8 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                                Real mx = -1.0;
                                amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                                {
-                                   mx = amrex::max(1.0/r(i,j,k), mx);
+                                   Real rho_inv = 1.0/r(i,j,k);
+                                   mx = amrex::max(rho_inv, mx);
                                });
                                return mx;
                            });
@@ -107,8 +109,9 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
             }
         }
         conv_cfl = std::max(conv_cfl, conv_lev);
-        diff_cfl = std::max(diff_cfl, diff_lev*2.*(dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1]+
-                                                   dxinv[2]*dxinv[2]));
+        Real two = 2.;
+        diff_cfl = std::max(diff_cfl, diff_lev*two*(dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1]+
+                                                    dxinv[2]*dxinv[2]));
     }
 
     Real cd_cfl;
@@ -151,13 +154,14 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
 
     // Don't let the timestep grow by more than 10% per step 
     // unless the previous time step was unduly shrunk to match m_plot_per_exact
+    Real allowed_change_factor = 1.1;
     if( (m_dt > 0.0) && !(m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
     {
-        dt_new = amrex::min(dt_new, 1.1 * m_prev_dt);
+        dt_new = amrex::min(dt_new, allowed_change_factor * m_prev_dt);
     } 
     else if ( (m_dt > 0.0) && (m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
     {
-        dt_new = amrex::min( dt_new, 1.1 * amrex::max(m_prev_dt, m_prev_prev_dt) );
+        dt_new = amrex::min( dt_new, allowed_change_factor * amrex::max(m_prev_dt, m_prev_prev_dt) );
     }
     
     // Don't overshoot specified plot times
