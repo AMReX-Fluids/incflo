@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Drag Types" href="InputsDrag.html" />
+    <link rel="next" title="Time Stepping" href="InputsTimeStepping.html" />
     <link rel="prev" title="Run-time Inputs" href="Inputs_Chapter.html" /> 
 </head>
 
@@ -98,7 +98,6 @@
 <li class="toctree-l3"><a class="reference internal" href="#initial-conditions">Initial Conditions</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="InputsDrag.html">Drag Types</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsTimeStepping.html">Time Stepping</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsInitialization.html">Initialization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing</a></li>
@@ -112,8 +111,6 @@
 <li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
-<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
@@ -278,7 +275,7 @@ should also be periodic.</p></td>
 </tr>
 </tbody>
 </table>
-<p>The following inputs must be preceded by “mfix.”</p>
+<p>The following inputs must be preceded by “incflo.”</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 19%" />
@@ -298,16 +295,6 @@ should also be periodic.</p></td>
 <td><p>Which type of EB geometry are we using?</p></td>
 <td><p>String</p></td>
 <td></td>
-</tr>
-<tr class="row-odd"><td><p>levelset__refinement</p></td>
-<td><p>Refinement factor of levelset resolution relative to level 0 resolution</p></td>
-<td><p>Int</p></td>
-<td><p>1</p></td>
-</tr>
-<tr class="row-even"><td><p>po_no_par_out</p></td>
-<td><p>Let particles exit (default) or bounce-back at pressure outflows</p></td>
-<td><p>Int</p></td>
-<td><p>0</p></td>
 </tr>
 <tr class="row-odd"><td><p>gravity</p></td>
 <td><p>Gravity vector (e.g., mfix.gravity = -9.81  0.0  0.0) [required]</p></td>
@@ -854,7 +841,7 @@ ic.bed.solid0.density.constant  = 1000.0
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="InputsDrag.html" class="btn btn-neutral float-right" title="Drag Types" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="InputsTimeStepping.html" class="btn btn-neutral float-right" title="Time Stepping" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="Inputs_Chapter.html" class="btn btn-neutral float-left" title="Run-time Inputs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>

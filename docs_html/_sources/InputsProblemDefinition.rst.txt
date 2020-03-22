@@ -37,16 +37,12 @@ The following inputs must be preceded by "bc."
 +-----------------+-----------------------------------------------------------------------+-------------+-----------+
 
 
-The following inputs must be preceded by "mfix."
+The following inputs must be preceded by "incflo."
 
 +----------------------+-------------------------------------------------------------------------+----------+-----------+
 |                      | Description                                                             |   Type   | Default   |
 +======================+=========================================================================+==========+===========+
 | geometry             | Which type of EB geometry are we using?                                 |   String |           |
-+----------------------+-------------------------------------------------------------------------+----------+-----------+
-| levelset__refinement | Refinement factor of levelset resolution relative to level 0 resolution |   Int    | 1         |
-+----------------------+-------------------------------------------------------------------------+----------+-----------+
-| po_no_par_out        | Let particles exit (default) or bounce-back at pressure outflows        |   Int    | 0         |
 +----------------------+-------------------------------------------------------------------------+----------+-----------+
 | gravity              | Gravity vector (e.g., mfix.gravity = -9.81  0.0  0.0) [required]        |  Reals   |  None     |
 +----------------------+-------------------------------------------------------------------------+----------+-----------+
@@ -197,7 +193,6 @@ Below is an example for specifying the inputs for two DEM solids.
 
    dem.restitution_coeff.sand.wall =  0.85
    dem.restitution_coeff.char.wall =  0.89
-
 
 Region definitions
 ------------------

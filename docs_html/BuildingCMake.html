@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Building MFiX-Exa with CMake &mdash; incflo 20.04-dev documentation</title>
+  <title>Building incflo with CMake &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -91,36 +91,32 @@
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="GettingStarted.html">Getting Started</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="Structure.html">Directory overview</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Building MFiX-Exa with CMake</a><ul>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Building incflo with CMake</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#superbuild-instructions-recommended">SUPERBUILD Instructions (recommended)</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#working-with-the-amrex-submodule">Working with the AMReX submodule</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#standalone-instructions"><strong>STANDALONE</strong> instructions</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#building-amrex">Building AMReX</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#building-mfix-exa">Building MFiX-Exa</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#building-incflo">Building incflo</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#few-more-notes-on-building-mfix-exa">Few more notes on building MFiX-Exa</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#building-mfix-exa-for-cori-nersc">Building MFiX-Exa for Cori (NERSC)</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#few-more-notes-on-building-incflo">Few more notes on building incflo</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#building-incflo-for-cori-nersc">Building incflo for Cori (NERSC)</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#standard-build">Standard build</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#gpu-build">GPU build</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#building-mfix-exa-for-summit-olcf">Building MFiX-Exa for Summit (OLCF)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#building-incflo-for-summit-olcf">Building incflo for Summit (OLCF)</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="BuildingGMake.html">Building incflo with gmake</a></li>
-<li class="toctree-l2"><a class="reference internal" href="RunningTestSuite.html">Running the MFiX Test Suite</a></li>
-<li class="toctree-l2"><a class="reference internal" href="RegressionTesting.html">Regression testing</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
-<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
@@ -169,7 +165,7 @@
         
           <li><a href="GettingStarted.html">Getting Started</a> &raquo;</li>
         
-      <li>Building MFiX-Exa with CMake</li>
+      <li>Building incflo with CMake</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -188,15 +184,15 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="building-mfix-exa-with-cmake">
-<h1>Building MFiX-Exa with CMake<a class="headerlink" href="#building-mfix-exa-with-cmake" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="building-incflo-with-cmake">
+<h1>Building incflo with CMake<a class="headerlink" href="#building-incflo-with-cmake" title="Permalink to this headline">¶</a></h1>
 <p>CMake build is a two-step process. First <code class="docutils literal notranslate"><span class="pre">cmake</span></code> is invoked to create
 configuration files and makefiles in a chosen directory (<code class="docutils literal notranslate"><span class="pre">builddir</span></code>).
 Next, the actual build is performed by invoking <code class="docutils literal notranslate"><span class="pre">make</span></code> from within <code class="docutils literal notranslate"><span class="pre">builddir</span></code>.
 The CMake build process is summarized as follows:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">mkdir /path/to/builddir</span>
 <span class="go">cd    /path/to/builddir</span>
-<span class="go">cmake [options] -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel] /path/to/mfix</span>
+<span class="go">cmake [options] -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel] /path/to/incflo</span>
 <span class="go">make</span>
 </pre></div>
 </div>
@@ -204,25 +200,25 @@ The CMake build process is summarized as follows:</p>
 customization of the build, as described later in this section.
 If the option <code class="docutils literal notranslate"><span class="pre">CMAKE_BUILD_TYPE</span></code> is omitted,
 <code class="docutils literal notranslate"><span class="pre">CMAKE_BUILD_TYPE=Release</span></code> is assumed.</p>
-<p>There are two modes to build MFiX-Exa with cmake:</p>
+<p>There are two modes to build incflo with cmake:</p>
 <p>o <strong>SUPERBUILD (recommended):</strong> AMReX is downloaded and built as part
-of the MFiX-Exa build process. This method is strongly encouraged as it
-ensures that the configuration options for MFiX-Exa and AMReX are consistent.</p>
-<p>o <strong>STANDALONE:</strong> MFiX-Exa source code is built separately and linked to an existing
+of the incflo build process. This method is strongly encouraged as it
+ensures that the configuration options for incflo and AMReX are consistent.</p>
+<p>o <strong>STANDALONE:</strong> incflo source code is built separately and linked to an existing
 AMReX installation. This is ideal for continuous integration severs (CI)
 and regression testing applications. AMReX library version and configuration options
-must meet MFiX-Exa requirements.</p>
+must meet incflo requirements.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p><strong>MFiX-Exa requires CMake 3.14 or higher.</strong></p>
+<p><strong>incflo requires CMake 3.14 or higher.</strong></p>
 </div>
 <div class="section" id="superbuild-instructions-recommended">
 <span id="sec-build-superbuild"></span><h2>SUPERBUILD Instructions (recommended)<a class="headerlink" href="#superbuild-instructions-recommended" title="Permalink to this headline">¶</a></h2>
-<p>By default MFiX-Exa CMake looks for an existing AMReX installation on the system. If none is found, it falls back to <strong>SUPERBUILD</strong> mode.
-In this mode, MFiX-Exa CMake inherents AMReX CMake targets and configuration options, that is, MFiX-Exa and AMReX are configured and built as a single entity</p>
-<p>Assuming no valid AMReX installation is present on the target system, and <code class="docutils literal notranslate"><span class="pre">AMReX_ROOT</span></code> is not set (see <a class="reference internal" href="#sec-build-standalone"><span class="std std-ref">STANDALONE instructions</span></a>), the following code will build MFiX-Exa in <strong>SUPERBUILD</strong> mode:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git clone http://mfix.netl.doe.gov/gitlab/exa/mfix.git
-&gt; <span class="nb">cd</span> mfix
+<p>By default incflo CMake looks for an existing AMReX installation on the system. If none is found, it falls back to <strong>SUPERBUILD</strong> mode.
+In this mode, incflo CMake inherents AMReX CMake targets and configuration options, that is, incflo and AMReX are configured and built as a single entity</p>
+<p>Assuming no valid AMReX installation is present on the target system, and <code class="docutils literal notranslate"><span class="pre">AMReX_ROOT</span></code> is not set (see <a class="reference internal" href="#sec-build-standalone"><span class="std std-ref">STANDALONE instructions</span></a>), the following code will build incflo in <strong>SUPERBUILD</strong> mode:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git clone http://github.com/amrex-codees/incflo.git
+&gt; <span class="nb">cd</span> incfo
 &gt; mkdir build
 &gt; <span class="nb">cd</span> build
 &gt; cmake <span class="o">[</span>amrex options<span class="o">]</span> -DCMAKE_BUILD_TYPE<span class="o">=[</span>Debug<span class="p">|</span>Release<span class="p">|</span>RelWithDebInfo<span class="p">|</span>MinSizeRel<span class="o">]</span> ..
@@ -236,11 +232,11 @@ In this mode, MFiX-Exa CMake inherents AMReX CMake targets and configuration opt
 If the AMReX submodule is not initialized, <strong>SUPERBUILD</strong> mode will initialize it and checkout
 the AMReX commit the submodule is pointing to.
 Instead, if the AMReX submodule has already been manually initialized and a custom commit has been checked out,
-<strong>SUPERBUILD</strong> mode will use that commit. For MFiX-Exa development or testing, you may need to build with a different
+<strong>SUPERBUILD</strong> mode will use that commit. For incflo development or testing, you may need to build with a different
 branch or release of AMReX.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">subprojects/amrex</span></code> directory is a Git repo, so use all standard Git
 commands. Either <code class="docutils literal notranslate"><span class="pre">cd</span> <span class="pre">subprojects/amrex</span></code> to run Git commands in the <code class="docutils literal notranslate"><span class="pre">amrex</span></code>
-directory, or use <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">-C</span> <span class="pre">subprojects/amrex</span></code> in the MFiX-Exa repo. For
+directory, or use <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">-C</span> <span class="pre">subprojects/amrex</span></code> in the incflo repo. For
 instance, to build with the <code class="docutils literal notranslate"><span class="pre">my-amrex-branch</span></code> branch of the AMReX repo:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git -C subprojects/amrex checkout my-amrex-branch
 &gt; git status
@@ -248,7 +244,7 @@ instance, to build with the <code class="docutils literal notranslate"><span cla
 modified:   subprojects/amrex <span class="o">(</span>new commits<span class="o">)</span>
 </pre></div>
 </div>
-<p>The branch <code class="docutils literal notranslate"><span class="pre">my-amrex-branch</span></code> will then be used when building MFiX-Exa.</p>
+<p>The branch <code class="docutils literal notranslate"><span class="pre">my-amrex-branch</span></code> will then be used when building incflo.</p>
 <p>To revert to the default version of the AMReX submodule, run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">submodule</span>
 <span class="pre">update</span></code>:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git submodule update
@@ -259,17 +255,17 @@ nothing to commit, working tree clean
 </div>
 <p>You can edit, commit, pull, and push AMReX changes from <code class="docutils literal notranslate"><span class="pre">subprojects/amrex</span></code>.
 AMReX development is outside the scope of this document. Run <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">status</span></code> in
-the top-level MFix-Exa repo to see whether the AMReX submodule has new commits,
+the top-level incflo repo to see whether the AMReX submodule has new commits,
 modified files, or untracked files.</p>
 <p>The CMake variables <code class="docutils literal notranslate"><span class="pre">AMREX_GIT_COMMIT_DEVELOP</span></code> and
 <code class="docutils literal notranslate"><span class="pre">AMREX_GIT_COMMIT_DEVELOP</span></code> have been removed. Instead, to update the AMReX
-submodule referenced by MFiX-Exa:</p>
+submodule referenced by incflo:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git -C subprojects/amrex checkout UPDATED_AMREX_COMMIT_SHA1
 &gt; git add subprojects/amrex
 &gt; git commit -m <span class="s1">&#39;Updating AMReX version&#39;</span>
 </pre></div>
 </div>
-<p>This will only update the AMReX SHA-1 referenced by MFiX-Exa. Uncommitted AMReX
+<p>This will only update the AMReX SHA-1 referenced by incflo. Uncommitted AMReX
 changes and untracked AMReX files under <code class="docutils literal notranslate"><span class="pre">subprojects/amrex</span></code> are not added by
 <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span> <span class="pre">subprojects/amrex</span></code>. (To commit to the AMReX repo, change directories
 to <code class="docutils literal notranslate"><span class="pre">subprojects/amrex</span></code> and run Git commands there, before <code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span>
@@ -277,7 +273,7 @@ to <code class="docutils literal notranslate"><span class="pre">subprojects/amre
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Only update the AMReX submodule reference in coordination with the other
-MFiX-Exa developers!</p>
+incflo developers!</p>
 </div>
 </div>
 </div>
@@ -299,15 +295,15 @@ MFiX-Exa developers!</p>
 &gt; make install
 </pre></div>
 </div>
-<p>The options <strong>ENABLE_PARTICLES=yes</strong>, <strong>ENABLE_AMRDATA=yes</strong>, and <strong>ENABLE_EB=yes</strong> are required by MFiX-Exa. <code class="docutils literal notranslate"><span class="pre">[other</span> <span class="pre">amrex</span> <span class="pre">options]</span></code> in the snippet above refers to any other AMReX configuration option in addition to the required ones. Please refer to the <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/BuildingAMReX.html#building-with-cmake">AMReX user guide</a> for more details on building AMReX with CMake.</p>
+<p>The options <strong>ENABLE_PARTICLES=yes</strong>, <strong>ENABLE_AMRDATA=yes</strong>, and <strong>ENABLE_EB=yes</strong> are required by incflo. <code class="docutils literal notranslate"><span class="pre">[other</span> <span class="pre">amrex</span> <span class="pre">options]</span></code> in the snippet above refers to any other AMReX configuration option in addition to the required ones. Please refer to the <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/BuildingAMReX.html#building-with-cmake">AMReX user guide</a> for more details on building AMReX with CMake.</p>
 </div>
-<div class="section" id="building-mfix-exa">
-<h3>Building MFiX-Exa<a class="headerlink" href="#building-mfix-exa" title="Permalink to this headline">¶</a></h3>
-<p>Clone and build MFiX-Exa:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git clone http://mfix.netl.doe.gov/gitlab/exa/mfix.git
+<div class="section" id="building-incflo">
+<h3>Building incflo<a class="headerlink" href="#building-incflo" title="Permalink to this headline">¶</a></h3>
+<p>Clone and build incflo:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git clone https://github.com/amrex-codes/incflo.git
 &gt; mkdir build
 &gt; <span class="nb">cd</span> build
-&gt; cmake -DCMAKE_BUILD_TYPE<span class="o">=[</span>Debug<span class="p">|</span>Release<span class="p">|</span>RelWithDebInfo<span class="p">|</span>MinSizeRel<span class="o">]</span> <span class="o">[</span>mfix options<span class="o">]</span> -DAMReX_ROOT<span class="o">=</span>/absolute/path/to/amrex/installdir ..
+&gt; cmake -DCMAKE_BUILD_TYPE<span class="o">=[</span>Debug<span class="p">|</span>Release<span class="p">|</span>RelWithDebInfo<span class="p">|</span>MinSizeRel<span class="o">]</span> <span class="o">[</span>incflo options<span class="o">]</span> -DAMReX_ROOT<span class="o">=</span>/absolute/path/to/amrex/installdir ..
 &gt; make -j
 </pre></div>
 </div>
@@ -315,7 +311,7 @@ MFiX-Exa developers!</p>
 <code class="docutils literal notranslate"><span class="pre">/absolute/path/to/amrex/installdir</span></code> before searching system paths
 for an available AMReX installation.
 <code class="docutils literal notranslate"><span class="pre">AMReX_ROOT</span></code> can also be set as an environmental variable instead of passing it as a command line option.</p>
-<p><code class="docutils literal notranslate"><span class="pre">[mfix</span> <span class="pre">options]</span></code> indicates any of the configuration option listed in the table below.</p>
+<p><code class="docutils literal notranslate"><span class="pre">[incflo</span> <span class="pre">options]</span></code> indicates any of the configuration option listed in the table below.</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 22%" />
@@ -380,8 +376,8 @@ Exceptions checks</p></td>
 </table>
 </div>
 </div>
-<div class="section" id="few-more-notes-on-building-mfix-exa">
-<h2>Few more notes on building MFiX-Exa<a class="headerlink" href="#few-more-notes-on-building-mfix-exa" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="few-more-notes-on-building-incflo">
+<h2>Few more notes on building incflo<a class="headerlink" href="#few-more-notes-on-building-incflo" title="Permalink to this headline">¶</a></h2>
 <p>The system defaults compilers can be overwritten as follows:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; cmake -DCMAKE_CXX_COMPILER<span class="o">=</span>&lt;c++-compiler&gt; -DCMAKE_Fortran_COMPILER<span class="o">=</span>&lt;f90-compiler&gt; <span class="o">[</span>options<span class="o">]</span>  ..
 </pre></div>
@@ -391,15 +387,15 @@ the above command (with full path to the compilers) or the following:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; cmake -DCMAKE_CXX_COMPILER<span class="o">=</span>CC -DCMAKE_Fortran_COMPILER<span class="o">=</span>ftn <span class="o">[</span>options<span class="o">]</span> ..
 </pre></div>
 </div>
-<p>MFiX-Exa uses the same compiler flags used to build AMReX, unless
+<p>incflo uses the same compiler flags used to build AMReX, unless
 <code class="docutils literal notranslate"><span class="pre">CMAKE_Fortran_FLAGS</span></code>/<code class="docutils literal notranslate"><span class="pre">CMAKE_CXX_FLAGS</span></code> is explicitly provided, or
 the environmental variables <code class="docutils literal notranslate"><span class="pre">FFLAGS</span></code>/<code class="docutils literal notranslate"><span class="pre">CXXFLAGS</span></code> are set.</p>
 </div>
-<div class="section" id="building-mfix-exa-for-cori-nersc">
-<h2>Building MFiX-Exa for Cori (NERSC)<a class="headerlink" href="#building-mfix-exa-for-cori-nersc" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="building-incflo-for-cori-nersc">
+<h2>Building incflo for Cori (NERSC)<a class="headerlink" href="#building-incflo-for-cori-nersc" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="standard-build">
 <h3>Standard build<a class="headerlink" href="#standard-build" title="Permalink to this headline">¶</a></h3>
-<p>For the Cori cluster at NERSC, you first need to load/unload modules required to build MFIX-Exa.</p>
+<p>For the Cori cluster at NERSC, you first need to load/unload modules required to build incflo.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; module unload altd
 &gt; module unload darshan
 &gt; module load cmake/3.14.0
@@ -413,7 +409,7 @@ the environmental variables <code class="docutils literal notranslate"><span cla
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; module swap PrgEnv-intel PrgEnv-gnu
 </pre></div>
 </div>
-<p>Now MFIX-Exa can be built following the <a class="reference internal" href="#sec-build-superbuild"><span class="std std-ref">SUPERBUILD Instructions (recommended)</span></a>.</p>
+<p>Now incflo can be built following the <a class="reference internal" href="#sec-build-superbuild"><span class="std std-ref">SUPERBUILD Instructions (recommended)</span></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The load/unload modules options could be saved in the <cite>~/.bash_profile.ext</cite></p>
@@ -435,8 +431,8 @@ the environmental variables <code class="docutils literal notranslate"><span cla
 </pre></div>
 </div>
 <p>This reservers an entire GPU node for your job. Note that you can’t cross-compile for the GPU nodes - you have to log on to one and then build your software.</p>
-<p>Finally, navigate to the base of the MFIX-Exa repository and compile in GPU mode:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; <span class="nb">cd</span> mfix
+<p>Finally, navigate to the base of the incflo repository and compile in GPU mode:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; <span class="nb">cd</span> incflo
 &gt; mdkir build
 &gt; <span class="nb">cd</span> build
 &gt; cmake -DENABLE_CUDA<span class="o">=</span>yes -DCUDA_ARCH<span class="o">=</span>Volta -DCMAKE_CXX_COMPILER<span class="o">=</span>g++ -DCMAKE_Fortran_COMPILER<span class="o">=</span>gfortran ..
@@ -446,29 +442,29 @@ the environmental variables <code class="docutils literal notranslate"><span cla
 <p>For more information about GPU nodes in Cori – <a class="reference external" href="https://docs-dev.nersc.gov/cgpu/">https://docs-dev.nersc.gov/cgpu/</a></p>
 </div>
 </div>
-<div class="section" id="building-mfix-exa-for-summit-olcf">
-<h2>Building MFiX-Exa for Summit (OLCF)<a class="headerlink" href="#building-mfix-exa-for-summit-olcf" title="Permalink to this headline">¶</a></h2>
-<p>For the Summit cluster at OLCF, you first need to load/unload modules required to build MFIX-Exa.</p>
+<div class="section" id="building-incflo-for-summit-olcf">
+<h2>Building incflo for Summit (OLCF)<a class="headerlink" href="#building-incflo-for-summit-olcf" title="Permalink to this headline">¶</a></h2>
+<p>For the Summit cluster at OLCF, you first need to load/unload modules required to build incflo.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; module unload xalt
 &gt; module unload darshan
 &gt; module load gcc
 &gt; module load cmake/3.14.0
 </pre></div>
 </div>
-<p>Now MFIX-Exa can be built following the <a class="reference internal" href="#sec-build-superbuild"><span class="std std-ref">SUPERBUILD Instructions (recommended)</span></a>.</p>
-<p>To build MFIX-Exa for GPUs, you need to load cuda module:</p>
+<p>Now incflo can be built following the <a class="reference internal" href="#sec-build-superbuild"><span class="std std-ref">SUPERBUILD Instructions (recommended)</span></a>.</p>
+<p>To build incflo for GPUs, you need to load cuda module:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; module load cuda/10.1.105
 </pre></div>
 </div>
 <p>To compile for GPUs:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; <span class="nb">cd</span> mfix
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; <span class="nb">cd</span> incflo
 &gt; mdkir build
 &gt; <span class="nb">cd</span> build
 &gt; cmake -DCMAKE_CXX_COMPILER<span class="o">=</span>g++ -DCMAKE_Fortran_COMPILER<span class="o">=</span>gfortran -DENABLE_CUDA<span class="o">=</span>yes
 &gt; make -j
 </pre></div>
 </div>
-<p>An example of a <em>submission_script</em> for GPUs can be found in the repo <code class="docutils literal notranslate"><span class="pre">mfix/tests/GPU_test/script.sh</span></code>.
+<p>An example of a <em>submission_script</em> for GPUs can be found in the repo <code class="docutils literal notranslate"><span class="pre">incflo/tests/GPU_test/script.sh</span></code>.
 For more information about Summit cluster: <a class="reference external" href="https://www.olcf.ornl.gov/for-users/system-user-guides/summit/">https://www.olcf.ornl.gov/for-users/system-user-guides/summit/</a></p>
 </div>
 </div>
