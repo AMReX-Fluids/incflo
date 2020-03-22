@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Welcome to MFiX-EXA’s documentation! &mdash; MFiX-Exa  documentation</title>
+  <title>Welcome to MFiX-EXA’s documentation! &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -17,47 +17,41 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="MFiX-Exa  documentation" href="#"/>
-        <link rel="next" title="MFiX-Exa Introduction" href="Introduction.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="MFiX-Exa Introduction" href="Introduction.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
-            <a href="#" class="icon icon-home"> MFiX-Exa
+            <a href="#" class="icon icon-home"> incflo
           
 
           
@@ -65,6 +59,10 @@
 
           
             
+            
+              <div class="version">
+                20.04-dev
+              </div>
             
           
 
@@ -91,10 +89,13 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Inputs.html">Run-time Inputs</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Fluids.html">Solving the Fluid Equations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Particles.html">Particles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
             
@@ -106,17 +107,18 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">MFiX-Exa</a>
+          <a href="#">incflo</a>
         
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -171,75 +173,14 @@ the master branch at the beginning of each month.</p>
 <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="Structure.html">Directory overview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="BuildingCMake.html">Building MFiX-Exa with CMake</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="BuildingCMake.html#superbuild-instructions-recommended">SUPERBUILD Instructions (recommended)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="BuildingCMake.html#building-mfix-exa-using-a-separate-amrex-installation-no-superbuild">Building MFiX-Exa using a separate AMReX installation (no superbuild)</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="BuildingCMake.html#build-amrex-library">Build AMReX Library</a></li>
-<li class="toctree-l4"><a class="reference internal" href="BuildingCMake.html#building-mfix-exa">Building MFiX-Exa</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="BuildingCMake.html#few-more-notes-on-building-mfix-exa">Few more notes on building MFiX-Exa</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="BuildingGMake.html">Building MFiX-Exa with gmake</a></li>
-<li class="toctree-l2"><a class="reference internal" href="RunningTestSuite.html">Running the MFiX Test Suite</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="RunningTestSuite.html#run-all-tests">Run all tests</a></li>
-<li class="toctree-l3"><a class="reference internal" href="RunningTestSuite.html#list-all-tests-without-running-them">List all tests (without running them)</a></li>
-<li class="toctree-l3"><a class="reference internal" href="RunningTestSuite.html#run-a-particular-test-by-the-index-listed-in-ctest-n">Run a particular test by the index listed in ctest -N</a></li>
-<li class="toctree-l3"><a class="reference internal" href="RunningTestSuite.html#run-a-particular-test-by-name">Run a particular test by name</a></li>
-<li class="toctree-l3"><a class="reference internal" href="RunningTestSuite.html#run-a-particular-test-via-make">Run a particular test via make</a></li>
-<li class="toctree-l3"><a class="reference internal" href="RunningTestSuite.html#run-specific">Run specific</a></li>
-<li class="toctree-l3"><a class="reference internal" href="RunningTestSuite.html#run-a-user-defined-case">Run a user-defined case</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="RegressionTesting.html">Regression testing</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="RegressionTesting.html#generating-local-regression-test-data">Generating local regression test data</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="Inputs.html">Run-time Inputs</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Fluids.html">Solving the Fluid Equations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="FluidEquations.html">Fluid Variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="FluidEquations.html#fluid-equations">Fluid Equations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="FluidTimeDiscretization.html">Time Discretization</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="FluidTimeStep.html">Fluid Time Step</a></li>
-<li class="toctree-l3"><a class="reference internal" href="Slopes.html">Computing slopes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="BuildingMacVelocities.html">Creating the MAC velocities</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="Particles.html">Particles</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ParticleBasics.html">Particle Basics</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="ParticleBasics.html#particle-dynamics">Particle Dynamics</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="ParticleFluid.html">Particle/Fluid Interactions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ParticleWalls.html">Particle/Wall Interactions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ParticlesOnGpus.html">Particles on GPUs</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="EBWalls.html">Constructing Embedded Boundaries in MFiX-Exa</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="EBWalls.html#how-mfix-exa-constructs-the-eb-geometry">How MFiX-Exa Constructs the EB Geometry</a></li>
-<li class="toctree-l3"><a class="reference internal" href="EBWalls.html#mfix-s-eb-data-structures">MFiX’s EB Data Structures</a></li>
-<li class="toctree-l3"><a class="reference internal" href="EBWalls.html#a-note-about-constructing-eb-levels">A note about constructing EB Levels</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="EBWalls.html#local-mesh-refinement-at-walls">Local Mesh Refinement at Walls</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="EBWalls.html#mfix-exa-initialization-process">MFiX-Exa Initialization Process</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="EBWalls.html#the-level-set-function">The Level-Set Function</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="EBWalls.html#special-cases-involving-level-sets">Special Cases Involving Level-Sets</a></li>
-<li class="toctree-l3"><a class="reference internal" href="EBWalls.html#fluid-reconstruction">Fluid Reconstruction</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 </div>
 <div class="section" id="notice">
@@ -250,23 +191,21 @@ any legal liability or responsibility for the accuracy, completeness, or
 usefulness of any information, apparatus, product, or process disclosed
 or represents that its use would not infringe privately owned rights.</p>
 <ul class="simple">
-<li>MFiX-Exa is provided without any user support for applications in the
+<li><p>MFiX-Exa is provided without any user support for applications in the
 user’s immediate organization. It should not be redistributed in
-whole or in part.</li>
-<li>The use of MFiX-Exa is to be acknowledged in any published paper based on
-computations using this software by citing this MFiX-Exa site.</li>
-<li>The authors would appreciate receiving any reports of bugs or other
+whole or in part.</p></li>
+<li><p>The use of MFiX-Exa is to be acknowledged in any published paper based on
+computations using this software by citing this MFiX-Exa site.</p></li>
+<li><p>The authors would appreciate receiving any reports of bugs or other
 difficulties with the software, enhancements to the software, and
-accounts of practical applications of this software.</li>
+accounts of practical applications of this software.</p></li>
 </ul>
 </div>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -282,11 +221,11 @@ accounts of practical applications of this software.</li>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017-2018, MFiX-Exa Team.
+        &copy; Copyright 2017-2018, Incflo Team
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -299,37 +238,15 @@ accounts of practical applications of this software.</li>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

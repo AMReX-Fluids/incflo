@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Fluid Time Step &mdash; MFiX-Exa  documentation</title>
+  <title>Fluid Time Step &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -17,49 +17,42 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="MFiX-Exa  documentation" href="index.html"/>
-        <link rel="up" title="Time Discretization" href="FluidTimeDiscretization.html"/>
-        <link rel="next" title="Creating the MAC velocities" href="BuildingMacVelocities.html"/>
-        <link rel="prev" title="Time Discretization" href="FluidTimeDiscretization.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Computing slopes" href="Slopes.html" />
+    <link rel="prev" title="Time Discretization" href="FluidTimeDiscretization.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
-            <a href="index.html" class="icon icon-home"> MFiX-Exa
+            <a href="index.html" class="icon icon-home"> incflo
           
 
           
@@ -67,6 +60,10 @@
 
           
             
+            
+              <div class="version">
+                20.04-dev
+              </div>
             
           
 
@@ -93,19 +90,23 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Inputs.html">Run-time Inputs</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="Fluids.html">Solving the Fluid Equations</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="FluidEquations.html">Fluid Variables</a></li>
 <li class="toctree-l2"><a class="reference internal" href="FluidEquations.html#fluid-equations">Fluid Equations</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="FluidTimeDiscretization.html">Time Discretization</a><ul class="current">
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Fluid Time Step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Slopes.html">Computing slopes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="BuildingMacVelocities.html">Creating the MAC velocities</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="Particles.html">Particles</a></li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
             
@@ -117,17 +118,18 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">MFiX-Exa</a>
+          <a href="index.html">incflo</a>
         
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -150,7 +152,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-          <li><a href="Fluids.html">Solving the Fluid Equations</a> &raquo;</li>
+          <li><a href="Fluids_Chapter.html">Solving the Fluid Equations</a> &raquo;</li>
         
           <li><a href="FluidTimeDiscretization.html">Time Discretization</a> &raquo;</li>
         
@@ -180,58 +182,57 @@
 <p>Thus here we focus on the discretization of the momentum equation</p>
 <p>In the predictor</p>
 <ul class="simple">
-<li>Define <span class="math">\(U^{MAC,n}\)</span>, the face-centered (staggered) MAC velocity which is used for advection, using <span class="math">\(U^n\)</span></li>
-<li>Define an approximation to the new-time state, <span class="math">\((\varepsilon_g \rho_g U)^{\ast}\)</span> by setting</li>
+<li><p>Define <span class="math notranslate nohighlight">\(U^{MAC,n}\)</span>, the face-centered (staggered) MAC velocity which is used for advection, using <span class="math notranslate nohighlight">\(U_g^n\)</span></p></li>
+<li><p>Define an approximation to the new-time state, <span class="math notranslate nohighlight">\((\varepsilon_g \rho_g U_g)^{\ast}\)</span> by setting</p></li>
 </ul>
-<div class="math">
-\[\begin{split}(\varepsilon_g \rho_g U)^{\ast} &amp;= (\varepsilon_g \rho_g U)^n -
+<div class="math notranslate nohighlight">
+\[\begin{split}(\varepsilon_g \rho_g U_g)^{\ast} &amp;= (\varepsilon_g \rho_g U_g)^n -
 \Delta t \left( \nabla \cdot (\varepsilon_g \rho_g U^{MAC} U_g) + \varepsilon_g \nabla {p_g}^{n-1/2} \right) \\ &amp;+
 \Delta t \left( \nabla \cdot \tau^n + \sum_p \beta_p (V_p - {U_g}^{\ast}) + \rho_g \varepsilon_g g \right)\end{split}\]</div>
 <ul class="simple">
-<li>Project <span class="math">\(U^{\ast}\)</span> by solving</li>
+<li><p>Project <span class="math notranslate nohighlight">\(U_g^{\ast}\)</span> by solving</p></li>
 </ul>
-<div class="math">
-\[\nabla \cdot \frac{\varepsilon_g}{\rho_g} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t} (\varepsilon_g  U)^{\ast}+ {\varepsilon_g}{\rho_g} \nabla {p_g}^{n-1/2} \right)\]</div>
+<div class="math notranslate nohighlight">
+\[\nabla \cdot \frac{\varepsilon_g}{\rho_g} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t}
+(\varepsilon_g  U_g)^{\ast}+ \frac{\varepsilon_g}{\rho_g} \nabla {p_g}^{n-1/2} \right)\]</div>
 <p>then defining</p>
-<div class="math">
-\[U^{\ast \ast} = U^{\ast} - \frac{1}{\rho_g} \nabla \phi\]</div>
+<div class="math notranslate nohighlight">
+\[U_g^{\ast \ast} = U_g^{\ast} - \frac{\Delta t}{\rho_g} \nabla \phi\]</div>
 <p>and</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[{p_g}^{n+1/2, \ast} = \phi\]</div>
 <p>In the corrector</p>
 <ul class="simple">
-<li>Define <span class="math">\(U^{MAC,\ast \ast}\)</span> at the “new” time using <span class="math">\(U^{\ast \ast}\)</span></li>
-<li>Define a new approximation to the new-time state, <span class="math">\((\varepsilon_g \rho_g U)^{\ast \ast \ast}\)</span> by setting</li>
+<li><p>Define <span class="math notranslate nohighlight">\(U^{MAC,\ast \ast}\)</span> at the “new” time using <span class="math notranslate nohighlight">\(U_g^{\ast \ast}\)</span></p></li>
+<li><p>Define a new approximation to the new-time state, <span class="math notranslate nohighlight">\((\varepsilon_g \rho_g U_g)^{\ast \ast \ast}\)</span> by setting</p></li>
 </ul>
-<div class="math">
-\[\begin{split}(\varepsilon_g \rho_g U)^{\ast \ast \ast} &amp;= (\varepsilon_g \rho_g U)^n - \frac{\Delta t}{2} \left( \nabla \cdot (\varepsilon_g \rho_g U^{MAC} U_g)^n + \nabla \cdot (\varepsilon_g \rho_g U^{MAC} U_g)^{\ast \ast}\right) + \\ &amp;+ \frac{\Delta t}{2} \left( \nabla \cdot \tau^n + \nabla \cdot \tau^{\ast \ast} \right) + \Delta t \left( - \varepsilon_g \nabla {p_g}^{n+1/2,\ast} + \sum_p \beta_p (V_p - {U_g}^{\ast \ast \ast}) + \varepsilon_g \rho_g g \right)\end{split}\]</div>
+<div class="math notranslate nohighlight">
+\[\begin{split}(\varepsilon_g \rho_g U_g)^{\ast \ast \ast} &amp;= (\varepsilon_g \rho_g U_g)^n - \frac{\Delta t}{2} \left( \nabla \cdot (\varepsilon_g \rho_g U^{MAC} U_g)^n + \nabla \cdot (\varepsilon_g \rho_g U^{MAC} U_g)^{\ast \ast}\right) + \\ &amp;+ \frac{\Delta t}{2} \left( \nabla \cdot \tau^n + \nabla \cdot \tau^{\ast \ast \ast} \right) + \Delta t \left( - \varepsilon_g \nabla {p_g}^{n+1/2,\ast} + \sum_p \beta_p (V_p - {U_g}^{\ast \ast \ast}) + \varepsilon_g \rho_g g \right)\end{split}\]</div>
 <ul class="simple">
-<li>Project <span class="math">\(U^{\ast \ast \ast}\)</span> by solving</li>
+<li><p>Project <span class="math notranslate nohighlight">\(U_g^{\ast \ast \ast}\)</span> by solving</p></li>
 </ul>
-<div class="math">
-\[\nabla \cdot \frac{\varepsilon_g}{\rho_g} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t} (\varepsilon_g  U)^{\ast \ast \ast} + \frac{\varepsilon_g}{\rho_g} \nabla {p_g}^{n+1/2,\ast} \right)\]</div>
+<div class="math notranslate nohighlight">
+\[\nabla \cdot \frac{\varepsilon_g}{\rho_g} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t} (\varepsilon_g  U_g)^{\ast \ast \ast} + \frac{\varepsilon_g}{\rho_g} \nabla {p_g}^{n+1/2,\ast} \right)\]</div>
 <p>then defining</p>
-<div class="math">
-\[U^{n+1} = U^{\ast \ast \ast} - \frac{1}{\rho_g} \nabla \phi\]</div>
+<div class="math notranslate nohighlight">
+\[U_g^{n+1} = U_g^{\ast \ast \ast} - \frac{\Delta t}{\rho_g} \nabla \phi\]</div>
 <p>and</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[{p_g}^{n+1/2} = \phi\]</div>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="BuildingMacVelocities.html" class="btn btn-neutral float-right" title="Creating the MAC velocities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="Slopes.html" class="btn btn-neutral float-right" title="Computing slopes" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="FluidTimeDiscretization.html" class="btn btn-neutral" title="Time Discretization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="FluidTimeDiscretization.html" class="btn btn-neutral float-left" title="Time Discretization" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -240,11 +241,11 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017-2018, MFiX-Exa Team.
+        &copy; Copyright 2017-2018, Incflo Team
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -257,37 +258,15 @@
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

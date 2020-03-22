@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Fluid Variables &mdash; MFiX-Exa  documentation</title>
+  <title>Fluid Variables &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -17,49 +17,42 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="MFiX-Exa  documentation" href="index.html"/>
-        <link rel="up" title="Solving the Fluid Equations" href="Fluids.html"/>
-        <link rel="next" title="Time Discretization" href="FluidTimeDiscretization.html"/>
-        <link rel="prev" title="Solving the Fluid Equations" href="Fluids.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Time Discretization" href="FluidTimeDiscretization.html" />
+    <link rel="prev" title="Solving the Fluid Equations" href="Fluids_Chapter.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
-            <a href="index.html" class="icon icon-home"> MFiX-Exa
+            <a href="index.html" class="icon icon-home"> incflo
           
 
           
@@ -67,6 +60,10 @@
 
           
             
+            
+              <div class="version">
+                20.04-dev
+              </div>
             
           
 
@@ -93,15 +90,18 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Inputs.html">Run-time Inputs</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="Fluids.html">Solving the Fluid Equations</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Fluid Variables</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#fluid-equations">Fluid Equations</a></li>
 <li class="toctree-l2"><a class="reference internal" href="FluidTimeDiscretization.html">Time Discretization</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="Particles.html">Particles</a></li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
             
@@ -113,17 +113,18 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">MFiX-Exa</a>
+          <a href="index.html">incflo</a>
         
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -146,7 +147,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-          <li><a href="Fluids.html">Solving the Fluid Equations</a> &raquo;</li>
+          <li><a href="Fluids_Chapter.html">Solving the Fluid Equations</a> &raquo;</li>
         
       <li>Fluid Variables</li>
     
@@ -170,31 +171,31 @@
   <div class="section" id="fluid-variables">
 <h1>Fluid Variables<a class="headerlink" href="#fluid-variables" title="Permalink to this headline">¶</a></h1>
 <blockquote>
-<div><table border="1" class="docutils">
+<div><table class="docutils align-default">
 <colgroup>
-<col width="32%" />
-<col width="68%" />
+<col style="width: 32%" />
+<col style="width: 68%" />
 </colgroup>
-<thead valign="bottom">
-<tr class="row-odd"><th class="head">Variable</th>
-<th class="head">Definition</th>
+<thead>
+<tr class="row-odd"><th class="head"><p>Variable</p></th>
+<th class="head"><p>Definition</p></th>
 </tr>
 </thead>
-<tbody valign="top">
-<tr class="row-even"><td><span class="math">\(\rho_g\)</span></td>
-<td>Fluid density</td>
+<tbody>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\rho_g\)</span></p></td>
+<td><p>Fluid density</p></td>
 </tr>
-<tr class="row-odd"><td><span class="math">\(\varepsilon_g\)</span></td>
-<td>Volume fraction of fluid (= 1 if no particles)</td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\varepsilon_g\)</span></p></td>
+<td><p>Volume fraction of fluid (= 1 if no particles)</p></td>
 </tr>
-<tr class="row-even"><td><span class="math">\(U_g\)</span></td>
-<td>Fluid velocity</td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(U_g\)</span></p></td>
+<td><p>Fluid velocity</p></td>
 </tr>
-<tr class="row-odd"><td><span class="math">\(\tau\)</span></td>
-<td>Viscous stress tensor</td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\tau\)</span></p></td>
+<td><p>Viscous stress tensor</p></td>
 </tr>
-<tr class="row-even"><td><span class="math">\(g\)</span></td>
-<td>Gravitational acceleration</td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(g\)</span></p></td>
+<td><p>Gravitational acceleration</p></td>
 </tr>
 </tbody>
 </table>
@@ -203,23 +204,51 @@
 <div class="section" id="fluid-equations">
 <h1>Fluid Equations<a class="headerlink" href="#fluid-equations" title="Permalink to this headline">¶</a></h1>
 <p>Conservation of fluid mass:</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\frac{\partial (\varepsilon_g \rho_g)}{\partial t} + \nabla \cdot (\varepsilon_g \rho_g U_g)  = 0\]</div>
-<p>Conservation of fluid momentum:</p>
-<div class="math">
-\[\frac{ \partial (\varepsilon_g \rho_g U)}{\partial t} + \nabla \cdot (\varepsilon_g \rho_g U_g U_g) + \varepsilon_g \nabla p_g = \nabla \cdot \tau
-+ \sum_p \beta_p (V_p - U_g) + \rho_g g\]</div>
-<p>where <span class="math">\(\sum_p \beta_p (V_p - U_g)\)</span> is the drag term in which <span class="math">\(V_p\)</span> represents the particle velocity and <span class="math">\(\beta_p\)</span> is the drag coefficient associated with that particle</p>
-<p>Conservation of fluid volume:</p>
-<div class="math">
+<p>Unlike two-fluid modeling, <span class="math notranslate nohighlight">\(\varepsilon_g = 1 - \varepsilon_s\)</span>, is not a solution
+variable. Rather, <span class="math notranslate nohighlight">\(\varepsilon_s\)</span> is evaluated from the particle field through
+volume filtering,</p>
+<div class="math notranslate nohighlight">
+\[(1 - \varepsilon_g) A (\boldsymbol{x},t) \approx
+\sum_{i=1}^{N_p} A_i(\boldsymbol{X}_i,t) {\mathcal G}
+(\left| \boldsymbol{x} - \boldsymbol{X}_i \right|) {\mathcal V}_i\]</div>
+<p>where <span class="math notranslate nohighlight">\(A_i\)</span> is a general particle property, <span class="math notranslate nohighlight">\({\mathcal V}_i\)</span> is the particle
+volume and <span class="math notranslate nohighlight">\(\mathcal G\)</span> is a transfer kernel with compact support–here linear hat.
+Setting <span class="math notranslate nohighlight">\(A_i = 1\)</span> gives the local void fraction.</p>
+<p>Assuming the fluid phase is incompressible, <span class="math notranslate nohighlight">\(\frac{D \rho_g}{Dt} = 0\)</span>, the conservation of fluid mass is equivalent to the conservation of fluid volume:</p>
+<div class="math notranslate nohighlight">
 \[\frac{\partial \varepsilon_g}{\partial t} + \nabla \cdot (\varepsilon_g  U_g)  = 0\]</div>
+<p>The conservation of fluid momentum is:</p>
+<div class="math notranslate nohighlight">
+\[\frac{ \partial (\varepsilon_g \rho_g U_g)}{\partial t}
++ \nabla \cdot (\varepsilon_g \rho_g U_g U_g) + \varepsilon_g \nabla p_g
+= \nabla \cdot \tau + M_{sg} + \varepsilon_g \rho_g g\]</div>
+<p>where <span class="math notranslate nohighlight">\(M_{sg} = - M_{gs}\)</span> is the generalized interfacial momentum transfer from
+the solid particles to the fluid-phase. Like <span class="math notranslate nohighlight">\(\varepsilon_s\)</span>,
+<span class="math notranslate nohighlight">\(M_{gs}\)</span> is determined from the L-E transfer kernel by setting <span class="math notranslate nohighlight">\(A_i = F_{gi}\)</span>,
+where <span class="math notranslate nohighlight">\(F_{gi}\)</span> is the force due to the fluid-phase on the ith particle. Following
+MFiX classic (and many other CFD-DEM codes designed for high density ratio gas-solids
+flows), only buoyancy (pressure gradient) and steady drag are considered:</p>
+<div class="math notranslate nohighlight">
+\[F_{gi} = - \mathcal{V}_i \nabla p_g
+- \frac{1}{2} C_D \rho_g \boldsymbol{V}_{ig} \left|\boldsymbol{V}_{ig}\right| A_i^{(proj)}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\boldsymbol{V}_{ig} = \boldsymbol{V}_i - \boldsymbol{U}_g ( \boldsymbol{X}_i )\)</span>
+is the velocity of ith particle relative to the fluid-phase (at the particle position
+<span class="math notranslate nohighlight">\(\boldsymbol{X}_i\)</span>). <span class="math notranslate nohighlight">\(F_{gi}\)</span> is closed by the specification of a drag
+coefficient, <span class="math notranslate nohighlight">\(C_D\)</span>. Currently, MFiX-Exa includes Wen-Yu, Gidaspow and BVK2 drag laws.</p>
+<p>In chemical engineering literature, it is common to lump all drag-related terms of
+<span class="math notranslate nohighlight">\(M_{gs}\)</span> into <span class="math notranslate nohighlight">\(\beta\)</span>. With this simplification and some re-arrangement,
+the fluid momentum takes the more convenient form:</p>
+<div class="math notranslate nohighlight">
+\[\frac{ \partial (\varepsilon_g \rho_g U_g)}{\partial t}
++ \nabla \cdot (\varepsilon_g \rho_g U_g U_g) + \varepsilon_g \nabla p_g
+= \nabla \cdot \tau + \sum_p \beta_p (V_p - U_g) + \varepsilon_g \rho_g g\]</div>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -228,7 +257,7 @@
         <a href="FluidTimeDiscretization.html" class="btn btn-neutral float-right" title="Time Discretization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="Fluids.html" class="btn btn-neutral" title="Solving the Fluid Equations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="Fluids_Chapter.html" class="btn btn-neutral float-left" title="Solving the Fluid Equations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -237,11 +266,11 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017-2018, MFiX-Exa Team.
+        &copy; Copyright 2017-2018, Incflo Team
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -254,37 +283,15 @@
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

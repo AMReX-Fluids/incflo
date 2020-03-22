@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Computing slopes &mdash; MFiX-Exa  documentation</title>
+  <title>Computing slopes &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -17,49 +17,42 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="MFiX-Exa  documentation" href="index.html"/>
-        <link rel="up" title="Time Discretization" href="FluidTimeDiscretization.html"/>
-        <link rel="next" title="Creating the MAC velocities" href="BuildingMacVelocities.html"/>
-        <link rel="prev" title="Fluid Time Step" href="FluidTimeStep.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Creating the MAC velocities" href="BuildingMacVelocities.html" />
+    <link rel="prev" title="Fluid Time Step" href="FluidTimeStep.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
-            <a href="index.html" class="icon icon-home"> MFiX-Exa
+            <a href="index.html" class="icon icon-home"> incflo
           
 
           
@@ -67,6 +60,10 @@
 
           
             
+            
+              <div class="version">
+                20.04-dev
+              </div>
             
           
 
@@ -93,8 +90,9 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Inputs.html">Run-time Inputs</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="Fluids.html">Solving the Fluid Equations</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="FluidEquations.html">Fluid Variables</a></li>
 <li class="toctree-l2"><a class="reference internal" href="FluidEquations.html#fluid-equations">Fluid Equations</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="FluidTimeDiscretization.html">Time Discretization</a><ul class="current">
@@ -105,8 +103,10 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="Particles.html">Particles</a></li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
             
@@ -118,17 +118,18 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">MFiX-Exa</a>
+          <a href="index.html">incflo</a>
         
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -151,7 +152,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-          <li><a href="Fluids.html">Solving the Fluid Equations</a> &raquo;</li>
+          <li><a href="Fluids_Chapter.html">Solving the Fluid Equations</a> &raquo;</li>
         
           <li><a href="FluidTimeDiscretization.html">Time Discretization</a> &raquo;</li>
         
@@ -182,14 +183,14 @@ velocity component.</p>
 limiter (van Leer, 1977). The scheme is described below for the u-velocity.</p>
 <p>The limiter computes the slope at cell “i” by combining the left, central
 and right u-variation “du”:</p>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="n">du_l</span> <span class="o">=</span> <span class="n">u</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>               <span class="o">=</span> <span class="n">left</span> <span class="n">variation</span>
-<span class="n">du_c</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span> <span class="n">u</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span>   <span class="o">=</span> <span class="n">central</span> <span class="p">(</span><span class="n">umlimited</span><span class="p">)</span> <span class="n">variation</span>
-<span class="n">du_r</span> <span class="o">=</span> <span class="n">u</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>               <span class="o">=</span> <span class="n">right</span> <span class="n">variation</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">du_l</span> <span class="o">=</span> u<span class="o">(</span>i<span class="o">)</span> - u<span class="o">(</span>i-1<span class="o">)</span>               <span class="o">=</span> left variation
+<span class="nv">du_c</span> <span class="o">=</span> <span class="m">0</span>.5 * <span class="o">(</span> u<span class="o">(</span>i+1<span class="o">)</span> - u<span class="o">(</span>i-1<span class="o">)</span> <span class="o">)</span>   <span class="o">=</span> central <span class="o">(</span>umlimited<span class="o">)</span> variation
+<span class="nv">du_r</span> <span class="o">=</span> u<span class="o">(</span>i+1<span class="o">)</span> - u<span class="o">(</span>i<span class="o">)</span>               <span class="o">=</span> right variation
 </pre></div>
 </div>
 <p>Finally, the u-variation at cell “i” is given by :</p>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="n">du</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">=</span> <span class="n">sign</span><span class="p">(</span><span class="n">du_c</span><span class="p">)</span> <span class="o">*</span> <span class="nb">min</span><span class="p">(</span><span class="mi">2</span><span class="o">|</span><span class="n">du_l</span><span class="o">|</span><span class="p">,</span> <span class="o">|</span><span class="n">du_c</span><span class="o">|</span><span class="p">,</span> <span class="mi">2</span><span class="o">|</span><span class="n">du_r</span><span class="o">|</span><span class="p">))</span> <span class="k">if</span> <span class="n">du_l</span><span class="o">*</span><span class="n">du_r</span> <span class="o">&gt;</span> <span class="mi">0</span>
-<span class="n">du</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span>                                           <span class="n">otherwise</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>du<span class="o">(</span>i<span class="o">)</span> <span class="o">=</span> sign<span class="o">(</span>du_c<span class="o">)</span> * min<span class="o">(</span><span class="m">2</span><span class="p">|</span>du_l<span class="p">|</span>, <span class="p">|</span>du_c<span class="p">|</span>, <span class="m">2</span><span class="p">|</span>du_r<span class="p">|</span><span class="o">))</span> <span class="k">if</span> du_l*du_r &gt; <span class="m">0</span>
+du<span class="o">(</span>i<span class="o">)</span> <span class="o">=</span> <span class="m">0</span>                                           otherwise
 </pre></div>
 </div>
 <p>The above procedure is applied direction by direction.</p>
@@ -205,18 +206,16 @@ is not known outside the domain since the BC is applied directly at the first
 valid node which lies on the boundary itself. Therefore, the scheme must be
 arranged as follows to use ONLY values from inside the domain.
 For a left boundary (i=0), the u-variations are:</p>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="n">du_l</span> <span class="o">=</span> <span class="mi">0</span>                             <span class="n">Dont</span> <span class="n">use</span> <span class="n">values</span> <span class="n">on</span> <span class="n">the</span> <span class="n">left</span>
-<span class="n">du_c</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.5</span><span class="o">*</span><span class="n">u</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="n">u</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span><span class="mf">0.5</span><span class="o">*</span><span class="n">u</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>  <span class="mi">2</span><span class="n">nd</span> <span class="n">order</span> <span class="n">right</span><span class="o">-</span><span class="n">biased</span>
-<span class="n">du_r</span> <span class="o">=</span> <span class="n">u</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">-</span> <span class="n">u</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>                   <span class="n">Right</span> <span class="n">variation</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">du_l</span> <span class="o">=</span> <span class="m">0</span>                             Dont use values on the left
+<span class="nv">du_c</span> <span class="o">=</span> -1.5*u<span class="o">(</span><span class="m">0</span><span class="o">)</span> + <span class="m">2</span>*u<span class="o">(</span><span class="m">1</span><span class="o">)</span> -0.5*u<span class="o">(</span><span class="m">2</span><span class="o">)</span>  2nd order right-biased
+<span class="nv">du_r</span> <span class="o">=</span> u<span class="o">(</span><span class="m">1</span><span class="o">)</span> - u<span class="o">(</span><span class="m">0</span><span class="o">)</span>                   Right variation
 </pre></div>
 </div>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -225,7 +224,7 @@ For a left boundary (i=0), the u-variations are:</p>
         <a href="BuildingMacVelocities.html" class="btn btn-neutral float-right" title="Creating the MAC velocities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="FluidTimeStep.html" class="btn btn-neutral" title="Fluid Time Step" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="FluidTimeStep.html" class="btn btn-neutral float-left" title="Fluid Time Step" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -234,11 +233,11 @@ For a left boundary (i=0), the u-variations are:</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017-2018, MFiX-Exa Team.
+        &copy; Copyright 2017-2018, Incflo Team
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -251,37 +250,15 @@ For a left boundary (i=0), the u-variations are:</p>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

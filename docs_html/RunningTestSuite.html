@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Running the MFiX Test Suite &mdash; MFiX-Exa  documentation</title>
+  <title>Running the MFiX Test Suite &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -17,49 +17,42 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="MFiX-Exa  documentation" href="index.html"/>
-        <link rel="up" title="Getting Started" href="GettingStarted.html"/>
-        <link rel="next" title="Regression testing" href="RegressionTesting.html"/>
-        <link rel="prev" title="Building MFiX-Exa with gmake" href="BuildingGMake.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Regression testing" href="RegressionTesting.html" />
+    <link rel="prev" title="Building MFiX-Exa with gmake" href="BuildingGMake.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
-            <a href="index.html" class="icon icon-home"> MFiX-Exa
+            <a href="index.html" class="icon icon-home"> incflo
           
 
           
@@ -67,6 +60,10 @@
 
           
             
+            
+              <div class="version">
+                20.04-dev
+              </div>
             
           
 
@@ -109,10 +106,13 @@
 <li class="toctree-l2"><a class="reference internal" href="RegressionTesting.html">Regression testing</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="Inputs.html">Run-time Inputs</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Fluids.html">Solving the Fluid Equations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Particles.html">Particles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
             
@@ -124,17 +124,18 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">MFiX-Exa</a>
+          <a href="index.html">incflo</a>
         
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -182,55 +183,55 @@
 <h1>Running the MFiX Test Suite<a class="headerlink" href="#running-the-mfix-test-suite" title="Permalink to this headline">¶</a></h1>
 <p>MFiX-Exa comes with several tests aimed at evaluating software
 functionalities. The source files as well as the required input files
-for each test are located in the <code class="docutils literal"><span class="pre">tests</span></code> directory. The <code class="docutils literal"><span class="pre">tests</span></code>
+for each test are located in the <code class="docutils literal notranslate"><span class="pre">tests</span></code> directory. The <code class="docutils literal notranslate"><span class="pre">tests</span></code>
 directory is copied to the build directory during MFiX-Exa configuration
 process. When a test is run (see below), output files are stored in
-<code class="docutils literal"><span class="pre">build_dir/tests/test-name</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">build_dir/tests/test-name</span></code>.</p>
 <p>There are various dependencies for comparing test results.</p>
-<p>o To compare results to archived flow slices stored in <code class="docutils literal"><span class="pre">AUTOTEST</span></code>
-directories with the case files, the environment variable <code class="docutils literal"><span class="pre">FEXTRACT</span></code>
-must point to the location of the AMReX <code class="docutils literal"><span class="pre">fextract</span></code> utility located in
-the directory, <code class="docutils literal"><span class="pre">amrex/Tools/PostProcessing/F_Src</span></code>. Additionally,
-<code class="docutils literal"><span class="pre">numdiff</span></code> must be installed for comparing results.</p>
+<p>o To compare results to archived flow slices stored in <code class="docutils literal notranslate"><span class="pre">AUTOTEST</span></code>
+directories with the case files, the environment variable <code class="docutils literal notranslate"><span class="pre">FEXTRACT</span></code>
+must point to the location of the AMReX <code class="docutils literal notranslate"><span class="pre">fextract</span></code> utility located in
+the directory, <code class="docutils literal notranslate"><span class="pre">amrex/Tools/PostProcessing/F_Src</span></code>. Additionally,
+<code class="docutils literal notranslate"><span class="pre">numdiff</span></code> must be installed for comparing results.</p>
 <p>o To compare point-by-point field data, the environment variable
-<code class="docutils literal"><span class="pre">FCOMPARE</span></code> must point the AMReX utility <code class="docutils literal"><span class="pre">plt_compare_diff_grids</span></code>
-found in the directory, <code class="docutils literal"><span class="pre">amrex/Tools/PostProcessing/F_Src</span></code>.
-Additionally, the environment variable <code class="docutils literal"><span class="pre">MFiX_BENCHMARKS_HOME</span></code> must
+<code class="docutils literal notranslate"><span class="pre">FCOMPARE</span></code> must point the AMReX utility <code class="docutils literal notranslate"><span class="pre">plt_compare_diff_grids</span></code>
+found in the directory, <code class="docutils literal notranslate"><span class="pre">amrex/Tools/PostProcessing/F_Src</span></code>.
+Additionally, the environment variable <code class="docutils literal notranslate"><span class="pre">MFiX_BENCHMARKS_HOME</span></code> must
 point to the location of a local regression test data set. See
 <em>Generating local regression test data</em> for instructions on creating a
 local regression test data set.</p>
 <div class="section" id="run-all-tests">
 <h2>Run all tests<a class="headerlink" href="#run-all-tests" title="Permalink to this headline">¶</a></h2>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">cd</span> <span class="n">to</span> <span class="n">mfix</span><span class="o">-</span><span class="n">build</span><span class="o">-</span><span class="nb">dir</span>
-<span class="o">&gt;</span> <span class="n">ctest</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; <span class="nb">cd</span> to incflo-build-dir
+&gt; ctest
 </pre></div>
 </div>
 </div>
 <div class="section" id="list-all-tests-without-running-them">
 <h2>List all tests (without running them)<a class="headerlink" href="#list-all-tests-without-running-them" title="Permalink to this headline">¶</a></h2>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">cd</span> <span class="n">to</span> <span class="n">mfix</span><span class="o">-</span><span class="n">build</span><span class="o">-</span><span class="nb">dir</span>
-<span class="o">&gt;</span> <span class="n">ctest</span> <span class="o">-</span><span class="n">N</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; <span class="nb">cd</span> to incflo-build-dir
+&gt; ctest -N
 </pre></div>
 </div>
 </div>
 <div class="section" id="run-a-particular-test-by-the-index-listed-in-ctest-n">
 <h2>Run a particular test by the index listed in ctest -N<a class="headerlink" href="#run-a-particular-test-by-the-index-listed-in-ctest-n" title="Permalink to this headline">¶</a></h2>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">cd</span> <span class="n">to</span> <span class="n">mfix</span><span class="o">-</span><span class="n">build</span><span class="o">-</span><span class="nb">dir</span>
-<span class="o">&gt;</span> <span class="n">ctest</span> <span class="o">-</span><span class="n">I</span> <span class="mi">3</span><span class="p">,</span><span class="mi">3</span>             <span class="c1"># run the third test</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; <span class="nb">cd</span> to incflo-build-dir
+&gt; ctest -I <span class="m">3</span>,3             <span class="c1"># run the third test</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="run-a-particular-test-by-name">
 <h2>Run a particular test by name<a class="headerlink" href="#run-a-particular-test-by-name" title="Permalink to this headline">¶</a></h2>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">cd</span> <span class="n">to</span> <span class="n">mfix</span><span class="o">-</span><span class="n">build</span><span class="o">-</span><span class="nb">dir</span>
-<span class="o">&gt;</span> <span class="n">ctest</span> <span class="o">-</span><span class="n">R</span> <span class="n">DEM01</span>  <span class="c1"># running all tests with &quot;DEM01&quot; in the test name</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; <span class="nb">cd</span> to incflo-build-dir
+&gt; ctest -R DEM01  <span class="c1"># running all tests with &quot;DEM01&quot; in the test name</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="run-a-particular-test-via-make">
 <h2>Run a particular test via make<a class="headerlink" href="#run-a-particular-test-via-make" title="Permalink to this headline">¶</a></h2>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">cd</span> <span class="n">to</span> <span class="n">mfix</span><span class="o">-</span><span class="n">build</span><span class="o">-</span><span class="nb">dir</span>
-<span class="o">&gt;</span> <span class="n">make</span> <span class="n">run_DEM01</span><span class="o">-</span><span class="n">x</span>  <span class="c1"># running &quot;DEM01-x&quot; and output to the screen</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; <span class="nb">cd</span> to incflo-build-dir
+&gt; make run_DEM01-x  <span class="c1"># running &quot;DEM01-x&quot; and output to the screen</span>
 </pre></div>
 </div>
 </div>
@@ -246,21 +247,15 @@ with “DEM01” for all grid types (single, multiple, tiled)</p>
 </div>
 <div class="section" id="run-a-user-defined-case">
 <h2>Run a user-defined case<a class="headerlink" href="#run-a-user-defined-case" title="Permalink to this headline">¶</a></h2>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="o">./</span><span class="n">mfix</span> <span class="n">inputs</span><span class="o">-</span><span class="n">myrun</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; ./incflo inputs-myrun
 </pre></div>
 </div>
-<p><em>inputs-myrun</em> is a text file containing the AMReX input parameters;
-this can be named anything as long as it is the <strong>first</strong> argument
-following the executable. Note that many of the problem parameters are
-still defined in <em>mfix.dat</em>.</p>
 </div>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -269,7 +264,7 @@ still defined in <em>mfix.dat</em>.</p>
         <a href="RegressionTesting.html" class="btn btn-neutral float-right" title="Regression testing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="BuildingGMake.html" class="btn btn-neutral" title="Building MFiX-Exa with gmake" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="BuildingGMake.html" class="btn btn-neutral float-left" title="Building MFiX-Exa with gmake" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -278,11 +273,11 @@ still defined in <em>mfix.dat</em>.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017-2018, MFiX-Exa Team.
+        &copy; Copyright 2017-2018, Incflo Team
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -295,37 +290,15 @@ still defined in <em>mfix.dat</em>.</p>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

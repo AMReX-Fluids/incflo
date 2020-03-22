@@ -1,0 +1,898 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Problem Definition &mdash; incflo 20.04-dev documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Drag Types" href="InputsDrag.html" />
+    <link rel="prev" title="Run-time Inputs" href="Inputs_Chapter.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> incflo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                20.04-dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Problem Definition</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fluid-model-settings">Fluid model settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dem-model-settings">DEM model settings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#region-definitions">Region definitions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#initial-conditions">Initial Conditions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="InputsDrag.html">Drag Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsTimeStepping.html">Time Stepping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsInitialization.html">Initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsMultigrid.html">Multigrid Inputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsPlotFiles.html">Plotfiles and Other Output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsCheckpoint.html">Checkpoint/Restart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsMonitors.html">Monitors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsVerbosity.html">Verbosity</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">incflo</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="Inputs_Chapter.html">Run-time Inputs</a> &raquo;</li>
+        
+      <li>Problem Definition</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/InputsProblemDefinition.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="problem-definition">
+<h1>Problem Definition<a class="headerlink" href="#problem-definition" title="Permalink to this headline">¶</a></h1>
+<p>The following inputs must be preceded by “amr.”</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 62%" />
+<col style="width: 11%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>n_cell</p></td>
+<td><p>Number of cells at level 0 in each coordinate direction</p></td>
+<td><p>Int Int Int</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>max_level</p></td>
+<td><p>Maximum level of refinement allowed (0 when single-level)</p></td>
+<td><p>Int</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following inputs must be preceded by “geometry.”</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 63%" />
+<col style="width: 12%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>coord_sys</p></td>
+<td><p>0 for Cartesian</p></td>
+<td><p>Int</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>is_periodic</p></td>
+<td><p>1 for true, 0 for false (one value for each coordinate direction)</p></td>
+<td><p>Ints</p></td>
+<td><p>0 0 0</p></td>
+</tr>
+<tr class="row-even"><td><p>prob_lo</p></td>
+<td><p>Low corner of physical domain (physical not index space)</p></td>
+<td><p>Reals</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>prob_hi</p></td>
+<td><p>High corner of physical domain (physical not index space)</p></td>
+<td><p>Reals</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following inputs must be preceded by “bc.”</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 63%" />
+<col style="width: 12%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>delp_dir</p></td>
+<td><p>Direction for specified pressure drop. Note that this direction
+should also be periodic.</p></td>
+<td><p>Int</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>delp</p></td>
+<td><p>Pressure drop (Pa)</p></td>
+<td><p>Real</p></td>
+<td><p>0.0</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following inputs must be preceded by “mfix.”</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 63%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>geometry</p></td>
+<td><p>Which type of EB geometry are we using?</p></td>
+<td><p>String</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>levelset__refinement</p></td>
+<td><p>Refinement factor of levelset resolution relative to level 0 resolution</p></td>
+<td><p>Int</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p>po_no_par_out</p></td>
+<td><p>Let particles exit (default) or bounce-back at pressure outflows</p></td>
+<td><p>Int</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>gravity</p></td>
+<td><p>Gravity vector (e.g., mfix.gravity = -9.81  0.0  0.0) [required]</p></td>
+<td><p>Reals</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>Setting basic EB walls can be specified by inputs preceded by “xlo”, “xhi”, “ylo”, “yhi”, “zlo”, and “zhi”</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 63%" />
+<col style="width: 11%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>type</p></td>
+<td><p>Used to define boundary type. Available options include:</p>
+<ul class="simple">
+<li><p>‘pi’  or ‘pressure_inflow’</p></li>
+<li><p>‘po’  or ‘pressure_outflow’</p></li>
+<li><p>‘mi’  or ‘mass_inflow’</p></li>
+<li><p>‘nsw’ or ‘no_slip_wall’</p></li>
+</ul>
+</td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>pressure</p></td>
+<td><p>Sets boundary pressure for pressure inflows, outflows and mass inflows</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>velocity</p></td>
+<td><p>Sets boundary velocity for mass inflows</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>location</p></td>
+<td><p>Specifies an offset from the domain boundary for no-slip walls</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>To specify multiple mass inflows (e.g., define a jet and uniform background flow), provide multiple velocities for the region and define the physical extents of the sub-region. The first velocity is applied to the entire flow plane. Subsequent velocities are successively applied to the specified sub-regions. If multiple sub-regions overlap, the velocity of last specified region is used. An example of a uniform mass inflow with a square-jet centered at (0.5x0.5) is given below.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>xlo.type = &quot;mi&quot;
+xlo.velocity = 0.01  0.10
+
+xlo.ylo =            0.25
+xlo.yhi =            0.75
+xlo.zlo =            0.25
+xlo.zhi =            0.75
+</pre></div>
+</div>
+<div class="section" id="fluid-model-settings">
+<h2>Fluid model settings<a class="headerlink" href="#fluid-model-settings" title="Permalink to this headline">¶</a></h2>
+<p>Enabling the fluid solver and specifying fluid model options.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 63%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>fluid.solve</p></td>
+<td><p>Specified name of the fluid or None to disable the fluid solver. The
+name assigned to the fluid solver is used to specify fluid inputs.</p></td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following inputs must be preceded by the given to the fluid solver e.g., “fluid.”</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 63%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>density</p></td>
+<td><dl class="simple">
+<dt>Specify which density model to use for fluid [required]</dt><dd><p>“constant” – constant density</p>
+</dd>
+</dl>
+</td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>density.constant</p></td>
+<td><p>Value of constant fluid density [required if density_model= “constant”</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>viscosity</p></td>
+<td><dl class="simple">
+<dt>Specify which viscosity model to use for fluid [required]</dt><dd><p>“constant” – constant viscosity</p>
+</dd>
+</dl>
+</td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>viscosity.constant</p></td>
+<td colspan="2"><p>Value of constant fluid viscosity [required if viscosity_model=”constant”|  Real</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>Below is an example for specifying fluid solver model options.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>fluid.solve = myfluid
+
+myfluid.density = constant
+myfluid.density.constant = 1.0
+
+myfluid.viscosity = constant
+myfluid.viscosity.constant = 1.8e-5
+</pre></div>
+</div>
+</div>
+<div class="section" id="dem-model-settings">
+<h2>DEM model settings<a class="headerlink" href="#dem-model-settings" title="Permalink to this headline">¶</a></h2>
+<p>Enabling the DEM solver and specifying model options.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 61%" />
+<col style="width: 8%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>dem.solve</p></td>
+<td><p>Specified name(s) of the DEM types or None to disable the DEM solver.
+The user defined names are used to specify DEM model inputs.</p></td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>dem.friction_coeff.pp</p></td>
+<td><p>Friction coefficient :: particle to particle collisions [required]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>dem.friction_coeff.pw</p></td>
+<td><p>Friction coefficient :: particle to wall collisions [required]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>dem.spring_const.pp</p></td>
+<td><p>Normal spring constant :: particle to particle collisions [required]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>dem.spring_const.pw</p></td>
+<td><p>Normal spring constant :: particle to wall collisions [required]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>dem.spring_tang_fac.pp</p></td>
+<td><p>Tangential-to-normal spring constant factor :: particle to particle
+collisions [required]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>dem.spring_tang_fac.pw</p></td>
+<td><p>Tangential-to-normal spring constant factor :: particle to wall
+collisions [required]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>dem.damping_tang_fac.pp</p></td>
+<td><p>Factor relating the tangential damping coefficient to the normal
+damping coefficient :: particle to particle collisions [required]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>dem.damping_tang_fac.pw</p></td>
+<td><p>Factor relating the tangential damping coefficient to the normal
+damping coefficient :: particle to wall collisions [required]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following inputs use the DEM type names specified using the <cite>dem.solve</cite> input to define restitution coefficients and
+are proceeded with <cite>dem.restitution_coeff</cite>. These must be defined for all solid-solid and solid-wall combinations.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 61%" />
+<col style="width: 8%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>[solid0].[solid1]</p></td>
+<td><p>Specifies the restitution coefficient between solid0 and solid1. Here
+the order is not important and could be defined as [solid1].[solid0]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>[solid0].wall</p></td>
+<td><p>Specifies the restitution coefficient between solid0 and the wall.
+Order is not important and this could be defined as wall.[solid0]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>Below is an example for specifying the inputs for two DEM solids.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>dem.solve = sand  char
+
+dem.friction_coeff.pp     =     0.25
+dem.friction_coeff.pw     =     0.15
+
+dem.spring_const.pp       =   100.0
+dem.spring_const.pw       =   100.0
+
+dem.spring_tang_fac.pp    =     0.2857
+dem.spring_tang_fac.pw    =     0.2857
+
+dem.damping_tang_fac.pp   =     0.5
+dem.damping_tang_fac.pw   =     0.5
+
+dem.restitution_coeff.sand.sand =  0.85
+dem.restitution_coeff.sand.char =  0.88
+dem.restitution_coeff.char.char =  0.90
+
+dem.restitution_coeff.sand.wall =  0.85
+dem.restitution_coeff.char.wall =  0.89
+</pre></div>
+</div>
+</div>
+<div class="section" id="region-definitions">
+<h2>Region definitions<a class="headerlink" href="#region-definitions" title="Permalink to this headline">¶</a></h2>
+<p>Regions are used to define sections of the domain. They may be either boxes, planes or points. They are used in building initial condition regions.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 61%" />
+<col style="width: 11%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>mfix.regions</p></td>
+<td><p>Names given to regions.</p></td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>regions.[region].lo</p></td>
+<td><p>Low corner of physical region (physical not index space)</p></td>
+<td><p>Reals</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>regions.[region].hi</p></td>
+<td><p>High corner of physical region (physical not index space)</p></td>
+<td><p>Reals</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>Below is an example for specifying two regions.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>mfix.regions  = full-domain   riser
+
+regions.full-domain.lo = 0.0000  0.0000  0.0000
+regions.full-domain.hi = 3.7584  0.2784  0.2784
+
+regions.riser.lo       = 0.0000  0.0000  0.0000
+regions.riser.hi       = 0.1000  0.2784  0.2784
+</pre></div>
+</div>
+</div>
+<div class="section" id="initial-conditions">
+<h2>Initial Conditions<a class="headerlink" href="#initial-conditions" title="Permalink to this headline">¶</a></h2>
+<p>Initial conditions are build from defined regions. The input names are built using the prefix <cite>ic.</cite>, the name of the
+region to apply the IC, and the name of the phase (e.g., <cite>myfuild</cite>).</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 61%" />
+<col style="width: 11%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>ic.regions</p></td>
+<td><p>Regions used to define initial conditions.</p></td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>For a fluid phase, the following inputs can be defined.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 61%" />
+<col style="width: 11%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>volfrac</p></td>
+<td><p>Volume fraction [required]</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>pressure</p></td>
+<td><p>Fluid pressure</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>temperature</p></td>
+<td><p>Fluid temperature</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>velocity</p></td>
+<td><p>Velocity components</p></td>
+<td><p>Reals</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>The name of the DEM phases to be defined in the IC region and the packing must be defined.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 61%" />
+<col style="width: 11%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>ic.[region].solids</p></td>
+<td><p>List of solids</p></td>
+<td><p>Strings</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>ic.[region].packing</p></td>
+<td><p>Specifies how auto-generated particles are placed in the IC region:
+* hcp - Hex-centered packing
+* random
+* pseudo_random
+* oneper – one particle per cell
+* eightper – eight particles per cell</p></td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>For each solid, the following inputs may be defined.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 61%" />
+<col style="width: 11%" />
+<col style="width: 9%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>volfrac</p></td>
+<td><p>Volume fraction</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>temperature</p></td>
+<td><p>Fluid temperature</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>velocity</p></td>
+<td><p>Velocity components</p></td>
+<td><p>Reals</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>diameter</p></td>
+<td><p>Method to specify particle diameter in the IC region. This is
+only used for auto-generated particles.
+* constant  – specified constant
+* uniform   – uniform distribution
+* normal    – normal distribution</p></td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>diameter.constant</p></td>
+<td><p>Value of specified constant particle density</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>diameter.mean</p></td>
+<td><p>Distribution mean</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>diameter.std</p></td>
+<td><p>Distribution standard deviation</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>diameter.min</p></td>
+<td><p>Minimum diameter to clip distribution</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>diameter.max</p></td>
+<td><p>Maximum diameter to clip distribution</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>density</p></td>
+<td><p>Method to specify particle density in the IC region. This is
+only used for auto-generated particles.
+* constant  – specified constant
+* uniform   – uniform distribution
+* normal    – normal distribution</p></td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>density.constant</p></td>
+<td><p>Value of specified constant particle density</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>density.mean</p></td>
+<td><p>Distribution mean</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>density.std</p></td>
+<td><p>Distribution standard deviation</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-odd"><td><p>density.min</p></td>
+<td><p>Minimum density to clip distribution</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>density.max</p></td>
+<td><p>Maximum density to clip distribution</p></td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>Below is an example for specifying an initial condition for a fluid (fluid) and one DEM solid (solid0).</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>ic.regions  = bed
+
+ic.bed.fluid.volfrac   =  0.725
+
+ic.bed.fluid.velocity  =  0.015  0.00  0.00
+
+ic.bed.solids  = solid0
+ic.bed.packing = pseudo_random
+
+ic.bed.solid0.volfrac  =  0.275
+
+ic.bed.solid0.velocity =  0.00  0.00  0.00
+
+ic.bed.solid0.diameter = constant
+ic.bed.solid0.diameter.constant =  100.0e-6
+
+ic.bed.solid0.density  = constant
+ic.bed.solid0.density.constant  = 1000.0
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="InputsDrag.html" class="btn btn-neutral float-right" title="Drag Types" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="Inputs_Chapter.html" class="btn btn-neutral float-left" title="Run-time Inputs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017-2018, Incflo Team
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

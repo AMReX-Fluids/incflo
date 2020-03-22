@@ -1,0 +1,377 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Time Stepping &mdash; incflo 20.04-dev documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Initialization" href="InputsInitialization.html" />
+    <link rel="prev" title="Drag Types" href="InputsDrag.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> incflo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                20.04-dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="InputsProblemDefinition.html">Problem Definition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsDrag.html">Drag Types</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Time Stepping</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setting-the-time-step">Setting the Time Step</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="InputsInitialization.html">Initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsMultigrid.html">Multigrid Inputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsPlotFiles.html">Plotfiles and Other Output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsCheckpoint.html">Checkpoint/Restart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsMonitors.html">Monitors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsVerbosity.html">Verbosity</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">incflo</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="Inputs_Chapter.html">Run-time Inputs</a> &raquo;</li>
+        
+      <li>Time Stepping</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/InputsTimeStepping.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="time-stepping">
+<h1>Time Stepping<a class="headerlink" href="#time-stepping" title="Permalink to this headline">¶</a></h1>
+<p>The following inputs must be preceded by “mfix.”   Note that if both are specified, both criteria
+are used and the simulation still stop when the first criterion is hit.  In the case of unsteady flow,
+the simulation will stop when either the number of steps reaches max_step or time reaches stop_time.
+In the case of unsteady flow, the simulation will stop when either the tolerance (difference between
+subsequent steps) is reached or the number of iterations reaches the maximum number specified.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 59%" />
+<col style="width: 11%" />
+<col style="width: 12%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>max_step</p></td>
+<td><p>Maximum number of time steps to take</p></td>
+<td><p>Int</p></td>
+<td><p>-1</p></td>
+</tr>
+<tr class="row-odd"><td><p>stop_time</p></td>
+<td><p>Maximum time to reach</p></td>
+<td><p>Real</p></td>
+<td><p>-1.0</p></td>
+</tr>
+<tr class="row-even"><td><p>fixed_dt</p></td>
+<td><p>Should we use a fixed timestep?</p></td>
+<td><p>Int</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>cfl</p></td>
+<td><p>CFL constraint (dt &lt; cfl * dx / u) if fixed_dt not 1</p></td>
+<td><p>Real</p></td>
+<td><p>0.5</p></td>
+</tr>
+<tr class="row-even"><td><p>dt_min</p></td>
+<td><p>Abort if dt gets smaller than this value</p></td>
+<td><p>Real</p></td>
+<td><p>1.e-6</p></td>
+</tr>
+<tr class="row-odd"><td><p>dt_max</p></td>
+<td><p>Maximum value of dt if calculating with cfl</p></td>
+<td><p>Real</p></td>
+<td><p>1.e14</p></td>
+</tr>
+<tr class="row-even"><td><p>tcoll_ratio</p></td>
+<td><p>DEM timestep equals the min collision time divided by this value</p></td>
+<td><p>Real</p></td>
+<td><p>50.0</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following inputs must be preceded by “mfix” and are only relevant if running a problem to steady state.
+Currently, the criterion for setting “steady_state” to true is if “dt” is undefined in mfix.dat</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 60%" />
+<col style="width: 11%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>steady_state</p></td>
+<td><p>Are we running a steady-state calculation?</p></td>
+<td><p>Int</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>steady_state_tol</p></td>
+<td><p>Tolerance for checking if we have reached steady state</p>
+<p>(Must be set if steady_state = 1)</p>
+</td>
+<td><p>Real</p></td>
+<td><p>None</p></td>
+</tr>
+<tr class="row-even"><td><p>steady_state_maxiter</p></td>
+<td><p>Maximum number of allowed iterations to converge to steady state</p></td>
+<td><p>Int</p></td>
+<td><p>100000000</p></td>
+</tr>
+</tbody>
+</table>
+<div class="section" id="setting-the-time-step">
+<h2>Setting the Time Step<a class="headerlink" href="#setting-the-time-step" title="Permalink to this headline">¶</a></h2>
+<p>There are several ways that the inputs are used to determine what time step
+is used in the evolution of the fluid-particle system in MFiX-Exa.</p>
+<p>1) In a pure particle case, the <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">fixed_dt</span></span></code>, if specified, is only used to determine the frequency
+of outputs, it has no effect on the “dtsolid” used in the particle evaluation. If you do not specify a positive
+value of <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">fixed_dt</span></span></code> then the code will abort.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">amrex</span><span class="o">::</span><span class="n">Abort</span><span class="o">::</span><span class="mi">0</span><span class="o">::</span><span class="n">If</span> <span class="n">running</span> <span class="n">particle</span><span class="o">-</span><span class="n">only</span> <span class="n">must</span> <span class="n">specify</span> <span class="n">fixed_dt</span> <span class="n">in</span> <span class="n">the</span> <span class="n">inputs</span> <span class="n">file</span> <span class="o">!!!</span>
+</pre></div>
+</div>
+<p>The particle time step “dtsolid” is determined by computing the collision time “tcoll” from particle properties,
+then setting “dtsolid” to be “tcoll / 50”.</p>
+<ol class="arabic simple" start="2">
+<li><p>In a pure fluid case, there are two options:</p></li>
+</ol>
+<blockquote>
+<div><ul>
+<li><p>If you want to fix the dt, simply set <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">fixed_dt</span></span> <span class="operator"><span class="pre">=</span></span> <span class="name"><span class="pre">XXX</span></span></code> and the fluid time
+step will always be that number.</p></li>
+<li><p>If you want to let the code determine the appropriate time step using the advective CFL
+condition, then set <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">cfl</span></span> <span class="operator"><span class="pre">=</span></span> <span class="literal number float"><span class="pre">0.7</span></span></code> for example, and the fluid time step will
+be computed to be dt = 0.5 * dx / max(vel).</p>
+<blockquote>
+<div><ul>
+<li><p>If dt as computed in the compute_dt routine is smaller than the user-specified
+<code class="docutils literal notranslate"><span class="pre">`mfix.dt_min`</span></code> then the code will abort:</p>
+<blockquote>
+<div><div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">amrex</span><span class="o">::</span><span class="n">Abort</span><span class="o">::</span><span class="mi">0</span><span class="o">::</span><span class="s">&quot;Current dt is smaller than dt_min !!!</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>If dt as computed in the compute_dt routine is larger than the user-specified
+<code class="docutils literal notranslate"><span class="pre">`mfix.dt_max`</span></code> then dt will be set to the minimum of its computed value and dt_max</p></li>
+<li><p>Note that the cfl defaults to 0.5 so it does not have to be set in the inputs file. If neither
+<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">cfl</span></span></code> nor <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">fixed_dt</span></span></code> is set, then default value of cfl will be used.
+If <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">fixed_dt</span></span></code> is set, then it will override the cfl option whether
+<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">cfl</span></span></code> is set or not.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+<p>These options apply to steady state calculations as well as unsteady runs.</p>
+<ol class="arabic simple" start="3">
+<li><p>In a coupled particle-fluid case, dt is determined as in the pure-fluid case.  In this case
+the particle time step “subdt” is first computed as in the particle-only case (“dtsolid”),
+then is adjusted so that an integral number of particle steps fit into a single fluid time step.</p></li>
+</ol>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="InputsInitialization.html" class="btn btn-neutral float-right" title="Initialization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="InputsDrag.html" class="btn btn-neutral float-left" title="Drag Types" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017-2018, Incflo Team
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

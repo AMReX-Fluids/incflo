@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Creating the MAC velocities &mdash; MFiX-Exa  documentation</title>
+  <title>Creating the MAC velocities &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -17,49 +17,42 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="MFiX-Exa  documentation" href="index.html"/>
-        <link rel="up" title="Time Discretization" href="FluidTimeDiscretization.html"/>
-        <link rel="next" title="Particles" href="Particles.html"/>
-        <link rel="prev" title="Computing slopes" href="Slopes.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Embedded Boundaries" href="EB.html" />
+    <link rel="prev" title="Computing slopes" href="Slopes.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
-            <a href="index.html" class="icon icon-home"> MFiX-Exa
+            <a href="index.html" class="icon icon-home"> incflo
           
 
           
@@ -67,6 +60,10 @@
 
           
             
+            
+              <div class="version">
+                20.04-dev
+              </div>
             
           
 
@@ -93,8 +90,9 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Inputs.html">Run-time Inputs</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="Fluids.html">Solving the Fluid Equations</a><ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="FluidEquations.html">Fluid Variables</a></li>
 <li class="toctree-l2"><a class="reference internal" href="FluidEquations.html#fluid-equations">Fluid Equations</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="FluidTimeDiscretization.html">Time Discretization</a><ul class="current">
@@ -105,8 +103,10 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="Particles.html">Particles</a></li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
             
@@ -118,17 +118,18 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">MFiX-Exa</a>
+          <a href="index.html">incflo</a>
         
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -151,7 +152,7 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-          <li><a href="Fluids.html">Solving the Fluid Equations</a> &raquo;</li>
+          <li><a href="Fluids_Chapter.html">Solving the Fluid Equations</a> &raquo;</li>
         
           <li><a href="FluidTimeDiscretization.html">Time Discretization</a> &raquo;</li>
         
@@ -177,77 +178,75 @@
   <div class="section" id="creating-the-mac-velocities">
 <h1>Creating the MAC velocities<a class="headerlink" href="#creating-the-mac-velocities" title="Permalink to this headline">¶</a></h1>
 <p>To create the normal velocities on faces, we first extrapolate from the cell centers on each side using the
-slopes as computed earlier, and upwind the face value to define  <span class="math">\(U^{pred}\)</span></p>
+slopes as computed earlier, and upwind the face value to define  <span class="math notranslate nohighlight">\(U^{pred}\)</span></p>
 <p>.  To compute the x-velocity on the x-faces of regular (ie not cut) cells, we call</p>
 <blockquote>
-<div><div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="n">AMREX_CUDA_HOST_DEVICE_FOR_3D</span><span class="p">(</span><span class="n">ubx</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span>
- <span class="p">{</span>
-     <span class="o">//</span> <span class="n">X</span><span class="o">-</span><span class="n">faces</span>
-     <span class="n">Real</span> <span class="n">upls</span>     <span class="o">=</span> <span class="n">ccvel_fab</span><span class="p">(</span><span class="n">i</span>  <span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">xslopes_fab</span><span class="p">(</span><span class="n">i</span>  <span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
-     <span class="n">Real</span> <span class="n">umns</span>     <span class="o">=</span> <span class="n">ccvel_fab</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">xslopes_fab</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
-     <span class="k">if</span> <span class="p">(</span> <span class="n">umns</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="o">&amp;&amp;</span> <span class="n">upls</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="p">)</span> <span class="p">{</span>
-        <span class="n">umac_fab</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
-     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-        <span class="n">Real</span> <span class="n">avg</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span> <span class="n">upls</span> <span class="o">+</span> <span class="n">umns</span> <span class="p">);</span>
-        <span class="k">if</span> <span class="p">(</span> <span class="n">std</span><span class="p">::</span><span class="nb">abs</span><span class="p">(</span><span class="n">avg</span><span class="p">)</span> <span class="o">&lt;</span>  <span class="n">small_vel</span><span class="p">)</span> <span class="p">{</span> <span class="n">umac_fab</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">avg</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>             <span class="p">{</span> <span class="n">umac_fab</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="o">=</span> <span class="n">umns</span><span class="p">;</span>
-        <span class="p">}</span> <span class="k">else</span>                           <span class="p">{</span> <span class="n">umac_fab</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="o">=</span> <span class="n">upls</span><span class="p">;</span>
-        <span class="p">}</span>
-     <span class="p">}</span>
- <span class="p">});</span>
+<div><div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>AMREX_CUDA_HOST_DEVICE_FOR_3D<span class="o">(</span>ubx, i, j, k,
+ <span class="o">{</span>
+     // X-faces
+     Real <span class="nv">upls</span>     <span class="o">=</span> ccvel_fab<span class="o">(</span>i  ,j,k,0<span class="o">)</span> - <span class="m">0</span>.5 * xslopes_fab<span class="o">(</span>i  ,j,k,0<span class="o">)</span><span class="p">;</span>
+     Real <span class="nv">umns</span>     <span class="o">=</span> ccvel_fab<span class="o">(</span>i-1,j,k,0<span class="o">)</span> + <span class="m">0</span>.5 * xslopes_fab<span class="o">(</span>i-1,j,k,0<span class="o">)</span><span class="p">;</span>
+     <span class="k">if</span> <span class="o">(</span> umns &lt; <span class="m">0</span>.0 <span class="o">&amp;&amp;</span> upls &gt; <span class="m">0</span>.0 <span class="o">)</span> <span class="o">{</span>
+        umac_fab<span class="o">(</span>i,j,k<span class="o">)</span> <span class="o">=</span> <span class="m">0</span>.0<span class="p">;</span>
+     <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+        Real <span class="nv">avg</span> <span class="o">=</span> <span class="m">0</span>.5 * <span class="o">(</span> upls + umns <span class="o">)</span><span class="p">;</span>
+        <span class="k">if</span> <span class="o">(</span> std::abs<span class="o">(</span>avg<span class="o">)</span> &lt;  small_vel<span class="o">)</span> <span class="o">{</span> umac_fab<span class="o">(</span>i,j,k<span class="o">)</span> <span class="o">=</span> <span class="m">0</span>.0<span class="p">;</span>
+        <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span>avg &gt;<span class="o">=</span> <span class="m">0</span><span class="o">)</span>             <span class="o">{</span> umac_fab<span class="o">(</span>i,j,k<span class="o">)</span> <span class="o">=</span> umns<span class="p">;</span>
+        <span class="o">}</span> <span class="k">else</span>                           <span class="o">{</span> umac_fab<span class="o">(</span>i,j,k<span class="o">)</span> <span class="o">=</span> upls<span class="p">;</span>
+        <span class="o">}</span>
+     <span class="o">}</span>
+ <span class="o">})</span><span class="p">;</span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>For cut cells we test on whether the area fraction is non-zero:</p>
 <blockquote>
-<div><div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="n">AMREX_CUDA_HOST_DEVICE_FOR_3D</span><span class="p">(</span><span class="n">ubx</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span>
-<span class="p">{</span>
-    <span class="o">//</span> <span class="n">X</span><span class="o">-</span><span class="n">faces</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">ax_fab</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
-    <span class="p">{</span>
-       <span class="n">Real</span> <span class="n">upls</span>     <span class="o">=</span> <span class="n">ccvel_fab</span><span class="p">(</span><span class="n">i</span>  <span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">xslopes_fab</span><span class="p">(</span><span class="n">i</span>  <span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
-       <span class="n">Real</span> <span class="n">umns</span>     <span class="o">=</span> <span class="n">ccvel_fab</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">xslopes_fab</span><span class="p">(</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
-       <span class="k">if</span> <span class="p">(</span> <span class="n">umns</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="o">&amp;&amp;</span> <span class="n">upls</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="p">)</span> <span class="p">{</span>
-          <span class="n">umac_fab</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
-       <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-          <span class="n">Real</span> <span class="n">avg</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span> <span class="n">upls</span> <span class="o">+</span> <span class="n">umns</span> <span class="p">);</span>
-          <span class="k">if</span> <span class="p">(</span> <span class="n">std</span><span class="p">::</span><span class="nb">abs</span><span class="p">(</span><span class="n">avg</span><span class="p">)</span> <span class="o">&lt;</span>  <span class="n">small_vel</span><span class="p">)</span> <span class="p">{</span> <span class="n">umac_fab</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
-          <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">avg</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span>             <span class="p">{</span> <span class="n">umac_fab</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="o">=</span> <span class="n">umns</span><span class="p">;</span>
-          <span class="p">}</span> <span class="k">else</span>                           <span class="p">{</span> <span class="n">umac_fab</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="o">=</span> <span class="n">upls</span><span class="p">;</span>
-          <span class="p">}</span>
-       <span class="p">}</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-          <span class="n">umac_fab</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="o">=</span> <span class="n">huge_vel</span><span class="p">;</span>
-    <span class="p">}</span>
-<span class="p">});</span>
+<div><div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>AMREX_CUDA_HOST_DEVICE_FOR_3D<span class="o">(</span>ubx, i, j, k,
+<span class="o">{</span>
+    // X-faces
+    <span class="k">if</span> <span class="o">(</span>ax_fab<span class="o">(</span>i,j,k<span class="o">)</span> &gt; <span class="m">0</span>.0<span class="o">)</span>
+    <span class="o">{</span>
+       Real <span class="nv">upls</span>     <span class="o">=</span> ccvel_fab<span class="o">(</span>i  ,j,k,0<span class="o">)</span> - <span class="m">0</span>.5 * xslopes_fab<span class="o">(</span>i  ,j,k,0<span class="o">)</span><span class="p">;</span>
+       Real <span class="nv">umns</span>     <span class="o">=</span> ccvel_fab<span class="o">(</span>i-1,j,k,0<span class="o">)</span> + <span class="m">0</span>.5 * xslopes_fab<span class="o">(</span>i-1,j,k,0<span class="o">)</span><span class="p">;</span>
+       <span class="k">if</span> <span class="o">(</span> umns &lt; <span class="m">0</span>.0 <span class="o">&amp;&amp;</span> upls &gt; <span class="m">0</span>.0 <span class="o">)</span> <span class="o">{</span>
+          umac_fab<span class="o">(</span>i,j,k<span class="o">)</span> <span class="o">=</span> <span class="m">0</span>.0<span class="p">;</span>
+       <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          Real <span class="nv">avg</span> <span class="o">=</span> <span class="m">0</span>.5 * <span class="o">(</span> upls + umns <span class="o">)</span><span class="p">;</span>
+          <span class="k">if</span> <span class="o">(</span> std::abs<span class="o">(</span>avg<span class="o">)</span> &lt;  small_vel<span class="o">)</span> <span class="o">{</span> umac_fab<span class="o">(</span>i,j,k<span class="o">)</span> <span class="o">=</span> <span class="m">0</span>.0<span class="p">;</span>
+          <span class="o">}</span> <span class="k">else</span> <span class="k">if</span> <span class="o">(</span>avg &gt;<span class="o">=</span> <span class="m">0</span><span class="o">)</span>             <span class="o">{</span> umac_fab<span class="o">(</span>i,j,k<span class="o">)</span> <span class="o">=</span> umns<span class="p">;</span>
+          <span class="o">}</span> <span class="k">else</span>                           <span class="o">{</span> umac_fab<span class="o">(</span>i,j,k<span class="o">)</span> <span class="o">=</span> upls<span class="p">;</span>
+          <span class="o">}</span>
+       <span class="o">}</span>
+    <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+          umac_fab<span class="o">(</span>i,j,k<span class="o">)</span> <span class="o">=</span> huge_vel<span class="p">;</span>
+    <span class="o">}</span>
+<span class="o">})</span><span class="p">;</span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>We then perform a MAC projection on the face-centered velocities to enforce that they satisfy</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\nabla \cdot (\varepsilon_g  U^{MAC})  = 0\]</div>
 <p>We do this by solving</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[\nabla \cdot \frac{\varepsilon_g}{\rho_g} \nabla \phi^{MAC} = \nabla \cdot \left( \varepsilon_g  U^{pred} \right)\]</div>
 <p>then defining</p>
-<div class="math">
+<div class="math notranslate nohighlight">
 \[U^{MAC} = U^{pred} - \frac{1}{\rho_g} \nabla \phi^{MAC}\]</div>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="Particles.html" class="btn btn-neutral float-right" title="Particles" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="EB.html" class="btn btn-neutral float-right" title="Embedded Boundaries" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="Slopes.html" class="btn btn-neutral" title="Computing slopes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="Slopes.html" class="btn btn-neutral float-left" title="Computing slopes" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -256,11 +255,11 @@ slopes as computed earlier, and upwind the face value to define  <span class="ma
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017-2018, MFiX-Exa Team.
+        &copy; Copyright 2017-2018, Incflo Team
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -273,37 +272,15 @@ slopes as computed earlier, and upwind the face value to define  <span class="ma
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

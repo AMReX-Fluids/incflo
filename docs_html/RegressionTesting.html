@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Regression testing &mdash; MFiX-Exa  documentation</title>
+  <title>Regression testing &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -17,49 +17,42 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="MFiX-Exa  documentation" href="index.html"/>
-        <link rel="up" title="Getting Started" href="GettingStarted.html"/>
-        <link rel="next" title="Run-time Inputs" href="Inputs.html"/>
-        <link rel="prev" title="Running the MFiX Test Suite" href="RunningTestSuite.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Run-time Inputs" href="Inputs_Chapter.html" />
+    <link rel="prev" title="Running the MFiX Test Suite" href="RunningTestSuite.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
-            <a href="index.html" class="icon icon-home"> MFiX-Exa
+            <a href="index.html" class="icon icon-home"> incflo
           
 
           
@@ -67,6 +60,10 @@
 
           
             
+            
+              <div class="version">
+                20.04-dev
+              </div>
             
           
 
@@ -103,10 +100,13 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="Inputs.html">Run-time Inputs</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Fluids.html">Solving the Fluid Equations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Particles.html">Particles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
             
@@ -118,17 +118,18 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">MFiX-Exa</a>
+          <a href="index.html">incflo</a>
         
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -179,74 +180,74 @@
 <p>Developers are encouraged to create local benchmark data for regression
 testing prior to committing code the GitLab repository.</p>
 <ol class="arabic">
-<li><p class="first">Create a location to store benchmark data and clone the MFiX and
+<li><p>Create a location to store benchmark data and clone the incflo and
 AMReX repositories.</p>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">user</span><span class="o">/</span><span class="n">exa</span><span class="o">-</span><span class="n">rt</span>
-<span class="n">mkdir</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">user</span><span class="o">/</span><span class="n">exa</span><span class="o">-</span><span class="n">rt</span><span class="o">/</span><span class="n">benchmark</span>
-<span class="n">cd</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">user</span><span class="o">/</span><span class="n">exa</span><span class="o">-</span><span class="n">rt</span>
-<span class="n">git</span> <span class="n">clone</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">mfix</span><span class="o">.</span><span class="n">netl</span><span class="o">.</span><span class="n">doe</span><span class="o">.</span><span class="n">gov</span><span class="o">/</span><span class="n">gitlab</span><span class="o">/</span><span class="n">exa</span><span class="o">/</span><span class="n">mfix</span><span class="o">.</span><span class="n">git</span>
-<span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">AMReX</span><span class="o">-</span><span class="n">Codes</span><span class="o">/</span><span class="n">amrex</span><span class="o">.</span><span class="n">git</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mkdir /home/user/incflo-rt
+mkdir /home/user/incflo-rt/benchmark
+<span class="nb">cd</span> /home/user/incflo-rt
+git clone https://github.com/AMReX-Codes/amrex.git
+git clone https://github.com/AMReX-Codes/incflo.git
 </pre></div>
 </div>
 </li>
-<li><p class="first">Create a local copy the regression test setup file from the MFiX
+<li><p>Create a local copy the regression test setup file from the incflo
 repository.</p>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="n">cp</span> <span class="n">mfix</span><span class="o">/</span><span class="n">RegressionTesting</span><span class="o">/</span><span class="n">MFiX</span><span class="o">-</span><span class="n">tests</span><span class="o">.</span><span class="n">ini</span> <span class="n">MFiX</span><span class="o">-</span><span class="n">local</span><span class="o">.</span><span class="n">ini</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>cp incflo/RegressionTesting/incflo-tests.ini incflo-local.ini
 </pre></div>
 </div>
 </li>
-<li><p class="first">Edit the local setup file. Specify the top level directories for test
-and web output under the <code class="docutils literal"><span class="pre">[main]</span></code> heading.</p>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">main</span><span class="p">]</span>
-<span class="n">testTopDir</span> <span class="o">=</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">user</span><span class="o">/</span><span class="n">exa</span><span class="o">-</span><span class="n">rt</span><span class="o">/</span><span class="n">benchmark</span>
-<span class="n">webTopDir</span> <span class="o">=</span>  <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">user</span><span class="o">/</span><span class="n">exa</span><span class="o">-</span><span class="n">rt</span><span class="o">/</span><span class="n">web</span>
+<li><p>Edit the local setup file. Specify the top level directories for test
+and web output under the <code class="docutils literal notranslate"><span class="pre">[main]</span></code> heading.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>main<span class="o">]</span>
+<span class="nv">testTopDir</span> <span class="o">=</span> /home/user/incflo-rt/benchmark
+<span class="nv">webTopDir</span> <span class="o">=</span>  /home/user/incflo-rt/web
 </pre></div>
 </div>
-<p>Specify the AMReX source directory location under the <code class="docutils literal"><span class="pre">[AMReX]</span></code>
+<p>Specify the AMReX source directory location under the <code class="docutils literal notranslate"><span class="pre">[AMReX]</span></code>
 heading.</p>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">AMReX</span><span class="p">]</span>
-<span class="nb">dir</span> <span class="o">=</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">user</span><span class="o">/</span><span class="n">exa</span><span class="o">-</span><span class="n">rt</span><span class="o">/</span><span class="n">amrex</span>
-<span class="n">branch</span> <span class="o">=</span> <span class="n">development</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>AMReX<span class="o">]</span>
+<span class="nv">dir</span> <span class="o">=</span> /home/user/incflo-rt/amrex
+<span class="nv">branch</span> <span class="o">=</span> development
 </pre></div>
 </div>
-<p>Specify the MFiX-Exa source directory location under the <code class="docutils literal"><span class="pre">[source]</span></code>
+<p>Specify the incflo-Exa source directory location under the <code class="docutils literal notranslate"><span class="pre">[source]</span></code>
 heading.</p>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="p">[</span><span class="n">source</span><span class="p">]</span>
-<span class="nb">dir</span> <span class="o">=</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">user</span><span class="o">/</span><span class="n">exa</span><span class="o">-</span><span class="n">rt</span><span class="o">/</span><span class="n">mfix</span>
-<span class="n">branch</span> <span class="o">=</span> <span class="n">develop</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>source<span class="o">]</span>
+<span class="nv">dir</span> <span class="o">=</span> /home/user/incflo-rt/incflo
+<span class="nv">branch</span> <span class="o">=</span> develop
 </pre></div>
 </div>
 </li>
-<li><p class="first">Run the AMReX regression test tool. The second argument is a user
+<li><p>Run the AMReX regression test tool. The second argument is a user
 supplied comment.</p>
-<div class="code shell highlight-default"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">user</span><span class="o">/</span><span class="n">exa</span><span class="o">-</span><span class="n">rt</span>
-<span class="n">amrex</span><span class="o">/</span><span class="n">Tools</span><span class="o">/</span><span class="n">RegressionTesting</span><span class="o">/</span><span class="n">regtest</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">make_benchmarks</span> <span class="s2">&quot;MFiX&quot;</span> <span class="n">MFiX</span><span class="o">-</span><span class="n">local</span><span class="o">.</span><span class="n">ini</span>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> /home/user/incflo-rt
+amrex/Tools/RegressionTesting/regtest.py --make_benchmarks <span class="s2">&quot;incflo&quot;</span> incflo-local.ini
 </pre></div>
 </div>
 </li>
 </ol>
-<table border="1" class="docutils">
+<table class="docutils align-default">
 <colgroup>
-<col width="100%" />
+<col style="width: 100%" />
 </colgroup>
-<tbody valign="top">
-<tr class="row-odd"><td>## Prerequisite: Environment Dependencies on Joule (Joule specific)</td>
+<tbody>
+<tr class="row-odd"><td><p>## Prerequisite: Environment Dependencies on Joule (Joule specific)</p></td>
 </tr>
-<tr class="row-even"><td>For the Joule environment, load the gnu module and set environment variables first. If not on Joule, skip this step.</td>
+<tr class="row-even"><td><p>For the Joule environment, load the gnu module and set environment variables first. If not on Joule, skip this step.</p></td>
 </tr>
-<tr class="row-odd"><td>```shell</td>
+<tr class="row-odd"><td><p>```shell</p></td>
 </tr>
-<tr class="row-even"><td>&gt; module load gnu/6.1.0</td>
+<tr class="row-even"><td><p>&gt; module load gnu/6.1.0</p></td>
 </tr>
-<tr class="row-odd"><td>&gt; export CC=/nfs/apps/Compilers/GNU/6.1.0/bin/gcc</td>
+<tr class="row-odd"><td><p>&gt; export CC=/nfs/apps/Compilers/GNU/6.1.0/bin/gcc</p></td>
 </tr>
-<tr class="row-even"><td>&gt; export CXX=/nfs/apps/Compilers/GNU/6.1.0/bin/g++</td>
+<tr class="row-even"><td><p>&gt; export CXX=/nfs/apps/Compilers/GNU/6.1.0/bin/g++</p></td>
 </tr>
-<tr class="row-odd"><td>&gt; export F77=/nfs/apps/Compilers/GNU/6.1.0/bin/gfortran</td>
+<tr class="row-odd"><td><p>&gt; export F77=/nfs/apps/Compilers/GNU/6.1.0/bin/gfortran</p></td>
 </tr>
-<tr class="row-even"><td>&gt; export FC=/nfs/apps/Compilers/GNU/6.1.0/bin/gfortran</td>
+<tr class="row-even"><td><p>&gt; export FC=/nfs/apps/Compilers/GNU/6.1.0/bin/gfortran</p></td>
 </tr>
-<tr class="row-odd"><td>```</td>
+<tr class="row-odd"><td><p>```</p></td>
 </tr>
 </tbody>
 </table>
@@ -255,18 +256,16 @@ supplied comment.</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="Inputs.html" class="btn btn-neutral float-right" title="Run-time Inputs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="Inputs_Chapter.html" class="btn btn-neutral float-right" title="Run-time Inputs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="RunningTestSuite.html" class="btn btn-neutral" title="Running the MFiX Test Suite" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="RunningTestSuite.html" class="btn btn-neutral float-left" title="Running the MFiX Test Suite" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -275,11 +274,11 @@ supplied comment.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017-2018, MFiX-Exa Team.
+        &copy; Copyright 2017-2018, Incflo Team
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -292,37 +291,15 @@ supplied comment.</p>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

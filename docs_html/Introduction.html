@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>MFiX-Exa Introduction &mdash; MFiX-Exa  documentation</title>
+  <title>MFiX-Exa Introduction &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -17,48 +17,42 @@
   
 
   
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
     
 
   
-
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="MFiX-Exa  documentation" href="index.html"/>
-        <link rel="next" title="Getting Started" href="GettingStarted.html"/>
-        <link rel="prev" title="Welcome to MFiX-EXA’s documentation!" href="index.html"/> 
-
-  
-  <script src="_static/js/modernizr.min.js"></script>
-
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting Started" href="GettingStarted.html" />
+    <link rel="prev" title="Welcome to MFiX-EXA’s documentation!" href="index.html" /> 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
-
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search">
+        <div class="wy-side-nav-search" >
           
 
           
-            <a href="index.html" class="icon icon-home"> MFiX-Exa
+            <a href="index.html" class="icon icon-home"> incflo
           
 
           
@@ -66,6 +60,10 @@
 
           
             
+            
+              <div class="version">
+                20.04-dev
+              </div>
             
           
 
@@ -92,10 +90,13 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">MFiX-Exa Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Inputs.html">Run-time Inputs</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Fluids.html">Solving the Fluid Equations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Particles.html">Particles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
             
@@ -107,17 +108,18 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">MFiX-Exa</a>
+          <a href="index.html">incflo</a>
         
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -169,26 +171,27 @@ applications.</p>
 <p>MFiX-Exa relies on the same fundamental physics as in MFIX but the spatial and
 time discretizations differ.  Specifically,</p>
 <ul class="simple">
-<li>Fluid velocity is defined at cell centers; pressure is defined at nodes.</li>
-<li>The advection algorithm includes an intermediate MAC projection for face-centered advection velocities</li>
-<li>Incompressibility of the fluid is imposed through the use of a projection at the
-end of the time step rather than through SIMPLE iterations</li>
-<li>The representation of the complex geometry includes mesh refinement around the
+<li><p>Fluid velocity is defined at cell centers; pressure is defined at nodes.</p></li>
+<li><p>The advection algorithm includes an intermediate MAC projection for face-centered advection velocities</p></li>
+<li><p>Incompressibility of the fluid is imposed through the use of a projection at the
+end of the time step rather than through SIMPLE iterations</p></li>
+<li><p>The representation of the complex geometry includes mesh refinement around the
 fluid-solid interface, which is represented used the embedded boundary, or
-cut-cell approach</li>
-<li>Parallelization via flat MPI, OpenMP, hybrid MPI/OpenMP, or MPI/MPI.</li>
-<li>Porting of MFiX-Exa to GPUs is in progress.</li>
-<li>Parallel I/O using AMReX native I/O or HDF5.</li>
-<li>Plotfile format supported by AmrVis, VisIt, ParaView, and yt.</li>
+cut-cell approach</p></li>
+<li><p>Parallelization via flat MPI, OpenMP, hybrid MPI/OpenMP, or MPI/MPI.</p></li>
+<li><p>Porting of MFiX-Exa to GPUs is in progress.</p></li>
+<li><p>Parallel I/O using AMReX native I/O or HDF5.</p></li>
+<li><p>Plotfile format supported by AmrVis, VisIt, ParaView, and yt.</p></li>
 </ul>
-<p>MFiX-Exa is being developed at NETL, LBNL, and CU as part of DOE’s Exascale Computing Project.</p>
+<p>MFiX-Exa is being developed at NETL and LBNL as part of the U.S. Department of Energy’s
+Exascale Computing Project (ECP).</p>
+<p>MFiX-Exa heavily leverages AMReX (see <a class="reference external" href="https://amrex-codes.github.io/">https://amrex-codes.github.io/</a>) which is also supported by
+ECP as part of the AMReX Co-Design Center.</p>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -197,7 +200,7 @@ cut-cell approach</li>
         <a href="GettingStarted.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="index.html" class="btn btn-neutral" title="Welcome to MFiX-EXA’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to MFiX-EXA’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -206,11 +209,11 @@ cut-cell approach</li>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017-2018, MFiX-Exa Team.
+        &copy; Copyright 2017-2018, Incflo Team
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -223,37 +226,15 @@ cut-cell approach</li>
   
 
 
-  
-
-    <script type="text/javascript">
-        var DOCUMENTATION_OPTIONS = {
-            URL_ROOT:'./',
-            VERSION:'',
-            COLLAPSE_INDEX:false,
-            FILE_SUFFIX:'.html',
-            HAS_SOURCE:  true,
-            SOURCELINK_SUFFIX: '.txt'
-        };
-    </script>
-      <script type="text/javascript" src="_static/jquery.js"></script>
-      <script type="text/javascript" src="_static/underscore.js"></script>
-      <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-
-  
-
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
-
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
+
+  
+  
+    
    
 
 </body>

@@ -1,0 +1,367 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Drag Types &mdash; incflo 20.04-dev documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Time Stepping" href="InputsTimeStepping.html" />
+    <link rel="prev" title="Problem Definition" href="InputsProblemDefinition.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> incflo
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                20.04-dev
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="InputsProblemDefinition.html">Problem Definition</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Drag Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsTimeStepping.html">Time Stepping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsInitialization.html">Initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsMultigrid.html">Multigrid Inputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsPlotFiles.html">Plotfiles and Other Output</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsCheckpoint.html">Checkpoint/Restart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsMonitors.html">Monitors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsVerbosity.html">Verbosity</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="CITests.html">Continuous Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NightlyTests.html">Nightly Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">incflo</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="Inputs_Chapter.html">Run-time Inputs</a> &raquo;</li>
+        
+      <li>Drag Types</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/InputsDrag.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="drag-types">
+<h1>Drag Types<a class="headerlink" href="#drag-types" title="Permalink to this headline">¶</a></h1>
+<p>The following inputs must be preceded by “mfix.”</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 62%" />
+<col style="width: 11%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>drag_type</p></td>
+<td><p>Which drag model to use</p></td>
+<td><p>String</p></td>
+<td><p>None</p></td>
+</tr>
+</tbody>
+</table>
+<p>The options currently supported in mfix are <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">WenYu</span></span></code>, <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">Gidaspow</span></span></code>, <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">BVK2</span></span></code>, or <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">UserDrag</span></span></code>.</p>
+<p>If one of these is not specified, the code will abort with</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">amrex</span><span class="o">::</span><span class="n">Abort</span><span class="o">::</span><span class="mi">0</span><span class="o">::</span><span class="s">&quot;Don&#39;t know this drag type!!!</span>
+</pre></div>
+</div>
+<p>The drag models are defined in src/src_des/des_drag_K.H</p>
+<p>If the user wishes to use their own drag model, they must</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>specify <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">drag_type</span></span> <span class="operator"><span class="pre">=</span></span> <span class="name"><span class="pre">UserDrag</span></span></code> in the inputs file</p></li>
+<li><p>provide the code in the ComputeDragUser routine in a local usr_drag.cpp file.
+An example can be found in tests/DEM06-x.</p></li>
+</ul>
+</div></blockquote>
+<p>With the variables defined as follows:</p>
+<blockquote>
+<div><div class="highlight-shell notranslate"><div class="highlight"><pre><span></span> *  <span class="se">\b</span>rief Returns: the calculated drag coefficient.
+*
+*  Inputs:
+*    EPg     - gas volume fraction
+*    Mug     - gas laminar viscosity
+*    ROpg    - gas density * EP_g
+*    vrel    - magnitude of gas-solids relative velocity
+*    DPM     - particle diamater of solids phase M
+*    DPA     - average particle diameter
+*    PHIS    - solids volume fraction of solids phases
+*    fvelx   - x component of the fluid velocity at the particle position
+*    fvely   - y component of the fluid velocity at the particle position
+*    fvelz   - z component of the fluid velocity at the particle position
+*    i, j, k - particle cell indices
+*    pid     - particle id number
+*/
+</pre></div>
+</div>
+</div></blockquote>
+<p>The WenYu model is defined as</p>
+<blockquote>
+<div><div class="highlight-shell notranslate"><div class="highlight"><pre><span></span> <span class="nv">RE</span> <span class="o">=</span> <span class="o">(</span>Mug &gt; <span class="m">0</span>.0<span class="o">)</span> ? DPM*vrel*ROPg/Mug : DEMParams::large_number<span class="p">;</span>
+
+<span class="k">if</span> <span class="o">(</span>RE &lt;<span class="o">=</span> <span class="m">1000</span>.0<span class="o">)</span>
+<span class="o">{</span>
+    <span class="nv">C_d</span> <span class="o">=</span> <span class="o">(</span><span class="m">24</span>.0/<span class="o">(</span>RE+DEMParams::small_number<span class="o">))</span> * <span class="o">(</span><span class="m">1</span>.0 + <span class="m">0</span>.15*std::pow<span class="o">(</span>RE, <span class="m">0</span>.687<span class="o">))</span><span class="p">;</span>
+<span class="o">}</span>
+<span class="k">else</span>
+<span class="o">{</span>
+    <span class="nv">C_d</span> <span class="o">=</span> <span class="m">0</span>.44<span class="p">;</span>
+<span class="o">}</span>
+
+<span class="k">if</span> <span class="o">(</span>RE &lt; DEMParams::eps<span class="o">)</span> <span class="k">return</span> <span class="m">0</span>.0<span class="p">;</span>
+<span class="k">return</span> <span class="m">0</span>.75 * C_d * vrel * ROPg * std::pow<span class="o">(</span>EPg, -2.65<span class="o">)</span> / DPM<span class="p">;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The Gidaspow model is defined as</p>
+<blockquote>
+<div><div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">ROg</span> <span class="o">=</span> ROPg / EPg<span class="p">;</span>
+
+<span class="nv">RE</span> <span class="o">=</span> <span class="o">(</span>Mug &gt; <span class="m">0</span>.0<span class="o">)</span> ? DPM*vrel*ROPg/Mug : DEMParams::large_number<span class="p">;</span>
+
+// Dense phase - EPg &lt;<span class="o">=</span> <span class="m">0</span>.8
+<span class="nv">Ergun</span> <span class="o">=</span> <span class="m">150</span>.0*<span class="o">(</span><span class="m">1</span>.0 - EPg<span class="o">)</span>*Mug / <span class="o">(</span>EPg*DPM*DPM<span class="o">)</span> + <span class="m">1</span>.75*ROg*vrel/DPM<span class="p">;</span>
+
+// Dilute phase - EPg &gt; <span class="m">0</span>.8
+<span class="k">if</span> <span class="o">(</span>RE &lt;<span class="o">=</span> <span class="m">1000</span>.0<span class="o">)</span>
+<span class="o">{</span>
+    <span class="nv">C_d</span> <span class="o">=</span> <span class="o">(</span><span class="m">24</span>.0/<span class="o">(</span>RE+DEMParams::small_number<span class="o">))</span> * <span class="o">(</span><span class="m">1</span>.0 + <span class="m">0</span>.15*std::pow<span class="o">(</span>RE, <span class="m">0</span>.687<span class="o">))</span><span class="p">;</span>
+<span class="o">}</span>
+<span class="k">else</span>
+<span class="o">{</span>
+    <span class="nv">C_d</span> <span class="o">=</span> <span class="m">0</span>.44<span class="p">;</span>
+<span class="o">}</span>
+
+<span class="nv">WenYu</span> <span class="o">=</span> <span class="m">0</span>.75*C_d*vrel*ROPg*std::pow<span class="o">(</span>EPg, -2.65<span class="o">)</span> / DPM<span class="p">;</span>
+
+// switch <span class="k">function</span>
+<span class="nv">PHI_gs</span> <span class="o">=</span> atan<span class="o">(</span><span class="m">150</span>.0*1.75*<span class="o">(</span>EPg - <span class="m">0</span>.8<span class="o">))</span>/M_PI / DPM<span class="p">;</span>
+
+// blend the models
+<span class="k">if</span> <span class="o">(</span>RE &lt; DEMParams::eps<span class="o">)</span> <span class="k">return</span> <span class="m">0</span>.0<span class="p">;</span>
+<span class="k">return</span> <span class="o">(</span><span class="m">1</span>.0 - PHI_gs<span class="o">)</span>*Ergun + PHI_gs*WenYu<span class="p">;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>The Gidaspow model is defined as</p>
+<blockquote>
+<div><div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>amrex::Real <span class="nv">RE</span> <span class="o">=</span> <span class="o">(</span>Mug &gt; <span class="m">0</span>.0<span class="o">)</span> ? DPA*vrel*ROPg/Mug : DEMParams::large_number<span class="p">;</span>
+
+<span class="k">if</span> <span class="o">(</span>RE &gt; DEMParams::eps<span class="o">)</span>
+<span class="o">{</span>
+    <span class="nv">oEPgfour</span> <span class="o">=</span> <span class="m">1</span>.0 / EPg / EPg / EPg / EPg<span class="p">;</span>
+
+    // eq<span class="o">(</span><span class="m">9</span><span class="o">)</span> BVK J. fluid. Mech. <span class="m">528</span>, <span class="m">2005</span>
+    // <span class="o">(</span>this F_Stokes is /<span class="o">=</span> of Koch_Hill by a factor of ep_g<span class="o">)</span>
+    <span class="nv">F_Stokes</span> <span class="o">=</span> <span class="m">18</span>.0*Mug*EPg/DPM/DPM<span class="p">;</span>
+
+    <span class="nv">F</span> <span class="o">=</span> <span class="m">10</span>.0*PHIS/EPg/EPg + EPg*EPg*<span class="o">(</span><span class="m">1</span>.0 + <span class="m">1</span>.5*sqrt<span class="o">(</span>PHIS<span class="o">))</span><span class="p">;</span>
+
+    <span class="nv">F</span> <span class="o">+=</span> RE*<span class="o">(</span><span class="m">0</span>.11*PHIS*<span class="o">(</span><span class="m">1</span>.0+PHIS<span class="o">)</span> - <span class="m">4</span>.56e-3*oEPgfour +
+         std::pow<span class="o">(</span>RE, -0.343<span class="o">)</span>*<span class="o">(</span><span class="m">0</span>.169*EPg + <span class="m">6</span>.44e-2*oEPgfour<span class="o">))</span><span class="p">;</span>
+
+    // <span class="nv">F</span> <span class="o">+=</span> <span class="m">0</span>.413*RE/<span class="o">(</span><span class="m">24</span>.0*EPg*EPg<span class="o">)</span> *
+    //     <span class="o">(</span><span class="m">1</span>.0/EPg + <span class="m">3</span>.0*EPg*PHIS + <span class="m">8</span>.4/std::pow<span class="o">(</span>RE, <span class="m">0</span>.343<span class="o">))</span> /
+    //     <span class="o">(</span><span class="m">1</span>.0 + std::pow<span class="o">(</span><span class="m">10</span>.0, <span class="m">3</span>.0*PHIS<span class="o">)</span>/std::pow<span class="o">(</span>RE, <span class="m">0</span>.5 + <span class="m">2</span>.0*PHIS<span class="o">))</span><span class="p">;</span>
+
+    <span class="k">return</span> F*F_Stokes<span class="p">;</span>
+<span class="o">}</span>
+<span class="k">else</span>
+<span class="o">{</span>
+    <span class="k">return</span> <span class="m">0</span>.0<span class="p">;</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="InputsTimeStepping.html" class="btn btn-neutral float-right" title="Time Stepping" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="InputsProblemDefinition.html" class="btn btn-neutral float-left" title="Problem Definition" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017-2018, Incflo Team
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
