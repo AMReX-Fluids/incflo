@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Constructing Embedded Boundaries in MFiX-Exa &mdash; incflo 20.04-dev documentation</title>
+  <title>Constructing Embedded Boundaries in incflo &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -88,24 +88,17 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">incflo Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="EB.html">Embedded Boundaries</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Constructing Embedded Boundaries in MFiX-Exa</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#how-mfix-exa-constructs-the-eb-geometry">How MFiX-Exa Constructs the EB Geometry</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#mfix-s-eb-data-structures">MFiX’s EB Data Structures</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Constructing Embedded Boundaries in incflo</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#how-incflo-constructs-the-eb-geometry">How incflo Constructs the EB Geometry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#incflo-s-eb-data-structures">incflo’s EB Data Structures</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#a-note-about-constructing-eb-levels">A note about constructing EB Levels</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#local-mesh-refinement-at-walls">Local Mesh Refinement at Walls</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#mfix-exa-initialization-process">MFiX-Exa Initialization Process</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#the-level-set-function">The Level-Set Function</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#special-cases-involving-level-sets">Special Cases Involving Level-Sets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#incflo-initialization-process">incflo Initialization Process</a></li>
 </ul>
 </li>
 </ul>
@@ -158,7 +151,7 @@
         
           <li><a href="EB.html">Embedded Boundaries</a> &raquo;</li>
         
-      <li>Constructing Embedded Boundaries in MFiX-Exa</li>
+      <li>Constructing Embedded Boundaries in incflo</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -177,141 +170,16 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="constructing-embedded-boundaries-in-mfix-exa">
-<span id="sec-eb-basics"></span><h1>Constructing Embedded Boundaries in MFiX-Exa<a class="headerlink" href="#constructing-embedded-boundaries-in-mfix-exa" title="Permalink to this headline">¶</a></h1>
-<p>MFiX uses AMReX’s constructive solid geometry framework defined in the namespace
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">amrex</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">EB2</span></span></code>. See the <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/EB_Chapter.html">AMReX EB documentation</a> for more details. These are
-defined in <code class="docutils literal notranslate"><span class="pre">src/eb/mfix_eb.cpp</span></code>. A the function <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">make_eb_geometry</span></span></code>
-(also defined in <code class="docutils literal notranslate"><span class="pre">src/eb/mfix_eb.cpp</span></code>) selects :cpp:one of the following
-geometries depending on the value of the :cpp:<code class="docutils literal notranslate"><span class="pre">mfix.geometry</span></code> setting in the
-<code class="docutils literal notranslate"><span class="pre">inputs</span></code> file.</p>
-<table class="docutils align-default">
-<colgroup>
-<col style="width: 39%" />
-<col style="width: 29%" />
-<col style="width: 32%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Description</p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">mfix.geometry</span></code></p></th>
-<th class="head"><p>Implementation Satus</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>Planar walls from mfix.dat
-(on by default)</p></td>
-<td><p>Don’t specify</p></td>
-<td><p>Fully implemented</p></td>
-</tr>
-<tr class="row-odd"><td><p>Box (up to six walls)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">box</span></code></p></td>
-<td><p>Fully implemented</p></td>
-</tr>
-<tr class="row-even"><td><p>Cylinder</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">cylinder</span></code></p></td>
-<td><p>Fully implemented</p></td>
-</tr>
-<tr class="row-odd"><td><p>Hopper</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">hopper</span></code></p></td>
-<td><p>Fully implemented</p></td>
-</tr>
-<tr class="row-even"><td><p>Cyclone</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">cyclone</span></code></p></td>
-<td><p>Fully implemented</p></td>
-</tr>
-<tr class="row-odd"><td><p>General</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">general</span></code>
-cf. note 1 below</p></td>
-<td><p>Partially implemented</p></td>
-</tr>
-<tr class="row-even"><td><p>Hourglass</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">hourglass</span></code>
-cf. note 1</p></td>
-<td><p>Deprecated
-cf. note 2 below</p></td>
-</tr>
-<tr class="row-odd"><td><p>CLR (chemical looping
-reactor)</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">clr</span></code>
-cf. note 1</p></td>
-<td><p>Deprecated
-cf. note 2</p></td>
-</tr>
-<tr class="row-even"><td><p>CLR Riser</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">clr_riser</span></code>
-cf. note 1</p></td>
-<td><p>Deprecated
-cf. note 2</p></td>
-</tr>
-</tbody>
-</table>
-<ol class="arabic">
-<li><p>Older (legacy) alternative settings are:</p>
-<table class="docutils align-default">
-<colgroup>
-<col style="width: 48%" />
-<col style="width: 52%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Value of  <code class="docutils literal notranslate"><span class="pre">mfix.geometry</span></code></p></th>
-<th class="head"><p>Alternative</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">general</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">mfix.use_poly2</span> <span class="pre">=</span> <span class="pre">true</span></code>
-or <code class="docutils literal notranslate"><span class="pre">mfix.use_walls</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hourglass</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">mfix.hourglass</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">clr</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">mfix.clr</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">clr_riser</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">mfix.clr_riser</span> <span class="pre">=</span> <span class="pre">true</span></code></p></td>
-</tr>
-</tbody>
-</table>
-</li>
-<li><p>These geometries where not ported from AMReX’s old :cpp:<code class="docutils literal notranslate"><span class="pre">EB</span></code> system to the
-new :cpp:<code class="docutils literal notranslate"><span class="pre">EB2</span></code>.</p></li>
-</ol>
-<p>Also note that planar boundary conditions can be specified in the <code class="docutils literal notranslate"><span class="pre">mfix.dat</span></code>
-file. Even if the user does not specify an <code class="docutils literal notranslate"><span class="pre">mfix.geometry</span></code> in the <code class="docutils literal notranslate"><span class="pre">inputs</span></code>,
-any no-slip or free-slip boundary conditions are expressed as EB walls.</p>
-<p>There are also two parameters (specified in the <code class="docutils literal notranslate"><span class="pre">inputs</span></code> file) that influence
-the level-set creation:</p>
-<table class="docutils align-default">
-<colgroup>
-<col style="width: 39%" />
-<col style="width: 61%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Parameter</p></th>
-<th class="head"><p>Description</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">amr.max_level</span></code></p></td>
-<td><p>If greater than 0, MFiX operates in multi-level
-mode. The level-set grids follow all other
-grids. If equal to 1, the level-set has two
-levels (one additional level with higher
-refinement).</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mfix.levelset__refinement</span></code></p></td>
-<td><p>If <code class="docutils literal notranslate"><span class="pre">amr.max_level</span> <span class="pre">&gt;</span> <span class="pre">1</span></code> this parameter is
-ignored. Otherwise it sets the maximum
-refinement of the level-set</p></td>
-</tr>
-</tbody>
-</table>
-<div class="section" id="how-mfix-exa-constructs-the-eb-geometry">
-<h2>How MFiX-Exa Constructs the EB Geometry<a class="headerlink" href="#how-mfix-exa-constructs-the-eb-geometry" title="Permalink to this headline">¶</a></h2>
-<p>Once a geometry is selected by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">make_eb_geometry</span></span></code>, the procedure is
-the same for (almost) all geometries. Also see the <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/EB.html#initializing-the-geometric-database">AMReX geometry
-documentation</a> for information on how to construct new geometries:</p>
+  <div class="section" id="constructing-embedded-boundaries-in-incflo">
+<span id="sec-eb-basics"></span><h1>Constructing Embedded Boundaries in incflo<a class="headerlink" href="#constructing-embedded-boundaries-in-incflo" title="Permalink to this headline">¶</a></h1>
+<p>MincfloFiX uses AMReX’s constructive solid geometry framework defined in the namespace
+<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">amrex</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">EB2</span></span></code>. See the <a href="#id5"><span class="problematic" id="id6">`AMReX EB documentation`_</span></a> for more details. These are
+defined in <a href="#id1"><span class="problematic" id="id2">``</span></a>incflo/src/embedded_boundaries <a href="#id3"><span class="problematic" id="id4">``</span></a>.</p>
+<div class="section" id="how-incflo-constructs-the-eb-geometry">
+<h2>How incflo Constructs the EB Geometry<a class="headerlink" href="#how-incflo-constructs-the-eb-geometry" title="Permalink to this headline">¶</a></h2>
+<p>Once a geometry is selected by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">make_eb_geometry</span></span></code>, the procedure is
+the same for (almost) all geometries. Also see the <a href="#id7"><span class="problematic" id="id8">`AMReX geometry
+documentation`_</span></a> for information on how to construct new geometries:</p>
 <ol class="arabic simple">
 <li><p>Construct an implicit function representing the geometry (using the language
 of constructive solid geometry). For example</p></li>
@@ -321,47 +189,25 @@ of constructive solid geometry). For example</p></li>
 </pre></div>
 </div>
 <ol class="arabic simple" start="2">
-<li><p>(Optional) Construct the implicit function representing the EB seen by the
-particles. This might deviate from the “standard” EB depending on the
-specific application. In all standard cases used by mfix, this step is
-omitted.</p></li>
-<li><p>Call <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">build_eb_levels</span></span><span class="punctuation"><span class="pre">(</span></span><span class="name"><span class="pre">gshop</span></span><span class="punctuation"><span class="pre">)</span></span></code> this function builds the EB levels
+<li><p>Call <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">build_eb_levels</span></span><span class="punctuation"><span class="pre">(</span></span><span class="name"><span class="pre">gshop</span></span><span class="punctuation"><span class="pre">)</span></span></code> this function builds the EB levels
 and fills the implicit function <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">MultiFab</span></span></code> (the later being used to
-construct the level-set function). Note that this also makes the particle EB
-levels point to the fluid eb levels.</p></li>
-<li><p>(Optional, do this if you did 2.) Call
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">build_particle_eb_levels</span></span><span class="punctuation"><span class="pre">(</span></span><span class="name"><span class="pre">gshop_part</span></span><span class="punctuation"><span class="pre">)</span></span></code> <strong>last</strong>. This will update
-the particle EB levels.</p></li>
+construct the level-set function).</p></li>
 </ol>
 </div>
-<div class="section" id="mfix-s-eb-data-structures">
-<h2>MFiX’s EB Data Structures<a class="headerlink" href="#mfix-s-eb-data-structures" title="Permalink to this headline">¶</a></h2>
-<p>The <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span></code> class stores the following EB data:</p>
+<div class="section" id="incflo-s-eb-data-structures">
+<h2>incflo’s EB Data Structures<a class="headerlink" href="#incflo-s-eb-data-structures" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span></code> class stores the following EB data:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//! EB levels representing fluid boundary conditions</span>
 <span class="n">Vector</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">EB2</span><span class="o">::</span><span class="n">Level</span> <span class="o">*&gt;</span> <span class="n">eb_levels</span><span class="p">;</span>
-<span class="c1">//! EB levels representing particle boundary conditions (same as</span>
-<span class="c1">//! `mfix::eb_levels` but might include additional walls).</span>
-<span class="n">Vector</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">EB2</span><span class="o">::</span><span class="n">Level</span> <span class="o">*&gt;</span> <span class="n">particle_eb_levels</span><span class="p">;</span>
 
 <span class="c1">//! EB factory that lives on the fluid grids</span>
 <span class="n">Vector</span><span class="o">&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">amrex</span><span class="o">::</span><span class="n">EBFArrayBoxFactory</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">ebfactory</span><span class="p">;</span>
-<span class="c1">//! EB factory that lives on the particle grids</span>
-<span class="n">Vector</span><span class="o">&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">amrex</span><span class="o">::</span><span class="n">EBFArrayBoxFactory</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">particle_ebfactory</span><span class="p">;</span>
 </pre></div>
 </div>
-<p>As discussed in the previous sub-section, the difference between
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">eb_levels</span></span></code> and <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">particle_eb_levels</span></span></code> enables the user to
-specify a modfied EB geometry for particles only. Whereas the fluid sees the EB
-geometry in <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">eb_levels</span></span></code>. If no addition particle EB geometry is
-specified (point 4 in the previous section), then
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">particle_eb_levels</span></span></code> points to <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">eb_levels</span></span></code>.</p>
-<p>In the same spirit, the <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">ebfactory</span></span></code> is constructed over the fluid
-grid and using the fluid EB levels, whereas <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">particle_ebfactory</span></span></code> is
-constructed over the particle grid using the particle EB levels.</p>
 </div>
 <div class="section" id="a-note-about-constructing-eb-levels">
 <h2>A note about constructing EB Levels<a class="headerlink" href="#a-note-about-constructing-eb-levels" title="Permalink to this headline">¶</a></h2>
-<p>MFiX-Exa builds EB levels in <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">build_eb_levels</span></span></code> (via
+<p>incflo builds EB levels in <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">build_eb_levels</span></span></code> (via
 <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">LSCore</span></span><span class="operator"><span class="pre">&lt;</span></span><span class="name"><span class="pre">F</span></span><span class="operator"><span class="pre">&gt;::</span></span><span class="name"><span class="pre">BuildEBLevel</span></span></code>)</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">EB2</span><span class="o">::</span><span class="n">Build</span><span class="p">(</span><span class="n">gshop</span><span class="p">,</span> <span class="n">geom</span><span class="p">[</span><span class="n">lev</span><span class="p">],</span> <span class="n">required_crse_lev</span><span class="p">,</span> <span class="n">max_crse_level</span><span class="p">);</span>
 <span class="k">const</span> <span class="n">EB2</span><span class="o">::</span><span class="n">IndexSpace</span> <span class="o">&amp;</span> <span class="n">ebis</span> <span class="o">=</span> <span class="n">EB2</span><span class="o">::</span><span class="n">IndexSpace</span><span class="o">::</span><span class="n">top</span><span class="p">();</span>
@@ -376,54 +222,37 @@ depends indirectly on these parameters. Thus changing these during EB level
 creation might restrict how many levels the MLMG solver can use, and therefore
 give slightly different answers in the fluid solve.</p>
 </div>
-</div>
-<div class="section" id="local-mesh-refinement-at-walls">
-<h1>Local Mesh Refinement at Walls<a class="headerlink" href="#local-mesh-refinement-at-walls" title="Permalink to this headline">¶</a></h1>
-<p>MFiX-Exa has the capability of locally refining the computational grid near EBs.
-This is done by tagging (in <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">ErrorEst</span></span></code>) any cells with volume
-fraction between 0 and 1. To enable local mesh refinement, set <code class="docutils literal notranslate"><span class="pre">amr.max_level</span></code>
-to a value greater than 1. Note that the parameter <code class="docutils literal notranslate"><span class="pre">mfix.levelset__refinement</span></code>
-is ignored on all cases except when <code class="docutils literal notranslate"><span class="pre">amr.max_level</span> <span class="pre">=</span> <span class="pre">1</span></code>.</p>
-<div class="section" id="mfix-exa-initialization-process">
-<h2>MFiX-Exa Initialization Process<a class="headerlink" href="#mfix-exa-initialization-process" title="Permalink to this headline">¶</a></h2>
-<p>Since MFiX requires the volume fraction when building grids (because this is
-needed by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">ErrorEst</span></span></code>), the EB geometries need to be built before
-calling <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">Init</span></span></code>. The recommended procedure therefore is</p>
+<div class="section" id="incflo-initialization-process">
+<h2>incflo Initialization Process<a class="headerlink" href="#incflo-initialization-process" title="Permalink to this headline">¶</a></h2>
+<p>Since incflo requires the volume fraction when building grids (because this is
+needed by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">ErrorEst</span></span></code>), the EB geometries need to be built before
+calling <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">Init</span></span></code>. The recommended procedure therefore is</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Default constructor (geom[lev] is defined here)</span>
-<span class="n">mfix</span> <span class="n">my_mfix</span><span class="p">;</span>
+<span class="n">incflo</span> <span class="n">my_incflo</span><span class="p">;</span>
 
 <span class="c1">// Initialize internals from ParamParse database</span>
-<span class="n">my_mfix</span><span class="p">.</span><span class="n">InitParams</span><span class="p">(</span><span class="n">solve_fluid</span><span class="p">,</span> <span class="n">solve_dem</span><span class="p">,</span> <span class="n">call_udf</span><span class="p">);</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">InitParams</span><span class="p">(</span><span class="n">solve_fluid</span><span class="p">,</span> <span class="n">solve_dem</span><span class="p">,</span> <span class="n">call_udf</span><span class="p">);</span>
 
 <span class="c1">// Initialize memory for data-array internals</span>
-<span class="n">my_mfix</span><span class="p">.</span><span class="n">ResizeArrays</span><span class="p">();</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">ResizeArrays</span><span class="p">();</span>
 
-<span class="c1">// Construct EB (must be done _before_ mfix::Init)</span>
-<span class="n">my_mfix</span><span class="p">.</span><span class="n">make_eb_geometry</span><span class="p">();</span>
+<span class="c1">// Construct EB (must be done _before_ incflo::Init)</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">make_eb_geometry</span><span class="p">();</span>
 
 <span class="c1">// Initialize derived internals. Grids are create here.</span>
-<span class="n">my_mfix</span><span class="p">.</span><span class="n">Init</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">time</span><span class="p">);</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">Init</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">time</span><span class="p">);</span>
 
 <span class="c1">// Create EB factories on new grids</span>
-<span class="n">my_mfix</span><span class="p">.</span><span class="n">make_eb_factories</span><span class="p">();</span>
-
-<span class="k">if</span> <span class="p">(</span><span class="n">solve_dem</span><span class="p">)</span>
-<span class="p">{</span>
-    <span class="c1">// Fill level-sets on each level (must be done _after_ mfix::Init)</span>
-    <span class="n">my_mfix</span><span class="p">.</span><span class="n">fill_eb_levelsets</span><span class="p">();</span>
-<span class="p">}</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">make_eb_factories</span><span class="p">();</span>
 
 <span class="c1">// Finish constructing levels</span>
-<span class="n">my_mfix</span><span class="p">.</span><span class="n">InitLevelData</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="n">time</span><span class="p">);</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">InitLevelData</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="n">time</span><span class="p">);</span>
 
 <span class="c1">// Regrid (ensure all MultiFabs are on their correct grids)</span>
-<span class="n">my_mfix</span><span class="p">.</span><span class="n">Regrid</span><span class="p">();</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">Regrid</span><span class="p">();</span>
 </pre></div>
 </div>
-<p>Also note that mfix defines boundary conditions in Fortran also (via the
-mfix.dat). Since these are potentially needed to build EB walls,
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">make_eb_geometry</span></span></code> also calls <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix_set_bc_type</span></span></code>.</p>
-<p>The grids for each level are build in the <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">Init</span></span></code> by invoking the
+<p>The grids for each level are build in the <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">Init</span></span></code> by invoking the
 initialization functions inherited from <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">amrex</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">AmrCore</span></span></code>.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// This tells the AmrMesh class not to iterate when creating the initial</span>
 <span class="c1">// grid hierarchy</span>
@@ -437,55 +266,6 @@ initialization functions inherited from <code class="code cpp c++ docutils liter
 <span class="n">InitFromScratch</span><span class="p">(</span><span class="mf">0.</span><span class="p">);</span>
 </pre></div>
 </div>
-</div>
-</div>
-<div class="section" id="the-level-set-function">
-<h1>The Level-Set Function<a class="headerlink" href="#the-level-set-function" title="Permalink to this headline">¶</a></h1>
-<p>MFiX-Exa uses a level-set function to resolve particle-wall collisions. See the
-<a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/EB.html#level-sets">AMReX Level-Set documentation</a> for more details. The level-set function is
-stored on the nodal <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">Vector</span></span><span class="operator"><span class="pre">&lt;</span></span><span class="name"><span class="pre">std</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">unique_ptr</span></span><span class="operator"><span class="pre">&lt;</span></span><span class="name"><span class="pre">MultiFab</span></span><span class="operator"><span class="pre">&gt;&gt;</span></span> <span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">level_sets</span></span></code>.
-The level-set data is always stored on the particle grids. Depending on the
-input <code class="docutils literal notranslate"><span class="pre">amr.max_level</span></code> The level-set can be in one of two modes:</p>
-<ol class="arabic simple">
-<li><p>MFiX-Exa is running in single-level mode (<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">nlev</span></span> <span class="operator"><span class="pre">==</span></span> <span class="literal number integer"><span class="pre">1</span></span></code>). Then
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">level_sets</span></span><span class="punctuation"><span class="pre">[</span></span><span class="literal number integer"><span class="pre">0</span></span><span class="punctuation"><span class="pre">]</span></span></code> will be at the same resolution as the fluid
-(except that it is stored on the particle grid). Even though <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">nlev</span></span> <span class="operator"><span class="pre">==</span></span> <span class="literal number integer"><span class="pre">1</span></span></code>,
-there is a second level, <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">level_sets</span></span><span class="punctuation"><span class="pre">[</span></span><span class="literal number integer"><span class="pre">1</span></span><span class="punctuation"><span class="pre">]</span></span></code>. This level is the same as
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">level_sets</span></span><span class="punctuation"><span class="pre">[</span></span><span class="literal number integer"><span class="pre">0</span></span><span class="punctuation"><span class="pre">]</span></span></code> but refined by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">levelset__refinement</span></span></code>. This
-way the level-set always has the appropriate resolution to resolve structures
-in the EB, even if the fluid is defined on a fairly coarse grid.</p></li>
-<li><p>MFiX-Exa is running in multi-level mode (<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">nlev</span></span> <span class="operator"><span class="pre">&gt;</span></span> <span class="literal number integer"><span class="pre">1</span></span></code>). The the parameter
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">levelset__refinement</span></span></code> is ignored. <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">mfix</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">level_sets</span></span></code> then
-follows the rest of MFiX, i.e. it is defined on the particle grids on all
-levels.</p></li>
-</ol>
-<p>The level-set is used in two places:</p>
-<ol class="arabic simple">
-<li><p>The function <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">MFIXParticleContainer</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">EvolveParticles</span></span></code> interpolates the
-level-set onto each particle’s position in order to resolve collisions with
-the EBs. If <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">nlev</span></span> <span class="operator"><span class="pre">==</span></span> <span class="literal number integer"><span class="pre">1</span></span></code>, <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">level_sets</span></span><span class="punctuation"><span class="pre">[</span></span><span class="literal number integer"><span class="pre">1</span></span><span class="punctuation"><span class="pre">]</span></span></code> is used to evolve the
-particle positions. Otherwise <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">level_sets</span></span><span class="punctuation"><span class="pre">[</span></span><span class="name"><span class="pre">lev</span></span><span class="punctuation"><span class="pre">]</span></span></code> is used for each level.</p></li>
-<li><p>The fluid-particle coupling can sometimes rely on neighbor stencils where one
-or more cell is covered by an EB. In order to avoid values that do not
-conform with the boundary conditions, the fluid velocity is reconstructed in
-those cells. The algorithm relies on the level-set, and uses
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">level_sets</span></span><span class="punctuation"><span class="pre">[</span></span><span class="name"><span class="pre">lev</span></span><span class="punctuation"><span class="pre">]</span></span></code> on each level.</p></li>
-</ol>
-<div class="section" id="special-cases-involving-level-sets">
-<h2>Special Cases Involving Level-Sets<a class="headerlink" href="#special-cases-involving-level-sets" title="Permalink to this headline">¶</a></h2>
-<p>The level-set function is filled by the <cite>mfix::fill_eb_levelsets()</cite> function.
-There are two special cases involving level-sets:</p>
-<ol class="arabic simple">
-<li><p>Mass-Inflow boundary conditions are not given EB walls. However, we don’t
-want particles to fall out of a MI either, so at the very end of the
-<cite>mfix::fill_eb_levelsets()</cite> function we call <cite>mfix::intersect_ls_walls()</cite>.
-This performs an intersection operation with the level-set representing a
-wall at each MI.</p></li>
-<li><p>Box geometries and regular geometries are comprised entirely out of planar
-surfaces. Therefore the levelset is not construction out of an EB factory (as
-would be the case for all other geometries). But out of an intersection with
-all planar surfaces. This has the advantage of correctly describing corners.</p></li>
-</ol>
 </div>
 </div>
 

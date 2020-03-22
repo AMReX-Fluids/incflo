@@ -4,8 +4,7 @@ Plotfiles and Other Output
 ==========================
 
 The following inputs must be preceded by "amr" and control frequency and naming of plotfile generation as well
-as whether the EB geometry or level set should be written out, and if the particles should be written out in Ascii
-format (for debugging).
+as whether the EB geometry should be written out.
 
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 |                     | Description                                                           |   Type      | Default   |

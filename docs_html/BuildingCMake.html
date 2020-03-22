@@ -88,7 +88,7 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">incflo Introduction</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="GettingStarted.html">Getting Started</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="Structure.html">Directory overview</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Building incflo with CMake</a><ul>
@@ -291,11 +291,11 @@ incflo developers!</p>
 <p>Next, configure, build and install AMReX as follows:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; mkdir build
 &gt; <span class="nb">cd</span> build
-&gt; cmake -DCMAKE_BUILD_TYPE<span class="o">=[</span>Debug<span class="p">|</span>Release<span class="p">|</span>RelWithDebInfo<span class="p">|</span>MinSizeRel<span class="o">]</span> -DENABLE_PARTICLES<span class="o">=</span>yes -DENABLE_AMRDATA<span class="o">=</span>yes -DENABLE_EB<span class="o">=</span>yes <span class="o">[</span>other amrex options<span class="o">]</span> -DCMAKE_INSTALL_PREFIX:PATH<span class="o">=</span>/absolute/path/to/installdir ..
+&gt; cmake -DCMAKE_BUILD_TYPE<span class="o">=[</span>Debug<span class="p">|</span>Release<span class="p">|</span>RelWithDebInfo<span class="p">|</span>MinSizeRel<span class="o">]</span> -DENABLE_AMRDATA<span class="o">=</span>yes -DENABLE_EB<span class="o">=</span>yes <span class="o">[</span>other amrex options<span class="o">]</span> -DCMAKE_INSTALL_PREFIX:PATH<span class="o">=</span>/absolute/path/to/installdir ..
 &gt; make install
 </pre></div>
 </div>
-<p>The options <strong>ENABLE_PARTICLES=yes</strong>, <strong>ENABLE_AMRDATA=yes</strong>, and <strong>ENABLE_EB=yes</strong> are required by incflo. <code class="docutils literal notranslate"><span class="pre">[other</span> <span class="pre">amrex</span> <span class="pre">options]</span></code> in the snippet above refers to any other AMReX configuration option in addition to the required ones. Please refer to the <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/BuildingAMReX.html#building-with-cmake">AMReX user guide</a> for more details on building AMReX with CMake.</p>
+<p>The options  <strong>ENABLE_AMRDATA=yes</strong>, and <strong>ENABLE_EB=yes</strong> are required by incflo. <code class="docutils literal notranslate"><span class="pre">[other</span> <span class="pre">amrex</span> <span class="pre">options]</span></code> in the snippet above refers to any other AMReX configuration option in addition to the required ones. Please refer to the <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/BuildingAMReX.html#building-with-cmake">AMReX user guide</a> for more details on building AMReX with CMake.</p>
 </div>
 <div class="section" id="building-incflo">
 <h3>Building incflo<a class="headerlink" href="#building-incflo" title="Permalink to this headline">¶</a></h3>

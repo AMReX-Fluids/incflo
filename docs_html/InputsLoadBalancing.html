@@ -88,7 +88,7 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">incflo Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="InputsProblemDefinition.html">Problem Definition</a></li>
@@ -98,7 +98,6 @@
 <li class="toctree-l2"><a class="reference internal" href="InputsMultigrid.html">Multigrid Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsPlotFiles.html">Plotfiles and Other Output</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsCheckpoint.html">Checkpoint/Restart</a></li>
-<li class="toctree-l2"><a class="reference internal" href="InputsMonitors.html">Monitors</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsVerbosity.html">Verbosity</a></li>
 </ul>
 </li>
@@ -272,24 +271,19 @@ if regrid_int = -1 then no regridding will occur</p></td>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>load_balance_fluid</p></td>
-<td><p>Only relevant if (dual_grid); if so do we also regrid mesh data</p></td>
-<td><p>Int</p></td>
-<td><p>1</p></td>
-</tr>
-<tr class="row-odd"><td><p>load_balance_type</p></td>
+<tr class="row-even"><td><p>load_balance_type</p></td>
 <td><p>What strategy to use for load balancing
 Options are “KnapSack”or “SFC”</p></td>
 <td><p>String</p></td>
 <td><p>KnapSack</p></td>
 </tr>
-<tr class="row-even"><td><p>knapsack_weight_type</p></td>
+<tr class="row-odd"><td><p>knapsack_weight_type</p></td>
 <td><p>What weighting function to use if using Knapsack load balancing
-Options are “RunTimeCosts” or “NumParticles””</p></td>
+Options are “RunTimeCosts”</p></td>
 <td><p>String</p></td>
 <td><p>RunTimeCosts</p></td>
 </tr>
-<tr class="row-odd"><td><p>knapsack_nmax</p></td>
+<tr class="row-even"><td><p>knapsack_nmax</p></td>
 <td><p>Maximum number of grids per MPI process if using knapsack algorithm</p></td>
 <td><p>Int</p></td>
 <td><p>128</p></td>

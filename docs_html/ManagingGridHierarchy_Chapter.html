@@ -88,12 +88,11 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">incflo Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Gridding and Load Balancing</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="GridCreation.html">Grid Creation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="DualGrid.html">Dual Grid Approach</a></li>
 <li class="toctree-l2"><a class="reference internal" href="LoadBalancing.html">Load Balancing</a></li>
 </ul>
 </li>
@@ -177,18 +176,13 @@ of grid creation (and re-creation when regridding) and distribution of grids to 
 <p>See <a class="reference internal" href="LoadBalancing.html#sec-load-balancing"><span class="std std-ref">Load Balancing</span></a> for the strategies AMReX supports for distributing
 grids to MPI ranks, i.e. defining the <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">DistributionMapping</span></span></code> with which
 <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">MultiFabs</span></span></code> at that level will be built.</p>
-<p>MFiX-Exa also allows for the “dual grid approach”, in which mesh and particle data are allocated
-on different box layouts with different mappings to MPI ranks.  This option is enabled
-by setting <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">amr</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">dual_grid</span></span> <span class="operator"><span class="pre">=</span></span> <span class="literal number integer"><span class="pre">1</span></span></code> in the inputs file.
-See <span class="xref std std-ref">sec:dual_grid</span> for more about this approach.</p>
 <p>When running on multicore machines with OpenMP, we can also control the distribution of
-work by setting the size of grid tiles (by defining <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">fabarray</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">mfiter_tile_size</span></span></code>), and if relevant, of
-particle tiles (by defining <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">particle</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">tile_size</span></span></code>).  We can also specify the strategy for assigning
-tiles to OpenMP threads.  See <span class="xref std std-ref">sec:basics:mfiter:tiling:</span> for more about tiling.</p>
+work by setting the size of grid tiles (by defining <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">fabarray</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">mfiter_tile_size</span></span></code>).
+We can also specify the strategy for assigning tiles to OpenMP threads.
+See <span class="xref std std-ref">sec:basics:mfiter:tiling:</span> for more about tiling.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="GridCreation.html">Grid Creation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="DualGrid.html">Dual Grid Approach</a></li>
 <li class="toctree-l1"><a class="reference internal" href="LoadBalancing.html">Load Balancing</a></li>
 </ul>
 </div>

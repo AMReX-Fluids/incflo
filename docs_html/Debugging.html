@@ -37,7 +37,7 @@
   <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Constructing Embedded Boundaries in MFiX-Exa" href="EBWalls.html" /> 
+    <link rel="prev" title="Constructing Embedded Boundaries in incflo" href="EBWalls.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -87,7 +87,7 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">MFiX-Exa Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">incflo Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
@@ -198,7 +198,7 @@ in u_g (in this case) between the two plotfiles.</p>
 <p>4) Valgrind is another useful debugging tool.  Note that for runs using
 more than one MPI process, one can tell valgrind to output to different
 files for different processes.  For example,</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">mpiexec -n 4 valgrind --leak-check=yes --track-origins=yes --log-file=vallog.%p ./mfix.exe ...</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">mpiexec -n 4 valgrind --leak-check=yes --track-origins=yes --log-file=vallog.%p ./incflo.exe ...</span>
 </pre></div>
 </div>
 </div>
@@ -212,7 +212,7 @@ files for different processes.  For example,</p>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
       
-        <a href="EBWalls.html" class="btn btn-neutral float-left" title="Constructing Embedded Boundaries in MFiX-Exa" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="EBWalls.html" class="btn btn-neutral float-left" title="Constructing Embedded Boundaries in incflo" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
