@@ -1,35 +1,30 @@
 dist: xenial
-
 language: python
-
 python:
-  - "3.7-dev"
-
+- 3.7-dev
 before_install:
-  - export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
-
+- openssl aes-256-cbc -K $encrypted_d9ed0b4fd0b2_key -iv $encrypted_d9ed0b4fd0b2_iv
+  -in deploy_rsa.enc -out deploy_rsa -d
+- export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" |
+  sed "s|::|:|g")
 addons:
-   apt: 
-      packages:
-      - mpich
-      - libmpich-dev
-      - g++
-      - gfortran
-      - libgmp-dev
-      - libmpfr-dev
-      - pandoc
-      - doxygen
-      - texlive
-      - texlive-latex-extra
-      - texlive-lang-cjk
-      - latexmk
-
+  apt:
+    packages:
+    - mpich
+    - libmpich-dev
+    - g++
+    - gfortran
+    - libgmp-dev
+    - libmpfr-dev
+    - pandoc
+    - doxygen
+    - texlive
+    - texlive-latex-extra
+    - texlive-lang-cjk
+    - latexmk
 install:
-  - pip install sphinx sphinx_rtd_theme breathe
-
+- pip install sphinx sphinx_rtd_theme breathe
 script: travis_wait bash ./build_and_deploy.sh
-
 env:
   global:
-  - COMMIT_AUTHOR_EMAIL: "atmyers@lbl.gov"
-
+  - COMMIT_AUTHOR_EMAIL: atmyers@lbl.gov
