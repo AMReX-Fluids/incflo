@@ -9,9 +9,8 @@
 Grid Creation
 -------------
 
-To run an AMReX-based application you must specifiy the domain size by
-specifying :cpp:`n_cell` -- this is the number of cells spanning the domain 
-in each coordinate direction at level 0.
+To run MFiX-Exa you must specify :cpp:`n_cell` in the inputs file -- 
+this is the number of cells spanning the domain in each coordinate direction at level 0.
 
 Users often specify :cpp:`max_grid_size` as well. The default load balancing algorithm then divides the 
 domain in every direction so that each grid is no longer than :cpp:`max_grid_size` in that direction.
@@ -19,11 +18,7 @@ If not specified by the user, :cpp:`max_grid_size` defaults to 128 in 2D and 32 
 
 Another popular input is :cpp:`blocking_factor`.  The value of :cpp:`blocking_factor` 
 constrains grid creation in that in that each grid must be divisible by :cpp:`blocking_factor`.  
-Note that both the domain (at each level) and :cpp:`max_grid_size` must be divisible by :cpp:`blocking_factor`,
-and that :cpp:`blocking_factor` must be either 1 or a power of 2 (otherwise the gridding algorithm
-would not in fact create grids divisible by  :cpp:`blocking_factor` because of how  :cpp:`blocking_factor`
-is used in the gridding algorithm).
-
+Note that both the domain (at each level) and :cpp:`max_grid_size` must be divisible by :cpp:`blocking_factor`
 If not specified by the user, :cpp:`blocking_factor` defaults to 8 in each coordinate direction.
 The typical purpose of :cpp:`blocking_factor` is to ensure that the grids will be 
 sufficiently coarsenable for good multigrid performance.
@@ -51,11 +46,6 @@ applying to all coordinate directions, or as separate values for each direction.
    (or :cpp:`blocking_factor_x`, :cpp:`blocking_factor_y` and :cpp:`blocking_factor_z`) must be used.  
    If you don't specify as many integers as there are levels, the final value will be used for the remaining levels.
 
-Additional notes:
-
- - to create identical grids of a specific size, e.g. of length *m* in each direction, 
-   then set :cpp:`max_grid_size` = *m* and :cpp:`blocking_factor` = *m*.
-
  - note that :cpp:`max_grid_size` is just an upper bound; with :cpp:`n_cell = 48` 
    and :cpp:`max_grid_size = 32`, we will typically have one grid of length 32 and one of length 16.
 
@@ -71,20 +61,4 @@ The grid creation process at level 0 proceeds as follows (if not using the KD-tr
 #. Next, if :cpp:`refine_grid_layout = true` and there are more processors than grids
    at this level, then the grids at this level are further divided until Ngrids >= Nprocs
    (unless doing so would violate the :cpp:`blocking_factor` criterion).
-
-The creation of grids at levels > 0 begins by tagging cells at the coarser level and follows
-the Berger-Rigoutsis clustering algorithm with the additional constraints of satisfying 
-the :cpp:`blocking_factor` and :cpp:`max_grid_size` criteria.  An additional parameter 
-becomes relevant here: the "grid efficiency", specified as :cpp:`amr.grid_eff` in the inputs file. 
-This threshhold value, which defaults to 0.7 (or 70%), is used to ensure that 
-grids do not contain too large a fraction of un-tagged cells.   We note that the grid creation
-process attempts to satisfy the :cpp:`amr.grid_eff` constraint but will not do so if it means
-violating the :cpp:`blocking_factor` criterion.
-
-Users often like to ensure that coarse/fine boundaries are not too close to tagged cells; the
-way to do this is to set :cpp:`amr.n_error_buf` to a large integer value (the default is 1).
-This parameter is used to increase the number of tagged cells before the grids are defined;
-if cell "*(i,j,k)*" satisfies the tagging criteria, then, for example, if :cpp:`amr.n_error_buf` is 3, 
-all cells in the 7x7x7 box from lower corner "*(i-3,j-3,k-3)*" to "*(i+3,j+3,k+3)*" will be tagged. 
-
 

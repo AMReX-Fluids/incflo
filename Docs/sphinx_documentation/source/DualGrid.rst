@@ -4,13 +4,12 @@
 .. role:: fortran(code)
    :language: fortran
 
-.. _sec:dual_grid:
+.. _ss:dual_grid:
 
 Dual Grid Approach
 ------------------
 
-In AMReX-based applications that have both mesh data and particle data,
-the mesh work and particle work have very different requirements for load balancing.
+In MFiX-Exa the mesh work and particle work have very different requirements for load balancing.
 
 Rather than using a combined work estimate to create the same grids for mesh and particle
 data, we have the option to pursue a "dual grid" approach.
