@@ -149,7 +149,7 @@ void incflo::ApplyProjection (Vector<MultiFab const*> density,
     nodal_projector.reset(new NodalProjector(vel, GetVecOfConstPtrs(sigma),
                                              Geom(0,finest_level), LPInfo()));
     nodal_projector->setDomainBC(bclo, bchi);
-    nodal_projector->project();
+    nodal_projector->project(nodal_mg_rtol, nodal_mg_atol);
 
     // Define "vel" to be U^{n+1} rather than (U^{n+1}-U^n)
     if (proj_for_small_dt || incremental)

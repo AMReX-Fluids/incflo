@@ -406,14 +406,66 @@ private:
     int m_refine_cutcells = 1;
     int m_regrid_int = -1;
 
+    // ***************************************************************
+    // MAC projection
+    // ***************************************************************
+    // Verbosity and MLMG parameters are now ParmParse with "mac_proj" in the
+    // inputs file
+    // Examples: mac_proj.verbose = 1
+    //           mac_proj.bottom_verbose = 1
+    //           mac_proj.maxiter
+    //           mac_proj.bottom_maxiter
+    //           mac_proj.bottom_rtol
+    //           mac_proj.bottom_atol
+    //           mac_proj.bottom_solver
+    // More info at "amrex/Src/LinearSolvers/Projections/AMReX_MacProjector.cpp"
+
     int m_mac_mg_verbose = 0;
     int m_mac_mg_cg_verbose = 0;
     int m_mac_mg_maxiter = 200;
     int m_mac_mg_cg_maxiter = 200;
     int m_mac_mg_max_coarsening_level = 100;
+
+#ifdef AMREX_USE_FLOAT
+    amrex::Real m_mac_mg_rtol = 1.0e-4;
+    amrex::Real m_mac_mg_atol = 1.0e-7;
+#else
     amrex::Real m_mac_mg_rtol = 1.0e-11;
     amrex::Real m_mac_mg_atol = 1.0e-14;
+#endif
+
     std::string m_mac_bottom_solver_type;
+
+    // ***************************************************************
+    // Nodal solve
+    // ***************************************************************
+
+    // Verbosity and MLMG parameters are now ParmParse with "nodal_proj" in the
+    // inputs file
+    // Examples: nodal_proj.verbose = 1
+    //           nodal_proj.bottom_verbose = 1
+    //           nodal_proj.maxiter
+    //           nodal_proj.bottom_maxiter
+    //           nodal_proj.bottom_rtol
+    //           nodal_proj.bottom_atol
+    //           nodal_proj.bottom_solver
+    // More info at "amrex/Src/LinearSolvers/Projections/AMReX_NodalProjector.cpp"
+    // Verbosity
+
+    // Control MLMG behavior
+#ifdef AMREX_USE_FLOAT
+    amrex::Real nodal_mg_rtol = 1.0e-4;
+    amrex::Real nodal_mg_atol = 1.0e-7;
+#else
+    amrex::Real nodal_mg_rtol = 1.0e-11;
+    amrex::Real nodal_mg_atol = 1.0e-14;
+#endif
+
+    // Max coarsening level
+    int nodal_mg_max_coarsening_level = 100;
+
+    // ***************************************************************
+    // ***************************************************************
 
     amrex::Real m_p000 = 0.0; // background pressure at node (0,0,0).
     amrex::Vector<amrex::Real> m_gp0{{0.0, 0.0, 0.0}};
@@ -473,6 +525,7 @@ private:
     int m_KE_int = -1;
     std::string m_check_file{"chk"};
     std::string m_restart_file{""};
+    std::string m_tag_file{""};
 
     amrex::Vector<amrex::Real> tag_region_lo;
     amrex::Vector<amrex::Real> tag_region_hi;
