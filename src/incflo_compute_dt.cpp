@@ -109,8 +109,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
             }
         }
         conv_cfl = std::max(conv_cfl, conv_lev);
-        Real two = 2.;
-        diff_cfl = std::max(diff_cfl, diff_lev*two*(dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1]+
+        diff_cfl = std::max(diff_cfl, diff_lev*2.0_rt*(dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1]+
                                                     dxinv[2]*dxinv[2]));
     }
 
