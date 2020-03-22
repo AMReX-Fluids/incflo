@@ -28,7 +28,7 @@
     
     <!-- Header -->
     <header id="header">
-      <h1><a href="index.html">IAMR</a></h1>
+      <h1><a href="index.html">incflo</a></h1>
       <nav id="nav">
 	<ul>
 	  <li><a href="gallery.html">Gallery</a></li>
@@ -40,11 +40,14 @@
 
     <!-- Banner -->
     <section id="banner">
-      <h2>IAMR</h2>
-      <p>An adaptive mesh, variable-density incompressible Navier Stokes solver
+      <h2>incflo</h2>
+      <p>An adaptive mesh, variable-density incompressible Navier-Stokes solver with no subcycling in time
       <ul class="actions">
+        <li>
+          <a href="https://amrex-codes.github.io/incflo/docs_html/" class="button big">Documentation</a>
+        </li>
 	<li>
-	  <a href="https://github.com/AMReX-Codes/IAMR" class="button big">Get IAMR</a>
+	  <a href="https://github.com/AMReX-Codes/incflo" class="button big">Source</a>
 	</li>
       </ul>
     </section><!-- Two -->
@@ -68,20 +71,6 @@ export AMREX_HOME=/path/to/AMReX
               </pre>
 	    </li>
 
-	    <li><h3><span class="icon fa-magic"></span> Compile</h3>
-	      problems are compiled in their own directory.  E.g.,
-	      <pre>
-cd IAMR/Exec/run2d/
-make DIM=2 COMP=gnu DEBUG=FALSE USE_MPI=TRUE
-              </pre>
-	    </li>
-
-	    <li><h3><span class="icon fa-laptop"></span> Run</h3>
-	      To run a simulation, an input file
-	      is always required:
-	      <pre> mpiexec -n 2 ./amr2d.gnu.MPI.ex inputs.2d.bubble</pre>
-	    </li>
-
 	    <li><h3><span class="icon fa-image"></span> Visualize</h3>
 	      AMReX output is supported natively by 
               <a href="http://yt-project.org/">yt</a>,
@@ -93,18 +82,11 @@ make DIM=2 COMP=gnu DEBUG=FALSE USE_MPI=TRUE
 	  </ul>
         <!-- </section> -->
 	<footer>
-          
 
-	  <p>The IAMR User's Guide is currently in the IAMR/UsersGuide directory.<br>
-            The AMReX <a href="https://amrex-codes.github.io/amrex/docs_html">Documentation</a>
+	  <p>The AMReX <a href="https://amrex-codes.github.io/amrex/docs_html">Documentation</a>
             is the best place to learn more about how the AMReX source code is organized.<br>
             You can also ask for help by opening up an issue on the 
-            <a href="https://github.com/AMReX-Codes/IAMR">IAMR GitHub webpage</a>.</p>
-	  <ul class="actions">
-	    <li>
-	      <a href="https://github.com/AMReX-Codes/IAMR" class="button big">Get IAMR</a>
-	    </li>
-	  </ul>
+            <a href="https://github.com/AMReX-Codes/incflo">incflo GitHub webpage</a>.</p>
 	</footer>
       </div>
     </section>
@@ -113,7 +95,7 @@ make DIM=2 COMP=gnu DEBUG=FALSE USE_MPI=TRUE
     <footer id="footer">
       <div class="container">
 	<section class="ack">
-	  IAMR is developed at the 
+	  incflo is developed at the 
           <a href="https://ccse.lbl.gov/"> 
             Center for Computational Sciences and Engineering</a>
           at <a href="http://www.lbl.gov/"> LBNL </a>.
@@ -121,7 +103,7 @@ make DIM=2 COMP=gnu DEBUG=FALSE USE_MPI=TRUE
 	<div class="row">
 	  <div class="8u 12u$(medium)">
 	    <ul class="copyright">
-	      <li>&copy; IAMR development team. All rights reserved.</li>
+	      <li>&copy; incflo development team. All rights reserved.</li>
 	    </ul>
 	  </div>
 	</div>
