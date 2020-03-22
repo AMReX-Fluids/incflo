@@ -1,6 +1,0 @@
-/**
-\mainpage MFiX-Exa: A multi-phase flow simulation tool based on MFiX-Classic, incorporating the massively parallel, block-structured adaptive mesh refinement (AMR) functionality of AMReX.
-
-AMReX is available at https://github.com/AMReX-Codes/amrex
-
-*/
