@@ -38,13 +38,11 @@ The following inputs must be preceded by "incflo" and determine how we load bala
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |                      | Description                                                           |   Type      | Default      |
 +======================+=======================================================================+=============+==============+
-| load_balance_fluid   | Only relevant if (dual_grid); if so do we also regrid mesh data       |  Int        | 1            |
-+----------------------+-----------------------------------------------------------------------+-------------+--------------+
 | load_balance_type    | What strategy to use for load balancing                               |  String     | KnapSack     |
 |                      | Options are "KnapSack"or "SFC"                                        |             |              |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 | knapsack_weight_type | What weighting function to use if using Knapsack load balancing       |  String     | RunTimeCosts |
-|                      | Options are "RunTimeCosts" or "NumParticles""                         |             |              |
+|                      | Options are "RunTimeCosts"                                            |             |              |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 | knapsack_nmax        | Maximum number of grids per MPI process if using knapsack algorithm   |  Int        | 128          | 
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+

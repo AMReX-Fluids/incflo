@@ -142,10 +142,10 @@ Next, configure, build and install AMReX as follows:
 
     > mkdir build
     > cd build
-    > cmake -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel] -DENABLE_PARTICLES=yes -DENABLE_AMRDATA=yes -DENABLE_EB=yes [other amrex options] -DCMAKE_INSTALL_PREFIX:PATH=/absolute/path/to/installdir ..
+    > cmake -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel] -DENABLE_AMRDATA=yes -DENABLE_EB=yes [other amrex options] -DCMAKE_INSTALL_PREFIX:PATH=/absolute/path/to/installdir ..
     > make install
 
-The options **ENABLE\_PARTICLES=yes**, **ENABLE\_AMRDATA=yes**, and **ENABLE\_EB=yes** are required by incflo. ``[other amrex options]`` in the snippet above refers to any other AMReX configuration option in addition to the required ones. Please refer to the `AMReX user guide <https://amrex-codes.github.io/amrex/docs_html/BuildingAMReX.html#building-with-cmake>`_ for more details on building AMReX with CMake.
+The options  **ENABLE\_AMRDATA=yes**, and **ENABLE\_EB=yes** are required by incflo. ``[other amrex options]`` in the snippet above refers to any other AMReX configuration option in addition to the required ones. Please refer to the `AMReX user guide <https://amrex-codes.github.io/amrex/docs_html/BuildingAMReX.html#building-with-cmake>`_ for more details on building AMReX with CMake.
 
 
 Building incflo
