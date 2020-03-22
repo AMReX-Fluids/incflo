@@ -9,5 +9,3 @@ Getting Started
    Structure
    BuildingCMake
    BuildingGMake
-   RunningTestSuite
-   RegressionTesting
