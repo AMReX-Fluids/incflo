@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Building MFiX-Exa with gmake &mdash; incflo 20.04-dev documentation</title>
+  <title>Building incflo with gmake &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -92,7 +92,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="GettingStarted.html">Getting Started</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="Structure.html">Directory overview</a></li>
 <li class="toctree-l2"><a class="reference internal" href="BuildingCMake.html">Building MFiX-Exa with CMake</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Building MFiX-Exa with gmake</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Building incflo with gmake</a></li>
 <li class="toctree-l2"><a class="reference internal" href="RunningTestSuite.html">Running the MFiX Test Suite</a></li>
 <li class="toctree-l2"><a class="reference internal" href="RegressionTesting.html">Regression testing</a></li>
 </ul>
@@ -151,7 +151,7 @@
         
           <li><a href="GettingStarted.html">Getting Started</a> &raquo;</li>
         
-      <li>Building MFiX-Exa with gmake</li>
+      <li>Building incflo with gmake</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -170,23 +170,21 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="building-mfix-exa-with-gmake">
-<h1>Building MFiX-Exa with gmake<a class="headerlink" href="#building-mfix-exa-with-gmake" title="Permalink to this headline">¶</a></h1>
-<p>Building MFiX-Exa with gmake</p>
-<p>If you want to use gmake to build MFiX_Exa, you will need to have already
+  <div class="section" id="building-incflo-with-gmake">
+<h1>Building incflo with gmake<a class="headerlink" href="#building-incflo-with-gmake" title="Permalink to this headline">¶</a></h1>
+<p>Building incflo with gmake</p>
+<p>If you want to use gmake to build incflo, you will need to have already
 cloned amrex into a local directory:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git clone https://github.com/amrex-codes/amrex
 </pre></div>
 </div>
-<p>If you want to run MFIX-Exa using the SIMPLE algorithm or the projection
+<p>If you want to run incflo using the SIMPLE algorithm or the projection
 method with normal velocity components defined on faces, then the easiest
 way to build it is:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git clone http://mfix.netl.doe.gov/gitlab/exa/mfix.git
-&gt; <span class="nb">cd</span> mfix/exec
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git clone http://github.com/amrex-codes/incflo.git
+&gt; <span class="nb">cd</span> incflo/test
 </pre></div>
 </div>
-<p>(If you want to run MFIX-Exa using the projection method with cell-centered
-velocity components, replace exec above with exec_cc)</p>
 <p>Edit the GNUmakefile to set AMREX_HOME to be the path to the directory
 where you have put amrex.  Other options that you can set include</p>
 <table class="docutils align-default">

@@ -1,26 +1,23 @@
-Building MFiX-Exa with gmake
+Building incflo with gmake
 ============================
 
-Building MFiX-Exa with gmake 
+Building incflo with gmake 
 
-If you want to use gmake to build MFiX_Exa, you will need to have already
+If you want to use gmake to build incflo, you will need to have already
 cloned amrex into a local directory:
 
 .. code:: shell
 
     > git clone https://github.com/amrex-codes/amrex
 
-If you want to run MFIX-Exa using the SIMPLE algorithm or the projection
+If you want to run incflo using the SIMPLE algorithm or the projection
 method with normal velocity components defined on faces, then the easiest
 way to build it is:
 
 .. code:: shell
 
-    > git clone http://mfix.netl.doe.gov/gitlab/exa/mfix.git
-    > cd mfix/exec
-
-(If you want to run MFIX-Exa using the projection method with cell-centered
-velocity components, replace exec above with exec_cc)
+    > git clone http://github.com/amrex-codes/incflo.git
+    > cd incflo/test
 
 Edit the GNUmakefile to set AMREX_HOME to be the path to the directory
 where you have put amrex.  Other options that you can set include
