@@ -34,6 +34,7 @@ echo "Build the Sphinx documentation for incflo."
 make SPHINX_BUILD="python -msphinx" latexpdf
 mv build/latex/incflo.pdf source/ 
 make SPHINX_BUILD="python -msphinx" html &> make_source_html.out
+cd ../..
 
 mv Docs/sphinx_documentation/build/html/* out/docs_html/
 touch out/.nojekyll
