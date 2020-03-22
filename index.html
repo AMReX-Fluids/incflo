@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<!--
+        This webpage is based on Transit by TEMPLATED
+	templated.co @templatedco
+	Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
+-->
+<html lang="en">
+  <head>
+
+    <meta charset="UTF-8">
+    <title>incflo: An adaptive mesh, variable-density incompressible Navier Stokes solver</title>
+    <link rel="icon" href="web_icon.ico" type="image/x-icon">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <!--[if lte IE 8]><script src="js/html5shiv.js"></script><![endif]-->
+    <script src="js/jquery.min.js"></script>
+    <script src="js/skel.min.js"></script>
+    <script src="js/skel-layers.min.js"></script>
+    <script src="js/init.js"></script>
+    <noscript>
+      <link rel="stylesheet" href="css/skel.css" />
+      <link rel="stylesheet" href="css/style.css" />
+      <link rel="stylesheet" href="css/style-xlarge.css" />
+    </noscript>
+  </head>
+  <body class="landing">
+    
+    <!-- Header -->
+    <header id="header">
+      <h1><a href="index.html">IAMR</a></h1>
+      <nav id="nav">
+	<ul>
+	  <li><a href="gallery.html">Gallery</a></li>
+	  <li><a href="overview.html">Overview</a></li>
+	  <li><a href="help.html" class="button special">Get Help</a></li>
+	</ul>
+      </nav>
+    </header>
+
+    <!-- Banner -->
+    <section id="banner">
+      <h2>IAMR</h2>
+      <p>An adaptive mesh, variable-density incompressible Navier Stokes solver
+      <ul class="actions">
+	<li>
+	  <a href="https://github.com/AMReX-Codes/IAMR" class="button big">Get IAMR</a>
+	</li>
+      </ul>
+    </section><!-- Two -->
+    <section id="two" class="wrapper style2 special">
+      <div class="container">
+	<header class="major">
+	  <h2>Getting Started</h2>
+	</header>
+	<!-- <section class="profiles"> -->
+	  <ul class="alt">
+	    <li><h3><span class="icon fa-download"></span> Clone</h3>
+	      <pre>
+git clone https://github.com/AMReX-Codes/amrex.git
+git clone https://github.com/AMReX-Codes/incflo.git
+              </pre>
+	    </li>
+
+	    <li><h3><span class="icon fa-cogs"></span> Setup Your Environment</h3>
+	      <pre>
+export AMREX_HOME=/path/to/AMReX
+              </pre>
+	    </li>
+
+	    <li><h3><span class="icon fa-magic"></span> Compile</h3>
+	      problems are compiled in their own directory.  E.g.,
+	      <pre>
+cd IAMR/Exec/run2d/
+make DIM=2 COMP=gnu DEBUG=FALSE USE_MPI=TRUE
+              </pre>
+	    </li>
+
+	    <li><h3><span class="icon fa-laptop"></span> Run</h3>
+	      To run a simulation, an input file
+	      is always required:
+	      <pre> mpiexec -n 2 ./amr2d.gnu.MPI.ex inputs.2d.bubble</pre>
+	    </li>
+
+	    <li><h3><span class="icon fa-image"></span> Visualize</h3>
+	      AMReX output is supported natively by 
+              <a href="http://yt-project.org/">yt</a>,
+              <a href="https://wci.llnl.gov/simulation/computer-codes/visit/">VisIt</a>,
+              <a href="https://github.com/AMReX-Codes/Amrvis">Amrvis</a>,
+              and <a href="https://www.paraview.org/">ParaView</a>.
+	    </li>
+
+	  </ul>
+        <!-- </section> -->
+	<footer>
+          
+
+	  <p>The IAMR User's Guide is currently in the IAMR/UsersGuide directory.<br>
+            The AMReX <a href="https://amrex-codes.github.io/amrex/docs_html">Documentation</a>
+            is the best place to learn more about how the AMReX source code is organized.<br>
+            You can also ask for help by opening up an issue on the 
+            <a href="https://github.com/AMReX-Codes/IAMR">IAMR GitHub webpage</a>.</p>
+	  <ul class="actions">
+	    <li>
+	      <a href="https://github.com/AMReX-Codes/IAMR" class="button big">Get IAMR</a>
+	    </li>
+	  </ul>
+	</footer>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="footer">
+      <div class="container">
+	<section class="ack">
+	  IAMR is developed at the 
+          <a href="https://ccse.lbl.gov/"> 
+            Center for Computational Sciences and Engineering</a>
+          at <a href="http://www.lbl.gov/"> LBNL </a>.
+	</section>
+	<div class="row">
+	  <div class="8u 12u$(medium)">
+	    <ul class="copyright">
+	      <li>&copy; IAMR development team. All rights reserved.</li>
+	    </ul>
+	  </div>
+	</div>
+      </div>
+    </footer>
+
+  </body>
+</html>

@@ -1,4 +1,0 @@
-CEXE_sources += incflo_diffusion.cpp
-CEXE_sources += DiffusionTensorOp.cpp DiffusionScalarOp.cpp
-CEXE_headers += DiffusionTensorOp.H   DiffusionScalarOp.H
-
