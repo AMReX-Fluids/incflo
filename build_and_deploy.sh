@@ -3,6 +3,7 @@ set -e # Exit with nonzero exit code if anything fails
 
 # Then we build and deploy the sphinx / doxygen documentation
 SOURCE_BRANCH="development"
+TARGET_BRANCH="gh-pages"
 
 # Pull requests and commits to other branches shouldn't try to deploy
 if [ "$TRAVIS_PULL_REQUEST" != "false" -o "$TRAVIS_BRANCH" != "$SOURCE_BRANCH" ]; then
@@ -12,42 +13,33 @@ fi
 
 # Save some useful information
 REPO=`git config remote.origin.url`
-#SSH_REPO=${REPO/https:\/\/github.com\//git@github.com:}
+SSH_REPO=${REPO/https:\/\/github.com\//git@github.com:}
 SHA=`git rev-parse --verify HEAD`
 
-# sphinx
-#
-# run breathe and clean up
+# Clone the existing gh-pages for this repo into out/
+# Create a new empty branch if gh-pages doesn't exist yet (should only happen on first deploy)
+git clone $REPO out
+cd out
+git checkout $TARGET_BRANCH || git checkout --orphan $TARGET_BRANCH
+cd ..
+
+# Clean out existing contents
+rm -rf out/docs_html/**/* || exit 0
+rm -rf out/tutorials_html/**/* || exit 0
+rm -rf out/docs_xml/**/* || exit 0
+
 cd Docs/sphinx_documentation
-#
-#breathe-apidoc --o source ../../out/docs_xml/doxygen/ -g class,file
-#python make_api.py
-#
+
 echo "Build the Sphinx documentation for incflo."
 make SPHINX_BUILD="python -msphinx" latexpdf
 mv build/latex/incflo.pdf source/ 
 make SPHINX_BUILD="python -msphinx" html &> make_source_html.out
-#
-# Start ssh-agent
-#openssl aes-256-cbc -K $encrypted_11fd376b52bf_key -iv $encrypted_11fd376b52bf_iv -in deploy_rsa.enc -out deploy_rsa -d
-#chmod 600 ./deploy_rsa
-#eval `ssh-agent -s`
-#ssh-add ./deploy_rsa
 
-# clone document
-DOC_SSH_REPO="git@github.com:AMReX-Codes/AMReX-Codes.github.io.git"
-git clone $DOC_SSH_REPO AMReX-Codes.github.io
-cd AMReX-Codes.github.io/incflo
-#
-# clean out existing contents
-git rm -r docs_html tutorials_html docs_xml
-mkdir     docs_html tutorials_html docs_xml
-#
-# add sphinx
-cp -rp ../../Docs/sphinx_documentation/build/html/* docs_html/
-cp -rp ../../Docs/sphinx_tutorials/build/html/* tutorials_html/
-#
+mv Docs/sphinx_documentation/build/html/* out/docs_html/
+touch out/.nojekyll
+
 # Now let's go have some fun with the cloned repo
+cd out
 git config user.name "Travis CI"
 git config user.email "$COMMIT_AUTHOR_EMAIL"
 
@@ -57,9 +49,9 @@ fi
 
 # Commit the "changes", i.e. the new version.
 # The delta will show diffs between new and old versions.
-git add docs_html tutorials_html docs_xml
+git add --all
 git commit -m "Deploy to GitHub Pages: ${SHA}" || true
 
-git push $DOC_SSH_REPO || true
+git push $SSH_REPO $TARGET_BRANCH || true
 ssh-agent -k
 cd ..
