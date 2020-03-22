@@ -30,9 +30,9 @@ make SPHINX_BUILD="python -msphinx" html &> make_source_html.out
 #
 # Start ssh-agent
 #openssl aes-256-cbc -K $encrypted_11fd376b52bf_key -iv $encrypted_11fd376b52bf_iv -in deploy_rsa.enc -out deploy_rsa -d
-chmod 600 ./deploy_rsa
-eval `ssh-agent -s`
-ssh-add ./deploy_rsa
+#chmod 600 ./deploy_rsa
+#eval `ssh-agent -s`
+#ssh-add ./deploy_rsa
 
 # clone document
 DOC_SSH_REPO="git@github.com:AMReX-Codes/AMReX-Codes.github.io.git"
