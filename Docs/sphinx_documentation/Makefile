@@ -5,7 +5,7 @@
 PYTHON       ?= python
 SPHINXOPTS    =
 SPHINXBUILD   = $(PYTHON) -msphinx
-SPHINXPROJ    = amrex
+SPHINXPROJ    = incflo
 SOURCEDIR     = source
 BUILDDIR      = build
 
