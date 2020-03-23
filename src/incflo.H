@@ -527,6 +527,8 @@ private:
     std::string m_restart_file{""};
     std::string m_tag_file{""};
 
+    bool m_plotfile_on_restart = false;
+
     amrex::Vector<amrex::Real> tag_region_lo;
     amrex::Vector<amrex::Real> tag_region_hi;
 
@@ -544,7 +546,6 @@ private:
     int m_plt_vort        = 1;
     int m_plt_forcing     = 0;
     int m_plt_strainrate  = 0;
-    int m_plt_stress      = 0;
     int m_plt_divu        = 0;
     int m_plt_vfrac       = 1;
 

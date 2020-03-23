@@ -366,9 +366,6 @@ void incflo::WritePlotFile()
     // Magnitude of the rate-of-strain tensor 
     if(m_plt_strainrate) ++ncomp;
 
-    // Magnitude of the stress tensor 
-    if(m_plt_stress) ++ncomp;
-
     // Divergence of velocity field
     if(m_plt_divu) ++ncomp;
 
@@ -479,11 +476,6 @@ void incflo::WritePlotFile()
     if (m_plt_strainrate) {
         amrex::Abort("plt_strainrate: xxxxx TODO");
         pltscaVarsName.push_back("strainrate");
-        ++icomp;
-    }
-    if (m_plt_stress) {
-        amrex::Abort("plt_stress: xxxxx TODO");
-        pltscaVarsName.push_back("stress");
         ++icomp;
     }
     if (m_plt_divu) {

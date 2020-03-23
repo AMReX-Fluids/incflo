@@ -137,6 +137,8 @@ void incflo::ReadIOParameters()
     pp.query("check_int", m_check_int);
     pp.query("restart", m_restart_file);
 
+    pp.query("plotfile_on_restart", m_plotfile_on_restart);
+
     pp.query("plot_file", m_plot_file);
     pp.query("plot_int"       , m_plot_int);
     pp.query("plot_per_exact" , m_plot_per_exact);
@@ -166,7 +168,6 @@ void incflo::ReadIOParameters()
         m_plt_eta        = 0;
         m_plt_vort       = 0;
         m_plt_strainrate = 0;
-        m_plt_stress     = 0;
         m_plt_divu       = 0;
         m_plt_vfrac      = 0;
     }
@@ -187,7 +188,6 @@ void incflo::ReadIOParameters()
     pp.query("plt_eta",        m_plt_eta   );
     pp.query("plt_vort",       m_plt_vort  );
     pp.query("plt_strainrate", m_plt_strainrate);
-    pp.query("plt_stress"    , m_plt_stress);
     pp.query("plt_divu",       m_plt_divu  );
     pp.query("plt_vfrac",      m_plt_vfrac );
 

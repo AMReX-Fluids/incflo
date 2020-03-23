@@ -39,7 +39,7 @@ void incflo::InitData ()
     BL_PROFILE("incflo::InitData()");
 
     int restart_flag = 0;
-    if(m_restart_file.empty())
+    if (m_restart_file.empty())
     {
         // This tells the AmrMesh class not to iterate when creating the initial
         // grid hierarchy
@@ -66,24 +66,30 @@ void incflo::InitData ()
         // xxxxx TODO averagedown ???
 
         if (m_check_int > 0) { WriteCheckPointFile(); }
+
+        // Plot initial distribution
+        if (m_plot_int > 0 || m_plot_per_exact > 0 || m_plot_per_approx > 0)
+        {
+            WritePlotFile();
+            m_last_plt = 0;
+        }
+        if (m_KE_int > 0)
+        {
+            amrex::Abort("xxxxx m_KE_int todo");
+//          amrex::Print() << "Time, Kinetic Energy: " << m_cur_time << ", " << ComputeKineticEnergy() << std::endl;
+        }
     }
     else
     {
         restart_flag = 1;
         // Read starting configuration from chk file.
         ReadCheckpointFile();
-    }
 
-    // Plot initial distribution
-    if((m_plot_int > 0 || m_plot_per_exact > 0 || m_plot_per_approx > 0) && !restart_flag)
-    {
-        WritePlotFile();
-        m_last_plt = 0;
-    }
-    if(m_KE_int > 0 && !restart_flag)
-    {
-        amrex::Abort("xxxxx m_KE_int todo");
-//        amrex::Print() << "Time, Kinetic Energy: " << m_cur_time << ", " << ComputeKineticEnergy() << std::endl;
+        if (m_plotfile_on_restart)
+        {
+            WritePlotFile();
+            m_last_plt = 0;
+        }
     }
 
 #ifdef AMREX_USE_EB
