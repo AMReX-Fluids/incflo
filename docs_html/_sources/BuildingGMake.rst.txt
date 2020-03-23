@@ -10,9 +10,7 @@ cloned amrex into a local directory:
 
     > git clone https://github.com/amrex-codes/amrex
 
-If you want to run incflo using the SIMPLE algorithm or the projection
-method with normal velocity components defined on faces, then the easiest
-way to build it is:
+Then
 
 .. code:: shell
 
