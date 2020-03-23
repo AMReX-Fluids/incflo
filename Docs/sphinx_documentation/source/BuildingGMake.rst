@@ -30,6 +30,8 @@ where you have put amrex.  Other options that you can set include
 +-----------------+------------------------------+------------------+-------------+
 | USE_OMP         | Whether to enable OpenMP     | TRUE / FALSE     | FALSE       |
 +-----------------+------------------------------+------------------+-------------+
+| USE_CUDA        | Whether to enable CUDA       | TRUE / FALSE     | FALSE       |
++-----------------+------------------------------+------------------+-------------+
 | DEBUG           | Whether to use DEBUG mode    | TRUE / FALSE     | FALSE       |
 +-----------------+------------------------------+------------------+-------------+
 | PROFILE         | Include profiling info       | TRUE / FALSE     | FALSE       |
@@ -40,6 +42,9 @@ where you have put amrex.  Other options that you can set include
 +-----------------+------------------------------+------------------+-------------+
 | TRACE_PROFILE   | Include trace profiling info | TRUE / FALSE     | FALSE       |
 +-----------------+------------------------------+------------------+-------------+
+
+.. note::
+   **Do not set both USE_OMP and USE_CUDA to true.**
 
 Then type
 
