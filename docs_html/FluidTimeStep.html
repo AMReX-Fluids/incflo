@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Fluid Time Step &mdash; incflo 20.04-dev documentation</title>
+  <title>Time Step – MOL &mdash; incflo 20.04-dev documentation</title>
   
 
   
@@ -96,7 +96,8 @@
 <li class="toctree-l2"><a class="reference internal" href="FluidEquations.html">Fluid Variables</a></li>
 <li class="toctree-l2"><a class="reference internal" href="FluidEquations.html#fluid-equations">Fluid Equations</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="FluidTimeDiscretization.html">Time Discretization</a><ul class="current">
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Fluid Time Step</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Time Step – MOL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#time-step-godunov">Time Step – Godunov</a></li>
 <li class="toctree-l3"><a class="reference internal" href="Slopes.html">Computing slopes</a></li>
 <li class="toctree-l3"><a class="reference internal" href="BuildingMacVelocities.html">Creating the MAC velocities</a></li>
 </ul>
@@ -154,7 +155,7 @@
         
           <li><a href="FluidTimeDiscretization.html">Time Discretization</a> &raquo;</li>
         
-      <li>Fluid Time Step</li>
+      <li>Time Step – MOL</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -173,50 +174,74 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="fluid-time-step">
-<h1>Fluid Time Step<a class="headerlink" href="#fluid-time-step" title="Permalink to this headline">¶</a></h1>
-<p>In the absence of reactions, we assume that the fluid density is unchanged.</p>
-<p>We compute the fluid volume fraction directly from the particle locations.</p>
-<p>Thus here we focus on the discretization of the momentum equation</p>
+  <div class="section" id="time-step-mol">
+<h1>Time Step – MOL<a class="headerlink" href="#time-step-mol" title="Permalink to this headline">¶</a></h1>
 <p>In the predictor</p>
 <ul class="simple">
-<li><p>Define <span class="math notranslate nohighlight">\(U^{MAC,n}\)</span>, the face-centered (staggered) MAC velocity which is used for advection, using <span class="math notranslate nohighlight">\(U_g^n\)</span></p></li>
-<li><p>Define an approximation to the new-time state, <span class="math notranslate nohighlight">\((\varepsilon_g \rho_g U_g)^{\ast}\)</span> by setting</p></li>
+<li><p>Define <span class="math notranslate nohighlight">\(U^{MAC,n}\)</span>, the face-centered (staggered) MAC velocity which is used for advection, using <span class="math notranslate nohighlight">\(U^n\)</span></p></li>
+<li><p>Define an approximation to the new-time state, <span class="math notranslate nohighlight">\((\rho U)^{\ast}\)</span> by setting</p></li>
 </ul>
 <div class="math notranslate nohighlight">
-\[\begin{split}(\varepsilon_g \rho_g U_g)^{\ast} &amp;= (\varepsilon_g \rho_g U_g)^n -
-\Delta t \left( \nabla \cdot (\varepsilon_g \rho_g U^{MAC} U_g) + \varepsilon_g \nabla {p_g}^{n-1/2} \right) \\ &amp;+
-\Delta t \left( \nabla \cdot \tau^n + \sum_p \beta_p (V_p - {U_g}^{\ast}) + \rho_g \varepsilon_g g \right)\end{split}\]</div>
+\[\begin{split}(\rho U)^{\ast} &amp;= (\rho U)^n -
+\Delta t \left( \nabla \cdot (\rho U^{MAC} U) + \nabla {p}^{n-1/2} \right) \\ &amp;+
+\Delta t \left( \nabla \cdot \tau^n + \sum_p \beta_p (V_p - {U}^{\ast}) + \rho g \right)\end{split}\]</div>
 <ul class="simple">
-<li><p>Project <span class="math notranslate nohighlight">\(U_g^{\ast}\)</span> by solving</p></li>
+<li><p>Project <span class="math notranslate nohighlight">\(U^{\ast}\)</span> by solving</p></li>
 </ul>
 <div class="math notranslate nohighlight">
-\[\nabla \cdot \frac{\varepsilon_g}{\rho_g} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t}
-(\varepsilon_g  U_g)^{\ast}+ \frac{\varepsilon_g}{\rho_g} \nabla {p_g}^{n-1/2} \right)\]</div>
+\[\nabla \cdot \frac{1}{\rho} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t}
+U^{\ast}+ \frac{1}{\rho} \nabla {p}^{n-1/2} \right)\]</div>
 <p>then defining</p>
 <div class="math notranslate nohighlight">
-\[U_g^{\ast \ast} = U_g^{\ast} - \frac{\Delta t}{\rho_g} \nabla \phi\]</div>
+\[U^{\ast \ast} = U^{\ast} - \frac{\Delta t}{\rho} \nabla \phi\]</div>
 <p>and</p>
 <div class="math notranslate nohighlight">
-\[{p_g}^{n+1/2, \ast} = \phi\]</div>
+\[{p}^{n+1/2, \ast} = \phi\]</div>
 <p>In the corrector</p>
 <ul class="simple">
-<li><p>Define <span class="math notranslate nohighlight">\(U^{MAC,\ast \ast}\)</span> at the “new” time using <span class="math notranslate nohighlight">\(U_g^{\ast \ast}\)</span></p></li>
-<li><p>Define a new approximation to the new-time state, <span class="math notranslate nohighlight">\((\varepsilon_g \rho_g U_g)^{\ast \ast \ast}\)</span> by setting</p></li>
+<li><p>Define <span class="math notranslate nohighlight">\(U^{MAC,\ast \ast}\)</span> at the “new” time using <span class="math notranslate nohighlight">\(U^{\ast \ast}\)</span></p></li>
+<li><p>Define a new approximation to the new-time state, <span class="math notranslate nohighlight">\((\rho U)^{\ast \ast \ast}\)</span> by setting</p></li>
 </ul>
 <div class="math notranslate nohighlight">
-\[\begin{split}(\varepsilon_g \rho_g U_g)^{\ast \ast \ast} &amp;= (\varepsilon_g \rho_g U_g)^n - \frac{\Delta t}{2} \left( \nabla \cdot (\varepsilon_g \rho_g U^{MAC} U_g)^n + \nabla \cdot (\varepsilon_g \rho_g U^{MAC} U_g)^{\ast \ast}\right) + \\ &amp;+ \frac{\Delta t}{2} \left( \nabla \cdot \tau^n + \nabla \cdot \tau^{\ast \ast \ast} \right) + \Delta t \left( - \varepsilon_g \nabla {p_g}^{n+1/2,\ast} + \sum_p \beta_p (V_p - {U_g}^{\ast \ast \ast}) + \varepsilon_g \rho_g g \right)\end{split}\]</div>
+\[\begin{split}(\rho U)^{\ast \ast \ast} &amp;= (\rho U)^n - \frac{\Delta t}{2} \left( \nabla \cdot (\rho U^{MAC} U)^n + \nabla \cdot (\rho U^{MAC} U)^{\ast \ast}\right) + \\ &amp;+ \frac{\Delta t}{2} \left( \nabla \cdot \tau^n + \nabla \cdot \tau^{\ast \ast \ast} \right) + \Delta t \left( - \nabla {p}^{n+1/2,\ast} + \sum_p \beta_p (V_p - {U}^{\ast \ast \ast}) + \rho g \right)\end{split}\]</div>
 <ul class="simple">
-<li><p>Project <span class="math notranslate nohighlight">\(U_g^{\ast \ast \ast}\)</span> by solving</p></li>
+<li><p>Project <span class="math notranslate nohighlight">\(U^{\ast \ast \ast}\)</span> by solving</p></li>
 </ul>
 <div class="math notranslate nohighlight">
-\[\nabla \cdot \frac{\varepsilon_g}{\rho_g} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t} (\varepsilon_g  U_g)^{\ast \ast \ast} + \frac{\varepsilon_g}{\rho_g} \nabla {p_g}^{n+1/2,\ast} \right)\]</div>
+\[\nabla \cdot \frac{1}{\rho} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t} U^{\ast \ast \ast} + \frac{1}{\rho} \nabla {p}^{n+1/2,\ast} \right)\]</div>
 <p>then defining</p>
 <div class="math notranslate nohighlight">
-\[U_g^{n+1} = U_g^{\ast \ast \ast} - \frac{\Delta t}{\rho_g} \nabla \phi\]</div>
+\[U^{n+1} = U^{\ast \ast \ast} - \frac{\Delta t}{\rho} \nabla \phi\]</div>
 <p>and</p>
 <div class="math notranslate nohighlight">
-\[{p_g}^{n+1/2} = \phi\]</div>
+\[{p}^{n+1/2} = \phi\]</div>
+</div>
+<div class="section" id="time-step-godunov">
+<h1>Time Step – Godunov<a class="headerlink" href="#time-step-godunov" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Define <span class="math notranslate nohighlight">\(U^{MAC,n+1/2}\)</span>, the time-centerd face-centered (staggered)</dt><dd><p>MAC velocity which is used for advection</p>
+</dd>
+</dl>
+</li>
+<li><p>Define an approximation to the new-time state, <span class="math notranslate nohighlight">\((\rho U)^{\ast}\)</span> by setting</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\begin{split}(\rho U)^{\ast} &amp;= (\rho U)^n -
+\Delta t \left( \nabla \cdot (\rho U^{MAC} U) + \nabla {p}^{n-1/2} \right) \\ &amp;+
+\Delta t \left( \nabla \cdot \tau^n + \rho g \right)\end{split}\]</div>
+<ul class="simple">
+<li><p>Project <span class="math notranslate nohighlight">\(U^{\ast}\)</span> by solving</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\nabla \cdot \frac{1}{\rho} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t}
+U^{\ast}+ \frac{1}{\rho} \nabla {p}^{n-1/2} \right)\]</div>
+<p>then defining</p>
+<div class="math notranslate nohighlight">
+\[U^{\ast \ast} = U^{\ast} - \frac{\Delta t}{\rho} \nabla \phi\]</div>
+<p>and</p>
+<div class="math notranslate nohighlight">
+\[{p}^{n+1/2, \ast} = \phi\]</div>
 </div>
 
 

@@ -4,7 +4,7 @@ Fluid Variables
    +-----------------------+--------------------------------------------------+
    | Variable              | Definition                                       |
    +=======================+==================================================+
-   | :math:`\rho_g`        | Fluid density                                    |
+   | :math:`\rho`          | Fluid density                                    |
    +-----------------------+--------------------------------------------------+
    | :math:`U`             | Fluid velocity                                   |
    +-----------------------+--------------------------------------------------+
@@ -18,10 +18,17 @@ Fluid Equations
 
 Conservation of fluid mass:
 
-.. math:: \frac{\partial \rho_g}{\partial t} + \nabla \cdot (\rho_g U_g)  = 0
+.. math:: \frac{\partial \rho}{\partial t} + \nabla \cdot (\rho U)  = 0
 
 Conservation of fluid momentum:
 
 .. math:: \frac{ \partial (\rho U)}{\partial t} 
-   + \nabla \cdot (\rho U g) + \nabla p_g = \nabla \cdot \tau + \rho g
+   + \nabla \cdot (\rho U g) + \nabla p = \nabla \cdot \tau + \rho g
 
+Incompressibility constraint:
+
+.. math:: \nabla \cdot U = 0
+
+Tracer(s) advection:
+
+.. math:: \frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  = 0

@@ -180,7 +180,7 @@
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\rho_g\)</span></p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\rho\)</span></p></td>
 <td><p>Fluid density</p></td>
 </tr>
 <tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(U\)</span></p></td>
@@ -200,11 +200,17 @@
 <h1>Fluid Equations<a class="headerlink" href="#fluid-equations" title="Permalink to this headline">¶</a></h1>
 <p>Conservation of fluid mass:</p>
 <div class="math notranslate nohighlight">
-\[\frac{\partial \rho_g}{\partial t} + \nabla \cdot (\rho_g U_g)  = 0\]</div>
+\[\frac{\partial \rho}{\partial t} + \nabla \cdot (\rho U)  = 0\]</div>
 <p>Conservation of fluid momentum:</p>
 <div class="math notranslate nohighlight">
 \[\frac{ \partial (\rho U)}{\partial t}
-+ \nabla \cdot (\rho U g) + \nabla p_g = \nabla \cdot \tau + \rho g\]</div>
++ \nabla \cdot (\rho U g) + \nabla p = \nabla \cdot \tau + \rho g\]</div>
+<p>Incompressibility constraint:</p>
+<div class="math notranslate nohighlight">
+\[\nabla \cdot U = 0\]</div>
+<p>Tracer(s) advection:</p>
+<div class="math notranslate nohighlight">
+\[\frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  = 0\]</div>
 </div>
 
 

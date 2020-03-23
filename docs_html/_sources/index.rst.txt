@@ -1,9 +1,10 @@
 Welcome to incflo's documentation!
 ====================================
 
-incflo is an AMReX-basd simulation code for modeling
-the incompressible Navier-Stokes equations.  It includes 
-adaptive mesh refinement (AMR) but without subcycling in time.
+incflo is an AMReX-based simulation code for modeling
+the incompressible Navier-Stokes equations in the presence
+of complex geometries.  It includes adaptive mesh refinement (AMR) 
+but without subcycling in time.
 
 For an AMReX-based incompressible flow code with subcycling in time, please go to 
 

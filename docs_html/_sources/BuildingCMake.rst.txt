@@ -323,5 +323,5 @@ To compile for GPUs:
     > cmake -DCMAKE_CXX_COMPILER=g++ -DCMAKE_Fortran_COMPILER=gfortran -DENABLE_CUDA=yes 
     > make -j
 
-An example of a *submission_script* for GPUs can be found in the repo ``incflo/tests/GPU_test/script.sh``.
+An example of a *submission_script* for using the GPUs on Summit can be found in ``incflo/summit_script.sh``.
 For more information about Summit cluster: `<https://www.olcf.ornl.gov/for-users/system-user-guides/summit/>`_ 

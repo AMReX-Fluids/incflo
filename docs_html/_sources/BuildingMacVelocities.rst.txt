@@ -51,12 +51,12 @@ For cut cells we test on whether the area fraction is non-zero:
 
 We then perform a MAC projection on the face-centered velocities to enforce that they satisfy 
 
-.. math:: \nabla \cdot (\varepsilon_g  U^{MAC})  = 0
+.. math:: \nabla \cdot (U^{MAC})  = 0
 
 We do this by solving 
 
-.. math:: \nabla \cdot \frac{\varepsilon_g}{\rho_g} \nabla \phi^{MAC} = \nabla \cdot \left( \varepsilon_g  U^{pred} \right)
+.. math:: \nabla \cdot \frac{1}{\rho} \nabla \phi^{MAC} = \nabla \cdot \left(U^{pred} \right)
 
 then defining
 
-.. math:: U^{MAC} = U^{pred} - \frac{1}{\rho_g} \nabla \phi^{MAC}
+.. math:: U^{MAC} = U^{pred} - \frac{1}{\rho} \nabla \phi^{MAC}

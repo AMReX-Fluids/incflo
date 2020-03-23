@@ -96,7 +96,8 @@
 <li class="toctree-l2"><a class="reference internal" href="FluidEquations.html">Fluid Variables</a></li>
 <li class="toctree-l2"><a class="reference internal" href="FluidEquations.html#fluid-equations">Fluid Equations</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="FluidTimeDiscretization.html">Time Discretization</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="FluidTimeStep.html">Fluid Time Step</a></li>
+<li class="toctree-l3"><a class="reference internal" href="FluidTimeStep.html">Time Step – MOL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="FluidTimeStep.html#time-step-godunov">Time Step – Godunov</a></li>
 <li class="toctree-l3"><a class="reference internal" href="Slopes.html">Computing slopes</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Creating the MAC velocities</a></li>
 </ul>
@@ -224,13 +225,13 @@ slopes as computed earlier, and upwind the face value to define  <span class="ma
 </div></blockquote>
 <p>We then perform a MAC projection on the face-centered velocities to enforce that they satisfy</p>
 <div class="math notranslate nohighlight">
-\[\nabla \cdot (\varepsilon_g  U^{MAC})  = 0\]</div>
+\[\nabla \cdot (U^{MAC})  = 0\]</div>
 <p>We do this by solving</p>
 <div class="math notranslate nohighlight">
-\[\nabla \cdot \frac{\varepsilon_g}{\rho_g} \nabla \phi^{MAC} = \nabla \cdot \left( \varepsilon_g  U^{pred} \right)\]</div>
+\[\nabla \cdot \frac{1}{\rho} \nabla \phi^{MAC} = \nabla \cdot \left(U^{pred} \right)\]</div>
 <p>then defining</p>
 <div class="math notranslate nohighlight">
-\[U^{MAC} = U^{pred} - \frac{1}{\rho_g} \nabla \phi^{MAC}\]</div>
+\[U^{MAC} = U^{pred} - \frac{1}{\rho} \nabla \phi^{MAC}\]</div>
 </div>
 
 
