@@ -211,33 +211,42 @@ value</p></th>
 <td><p>TRUE / FALSE</p></td>
 <td><p>FALSE</p></td>
 </tr>
-<tr class="row-odd"><td><p>DEBUG</p></td>
+<tr class="row-odd"><td><p>USE_CUDA</p></td>
+<td><p>Whether to enable CUDA</p></td>
+<td><p>TRUE / FALSE</p></td>
+<td><p>FALSE</p></td>
+</tr>
+<tr class="row-even"><td><p>DEBUG</p></td>
 <td><p>Whether to use DEBUG mode</p></td>
 <td><p>TRUE / FALSE</p></td>
 <td><p>FALSE</p></td>
 </tr>
-<tr class="row-even"><td><p>PROFILE</p></td>
+<tr class="row-odd"><td><p>PROFILE</p></td>
 <td><p>Include profiling info</p></td>
 <td><p>TRUE / FALSE</p></td>
 <td><p>FALSE</p></td>
 </tr>
-<tr class="row-odd"><td><p>TINY_PROFILE</p></td>
+<tr class="row-even"><td><p>TINY_PROFILE</p></td>
 <td><p>Include tiny profiling info</p></td>
 <td><p>TRUE / FALSE</p></td>
 <td><p>FALSE</p></td>
 </tr>
-<tr class="row-even"><td><p>COMM_PROFILE</p></td>
+<tr class="row-odd"><td><p>COMM_PROFILE</p></td>
 <td><p>Include comm profiling info</p></td>
 <td><p>TRUE / FALSE</p></td>
 <td><p>FALSE</p></td>
 </tr>
-<tr class="row-odd"><td><p>TRACE_PROFILE</p></td>
+<tr class="row-even"><td><p>TRACE_PROFILE</p></td>
 <td><p>Include trace profiling info</p></td>
 <td><p>TRUE / FALSE</p></td>
 <td><p>FALSE</p></td>
 </tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Do not set both USE_OMP and USE_CUDA to true.</strong></p>
+</div>
 <p>Then type</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; make
 </pre></div>
