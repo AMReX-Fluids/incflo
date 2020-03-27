@@ -98,28 +98,36 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         amrex::ParallelFor(ubx, [vcc,extdir_ilo,extdir_ihi,domain_ilo,domain_ihi,u]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            Real upls = vcc(i,j,k,0) - 0.5 * incflo_xslope_extdir
+            const Real vcc_pls = vcc(i,j,k,0);
+            const Real vcc_mns = vcc(i-1,j,k,0);
+
+            Real upls = vcc_pls - 0.5 * incflo_xslope_extdir
                 (i,j,k,0,vcc, extdir_ilo, extdir_ihi, domain_ilo, domain_ihi);
-            Real umns = vcc(i-1,j,k,0) + 0.5 * incflo_xslope_extdir
+
+            Real umns = vcc_mns + 0.5 * incflo_xslope_extdir
                 (i-1,j,k,0,vcc, extdir_ilo, extdir_ihi, domain_ilo, domain_ihi);
-            if (umns < 0.0 and upls > 0.0) {
-                u(i,j,k) = 0.0;
-            } else {
+
+            Real u_val(0);
+
+            if (umns >= 0.0 or upls <= 0.0) {
+                
                 Real avg = 0.5 * (upls + umns);
-                if (std::abs(avg) < small_vel) {
-                    u(i,j,k) = 0.0;
-                } else if (avg > 0.0) {
-                    u(i,j,k) = umns;
-                } else {
-                    u(i,j,k) = upls;
+
+                if (avg >= small_vel) {
+                    u_val = umns;
+                }
+                else if (avg <= -small_vel){
+                    u_val = upls;
                 }
             }
 
             if (extdir_ilo and i == domain_ilo) {
-                u(i,j,k) = vcc(i-1,j,k,0);
+                u_val = vcc_mns;
             } else if (extdir_ihi and i == domain_ihi+1) {
-                u(i,j,k) = vcc(i,j,k,0);
+                u_val = vcc_pls;
             }
+
+            u(i,j,k) = u_val;
         });
     }
     else
@@ -129,18 +137,22 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         {
             Real upls = vcc(i  ,j,k,0) - 0.5 * incflo_xslope(i  ,j,k,0,vcc);
             Real umns = vcc(i-1,j,k,0) + 0.5 * incflo_xslope(i-1,j,k,0,vcc);
-            if (umns < 0.0 and upls > 0.0) {
-                u(i,j,k) = 0.0;
-            } else {
+
+            Real u_val(0);
+
+            if (umns >= 0.0 or upls <= 0.0) {
+                
                 Real avg = 0.5 * (upls + umns);
-                if (std::abs(avg) < small_vel) {
-                    u(i,j,k) = 0.0;
-                } else if (avg > 0.0) {
-                    u(i,j,k) = umns;
-                } else {
-                    u(i,j,k) = upls;
+                
+                if (avg >= small_vel) {
+                    u_val = umns;
+                }
+                else if (avg <= -small_vel){
+                    u_val = upls;
                 }
             }
+
+            u(i,j,k) = u_val;
         });
     }
 
@@ -150,28 +162,34 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         amrex::ParallelFor(vbx, [vcc,extdir_jlo,extdir_jhi,domain_jlo,domain_jhi,v]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            Real vpls = vcc(i,j,k,1) - 0.5 * incflo_yslope_extdir
+            const Real vcc_pls = vcc(i,j,k,1);
+            const Real vcc_mns = vcc(i,j-1,k,1);
+
+            Real vpls = vcc_pls - 0.5 * incflo_yslope_extdir
                 (i,j,k,1,vcc, extdir_jlo, extdir_jhi, domain_jlo, domain_jhi);
-            Real vmns = vcc(i,j-1,k,1) + 0.5 * incflo_yslope_extdir
+            Real vmns = vcc_mns + 0.5 * incflo_yslope_extdir
                 (i,j-1,k,1,vcc, extdir_jlo, extdir_jhi, domain_jlo, domain_jhi);
-            if (vmns < 0.0 and vpls > 0.0) {
-                v(i,j,k) = 0.0;
-            } else {
+
+            Real v_val(0);
+
+            if (vmns >= 0.0 or vpls <= 0.0) {
                 Real avg = 0.5 * (vpls + vmns);
-                if (std::abs(avg) < small_vel) {
-                    v(i,j,k) = 0.0;
-                } else if (avg > 0.0) {
-                    v(i,j,k) = vmns;
-                } else {
-                    v(i,j,k) = vpls;
+
+                if (avg >= small_vel) {
+                    v_val = vmns;
+                }
+                else if (avg <= -small_vel){
+                    v_val = vpls;
                 }
             }
 
             if (extdir_jlo and j == domain_jlo) {
-                v(i,j,k) = vcc(i,j-1,k,1);
+                v_val = vcc_mns;
             } else if (extdir_jhi and j == domain_jhi+1) {
-                v(i,j,k) = vcc(i,j,k,1);
+                v_val = vcc_pls;
             }
+
+            v(i,j,k) = v_val;
         });
     }
     else
@@ -181,18 +199,21 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         {
             Real vpls = vcc(i,j  ,k,1) - 0.5 * incflo_yslope(i,j  ,k,1,vcc);
             Real vmns = vcc(i,j-1,k,1) + 0.5 * incflo_yslope(i,j-1,k,1,vcc);
-            if (vmns < 0.0 and vpls > 0.0) {
-                v(i,j,k) = 0.0;
-            } else {
+
+            Real v_val(0);
+
+            if (vmns >= 0.0 or vpls <= 0.0) {
                 Real avg = 0.5 * (vpls + vmns);
-                if (std::abs(avg) < small_vel) {
-                    v(i,j,k) = 0.0;
-                } else if (avg > 0.0) {
-                    v(i,j,k) = vmns;
-                } else {
-                    v(i,j,k) = vpls;
+
+                if (avg >= small_vel) {
+                    v_val = vmns;
+                }
+                else if (avg <= -small_vel) {
+                    v_val = vpls;
                 }
             }
+
+            v(i,j,k) = v_val;
         });
     }
 
@@ -202,28 +223,34 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         amrex::ParallelFor(wbx, [vcc,extdir_klo,extdir_khi,domain_klo,domain_khi,w]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            Real wpls = vcc(i,j,k,2) - 0.5 * incflo_zslope_extdir
+            const Real vcc_pls = vcc(i,j,k,2);
+            const Real vcc_mns = vcc(i,j,k-1,2);
+
+            Real wpls = vcc_pls - 0.5 * incflo_zslope_extdir
                 (i,j,k,2,vcc, extdir_klo, extdir_khi, domain_klo, domain_khi);
-            Real wmns = vcc(i,j,k-1,2) + 0.5 * incflo_zslope_extdir(
+            Real wmns = vcc_mns + 0.5 * incflo_zslope_extdir(
                 i,j,k-1,2,vcc, extdir_klo, extdir_khi, domain_klo, domain_khi);
-            if (wmns < 0.0 and wpls > 0.0) {
-                w(i,j,k) = 0.0;
-            } else {
+
+            Real w_val(0);
+
+            if (wmns >= 0.0 or wpls <= 0.0) {
                 Real avg = 0.5 * (wpls + wmns);
-                if (std::abs(avg) < small_vel) {
-                    w(i,j,k) = 0.0;
-                } else if (avg > 0.0) {
-                    w(i,j,k) = wmns;
-                } else {
-                    w(i,j,k) = wpls;
+
+                if (avg >= small_vel) {
+                    w_val = wmns;
+                }
+                else if (avg <= -small_vel) {
+                    w_val = wpls;
                 }
             }
 
             if (extdir_klo and k == domain_klo) {
-                w(i,j,k) = vcc(i,j,k-1,2);
+                w_val = vcc_mns;
             } else if (extdir_khi and k == domain_khi+1) {
-                w(i,j,k) = vcc(i,j,k,2);
+                w_val = vcc_pls;
             }
+
+            w(i,j,k) = w_val;
         });
     }
     else
@@ -233,16 +260,17 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         {
             Real wpls = vcc(i,j,k  ,2) - 0.5 * incflo_zslope(i,j,k  ,2,vcc);
             Real wmns = vcc(i,j,k-1,2) + 0.5 * incflo_zslope(i,j,k-1,2,vcc);
-            if (wmns < 0.0 and wpls > 0.0) {
-                w(i,j,k) = 0.0;
-            } else {
+
+            Real w_val(0);
+
+            if (wmns >= 0.0 or wpls <= 0.0) {
                 Real avg = 0.5 * (wpls + wmns);
-                if (std::abs(avg) < small_vel) {
-                    w(i,j,k) = 0.0;
-            } else if (avg > 0.0) {
-                    w(i,j,k) = wmns;
-                } else {
-                    w(i,j,k) = wpls;
+
+                if (avg >= small_vel) {
+                    w_val = wmns;
+                }
+                else if (avg <= -small_vel) {
+                    w_val = wpls;
                 }
             }
         });

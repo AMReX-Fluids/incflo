@@ -186,8 +186,12 @@ void incflo::ApplyCorrector()
 
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                        rho_n  (i,j,k) = rho_o(i,j,k) + l_dt * 0.5*(drdt(i,j,k)+drdt_o(i,j,k));
-                        rho_nph(i,j,k) = 0.5 * (rho_o(i,j,k) + rho_n(i,j,k));
+                    const Real rho_old = rho_o(i,j,k);
+
+                    Real rho_new = rho_old + l_dt * 0.5*(drdt(i,j,k)+drdt_o(i,j,k));
+                    rho_nph(i,j,k) = 0.5 * (rho_old + rho_new);
+
+                    rho_n  (i,j,k) = rho_new;
                 });
             } // mfi
         } // lev
@@ -235,12 +239,13 @@ void incflo::ApplyCorrector()
                     {
                         for (int n = 0; n < l_ntrac; ++n) 
                         {
-                            tra(i,j,k,n) = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
+                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
                                 ( 0.5*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
                                  +0.5*(laps_o(i,j,k,n) +   laps(i,j,k,n))
                                    +    tra_f(i,j,k,n) );
 
-                            tra(i,j,k,n) /= rho(i,j,k);
+                            tra_new /= rho(i,j,k);
+                            tra(i,j,k,n) = tra_new;
                         }
                     });
                 } 
@@ -252,12 +257,13 @@ void incflo::ApplyCorrector()
                     {
                         for (int n = 0; n < l_ntrac; ++n) 
                         {
-                            tra(i,j,k,n) = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
+                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
                                 ( 0.5*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
                                  +0.5*(laps_o(i,j,k,n)                  )
                                    +    tra_f(i,j,k,n) );
 
-                            tra(i,j,k,n) /= rho(i,j,k);
+                            tra_new /= rho(i,j,k);
+                            tra(i,j,k,n) = tra_new;
                         }
                     });
                 } 
@@ -267,11 +273,12 @@ void incflo::ApplyCorrector()
                     {
                         for (int n = 0; n < l_ntrac; ++n) 
                         {
-                            tra(i,j,k,n) = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
+                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
                                 ( 0.5*( dtdt(i,j,k,n)+dtdt_o(i,j,k,n))
                                    +   tra_f(i,j,k,n) );
 
-                            tra(i,j,k,n) /= rho(i,j,k);
+                            tra_new /= rho(i,j,k);
+                            tra(i,j,k,n) = tra_new;
                         }
                     });
                 }

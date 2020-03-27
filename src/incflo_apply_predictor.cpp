@@ -218,8 +218,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    rho_new(i,j,k) = rho_o(i,j,k) + l_dt * drdt(i,j,k);
-                    rho_nph(i,j,k) = 0.5 * (rho_o(i,j,k) + rho_new(i,j,k));
+                    const Real rho_old = rho_o(i,j,k);
+
+                    Real rho = rho_old + l_dt * drdt(i,j,k);
+                    rho_nph(i,j,k) = 0.5 * (rho_old + rho);
+
+                    rho_new(i,j,k) = rho;
                 });
             } // mfi
         } // lev
@@ -266,10 +270,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
                         //                   div(rho trac u) + div (mu grad trac) + rho * f_t 
                         for (int n = 0; n < l_ntrac; ++n) 
                         {
-                            tra(i,j,k,n) = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
+                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
                                 ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n) );
 
-                            tra(i,j,k,n) /= rho(i,j,k);
+                            tra_new /= rho(i,j,k);
+                            tra(i,j,k,n) = tra_new;
                         }
                     });
                 }
@@ -281,10 +286,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
                     {
                         for (int n = 0; n < l_ntrac; ++n) 
                         {
-                            tra(i,j,k,n) = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
+                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
                                 ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + 0.5 * laps_o(i,j,k,n) );
 
-                            tra(i,j,k,n) /= rho(i,j,k);
+                            tra_new /= rho(i,j,k);
+                            tra(i,j,k,n) = tra_new;
                         }
                     });
                 } 
@@ -294,10 +300,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
                     {
                         for (int n = 0; n < l_ntrac; ++n) 
                         {
-                            tra(i,j,k,n) = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
+                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
                                 ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) );
 
-                            tra(i,j,k,n) /= rho(i,j,k);
+                            tra_new /= rho(i,j,k);
+                            tra(i,j,k,n) = tra_new;
                         }
                     });
                 }

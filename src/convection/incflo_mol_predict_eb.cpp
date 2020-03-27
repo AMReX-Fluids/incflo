@@ -51,21 +51,22 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
          domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            Real u_val(0);
+
             if (flag(i,j,k).isConnected(-1,0,0))
             {
                Real yf = fcx(i,j,k,0); // local (y,z) of centroid of x-face we are extrapolating to
                Real zf = fcx(i,j,k,1);
 
-               Real xc = ccc(i,j,k,0); // centroid of cell (i,j,k)
-               Real yc = ccc(i,j,k,1);
-               Real zc = ccc(i,j,k,2);
+               Real delta_x = 0.5 + ccc(i,j,k,0);
+               Real delta_y = yf  - ccc(i,j,k,1);
+               Real delta_z = zf  - ccc(i,j,k,2);
 
-               Real delta_x = 0.5 + xc;
-               Real delta_y = yf  - yc;
-               Real delta_z = zf  - zc;
+               Real vcc_mns = vcc(i-1,j,k,0);
+               Real vcc_pls = vcc(i,j,k,0);
 
-               Real cc_umax = amrex::max(vcc(i,j,k,0), vcc(i-1,j,k,0));
-               Real cc_umin = amrex::min(vcc(i,j,k,0), vcc(i-1,j,k,0));
+               Real cc_umax = amrex::max(vcc_pls, vcc_mns);
+               Real cc_umin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "0" of vcc
                const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,0,vcc,ccc,flag,
@@ -73,19 +74,15 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                                           extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
                                           extdir_klo, extdir_khi, domain_klo, domain_khi);
 
-               Real upls = vcc(i  ,j,k,0) - delta_x * slopes_eb_hi[0]
-                                          + delta_y * slopes_eb_hi[1]
-                                          + delta_z * slopes_eb_hi[2];
+               Real upls = vcc_pls - delta_x * slopes_eb_hi[0]
+                                   + delta_y * slopes_eb_hi[1]
+                                   + delta_z * slopes_eb_hi[2];
 
                upls = amrex::max(amrex::min(upls, cc_umax), cc_umin);
 
-               xc = ccc(i-1,j,k,0); // centroid of cell (i-1,j,k)
-               yc = ccc(i-1,j,k,1);
-               zc = ccc(i-1,j,k,2);
-
-               delta_x = 0.5 - xc;
-               delta_y = yf  - yc;
-               delta_z = zf  - zc;
+               delta_x = 0.5 - ccc(i-1,j,k,0);
+               delta_y = yf  - ccc(i-1,j,k,1);
+               delta_z = zf  - ccc(i-1,j,k,2);
 
                // Compute slopes of component "0" of vcc
                const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i-1,j,k,0,vcc,ccc,flag,
@@ -93,31 +90,31 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                                           extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
                                           extdir_klo, extdir_khi, domain_klo, domain_khi);
 
-               Real umns = vcc(i-1,j,k,0) + delta_x * slopes_eb_lo[0]
-                                          + delta_y * slopes_eb_lo[1]
-                                          + delta_z * slopes_eb_lo[2];
+               Real umns = vcc_mns + delta_x * slopes_eb_lo[0]
+                                   + delta_y * slopes_eb_lo[1]
+                                   + delta_z * slopes_eb_lo[2];
 
                umns = amrex::max(amrex::min(umns, cc_umax), cc_umin);
 
-               if ( umns < 0.0 && upls > 0.0 ) {
-                  u(i,j,k) = 0.0;
-               } else {
+               if ( umns >= 0.0 or upls <= 0.0 ) {
                   Real avg = 0.5 * ( upls + umns );
-                  if ( std::abs(avg) <  small_vel) { u(i,j,k) = 0.0;
-                  } else if (avg >= 0)             { u(i,j,k) = umns;
-                  } else                           { u(i,j,k) = upls;
+
+                  if (avg >= small_vel) {
+                    u_val = umns;
+                  }
+                  else if (avg <= -small_vel) {
+                    u_val = upls;
                   }
                }
 
                if (extdir_ilo and i == domain_ilo) {
-                   u(i,j,k) = vcc(i-1,j,k,0);
+                   u_val = vcc_mns;
                } else if (extdir_ihi and i == domain_ihi+1) {
-                   u(i,j,k) = vcc(i,j,k,0);
+                   u_val = vcc_pls;
                }
-
-            } else {
-               u(i,j,k) = 0.0;
-            } 
+            }
+            
+            u(i,j,k) = u_val;
         });
     }
     else
@@ -126,61 +123,58 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         [u,vcc,flag,fcx,ccc]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            Real u_val(0);
+
             if (flag(i,j,k).isConnected(-1,0,0))
             {
                Real yf = fcx(i,j,k,0); // local (y,z) of centroid of x-face we are extrapolating to
                Real zf = fcx(i,j,k,1);
 
-               Real xc = ccc(i,j,k,0); // centroid of cell (i,j,k)
-               Real yc = ccc(i,j,k,1);
-               Real zc = ccc(i,j,k,2);
+               Real delta_x = 0.5 + ccc(i,j,k,0);
+               Real delta_y = yf  - ccc(i,j,k,1);
+               Real delta_z = zf  - ccc(i,j,k,2);
 
-               Real delta_x = 0.5 + xc;
-               Real delta_y = yf  - yc;
-               Real delta_z = zf  - zc;
+               const Real vcc_mns = vcc(i-1,j,k,0);
+               const Real vcc_pls = vcc(i,j,k,0);
 
-               Real cc_umax = amrex::max(vcc(i,j,k,0), vcc(i-1,j,k,0));
-               Real cc_umin = amrex::min(vcc(i,j,k,0), vcc(i-1,j,k,0));
+               Real cc_umax = amrex::max(vcc_pls, vcc_mns);
+               Real cc_umin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "0" of vcc
                const auto slopes_eb_hi = incflo_slopes_eb(i,j,k,0,vcc,ccc,flag);
 
-               Real upls = vcc(i  ,j,k,0) - delta_x * slopes_eb_hi[0]
-                                          + delta_y * slopes_eb_hi[1]
-                                          + delta_z * slopes_eb_hi[2];
+               Real upls = vcc_pls - delta_x * slopes_eb_hi[0]
+                                   + delta_y * slopes_eb_hi[1]
+                                   + delta_z * slopes_eb_hi[2];
 
                upls = amrex::max(amrex::min(upls, cc_umax), cc_umin);
 
-               xc = ccc(i-1,j,k,0); // centroid of cell (i-1,j,k)
-               yc = ccc(i-1,j,k,1);
-               zc = ccc(i-1,j,k,2);
-
-               delta_x = 0.5 - xc;
-               delta_y = yf  - yc;
-               delta_z = zf  - zc;
+               delta_x = 0.5 - ccc(i-1,j,k,0);
+               delta_y = yf  - ccc(i-1,j,k,1);
+               delta_z = zf  - ccc(i-1,j,k,2);
 
                // Compute slopes of component "0" of vcc
                const auto& slopes_eb_lo = incflo_slopes_eb(i-1,j,k,0,vcc,ccc,flag);
 
-               Real umns = vcc(i-1,j,k,0) + delta_x * slopes_eb_lo[0]
-                                          + delta_y * slopes_eb_lo[1]
-                                          + delta_z * slopes_eb_lo[2];
+               Real umns = vcc_mns + delta_x * slopes_eb_lo[0]
+                                   + delta_y * slopes_eb_lo[1]
+                                   + delta_z * slopes_eb_lo[2];
 
                umns = amrex::max(amrex::min(umns, cc_umax), cc_umin);
 
-               if ( umns < 0.0 && upls > 0.0 ) {
-                  u(i,j,k) = 0.0;
-               } else {
+               if ( umns >= 0.0 or upls <= 0.0 ) {
                   Real avg = 0.5 * ( upls + umns );
-                  if ( std::abs(avg) <  small_vel) { u(i,j,k) = 0.0;
-                  } else if (avg >= 0)             { u(i,j,k) = umns;
-                  } else                           { u(i,j,k) = upls;
+
+                  if (avg >= small_vel) {
+                    u_val = umns;
+                  }
+                  else if (avg <= -small_vel) {
+                    u_val = upls;
                   }
                }
+            }
 
-            } else {
-               u(i,j,k) = 0.0;
-            } 
+            u(i,j,k) = u_val;
         });
     }
 
@@ -195,21 +189,22 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
          domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            Real v_val(0);
+
             if (flag(i,j,k).isConnected(0,-1,0))
             {
                Real xf = fcy(i,j,k,0); // local (x,z) of centroid of y-face we are extrapolating to
                Real zf = fcy(i,j,k,1);
 
-               Real xc = ccc(i,j,k,0); // centroid of cell (i,j,k)
-               Real yc = ccc(i,j,k,1);
-               Real zc = ccc(i,j,k,2);
+               Real delta_x = xf  - ccc(i,j,k,0);
+               Real delta_y = 0.5 + ccc(i,j,k,1);
+               Real delta_z = zf  - ccc(i,j,k,2);
 
-               Real delta_x = xf  - xc;
-               Real delta_y = 0.5 + yc;
-               Real delta_z = zf  - zc;
+               const Real vcc_mns = vcc(i,j-1,k,1);
+               const Real vcc_pls = vcc(i,j,k,1);
 
-               Real cc_vmax = amrex::max(vcc(i,j,k,1), vcc(i,j-1,k,1));
-               Real cc_vmin = amrex::min(vcc(i,j,k,1), vcc(i,j-1,k,1));
+               Real cc_vmax = amrex::max(vcc_pls, vcc_mns);
+               Real cc_vmin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "1" of vcc
                const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,1,vcc,ccc,flag,
@@ -217,19 +212,15 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                                           extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
                                           extdir_klo, extdir_khi, domain_klo, domain_khi);
 
-               Real vpls = vcc(i,j  ,k,1) + delta_x * slopes_eb_hi[0]
-                                          - delta_y * slopes_eb_hi[1]
-                                          + delta_z * slopes_eb_hi[2];
+               Real vpls = vcc_pls + delta_x * slopes_eb_hi[0]
+                                   - delta_y * slopes_eb_hi[1]
+                                   + delta_z * slopes_eb_hi[2];
 
                vpls = amrex::max(amrex::min(vpls, cc_vmax), cc_vmin);
 
-               xc = ccc(i,j-1,k,0); // centroid of cell (i,j-1,k)
-               yc = ccc(i,j-1,k,1);
-               zc = ccc(i,j-1,k,2);
-
-               delta_x = xf  - xc;
-               delta_y = 0.5 - yc;
-               delta_z = zf  - zc;
+               delta_x = xf  - ccc(i,j-1,k,0);
+               delta_y = 0.5 - ccc(i,j-1,k,1);
+               delta_z = zf  - ccc(i,j-1,k,2);
 
                // Compute slopes of component "1" of vcc
                const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j-1,k,1,vcc,ccc,flag,
@@ -237,31 +228,32 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                                           extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
                                           extdir_klo, extdir_khi, domain_klo, domain_khi);
 
-               Real vmns = vcc(i,j-1,k,1) + delta_x * slopes_eb_lo[0]
-                                          + delta_y * slopes_eb_lo[1]
-                                          + delta_z * slopes_eb_lo[2];
+               Real vmns = vcc_mns + delta_x * slopes_eb_lo[0]
+                                   + delta_y * slopes_eb_lo[1]
+                                   + delta_z * slopes_eb_lo[2];
 
                vmns = amrex::max(amrex::min(vmns, cc_vmax), cc_vmin);
 
-               if ( vmns < 0.0 && vpls > 0.0 ) {
-                  v(i,j,k) = 0.0;
-               } else {
+               if ( vmns >= 0.0 or vpls <= 0.0 ) {
                   Real avg = 0.5 * ( vpls + vmns );
-                  if ( std::abs(avg) <  small_vel) { v(i,j,k) = 0.0;
-                  } else if (avg >= 0)             { v(i,j,k) = vmns;
-                  } else                           { v(i,j,k) = vpls;
+
+                  if (avg >= small_vel) {
+                    v_val = vmns;
+                  }
+                  else if (avg <= -small_vel) {
+                    v_val = vpls;
                   }
                }
 
                if (extdir_jlo and j == domain_jlo) {
-                   v(i,j,k) = vcc(i,j-1,k,1);
-               } else if (extdir_jhi and j == domain_jhi+1) {
-                   v(i,j,k) = vcc(i,j,k,1);
+                   v_val = vcc_mns;
+               } 
+               else if (extdir_jhi and j == domain_jhi+1) {
+                   v_val = vcc_pls;
                }
+            }
 
-            } else {
-               v(i,j,k) = 0.0;
-            } 
+            v(i,j,k) = v_val;
         });
     }
     else
@@ -269,61 +261,58 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         amrex::ParallelFor(Box(vbx),
         [v,vcc,flag,fcy,ccc] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            Real v_val(0);
+
             if (flag(i,j,k).isConnected(0,-1,0))
             {
                Real xf = fcy(i,j,k,0); // local (x,z) of centroid of y-face we are extrapolating to
                Real zf = fcy(i,j,k,1);
 
-               Real xc = ccc(i,j,k,0); // centroid of cell (i,j,k)
-               Real yc = ccc(i,j,k,1);
-               Real zc = ccc(i,j,k,2);
+               Real delta_x = xf  - ccc(i,j,k,0);
+               Real delta_y = 0.5 + ccc(i,j,k,1);
+               Real delta_z = zf  - ccc(i,j,k,2);
 
-               Real delta_x = xf  - xc;
-               Real delta_y = 0.5 + yc;
-               Real delta_z = zf  - zc;
+               const Real vcc_mns = vcc(i,j-1,k,1);
+               const Real vcc_pls = vcc(i,j,k,1);
 
-               Real cc_vmax = amrex::max(vcc(i,j,k,1), vcc(i,j-1,k,1));
-               Real cc_vmin = amrex::min(vcc(i,j,k,1), vcc(i,j-1,k,1));
+               Real cc_vmax = amrex::max(vcc_pls, vcc_mns);
+               Real cc_vmin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "1" of vcc
                const auto slopes_eb_hi = incflo_slopes_eb(i,j,k,1,vcc,ccc,flag);
 
-               Real vpls = vcc(i,j  ,k,1) + delta_x * slopes_eb_hi[0]
-                                          - delta_y * slopes_eb_hi[1]
-                                          + delta_z * slopes_eb_hi[2];
+               Real vpls = vcc_pls + delta_x * slopes_eb_hi[0]
+                                   - delta_y * slopes_eb_hi[1]
+                                   + delta_z * slopes_eb_hi[2];
 
                vpls = amrex::max(amrex::min(vpls, cc_vmax), cc_vmin);
 
-               xc = ccc(i,j-1,k,0); // centroid of cell (i,j-1,k)
-               yc = ccc(i,j-1,k,1);
-               zc = ccc(i,j-1,k,2);
-
-               delta_x = xf  - xc;
-               delta_y = 0.5 - yc;
-               delta_z = zf  - zc;
+               delta_x = xf  - ccc(i,j-1,k,0);
+               delta_y = 0.5 - ccc(i,j-1,k,1);
+               delta_z = zf  - ccc(i,j-1,k,2);
 
                // Compute slopes of component "1" of vcc
                const auto& slopes_eb_lo = incflo_slopes_eb(i,j-1,k,1,vcc,ccc,flag);
 
-               Real vmns = vcc(i,j-1,k,1) + delta_x * slopes_eb_lo[0]
-                                          + delta_y * slopes_eb_lo[1]
-                                          + delta_z * slopes_eb_lo[2];
+               Real vmns = vcc_mns + delta_x * slopes_eb_lo[0]
+                                   + delta_y * slopes_eb_lo[1]
+                                   + delta_z * slopes_eb_lo[2];
                                           
                vmns = amrex::max(amrex::min(vmns, cc_vmax), cc_vmin);
 
-               if ( vmns < 0.0 && vpls > 0.0 ) {
-                  v(i,j,k) = 0.0;
-               } else {
+               if ( vmns >= 0.0 or vpls <= 0.0 ) {
                   Real avg = 0.5 * ( vpls + vmns );
-                  if ( std::abs(avg) <  small_vel) { v(i,j,k) = 0.0;
-                  } else if (avg >= 0)             { v(i,j,k) = vmns;
-                  } else                           { v(i,j,k) = vpls;
+
+                  if (avg >= small_vel) {
+                    v(i,j,k) = vmns;
+                  }
+                  else if (avg <= -small_vel) {
+                    v(i,j,k) = vpls;
                   }
                }
+            }
 
-            } else {
-               v(i,j,k) = 0.0;
-            } 
+            v(i,j,k) = v_val;
         });
     }
 
@@ -338,21 +327,22 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
          domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            Real w_val(0);
+
             if (flag(i,j,k).isConnected(0,0,-1))
             {
                Real xf = fcz(i,j,k,0); // local (x,y) of centroid of z-face we are extrapolating to
                Real yf = fcz(i,j,k,1);
 
-               Real xc = ccc(i,j,k,0); // centroid of cell (i,j,k)
-               Real yc = ccc(i,j,k,1);
-               Real zc = ccc(i,j,k,2);
+               Real delta_x = xf  - ccc(i,j,k,0);
+               Real delta_y = yf  - ccc(i,j,k,1);
+               Real delta_z = 0.5 + ccc(i,j,k,2);
 
-               Real delta_x = xf  - xc;
-               Real delta_y = yf  - yc;
-               Real delta_z = 0.5 + zc;
+               const Real vcc_mns = vcc(i,j,k-1,2);
+               const Real vcc_pls = vcc(i,j,k,2);
 
-               Real cc_wmax = amrex::max(vcc(i,j,k,2), vcc(i,j,k-1,2));
-               Real cc_wmin = amrex::min(vcc(i,j,k,2), vcc(i,j,k-1,2));
+               Real cc_wmax = amrex::max(vcc_pls, vcc_mns);
+               Real cc_wmin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,2,vcc,ccc,flag,
@@ -360,19 +350,15 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                                           extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
                                           extdir_klo, extdir_khi, domain_klo, domain_khi);
 
-               Real wpls = vcc(i,j,k  ,2) + delta_x * slopes_eb_hi[0]
-                                          + delta_y * slopes_eb_hi[1]
-                                          - delta_z * slopes_eb_hi[2];
+               Real wpls = vcc_pls + delta_x * slopes_eb_hi[0]
+                                   + delta_y * slopes_eb_hi[1]
+                                   - delta_z * slopes_eb_hi[2];
 
                wpls = amrex::max(amrex::min(wpls, cc_wmax), cc_wmin);
 
-               xc = ccc(i,j,k-1,0); // centroid of cell (i,j,k-1)
-               yc = ccc(i,j,k-1,1);
-               zc = ccc(i,j,k-1,2);
-
-               delta_x = xf  - xc;
-               delta_y = yf  - yc;
-               delta_z = 0.5 - zc;
+               delta_x = xf  - ccc(i,j,k-1,0);
+               delta_y = yf  - ccc(i,j,k-1,1);
+               delta_z = 0.5 - ccc(i,j,k-1,2);
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j,k-1,2,vcc,ccc,flag,
@@ -380,31 +366,32 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                                           extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
                                           extdir_klo, extdir_khi, domain_klo, domain_khi);
 
-               Real wmns = vcc(i,j,k-1,2) + delta_x * slopes_eb_lo[0]
-                                          + delta_y * slopes_eb_lo[1]
-                                          + delta_z * slopes_eb_lo[2];
+               Real wmns = vcc_mns + delta_x * slopes_eb_lo[0]
+                                   + delta_y * slopes_eb_lo[1]
+                                   + delta_z * slopes_eb_lo[2];
 
                wmns = amrex::max(amrex::min(wmns, cc_wmax), cc_wmin);
 
-               if ( wmns < 0.0 && wpls > 0.0 ) {
-                  w(i,j,k) = 0.0;
-               } else {
+               if ( wmns >= 0.0 or wpls <= 0.0 ) {
                   Real avg = 0.5 * ( wpls + wmns );
-                  if ( std::abs(avg) <  small_vel) { w(i,j,k) = 0.0;
-                  } else if (avg >= 0)             { w(i,j,k) = wmns;
-                  } else                           { w(i,j,k) = wpls;
+
+                  if (avg >= small_vel) {
+                    w_val = wmns;
+                  }
+                  else if (avg <= -small_vel) {
+                    w_val = wpls;
                   }
                }
 
                 if (extdir_klo and k == domain_klo) {
-                    w(i,j,k) = vcc(i,j,k-1,2);
-                } else if (extdir_khi and k == domain_khi+1) {
-                    w(i,j,k) = vcc(i,j,k,2);
+                    w_val = vcc_mns;
                 }
+                else if (extdir_khi and k == domain_khi+1) {
+                    w_val = vcc_pls;
+                }
+            }
 
-            } else {
-               w(i,j,k) = 0.0;
-            } 
+            w(i,j,k) = w_val;
         });
     }
     else
@@ -412,61 +399,58 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         amrex::ParallelFor(Box(wbx),
         [w,vcc,flag,fcz,ccc] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            Real w_val(0);
+
             if (flag(i,j,k).isConnected(0,0,-1))
             {
                Real xf = fcz(i,j,k,0); // local (x,y) of centroid of z-face we are extrapolating to
                Real yf = fcz(i,j,k,1);
 
-               Real xc = ccc(i,j,k,0); // centroid of cell (i,j,k)
-               Real yc = ccc(i,j,k,1);
-               Real zc = ccc(i,j,k,2);
+               Real delta_x = xf  - ccc(i,j,k,0);
+               Real delta_y = yf  - ccc(i,j,k,1);
+               Real delta_z = 0.5 + ccc(i,j,k,2);
 
-               Real delta_x = xf  - xc;
-               Real delta_y = yf  - yc;
-               Real delta_z = 0.5 + zc;
+               const Real vcc_mns = vcc(i,j,k-1,2);
+               const Real vcc_pls = vcc(i,j,k,2);
 
-               Real cc_wmax = amrex::max(vcc(i,j,k,2), vcc(i,j,k-1,2));
-               Real cc_wmin = amrex::min(vcc(i,j,k,2), vcc(i,j,k-1,2));
+               Real cc_wmax = amrex::max(vcc_pls, vcc_mns);
+               Real cc_wmin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "2" of vcc
                const auto slopes_eb_hi = incflo_slopes_eb(i,j,k,2,vcc,ccc,flag);
 
-               Real wpls = vcc(i,j,k  ,2) + delta_x * slopes_eb_hi[0]
-                                          + delta_y * slopes_eb_hi[1]
-                                          - delta_z * slopes_eb_hi[2];
+               Real wpls = vcc_pls + delta_x * slopes_eb_hi[0]
+                                   + delta_y * slopes_eb_hi[1]
+                                   - delta_z * slopes_eb_hi[2];
 
                wpls = amrex::max(amrex::min(wpls, cc_wmax), cc_wmin);
 
-               xc = ccc(i,j,k-1,0); // centroid of cell (i,j,k-1)
-               yc = ccc(i,j,k-1,1);
-               zc = ccc(i,j,k-1,2);
-
-               delta_x = xf  - xc;
-               delta_y = yf  - yc;
-               delta_z = 0.5 - zc;
+               delta_x = xf  - ccc(i,j,k-1,0);
+               delta_y = yf  - ccc(i,j,k-1,1);
+               delta_z = 0.5 - ccc(i,j,k-1,2);
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_lo = incflo_slopes_eb(i,j,k-1,2,vcc,ccc,flag);
 
-               Real wmns = vcc(i,j,k-1,2) + delta_x * slopes_eb_lo[0]
-                                          + delta_y * slopes_eb_lo[1]
-                                          + delta_z * slopes_eb_lo[2];
+               Real wmns = vcc_mns + delta_x * slopes_eb_lo[0]
+                                   + delta_y * slopes_eb_lo[1]
+                                   + delta_z * slopes_eb_lo[2];
 
                wmns = amrex::max(amrex::min(wmns, cc_wmax), cc_wmin);
 
-               if ( wmns < 0.0 && wpls > 0.0 ) {
-                  w(i,j,k) = 0.0;
-               } else {
+               if ( wmns >= 0.0 or wpls <= 0.0 ) {
                   Real avg = 0.5 * ( wpls + wmns );
-                  if ( std::abs(avg) <  small_vel) { w(i,j,k) = 0.0;
-                  } else if (avg >= 0)             { w(i,j,k) = wmns;
-                  } else                           { w(i,j,k) = wpls;
+
+                  if (avg >= small_vel) {
+                    w_val = wmns;
+                  }
+                  else if (avg <= -small_vel) {
+                    w_val = wpls;
                   }
                }
+            }
 
-            } else {
-               w(i,j,k) = 0.0;
-            } 
+            w(i,j,k) = w_val;
         });
     }
 }
