@@ -15,7 +15,7 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
     static bool first = true;
     static Vector<Real> rhoerr_v, gradrhoerr_v;
 
-    bool tag_region;
+    static bool tag_region;
 
     if (first) {
         first = false;
