@@ -273,6 +273,8 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
                     w_val = wpls;
                 }
             }
+
+            w(i,j,k) = w_val;
         });
     }
 }

@@ -304,10 +304,10 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                   Real avg = 0.5 * ( vpls + vmns );
 
                   if (avg >= small_vel) {
-                    v(i,j,k) = vmns;
+                    v_val = vmns;
                   }
                   else if (avg <= -small_vel) {
-                    v(i,j,k) = vpls;
+                    v_val = vpls;
                   }
                }
             }
