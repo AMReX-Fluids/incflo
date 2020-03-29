@@ -23,7 +23,7 @@ amrex::Real incflo_strainrate (int i, int j, int k,
     Real vz = 0.5 * (vel(i,j,k+1,1) - vel(i,j,k-1,1)) * idz;
     Real wz = 0.5 * (vel(i,j,k+1,2) - vel(i,j,k-1,2)) * idz;
 
-    return amrex::Math::sqrt(2.0 * ux*ux + 2.0 * vy*vy + 2.0 * wz*wz
+    return std::sqrt(2.0 * ux*ux + 2.0 * vy*vy + 2.0 * wz*wz
                      + (uy+vx)*(uy+vx) + (vz+wy)*(vz+wy) + (wx+uz)*(wx+uz));
 }
 
@@ -141,7 +141,7 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
             wz = 0.5 * (vel(i,j,k+1,2) - vel(i,j,k-1,2)) * idz;
         }
 
-        return amrex::Math::sqrt(2.0 * ux*ux + 2.0 * vy*vy + 2.0 * wz*wz
+        return std::sqrt(2.0 * ux*ux + 2.0 * vy*vy + 2.0 * wz*wz
                          + (uy+vx)*(uy+vx) + (vz+wy)*(vz+wy) + (wx+uz)*(wx+uz));
     } else {
         return 0.0;
