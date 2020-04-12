@@ -208,7 +208,6 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         if (!regular)
         {
             Array4<Real> scratch = tmpfab.array(0);
-            Array4<Real> qface = tmpfab.array(nmaxcomp*3);
             Array4<Real> dUdt_tmp = tmpfab.array(nmaxcomp*3);
 
             // velocity
