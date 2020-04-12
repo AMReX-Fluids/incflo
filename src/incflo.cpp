@@ -120,7 +120,7 @@ void incflo::Evolve()
 
         if (m_regrid_int > 0 and m_nstep > 0 and m_nstep%m_regrid_int == 0)
         {
-            if (m_verbose > 0) amrex::Print() << "Regriding...\n";
+            if (m_verbose > 0) amrex::Print() << "Regridding...\n";
             regrid(0, m_cur_time);
             if (m_verbose > 0 and ParallelDescriptor::IOProcessor()) {
                 printGridSummary(amrex::OutStream(), 0, finest_level);
