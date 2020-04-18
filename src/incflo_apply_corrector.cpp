@@ -239,8 +239,8 @@ void incflo::ApplyCorrector()
                     {
                         for (int n = 0; n < l_ntrac; ++n) 
                         {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( 0.5*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
+                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
+                                  0.5*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
                                  +0.5*(laps_o(i,j,k,n) +   laps(i,j,k,n))
                                    +    tra_f(i,j,k,n) );
 
@@ -257,8 +257,8 @@ void incflo::ApplyCorrector()
                     {
                         for (int n = 0; n < l_ntrac; ++n) 
                         {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( 0.5*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
+                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
+                                  0.5*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
                                  +0.5*(laps_o(i,j,k,n)                  )
                                    +    tra_f(i,j,k,n) );
 
@@ -273,9 +273,9 @@ void incflo::ApplyCorrector()
                     {
                         for (int n = 0; n < l_ntrac; ++n) 
                         {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( 0.5*( dtdt(i,j,k,n)+dtdt_o(i,j,k,n))
-                                   +   tra_f(i,j,k,n) );
+                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
+                                  0.5*(  dtdt(i,j,k,n)+dtdt_o(i,j,k,n))
+                                 +      tra_f(i,j,k,n) );
 
                             tra_new /= rho(i,j,k);
                             tra(i,j,k,n) = tra_new;
@@ -329,13 +329,17 @@ void incflo::ApplyCorrector()
             Array4<Real const> const& dvdt_o = ld.conv_velocity_o.const_array(mfi);
             Array4<Real const> const& vel_f = vel_forces[lev].const_array(mfi);
 
-            if (m_diff_type == DiffusionType::Implicit) 
+            if (m_diff_type == DiffusionType::Explicit) 
             {
+                Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
+                Array4<Real const> const& divtau   = ld.divtau.const_array(mfi);
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-                        vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt*
-                            (0.5*(dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))+vel_f(i,j,k,idim));
+                        vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
+                             0.5*(  dvdt_o(i,j,k,idim)+  dvdt(i,j,k,idim))
+                            +0.5*(divtau_o(i,j,k,idim)+divtau(i,j,k,idim))
+                            +        vel_f(i,j,k,idim) );
                     }
                 });
             } 
@@ -345,23 +349,21 @@ void incflo::ApplyCorrector()
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-                        vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt*
-                            (0.5*(dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))+vel_f(i,j,k,idim) 
-                                +divtau_o(i,j,k,idim));
+                        vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
+                            0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
+                           +0.5*(divtau_o(i,j,k,idim)                 )
+                           +        vel_f(i,j,k,idim) );
                     }
                 });
             }
-            else if (m_diff_type == DiffusionType::Explicit)
+            else if (m_diff_type == DiffusionType::Implicit)
             {
-                Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
-                Array4<Real const> const& divtau   = ld.divtau.const_array(mfi);
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-                        vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt*
-                            (0.5*(dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim)
-                                +divtau_o(i,j,k,idim)+divtau(i,j,k,idim))
-                             +vel_f(i,j,k,idim));
+                        vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
+                             0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
+                            +        vel_f(i,j,k,idim) );
                     }
                 });
             } 
