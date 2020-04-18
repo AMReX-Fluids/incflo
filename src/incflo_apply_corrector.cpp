@@ -223,7 +223,6 @@ void incflo::ApplyCorrector()
                 Array4<Real const> const& rho_o   = ld.density_o.const_array(mfi);
                 Array4<Real      > const& tra     = ld.tracer.array(mfi);
                 Array4<Real const> const& rho     = ld.density.const_array(mfi);
-                Array4<Real const> const& rho_nph = density_nph[lev].const_array(mfi);
                 Array4<Real const> const& dtdt_o  = ld.conv_tracer_o.const_array(mfi);
                 Array4<Real const> const& dtdt    = ld.conv_tracer.const_array(mfi);
                 Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
