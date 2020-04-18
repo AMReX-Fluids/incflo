@@ -20,17 +20,16 @@ namespace godunov {
                           amrex::Vector<amrex::Geometry> geom,
                           amrex::Real dt, bool use_ppm, bool use_forces_in_trans);
 
-   void predict_plm (int lev, amrex::Box const& bx, int ncomp,
-                     amrex::Array4<amrex::Real> const& Imx, amrex::Array4<amrex::Real> const& Ipx,
-                     amrex::Array4<amrex::Real> const& Imy, amrex::Array4<amrex::Real> const& Ipy,
-                     amrex::Array4<amrex::Real> const& Imz, amrex::Array4<amrex::Real> const& Ipz,
-                     amrex::Array4<amrex::Real const> const& q,
-                     amrex::Array4<amrex::Real  const> const& vcc,
-                     const amrex::Box& domain,
-                     const amrex::Real* dx,
-                     amrex::Real dt,
-                     amrex::Vector<amrex::BCRec> const& h_bcrec,
-                     amrex::BCRec const* d_bcrec);
+    void predict_plm (int lev, amrex::Box const& bx, int ncomp,
+                      amrex::Array4<amrex::Real> const& Imx, amrex::Array4<amrex::Real> const& Ipx,
+                      amrex::Array4<amrex::Real> const& Imy, amrex::Array4<amrex::Real> const& Ipy,
+                      amrex::Array4<amrex::Real> const& Imz, amrex::Array4<amrex::Real> const& Ipz,
+                      amrex::Array4<amrex::Real const> const& q,
+                      amrex::Array4<amrex::Real  const> const& vcc,
+                      amrex::Vector<amrex::Geometry> geom,
+                      amrex::Real dt,
+                      amrex::Vector<amrex::BCRec> const& h_bcrec,
+                      amrex::BCRec const* d_bcrec);
 
 
     void predict_ppm (int lev, amrex::Box const& bx, int ncomp,
@@ -43,8 +42,6 @@ namespace godunov {
                       amrex::Array4<amrex::Real const> const& q,
                       amrex::Array4<amrex::Real const> const& vel,
                       amrex::Vector<amrex::Geometry> geom,
-                      const amrex::Box& domain,
-                      const amrex::Real* dx,
                       amrex::Real dt,
                       amrex::BCRec const* d_bcrec);
 
