@@ -1,5 +1,4 @@
 #ifndef INCFLO_H_
-#define INCFLO_H_
 
 #include <AMReX_AmrCore.H>
 #include <AMReX_MultiFabUtil.H>
@@ -124,74 +123,6 @@ public: // for cuda
                                   amrex::Array4<amrex::Real const> const& wmac,
                                   amrex::Array4<amrex::Real const> const& fv,
                                   amrex::Array4<amrex::Real const> const& ft);
-
-    //
-    // Godunov
-    //
-    void predict_godunov (int lev, amrex::Real time, amrex::MultiFab& u_mac,
-                          amrex::MultiFab& v_mac, amrex::MultiFab& w_mac,
-                          amrex::MultiFab const& vel, 
-                          amrex::MultiFab const& vel_forces);
-
-   void predict_plm (int lev, amrex::Box const& bx, int ncomp,
-                      amrex::Array4<amrex::Real> const& Imx, amrex::Array4<amrex::Real> const& Ipx,
-                      amrex::Array4<amrex::Real> const& Imy, amrex::Array4<amrex::Real> const& Ipy,
-                      amrex::Array4<amrex::Real> const& Imz, amrex::Array4<amrex::Real> const& Ipz,
-                      amrex::Array4<amrex::Real const> const& q,
-                      amrex::Array4<amrex::Real  const> const& vcc);
-
-
-    void predict_ppm (int lev, amrex::Box const& bx, int ncomp,
-                      amrex::Array4<amrex::Real> const& Imx,
-                      amrex::Array4<amrex::Real> const& Ipx,
-                      amrex::Array4<amrex::Real> const& Imy,
-                      amrex::Array4<amrex::Real> const& Ipy,
-                      amrex::Array4<amrex::Real> const& Imz,
-                      amrex::Array4<amrex::Real> const& Ipz,
-                      amrex::Array4<amrex::Real const> const& q,
-                      amrex::Array4<amrex::Real const> const& vel);
-
-    void make_trans_velocities (int lev, amrex::Box const& xbx,
-                                amrex::Box const& ybx, amrex::Box const& zbx,
-                                amrex::Array4<amrex::Real> const& u_ad,
-                                amrex::Array4<amrex::Real> const& v_ad,
-                                amrex::Array4<amrex::Real> const& w_ad,
-                                amrex::Array4<amrex::Real const> const& Imx,
-                                amrex::Array4<amrex::Real const> const& Ipx,
-                                amrex::Array4<amrex::Real const> const& Imy,
-                                amrex::Array4<amrex::Real const> const& Ipy,
-                                amrex::Array4<amrex::Real const> const& Imz,
-                                amrex::Array4<amrex::Real const> const& Ipz,
-                                amrex::Array4<amrex::Real const> const& vel,
-                                amrex::Array4<amrex::Real const> const& f);
-
-    void predict_godunov (int lev, amrex::Box const& bx, int ncomp,
-                          amrex::Box const& xbx, amrex::Box const& ybx, amrex::Box const& zbx,
-                          amrex::Array4<amrex::Real> const& qx,
-                          amrex::Array4<amrex::Real> const& qy,
-                          amrex::Array4<amrex::Real> const& qz,
-                          amrex::Array4<amrex::Real const> const& q,
-                          amrex::Array4<amrex::Real const> const& u_ad,
-                          amrex::Array4<amrex::Real const> const& v_ad,
-                          amrex::Array4<amrex::Real const> const& w_ad,
-                          amrex::Array4<amrex::Real> const& Imx,
-                          amrex::Array4<amrex::Real> const& Ipx,
-                          amrex::Array4<amrex::Real> const& Imy,
-                          amrex::Array4<amrex::Real> const& Ipy,
-                          amrex::Array4<amrex::Real> const& Imz,
-                          amrex::Array4<amrex::Real> const& Ipz,
-                          amrex::Array4<amrex::Real const> const& f,
-                          amrex::Real* p);
-
-    void compute_godunov_advection (int lev, amrex::Box const& bx, int ncomp,
-                                    amrex::Array4<amrex::Real> const& dqdt,
-                                    amrex::Array4<amrex::Real const> const& q,
-                                    amrex::Array4<amrex::Real const> const& umac,
-                                    amrex::Array4<amrex::Real const> const& vmac,
-                                    amrex::Array4<amrex::Real const> const& wmac,
-                                    amrex::Array4<amrex::Real const> const& fq,
-                                    amrex::BCRec const* d_bcrec, int const* iconserv,
-                                    amrex::Real* p);
 
     //
     // MOL
@@ -638,8 +569,9 @@ private:
     int nghost_state () const {
 #ifdef AMREX_USE_EB
         if (!EBFactory(0).isAllRegular()) return (m_use_godunov) ? 5 : 4;
-#endif
+#else
         return (m_use_godunov) ? 3 : 2;
+#endif
     }
 
     int nghost_force () const { return (m_use_godunov) ? 1 : 0; }

@@ -1,6 +1,6 @@
 #ifndef GODUNOV_PPM_H
 #define GODUNOV_PPM_H
-#include <incflo.H> 
+
 #include <AMReX_Gpu.H> 
 #include <AMReX_FArrayBox.H>
 #include <AMReX_BCRec.H> 
@@ -694,7 +694,7 @@ void Godunov_trans_xbc(const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
 
-    constexpr amrex::Real small_vel = 1e-10;
+    // constexpr amrex::Real small_vel = 1e-10;
 
     // Low X
     if (i <= domlo)
@@ -754,7 +754,7 @@ void Godunov_trans_ybc(const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
 
-    constexpr amrex::Real small_vel = 1e-10;
+    // constexpr amrex::Real small_vel = 1e-10;
 
     // Low Y 
     if (j <= domlo)
@@ -814,7 +814,7 @@ void Godunov_trans_zbc(const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
 
-    constexpr amrex::Real small_vel = 1e-10;
+    // constexpr amrex::Real small_vel = 1e-10;
 
     // Low Z
     if (k <= domlo)

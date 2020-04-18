@@ -1,4 +1,5 @@
 #include <incflo.H>
+#include <Godunov.H>
 
 using namespace amrex;
 
@@ -30,11 +31,15 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 {
     int ngmac = nghost_mac();
 
+    Real l_dt = m_dt;
+
     for (int lev = 0; lev <= finest_level; ++lev) {
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
         if (m_use_godunov) {
-            predict_godunov(lev, time, *u_mac[lev], *v_mac[lev], *w_mac[lev], *vel[lev], *vel_forces[lev]);
+            godunov::predict_godunov(lev, time, *u_mac[lev], *v_mac[lev], *w_mac[lev], *vel[lev], *vel_forces[lev],
+                                     get_velocity_bcrec(), get_velocity_bcrec_device_ptr(), 
+                                     Geom(), l_dt, m_godunov_ppm, m_godunov_use_forces_in_trans);
         } else {
             predict_vels_on_faces(lev, *u_mac[lev], *v_mac[lev], *w_mac[lev], *vel[lev]);
         }
@@ -160,27 +165,30 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         FArrayBox tmpfab(amrex::grow(bx,1), nmaxcomp*14+1);
 //        Elixir eli = tmpfab.elixir();
 
-        compute_godunov_advection(lev, bx, AMREX_SPACEDIM,
-                                  dvdt, vel,
-                                  umac, vmac, wmac, fvel,
-                                  get_velocity_bcrec_device_ptr(),
-                                  get_velocity_iconserv_device_ptr(),
-                                  tmpfab.dataPtr());
+        godunov::compute_godunov_advection(lev, bx, AMREX_SPACEDIM,
+                                           dvdt, vel,
+                                           umac, vmac, wmac, fvel, 
+                                           geom, m_dt, 
+                                           get_velocity_bcrec_device_ptr(),
+                                           get_velocity_iconserv_device_ptr(),
+                                           tmpfab.dataPtr(),m_godunov_ppm);
         if (!m_constant_density) {
-            compute_godunov_advection(lev, bx, 1,
-                                      drdt, rho,
-                                      umac, vmac, wmac, {},
-                                      get_density_bcrec_device_ptr(),
-                                      get_density_iconserv_device_ptr(),
-                                      tmpfab.dataPtr());
+            godunov::compute_godunov_advection(lev, bx, 1,
+                                               drdt, rho,
+                                               umac, vmac, wmac, {},
+                                               geom, m_dt, 
+                                               get_density_bcrec_device_ptr(),
+                                               get_density_iconserv_device_ptr(),
+                                               tmpfab.dataPtr(),m_godunov_ppm);
         }
         if (m_advect_tracer) {
-            compute_godunov_advection(lev, bx, m_ntrac,
-                                      dtdt, rhotrac,
-                                      umac, vmac, wmac, ftra,
-                                      get_tracer_bcrec_device_ptr(),
-                                      get_tracer_iconserv_device_ptr(),
-                                      tmpfab.dataPtr());
+            godunov::compute_godunov_advection(lev, bx, m_ntrac,
+                                               dtdt, rhotrac,
+                                               umac, vmac, wmac, ftra,
+                                               geom, m_dt, 
+                                               get_tracer_bcrec_device_ptr(),
+                                               get_tracer_iconserv_device_ptr(),
+                                               tmpfab.dataPtr(),m_godunov_ppm);
         }
         Gpu::streamSynchronize();
     }
