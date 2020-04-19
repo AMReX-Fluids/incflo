@@ -5,14 +5,12 @@
 #ifndef MOL_H
 #define MOL_H
 
-#ifdef AMREX_USE_EB
-#include "AMReX_EBFabFactory.H"
-#include <AMReX_EBMultiFabUtil.H>
-#include <AMReX_EB_utils.H>
-#endif
-
 #include <AMReX_BCRec.H>
 #include <AMReX_MultiFab.H>
+
+#ifdef AMREX_USE_EB
+#include <AMReX_MultiCutFab.H>
+#endif
 
 
 namespace mol {
