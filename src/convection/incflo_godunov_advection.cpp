@@ -99,7 +99,6 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
                               q, vmac(i,j,k), pbc[n], dlo.y, dhi.y);
         });
 
-        std::cout << "ZBOX " << zbx << std::endl;
         amrex::ParallelFor(zbx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
