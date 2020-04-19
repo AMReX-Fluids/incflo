@@ -129,7 +129,9 @@ public: // for cuda
     //
     void predict_vels_on_faces (int lev,  amrex::MultiFab& u_mac,
                                 amrex::MultiFab& v_mac, amrex::MultiFab& w_mac,
-                                amrex::MultiFab const& vel);
+                                amrex::MultiFab const& vel,
+                                amrex::Vector<amrex::BCRec> const& h_bcrec,
+                                              amrex::BCRec  const* d_bcrec);
 
     void predict_vels_on_faces (int lev,
                                 amrex::Box const& ubx,
@@ -138,7 +140,9 @@ public: // for cuda
                                 amrex::Array4<amrex::Real> const& u,
                                 amrex::Array4<amrex::Real> const& v,
                                 amrex::Array4<amrex::Real> const& w,
-                                amrex::Array4<amrex::Real const> const& vcc);
+                                amrex::Array4<amrex::Real const> const& vcc,
+                                amrex::Vector<amrex::BCRec> const& h_bcrec,
+                                              amrex::BCRec  const* d_bcrec);
 
 #ifdef AMREX_USE_EB
     void predict_vels_on_faces_eb (int lev,
@@ -154,7 +158,9 @@ public: // for cuda
                                    amrex::Array4<amrex::Real const> const& fcx,
                                    amrex::Array4<amrex::Real const> const& fcy,
                                    amrex::Array4<amrex::Real const> const& fcz, 
-                                   amrex::Array4<amrex::Real const> const& ccc);
+                                   amrex::Array4<amrex::Real const> const& ccc,
+                                   amrex::Vector<amrex::BCRec> const& h_bcrec,
+                                                 amrex::BCRec  const* d_bcrec);
 #endif
      
     void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,

@@ -3,6 +3,18 @@
 
 using namespace amrex;
 
+namespace {
+    std::pair<bool,bool> has_extdir (BCRec const* bcrec, int ncomp, int dir)
+    {
+        std::pair<bool,bool> r{false,false};
+        for (int n = 0; n < ncomp; ++n) {
+            r.first = r.first or bcrec[n].lo(dir) == BCType::ext_dir;
+            r.second = r.second or bcrec[n].hi(dir) == BCType::ext_dir;
+        }
+        return r;
+    }
+}
+
 #ifdef AMREX_USE_EB
 void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                                        Box const& ubx, Box const& vbx, Box const& wbx,
@@ -12,7 +24,9 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                                        Array4<Real const> const& fcx,
                                        Array4<Real const> const& fcy,
                                        Array4<Real const> const& fcz,
-                                       Array4<Real const> const& ccc)
+                                       Array4<Real const> const& ccc,
+                                       Vector<BCRec> const& h_bcrec,
+                                              BCRec  const* d_bcrec)
 {
     constexpr Real small_vel = 1.e-10;
 
@@ -24,34 +38,35 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
 
-    auto const bc_ilo = m_bc_type[Orientation(Direction::x,Orientation::low)];
-    auto const bc_ihi = m_bc_type[Orientation(Direction::x,Orientation::high)];
-    auto const bc_jlo = m_bc_type[Orientation(Direction::y,Orientation::low)];
-    auto const bc_jhi = m_bc_type[Orientation(Direction::y,Orientation::high)];
-    auto const bc_klo = m_bc_type[Orientation(Direction::z,Orientation::low)];
-    auto const bc_khi = m_bc_type[Orientation(Direction::z,Orientation::high)];
-
-    bool extdir_ilo = (bc_ilo == BC::mass_inflow) or (bc_ilo == BC::no_slip_wall);
-    bool extdir_ihi = (bc_ihi == BC::mass_inflow) or (bc_ihi == BC::no_slip_wall);
-    bool extdir_jlo = (bc_jlo == BC::mass_inflow) or (bc_jlo == BC::no_slip_wall);
-    bool extdir_jhi = (bc_jhi == BC::mass_inflow) or (bc_jhi == BC::no_slip_wall);
-    bool extdir_klo = (bc_klo == BC::mass_inflow) or (bc_klo == BC::no_slip_wall);
-    bool extdir_khi = (bc_khi == BC::mass_inflow) or (bc_khi == BC::no_slip_wall);
+    int ncomp = AMREX_SPACEDIM; // This is only used because h_bcrec and d_bcrec hold the
+                                // bc's for all three velocity components
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
+    auto extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
+    bool has_extdir_lo = extdir_lohi.first;
+    bool has_extdir_hi = extdir_lohi.second;
 
     // ****************************************************************************
     // Predict to x-faces
     // ****************************************************************************
-    if ((extdir_ilo and domain_ilo >= ubx.smallEnd(0)-1) or
-        (extdir_ihi and domain_ihi <= ubx.bigEnd(0)))
+    if ((has_extdir_lo and domain_ilo >= ubx.smallEnd(0)-1) or
+        (has_extdir_hi and domain_ihi <= ubx.bigEnd(0)))
     {
         amrex::ParallelFor(Box(ubx),
-        [u,vcc,flag,fcx,ccc,extdir_ilo,extdir_ihi,extdir_jlo,extdir_jhi,extdir_klo,extdir_khi,
+        [u,vcc,flag,fcx,ccc,d_bcrec,
          domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real u_val(0);
+
+            bool extdir_ilo = d_bcrec[0].lo(0) == BCType::ext_dir;
+            bool extdir_ihi = d_bcrec[0].hi(0) == BCType::ext_dir;
+
+            bool extdir_jlo = d_bcrec[0].lo(1) == BCType::ext_dir;
+            bool extdir_jhi = d_bcrec[0].hi(1) == BCType::ext_dir;
+
+            bool extdir_klo = d_bcrec[0].lo(2) == BCType::ext_dir;
+            bool extdir_khi = d_bcrec[0].hi(2) == BCType::ext_dir;
 
             if (flag(i,j,k).isConnected(-1,0,0))
             {
@@ -181,15 +196,28 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     // ****************************************************************************
     // Predict to y-faces
     // ****************************************************************************
-    if ((extdir_jlo and domain_jlo >= vbx.smallEnd(1)-1) or
-        (extdir_jhi and domain_jhi <= vbx.bigEnd(1)))
+    extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
+    has_extdir_lo = extdir_lohi.first;
+    has_extdir_hi = extdir_lohi.second;
+
+    if ((has_extdir_lo and domain_jlo >= vbx.smallEnd(1)-1) or
+        (has_extdir_hi and domain_jhi <= vbx.bigEnd(1)))
     {
         amrex::ParallelFor(Box(vbx),
-        [v,vcc,flag,fcy,ccc,extdir_ilo,extdir_ihi,extdir_jlo,extdir_jhi,extdir_klo,extdir_khi,
+        [v,vcc,flag,fcy,ccc,d_bcrec,
          domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real v_val(0);
+
+            bool extdir_ilo = d_bcrec[1].lo(0) == BCType::ext_dir;
+            bool extdir_ihi = d_bcrec[1].hi(0) == BCType::ext_dir;
+
+            bool extdir_jlo = d_bcrec[1].lo(1) == BCType::ext_dir;
+            bool extdir_jhi = d_bcrec[1].hi(1) == BCType::ext_dir;
+
+            bool extdir_klo = d_bcrec[1].lo(2) == BCType::ext_dir;
+            bool extdir_khi = d_bcrec[1].hi(2) == BCType::ext_dir;
 
             if (flag(i,j,k).isConnected(0,-1,0))
             {
@@ -319,15 +347,28 @@ void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     // ****************************************************************************
     // Predict to z-faces
     // ****************************************************************************
-    if ((extdir_klo and domain_klo >= wbx.smallEnd(2)-1) or
-        (extdir_khi and domain_khi <= wbx.bigEnd(2)))
+    extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
+    has_extdir_lo = extdir_lohi.first;
+    has_extdir_hi = extdir_lohi.second;
+
+    if ((has_extdir_lo and domain_klo >= wbx.smallEnd(2)-1) or
+        (has_extdir_hi and domain_khi <= wbx.bigEnd(2)))
     {
         amrex::ParallelFor(Box(wbx),
-        [w,vcc,flag,fcz,ccc,extdir_ilo,extdir_ihi,extdir_jlo,extdir_jhi,extdir_klo,extdir_khi,
+        [w,vcc,flag,fcz,ccc,d_bcrec,
          domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real w_val(0);
+
+            bool extdir_ilo = d_bcrec[2].lo(0) == BCType::ext_dir;
+            bool extdir_ihi = d_bcrec[2].hi(0) == BCType::ext_dir;
+
+            bool extdir_jlo = d_bcrec[2].lo(1) == BCType::ext_dir;
+            bool extdir_jhi = d_bcrec[2].hi(1) == BCType::ext_dir;
+
+            bool extdir_klo = d_bcrec[2].lo(2) == BCType::ext_dir;
+            bool extdir_khi = d_bcrec[2].hi(2) == BCType::ext_dir;
 
             if (flag(i,j,k).isConnected(0,0,-1))
             {

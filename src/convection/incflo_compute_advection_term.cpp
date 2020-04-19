@@ -41,7 +41,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                      get_velocity_bcrec(), get_velocity_bcrec_device_ptr(), 
                                      Geom(), l_dt, m_godunov_ppm, m_godunov_use_forces_in_trans);
         } else {
-            predict_vels_on_faces(lev, *u_mac[lev], *v_mac[lev], *w_mac[lev], *vel[lev]);
+            predict_vels_on_faces(lev, *u_mac[lev], *v_mac[lev], *w_mac[lev], *vel[lev],
+                                  get_velocity_bcrec(), get_velocity_bcrec_device_ptr()); 
         }
     }
 

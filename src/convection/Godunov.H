@@ -1,6 +1,5 @@
 //
 //  Godunov.H
-//  amr-wind
 //
 
 #ifndef Godunov_H
