@@ -569,9 +569,8 @@ private:
     int nghost_state () const {
 #ifdef AMREX_USE_EB
         if (!EBFactory(0).isAllRegular()) return (m_use_godunov) ? 5 : 4;
-#else
-        return (m_use_godunov) ? 3 : 2;
 #endif
+        return (m_use_godunov) ? 3 : 2;
     }
 
     int nghost_force () const { return (m_use_godunov) ? 1 : 0; }
