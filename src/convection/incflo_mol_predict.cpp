@@ -1,5 +1,5 @@
-#include <incflo.H>
-#include <incflo_convection_K.H>
+#include <MOL.H>
+#include <incflo_slopes_K.H>
 #include <incflo_MAC_bcs.H>
 
 using namespace amrex;
@@ -16,19 +16,23 @@ namespace {
     }
 }
 
-void incflo::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
-                                    MultiFab& w_mac, MultiFab const& vel,
-                                    Vector<BCRec> const& h_bcrec,
-                                           BCRec  const* d_bcrec)
+void 
+mol::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
+                            MultiFab& w_mac, MultiFab const& vel,
+                            Vector<BCRec> const& h_bcrec,
+                                   BCRec  const* d_bcrec,
+#ifdef AMREX_USE_EB
+                            EBFArrayBoxFactory const* ebfact,
+#endif
+                            Vector<Geometry> geom)
 {
 #ifdef AMREX_USE_EB
-    auto const& fact = this->EBFactory(lev);
-    auto const& flags = fact.getMultiEBCellFlagFab();
-    auto const& fcent = fact.getFaceCent();
-    auto const& ccent = fact.getCentroid();
+    auto const& flags = ebfact->getMultiEBCellFlagFab();
+    auto const& fcent = ebfact->getFaceCent();
+    auto const& ccent = ebfact->getCentroid();
 #endif
 
-    Box const& domain = Geom(lev).Domain();
+    Box const& domain = geom[lev].Domain();
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -63,12 +67,12 @@ void incflo::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
                 Array4<Real const> const& ccc = ccent.const_array(mfi);
                 predict_vels_on_faces_eb(lev,bx,ubx,vbx,wbx,
                                          u,v,w,vcc,flagarr,fcx,fcy,fcz,ccc,
-                                         h_bcrec,d_bcrec);
+                                         h_bcrec,d_bcrec,geom);
             }
             else
 #endif
             {
-                predict_vels_on_faces(lev,ubx,vbx,wbx,u,v,w,vcc,h_bcrec,d_bcrec);
+                predict_vels_on_faces(lev,ubx,vbx,wbx,u,v,w,vcc,h_bcrec,d_bcrec,geom);
             }
 
             incflo_set_mac_bcs(domain,ubx,vbx,wbx,u,v,w,vcc,h_bcrec,d_bcrec);
@@ -77,11 +81,12 @@ void incflo::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
 }
 
 void 
-incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& wbx,
-                               Array4<Real> const& u, Array4<Real> const& v,
-                               Array4<Real> const& w, Array4<Real const> const& vcc,
-                               Vector<BCRec> const& h_bcrec,
-                                      BCRec  const* d_bcrec)
+mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& wbx,
+                            Array4<Real> const& u, Array4<Real> const& v,
+                            Array4<Real> const& w, Array4<Real const> const& vcc,
+                            Vector<BCRec> const& h_bcrec,
+                                   BCRec  const* d_bcrec,
+                            Vector<Geometry> geom)
 {
     constexpr Real small_vel = 1.e-10;
 

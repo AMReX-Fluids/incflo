@@ -1,5 +1,5 @@
-#include <incflo_convection_K.H>
-#include <incflo.H>
+#include <incflo_slopes_K.H>
+#include <MOL.H>
 #include <utility>
 
 using namespace amrex;
@@ -17,15 +17,16 @@ namespace {
 }
 
 void
-incflo::compute_convective_fluxes (int lev, Box const& bx, int ncomp,
-                                   Array4<Real> const& fx,
-                                   Array4<Real> const& fy,
-                                   Array4<Real> const& fz,
-                                   Array4<Real const> const& q,
-                                   Array4<Real const> const& umac,
-                                   Array4<Real const> const& vmac,
-                                   Array4<Real const> const& wmac,
-                                   BCRec const* h_bcrec, BCRec const* d_bcrec)
+mol::compute_convective_fluxes (int lev, Box const& bx, int ncomp,
+                                Array4<Real> const& fx,
+                                Array4<Real> const& fy,
+                                Array4<Real> const& fz,
+                                Array4<Real const> const& q,
+                                Array4<Real const> const& umac,
+                                Array4<Real const> const& vmac,
+                                Array4<Real const> const& wmac,
+                                BCRec const* h_bcrec, BCRec const* d_bcrec,
+                                Vector<Geometry> geom)
 {
     constexpr Real small_vel = 1.e-10;
 

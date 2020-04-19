@@ -1,5 +1,5 @@
-#include <incflo_convection_K.H>
-#include <incflo.H>
+#include <incflo_slopes_K.H>
+#include <MOL.H>
 
 using namespace amrex;
 
@@ -16,17 +16,19 @@ namespace {
 }
 
 #ifdef AMREX_USE_EB
-void incflo::predict_vels_on_faces_eb (int lev, Box const& ccbx,
-                                       Box const& ubx, Box const& vbx, Box const& wbx,
-                                       Array4<Real> const& u, Array4<Real> const& v,
-                                       Array4<Real> const& w, Array4<Real const> const& vcc,
-                                       Array4<EBCellFlag const> const& flag,
-                                       Array4<Real const> const& fcx,
-                                       Array4<Real const> const& fcy,
-                                       Array4<Real const> const& fcz,
-                                       Array4<Real const> const& ccc,
-                                       Vector<BCRec> const& h_bcrec,
-                                              BCRec  const* d_bcrec)
+void 
+mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
+                               Box const& ubx, Box const& vbx, Box const& wbx,
+                               Array4<Real> const& u, Array4<Real> const& v,
+                               Array4<Real> const& w, Array4<Real const> const& vcc,
+                               Array4<EBCellFlag const> const& flag,
+                               Array4<Real const> const& fcx,
+                               Array4<Real const> const& fcy,
+                               Array4<Real const> const& fcz,
+                               Array4<Real const> const& ccc,
+                               Vector<BCRec> const& h_bcrec,
+                                      BCRec  const* d_bcrec,
+                               Vector<Geometry> geom)
 {
     constexpr Real small_vel = 1.e-10;
 
