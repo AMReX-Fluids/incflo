@@ -15,43 +15,33 @@ namespace {
     }
 }
 
-void godunov::predict_plm (int lev, Box const& bx, int ncomp,
-                           Array4<Real> const& Imx, Array4<Real> const& Ipx,
-                           Array4<Real> const& Imy, Array4<Real> const& Ipy,
-                           Array4<Real> const& Imz, Array4<Real> const& Ipz,
-                           Array4<Real const> const& q,
-                           Array4<Real const> const& vcc,
-                           Vector<Geometry> geom,
-                           Real dt,
-                           Vector<BCRec> const& h_bcrec,
-                           BCRec const* pbc)
+void godunov::predict_plm_x (int lev, Box const& bx_in, int ncomp,
+                            Array4<Real> const& Imx, Array4<Real> const& Ipx,
+                            Array4<Real const> const& q,
+                            Array4<Real const> const& vcc,
+                            Vector<Geometry> geom,
+                            Real dt,
+                            Vector<BCRec> const& h_bcrec,
+                            BCRec const* pbc)
 {
     const Real dx = geom[lev].CellSize(0);
-    const Real dy = geom[lev].CellSize(1);
-    const Real dz = geom[lev].CellSize(2);
-
     const Real dtdx = dt/dx;
-    const Real dtdy = dt/dy;
-    const Real dtdz = dt/dz;
 
     const Box& domain_box = geom[lev].Domain();
     const int domain_ilo = domain_box.smallEnd(0);
     const int domain_ihi = domain_box.bigEnd(0);
-    const int domain_jlo = domain_box.smallEnd(1);
-    const int domain_jhi = domain_box.bigEnd(1);
-    const int domain_klo = domain_box.smallEnd(2);
-    const int domain_khi = domain_box.bigEnd(2);
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
-
     auto extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
     bool has_extdir_lo = extdir_lohi.first;
     bool has_extdir_hi = extdir_lohi.second;
 
-    if ((has_extdir_lo and domain_ilo >= bx.smallEnd(0)-1) or
-        (has_extdir_hi and domain_ihi <= bx.bigEnd(0)))
+    Box xebox = Box(bx_in).grow(1,1).grow(2,1).surroundingNodes(0);
+ 
+    if ((has_extdir_lo and domain_ilo >= xebox.smallEnd(0)-1) or
+        (has_extdir_hi and domain_ihi <= xebox.bigEnd(0)))
     {
-        amrex::ParallelFor(bx, ncomp, [q,vcc,domain_ilo,domain_ihi,Imx,Ipx,dtdx,pbc]
+        amrex::ParallelFor(xebox, ncomp, [q,vcc,domain_ilo,domain_ihi,Imx,Ipx,dtdx,pbc]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             const auto& bc = pbc[n];
@@ -77,7 +67,7 @@ void godunov::predict_plm (int lev, Box const& bx, int ncomp,
     }
     else
     {
-        amrex::ParallelFor(bx, ncomp, [q,vcc,Ipx,Imx,dtdx]
+        amrex::ParallelFor(xebox, ncomp, [q,vcc,Ipx,Imx,dtdx]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real upls = q(i  ,j,k,n) + 0.5 * (-1.0 - vcc(i  ,j,k,0) * dtdx) * 
@@ -89,15 +79,35 @@ void godunov::predict_plm (int lev, Box const& bx, int ncomp,
             Imx(i  ,j,k,n) = upls;
         });
     }
+}
 
-    extdir_lohi = has_extdir(h_bcrec.data(), ncomp,  static_cast<int>(Direction::y));
-    has_extdir_lo = extdir_lohi.first;
-    has_extdir_hi = extdir_lohi.second;
+void godunov::predict_plm_y (int lev, Box const& bx_in, int ncomp,
+                            Array4<Real> const& Imy, Array4<Real> const& Ipy,
+                            Array4<Real const> const& q,
+                            Array4<Real const> const& vcc,
+                            Vector<Geometry> geom,
+                            Real dt,
+                            Vector<BCRec> const& h_bcrec,
+                            BCRec const* pbc)
+{
+    Box yebox = Box(bx_in).grow(0,1).grow(2,1).surroundingNodes(1);
 
-    if ((has_extdir_lo and domain_jlo >= bx.smallEnd(1)-1) or
-        (has_extdir_hi and domain_jhi <= bx.bigEnd(1)))
+    const Real dy = geom[lev].CellSize(1);
+    const Real dtdy = dt/dy;
+
+    const Box& domain_box = geom[lev].Domain();
+    const int domain_jlo = domain_box.smallEnd(1);
+    const int domain_jhi = domain_box.bigEnd(1);
+
+    // At an ext_dir boundary, the boundary value is on the face, not cell center.
+    auto extdir_lohi = has_extdir(h_bcrec.data(), ncomp,  static_cast<int>(Direction::y));
+    bool has_extdir_lo = extdir_lohi.first;
+    bool has_extdir_hi = extdir_lohi.second;
+
+    if ((has_extdir_lo and domain_jlo >= yebox.smallEnd(1)-1) or
+        (has_extdir_hi and domain_jhi <= yebox.bigEnd(1)))
     {
-        amrex::ParallelFor(bx, ncomp, [q,vcc,domain_jlo,domain_jhi,Imy,Ipy,dtdy,pbc]
+        amrex::ParallelFor(yebox, ncomp, [q,vcc,domain_jlo,domain_jhi,Imy,Ipy,dtdy,pbc]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             const auto& bc = pbc[n];
@@ -123,7 +133,7 @@ void godunov::predict_plm (int lev, Box const& bx, int ncomp,
     }
     else
     {
-        amrex::ParallelFor(bx, ncomp, [q,vcc,Ipy,Imy,dtdy]
+        amrex::ParallelFor(yebox, ncomp, [q,vcc,Ipy,Imy,dtdy]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real vpls = q(i,j  ,k,n) + 0.5 * (-1.0 - vcc(i,j  ,k,1) * dtdy) * 
@@ -135,15 +145,35 @@ void godunov::predict_plm (int lev, Box const& bx, int ncomp,
             Imy(i,j  ,k,n) = vpls;
         });
     }
+}
 
-    extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
-    has_extdir_lo = extdir_lohi.first;
-    has_extdir_hi = extdir_lohi.second;
+void godunov::predict_plm_z (int lev, Box const& bx_in, int ncomp,
+                            Array4<Real> const& Imz, Array4<Real> const& Ipz,
+                            Array4<Real const> const& q,
+                            Array4<Real const> const& vcc,
+                            Vector<Geometry> geom,
+                            Real dt,
+                            Vector<BCRec> const& h_bcrec,
+                            BCRec const* pbc)
+{
+    Box zebox = Box(bx_in).grow(0,1).grow(1,1).surroundingNodes(2);
 
-    if ((has_extdir_lo and domain_klo >= bx.smallEnd(2)-1) or
-        (has_extdir_hi and domain_khi <= bx.bigEnd(2)))
+    const Real dz = geom[lev].CellSize(2);
+    const Real dtdz = dt/dz;
+
+    const Box& domain_box = geom[lev].Domain();
+    const int domain_klo = domain_box.smallEnd(2);
+    const int domain_khi = domain_box.bigEnd(2);
+
+    // At an ext_dir boundary, the boundary value is on the face, not cell center.
+    auto extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
+    bool has_extdir_lo = extdir_lohi.first;
+    bool has_extdir_hi = extdir_lohi.second;
+
+    if ((has_extdir_lo and domain_klo >= zebox.smallEnd(2)-1) or
+        (has_extdir_hi and domain_khi <= zebox.bigEnd(2)))
     {
-        amrex::ParallelFor(bx, ncomp, [q,vcc,domain_klo,domain_khi,Ipz,Imz,dtdz,pbc]
+        amrex::ParallelFor(zebox, ncomp, [q,vcc,domain_klo,domain_khi,Ipz,Imz,dtdz,pbc]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             const auto& bc = pbc[n];
@@ -169,7 +199,7 @@ void godunov::predict_plm (int lev, Box const& bx, int ncomp,
     }
     else
     {
-        amrex::ParallelFor(bx, ncomp, [q,vcc,Ipz,Imz,dtdz]
+        amrex::ParallelFor(zebox, ncomp, [q,vcc,Ipz,Imz,dtdz]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real wpls = q(i,j,k  ,n) + 0.5 * (-1.0 - vcc(i,j,k  ,2) * dtdz) * 
