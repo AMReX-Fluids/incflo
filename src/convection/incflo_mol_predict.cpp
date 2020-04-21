@@ -5,12 +5,16 @@
 using namespace amrex;
 
 namespace {
-    std::pair<bool,bool> has_extdir (BCRec const* bcrec, int ncomp, int dir)
+    std::pair<bool,bool> has_extdir_or_ho (BCRec const* bcrec, int ncomp, int dir)
     {
         std::pair<bool,bool> r{false,false};
         for (int n = 0; n < ncomp; ++n) {
-            r.first = r.first or bcrec[n].lo(dir) == BCType::ext_dir;
-            r.second = r.second or bcrec[n].hi(dir) == BCType::ext_dir;
+            r.first = r.first 
+                 or (bcrec[n].lo(dir) == BCType::ext_dir)
+                 or (bcrec[n].lo(dir) == BCType::hoextrap);
+            r.second = r.second 
+                 or (bcrec[n].hi(dir) == BCType::ext_dir)
+                 or (bcrec[n].hi(dir) == BCType::hoextrap);
         }
         return r;
     }
@@ -101,8 +105,9 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
 
-    // At an ext_dir boundary, the boundary value is on the face, not cell center.
-    auto extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
+    // At an ext_dir or hoextrap boundary, 
+    //    the boundary value is on the face, not cell center.
+    auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
     bool has_extdir_lo = extdir_lohi.first;
     bool has_extdir_hi = extdir_lohi.second;
 
@@ -112,8 +117,10 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
         amrex::ParallelFor(ubx, [vcc,domain_ilo,domain_ihi,u,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            bool extdir_ilo = d_bcrec[0].lo(0) == BCType::ext_dir;
-            bool extdir_ihi = d_bcrec[0].hi(0) == BCType::ext_dir;
+            bool extdir_ilo = (   (d_bcrec[0].lo(0) == BCType::ext_dir)
+                               or (d_bcrec[0].lo(0) == BCType::hoextrap) );
+            bool extdir_ihi = (   (d_bcrec[0].hi(0) == BCType::ext_dir)
+                               or (d_bcrec[0].hi(0) == BCType::hoextrap) );
 
             const Real vcc_pls = vcc(i,j,k,0);
             const Real vcc_mns = vcc(i-1,j,k,0);
@@ -173,8 +180,9 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
         });
     }
 
-    // At an ext_dir boundary, the boundary value is on the face, not cell center.
-    extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
+    // At an ext_dir or hoextrap boundary, 
+    //    the boundary value is on the face, not cell center.
+    extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
     has_extdir_lo = extdir_lohi.first;
     has_extdir_hi = extdir_lohi.second;
 
@@ -184,8 +192,10 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
         amrex::ParallelFor(vbx, [vcc,domain_jlo,domain_jhi,v,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            bool extdir_jlo = d_bcrec[1].lo(1) == BCType::ext_dir;
-            bool extdir_jhi = d_bcrec[1].hi(1) == BCType::ext_dir;
+            bool extdir_jlo = (   (d_bcrec[1].lo(1) == BCType::ext_dir)
+                               or (d_bcrec[1].lo(1) == BCType::hoextrap) );
+            bool extdir_jhi = (   (d_bcrec[1].hi(1) == BCType::ext_dir)
+                               or (d_bcrec[1].hi(1) == BCType::hoextrap) );
 
             const Real vcc_pls = vcc(i,j,k,1);
             const Real vcc_mns = vcc(i,j-1,k,1);
@@ -242,8 +252,9 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
         });
     }
 
-    // At an ext_dir boundary, the boundary value is on the face, not cell center.
-    extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
+    // At an ext_dir or hoextrap boundary, 
+    //    the boundary value is on the face, not cell center.
+    extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
     has_extdir_lo = extdir_lohi.first;
     has_extdir_hi = extdir_lohi.second;
 
@@ -253,8 +264,10 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
         amrex::ParallelFor(wbx, [vcc,domain_klo,domain_khi,w,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            bool extdir_klo = d_bcrec[2].lo(2) == BCType::ext_dir;
-            bool extdir_khi = d_bcrec[2].hi(2) == BCType::ext_dir;
+            bool extdir_klo = (   (d_bcrec[2].lo(2) == BCType::ext_dir)
+                               or (d_bcrec[2].lo(2) == BCType::hoextrap) );
+            bool extdir_khi = (   (d_bcrec[2].hi(2) == BCType::ext_dir)
+                               or (d_bcrec[2].hi(2) == BCType::hoextrap) );
 
             const Real vcc_pls = vcc(i,j,k,2);
             const Real vcc_mns = vcc(i,j,k-1,2);

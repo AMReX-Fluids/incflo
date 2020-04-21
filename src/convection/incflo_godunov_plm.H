@@ -23,8 +23,10 @@ void Godunov_plm_fpu_x (const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
     {
-        bool extdir_ilo = bc.lo(0) == BCType::ext_dir;
-        bool extdir_ihi = bc.hi(0) == BCType::ext_dir;
+        bool extdir_ilo = (bc.lo(0) == BCType::ext_dir) or
+                          (bc.lo(0) == BCType::hoextrap);
+        bool extdir_ihi = (bc.hi(0) == BCType::ext_dir) or
+                          (bc.hi(0) == BCType::hoextrap);
 
         Real upls, umns;
 
@@ -60,8 +62,10 @@ void Godunov_plm_fpu_y (const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
     {
-        bool extdir_jlo = bc.lo(1) == BCType::ext_dir;
-        bool extdir_jhi = bc.hi(1) == BCType::ext_dir;
+        bool extdir_jlo = (bc.lo(1) == BCType::ext_dir) or
+                          (bc.lo(1) == BCType::hoextrap);
+        bool extdir_jhi = (bc.hi(1) == BCType::ext_dir) or
+                          (bc.hi(1) == BCType::hoextrap);
 
         Real vpls, vmns;
 
@@ -96,8 +100,10 @@ void Godunov_plm_fpu_z (const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
     {
-        bool extdir_klo = bc.lo(2) == BCType::ext_dir;
-        bool extdir_khi = bc.hi(2) == BCType::ext_dir;
+        bool extdir_klo = (bc.lo(2) == BCType::ext_dir) or
+                          (bc.lo(2) == BCType::hoextrap);
+        bool extdir_khi = (bc.hi(2) == BCType::ext_dir) or
+                          (bc.hi(2) == BCType::hoextrap);
 
         Real wpls, wmns;
 

@@ -4,12 +4,16 @@
 using namespace amrex;
 
 namespace {
-    std::pair<bool,bool> has_extdir (BCRec const* bcrec, int ncomp, int dir)
+    std::pair<bool,bool> has_extdir_or_ho (BCRec const* bcrec, int ncomp, int dir)
     {
         std::pair<bool,bool> r{false,false};
         for (int n = 0; n < ncomp; ++n) {
-            r.first = r.first or bcrec[n].lo(dir) == BCType::ext_dir;
-            r.second = r.second or bcrec[n].hi(dir) == BCType::ext_dir;
+            r.first = r.first 
+                 or (bcrec[n].lo(dir) == BCType::ext_dir)
+                 or (bcrec[n].lo(dir) == BCType::hoextrap);
+            r.second = r.second 
+                 or (bcrec[n].hi(dir) == BCType::ext_dir)
+                 or (bcrec[n].hi(dir) == BCType::hoextrap);
         }
         return r;
     }
@@ -32,7 +36,7 @@ void godunov::predict_plm_x (int lev, Box const& bx_in, int ncomp,
     const int domain_ihi = domain_box.bigEnd(0);
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
-    auto extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
+    auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
     bool has_extdir_lo = extdir_lohi.first;
     bool has_extdir_hi = extdir_lohi.second;
 
@@ -45,8 +49,10 @@ void godunov::predict_plm_x (int lev, Box const& bx_in, int ncomp,
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             const auto& bc = pbc[n];
-            bool extdir_ilo = bc.lo(0) == BCType::ext_dir;
-            bool extdir_ihi = bc.hi(0) == BCType::ext_dir;
+            bool extdir_ilo = (bc.lo(0) == BCType::ext_dir) or
+                              (bc.lo(0) == BCType::hoextrap);
+            bool extdir_ihi = (bc.hi(0) == BCType::ext_dir) or
+                              (bc.hi(0) == BCType::hoextrap);
 
             Real upls = q(i  ,j,k,n) + 0.5 * (-1.0 - vcc(i  ,j,k,0) * dtdx) * 
                 incflo_ho_xslope_extdir(i,j,k,n,q, extdir_ilo, extdir_ihi, domain_ilo, domain_ihi);
@@ -100,7 +106,7 @@ void godunov::predict_plm_y (int lev, Box const& bx_in, int ncomp,
     const int domain_jhi = domain_box.bigEnd(1);
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
-    auto extdir_lohi = has_extdir(h_bcrec.data(), ncomp,  static_cast<int>(Direction::y));
+    auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp,  static_cast<int>(Direction::y));
     bool has_extdir_lo = extdir_lohi.first;
     bool has_extdir_hi = extdir_lohi.second;
 
@@ -111,8 +117,10 @@ void godunov::predict_plm_y (int lev, Box const& bx_in, int ncomp,
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             const auto& bc = pbc[n];
-            bool extdir_jlo = bc.lo(0) == BCType::ext_dir;
-            bool extdir_jhi = bc.hi(0) == BCType::ext_dir;
+            bool extdir_jlo = (bc.lo(1) == BCType::ext_dir) or
+                              (bc.lo(1) == BCType::hoextrap);
+            bool extdir_jhi = (bc.hi(1) == BCType::ext_dir) or
+                              (bc.hi(1) == BCType::hoextrap);
 
             Real vpls = q(i,j  ,k,n) + 0.5 * (-1.0 - vcc(i,j  ,k,1) * dtdy) *
                 incflo_ho_yslope_extdir(i,j,k,n,q, extdir_jlo, extdir_jhi, domain_jlo, domain_jhi);
@@ -166,7 +174,7 @@ void godunov::predict_plm_z (int lev, Box const& bx_in, int ncomp,
     const int domain_khi = domain_box.bigEnd(2);
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
-    auto extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
+    auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
     bool has_extdir_lo = extdir_lohi.first;
     bool has_extdir_hi = extdir_lohi.second;
 
@@ -177,8 +185,10 @@ void godunov::predict_plm_z (int lev, Box const& bx_in, int ncomp,
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             const auto& bc = pbc[n];
-            bool extdir_klo = bc.lo(0) == BCType::ext_dir;
-            bool extdir_khi = bc.hi(0) == BCType::ext_dir;
+            bool extdir_klo = (bc.lo(2) == BCType::ext_dir) or
+                              (bc.lo(2) == BCType::hoextrap);
+            bool extdir_khi = (bc.hi(2) == BCType::ext_dir) or
+                              (bc.hi(2) == BCType::hoextrap);
 
             Real wpls = q(i,j,k  ,n) + 0.5 * (-1.0 - vcc(i,j,k  ,2) * dtdz) * 
                 incflo_ho_zslope_extdir(i,j,k,n,q, extdir_klo, extdir_khi, domain_klo, domain_khi);

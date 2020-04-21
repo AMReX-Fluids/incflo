@@ -5,12 +5,16 @@
 using namespace amrex;
 
 namespace {
-    std::pair<bool,bool> has_extdir (BCRec const* bcrec, int ncomp, int dir)
+    std::pair<bool,bool> has_extdir_or_ho (BCRec const* bcrec, int ncomp, int dir)
     {
         std::pair<bool,bool> r{false,false};
         for (int n = 0; n < ncomp; ++n) {
-            r.first = r.first or bcrec[n].lo(dir) == BCType::ext_dir;
-            r.second = r.second or bcrec[n].hi(dir) == BCType::ext_dir;
+            r.first = r.first 
+                 or (bcrec[n].lo(dir) == BCType::ext_dir)
+                 or (bcrec[n].lo(dir) == BCType::hoextrap);
+            r.second = r.second 
+                 or (bcrec[n].hi(dir) == BCType::ext_dir)
+                 or (bcrec[n].hi(dir) == BCType::hoextrap);
         }
         return r;
     }
@@ -53,8 +57,9 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
     // Predict to x-faces
     // ****************************************************************************
 
-    // At an ext_dir boundary, the boundary value is on the face, not cell center.
-    auto extdir_lohi = has_extdir(h_bcrec, ncomp, static_cast<int>(Direction::x));
+    // At an ext_dir or hoextrap boundary,
+    //    the boundary value is on the face, not cell center.
+    auto extdir_lohi = has_extdir_or_ho(h_bcrec, ncomp, static_cast<int>(Direction::x));
     bool has_extdir_lo = extdir_lohi.first;
     bool has_extdir_hi = extdir_lohi.second;
 
@@ -66,12 +71,18 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
         q,ccc,fcx,flag,umac,small_vel,fx]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-           bool extdir_ilo = d_bcrec[n].lo(0) == BCType::ext_dir;
-           bool extdir_ihi = d_bcrec[n].hi(0) == BCType::ext_dir;
-           bool extdir_jlo = d_bcrec[n].lo(1) == BCType::ext_dir;
-           bool extdir_jhi = d_bcrec[n].hi(1) == BCType::ext_dir;
-           bool extdir_klo = d_bcrec[n].lo(2) == BCType::ext_dir;
-           bool extdir_khi = d_bcrec[n].hi(2) == BCType::ext_dir;
+           bool extdir_ilo = (d_bcrec[n].lo(0) == BCType::ext_dir) or
+                             (d_bcrec[n].lo(0) == BCType::hoextrap);
+           bool extdir_ihi = (d_bcrec[n].hi(0) == BCType::ext_dir) or
+                             (d_bcrec[n].hi(0) == BCType::hoextrap);
+           bool extdir_jlo = (d_bcrec[n].lo(1) == BCType::ext_dir) or
+                             (d_bcrec[n].lo(1) == BCType::hoextrap);
+           bool extdir_jhi = (d_bcrec[n].hi(1) == BCType::ext_dir) or
+                             (d_bcrec[n].hi(1) == BCType::hoextrap);
+           bool extdir_klo = (d_bcrec[n].lo(2) == BCType::ext_dir) or
+                             (d_bcrec[n].lo(2) == BCType::hoextrap);
+           bool extdir_khi = (d_bcrec[n].hi(2) == BCType::ext_dir) or
+                             (d_bcrec[n].hi(2) == BCType::hoextrap);
            Real qs;
 
            if (flag(i,j,k).isConnected(-1,0,0)) 
@@ -213,7 +224,9 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
     // Predict to y-faces
     // ****************************************************************************
 
-    extdir_lohi = has_extdir(h_bcrec, ncomp,  static_cast<int>(Direction::y));
+    // At an ext_dir or hoextrap boundary,
+    //    the boundary value is on the face, not cell center.
+    extdir_lohi = has_extdir_or_ho(h_bcrec, ncomp,  static_cast<int>(Direction::y));
     has_extdir_lo = extdir_lohi.first;
     has_extdir_hi = extdir_lohi.second;
     if ((has_extdir_lo and domain_jlo >= ybx.smallEnd(1)-1) or
@@ -227,12 +240,18 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
             Real qs;
             if (flag(i,j,k).isConnected(0,-1,0)) 
             {
-                bool extdir_ilo = d_bcrec[n].lo(0) == BCType::ext_dir;
-                bool extdir_ihi = d_bcrec[n].hi(0) == BCType::ext_dir;
-                bool extdir_jlo = d_bcrec[n].lo(1) == BCType::ext_dir;
-                bool extdir_jhi = d_bcrec[n].hi(1) == BCType::ext_dir;
-                bool extdir_klo = d_bcrec[n].lo(2) == BCType::ext_dir;
-                bool extdir_khi = d_bcrec[n].hi(2) == BCType::ext_dir;
+                bool extdir_ilo = (d_bcrec[n].lo(0) == BCType::ext_dir) or
+                                  (d_bcrec[n].lo(0) == BCType::hoextrap);
+                bool extdir_ihi = (d_bcrec[n].hi(0) == BCType::ext_dir) or
+                                  (d_bcrec[n].hi(0) == BCType::hoextrap);
+                bool extdir_jlo = (d_bcrec[n].lo(1) == BCType::ext_dir) or
+                                  (d_bcrec[n].lo(1) == BCType::hoextrap);
+                bool extdir_jhi = (d_bcrec[n].hi(1) == BCType::ext_dir) or
+                                  (d_bcrec[n].hi(1) == BCType::hoextrap);
+                bool extdir_klo = (d_bcrec[n].lo(2) == BCType::ext_dir) or
+                                  (d_bcrec[n].lo(2) == BCType::hoextrap);
+                bool extdir_khi = (d_bcrec[n].hi(2) == BCType::ext_dir) or
+                                  (d_bcrec[n].hi(2) == BCType::hoextrap);
 
                 if (extdir_jlo and j <= domain_jlo) {
                     qs = q(i,domain_jlo-1,k,n);
@@ -371,7 +390,9 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
     // Predict to z-faces
     // ****************************************************************************
 
-    extdir_lohi = has_extdir(h_bcrec, ncomp, static_cast<int>(Direction::z));
+    // At an ext_dir or hoextrap boundary,
+    //    the boundary value is on the face, not cell center.
+    extdir_lohi = has_extdir_or_ho(h_bcrec, ncomp, static_cast<int>(Direction::z));
     has_extdir_lo = extdir_lohi.first;
     has_extdir_hi = extdir_lohi.second;
     if ((has_extdir_lo and domain_klo >= zbx.smallEnd(2)-1) or
@@ -384,12 +405,18 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
         {
             if (flag(i,j,k).isConnected(0,0,-1)) {
 
-                bool extdir_ilo = d_bcrec[n].lo(0) == BCType::ext_dir;
-                bool extdir_ihi = d_bcrec[n].hi(0) == BCType::ext_dir;
-                bool extdir_jlo = d_bcrec[n].lo(1) == BCType::ext_dir;
-                bool extdir_jhi = d_bcrec[n].hi(1) == BCType::ext_dir;
-                bool extdir_klo = d_bcrec[n].lo(2) == BCType::ext_dir;
-                bool extdir_khi = d_bcrec[n].hi(2) == BCType::ext_dir;
+                bool extdir_ilo = (d_bcrec[n].lo(0) == BCType::ext_dir) or
+                                  (d_bcrec[n].lo(0) == BCType::hoextrap);
+                bool extdir_ihi = (d_bcrec[n].hi(0) == BCType::ext_dir) or
+                                  (d_bcrec[n].hi(0) == BCType::hoextrap);
+                bool extdir_jlo = (d_bcrec[n].lo(1) == BCType::ext_dir) or
+                                  (d_bcrec[n].lo(1) == BCType::hoextrap);
+                bool extdir_jhi = (d_bcrec[n].hi(1) == BCType::ext_dir) or
+                                  (d_bcrec[n].hi(1) == BCType::hoextrap);
+                bool extdir_klo = (d_bcrec[n].lo(2) == BCType::ext_dir) or
+                                  (d_bcrec[n].lo(2) == BCType::hoextrap);
+                bool extdir_khi = (d_bcrec[n].hi(2) == BCType::ext_dir) or
+                                  (d_bcrec[n].hi(2) == BCType::hoextrap);
 
                 Real qs;
                 if (extdir_klo and k <= domain_klo) {

@@ -4,12 +4,16 @@
 using namespace amrex;
 
 namespace {
-    std::pair<bool,bool> has_extdir (BCRec const* bcrec, int ncomp, int dir)
+    std::pair<bool,bool> has_extdir_or_ho (BCRec const* bcrec, int ncomp, int dir)
     {
         std::pair<bool,bool> r{false,false};
         for (int n = 0; n < ncomp; ++n) {
-            r.first = r.first or bcrec[n].lo(dir) == BCType::ext_dir;
-            r.second = r.second or bcrec[n].hi(dir) == BCType::ext_dir;
+            r.first = r.first 
+                 or (bcrec[n].lo(dir) == BCType::ext_dir)
+                 or (bcrec[n].lo(dir) == BCType::hoextrap);
+            r.second = r.second 
+                 or (bcrec[n].hi(dir) == BCType::ext_dir)
+                 or (bcrec[n].hi(dir) == BCType::hoextrap);
         }
         return r;
     }
@@ -44,7 +48,7 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                                 // bc's for all three velocity components
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
-    auto extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
+    auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
     bool has_extdir_lo = extdir_lohi.first;
     bool has_extdir_hi = extdir_lohi.second;
 
@@ -61,14 +65,20 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         {
             Real u_val(0);
 
-            bool extdir_ilo = d_bcrec[0].lo(0) == BCType::ext_dir;
-            bool extdir_ihi = d_bcrec[0].hi(0) == BCType::ext_dir;
+            bool extdir_ilo =    (d_bcrec[0].lo(0) == BCType::ext_dir)
+                              or (d_bcrec[0].lo(0) == BCType::hoextrap);
+            bool extdir_ihi =    (d_bcrec[0].hi(0) == BCType::ext_dir)
+                              or (d_bcrec[0].hi(0) == BCType::hoextrap);
 
-            bool extdir_jlo = d_bcrec[0].lo(1) == BCType::ext_dir;
-            bool extdir_jhi = d_bcrec[0].hi(1) == BCType::ext_dir;
+            bool extdir_jlo =    (d_bcrec[0].lo(1) == BCType::ext_dir)
+                              or (d_bcrec[0].lo(1) == BCType::hoextrap);
+            bool extdir_jhi =    (d_bcrec[0].hi(1) == BCType::ext_dir)
+                              or (d_bcrec[0].hi(1) == BCType::hoextrap);
 
-            bool extdir_klo = d_bcrec[0].lo(2) == BCType::ext_dir;
-            bool extdir_khi = d_bcrec[0].hi(2) == BCType::ext_dir;
+            bool extdir_klo =    (d_bcrec[0].lo(2) == BCType::ext_dir)
+                              or (d_bcrec[0].lo(2) == BCType::hoextrap);
+            bool extdir_khi =    (d_bcrec[0].hi(2) == BCType::ext_dir)
+                              or (d_bcrec[0].hi(2) == BCType::hoextrap);
 
             if (flag(i,j,k).isConnected(-1,0,0))
             {
@@ -198,7 +208,7 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     // ****************************************************************************
     // Predict to y-faces
     // ****************************************************************************
-    extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
+    extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
     has_extdir_lo = extdir_lohi.first;
     has_extdir_hi = extdir_lohi.second;
 
@@ -212,14 +222,20 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         {
             Real v_val(0);
 
-            bool extdir_ilo = d_bcrec[1].lo(0) == BCType::ext_dir;
-            bool extdir_ihi = d_bcrec[1].hi(0) == BCType::ext_dir;
+            bool extdir_ilo =    (d_bcrec[1].lo(0) == BCType::ext_dir)
+                              or (d_bcrec[1].lo(0) == BCType::hoextrap);
+            bool extdir_ihi =    (d_bcrec[1].hi(0) == BCType::ext_dir)
+                              or (d_bcrec[1].hi(0) == BCType::hoextrap);
 
-            bool extdir_jlo = d_bcrec[1].lo(1) == BCType::ext_dir;
-            bool extdir_jhi = d_bcrec[1].hi(1) == BCType::ext_dir;
+            bool extdir_jlo =    (d_bcrec[1].lo(1) == BCType::ext_dir)
+                              or (d_bcrec[1].lo(1) == BCType::hoextrap);
+            bool extdir_jhi =    (d_bcrec[1].hi(1) == BCType::ext_dir)
+                              or (d_bcrec[1].hi(1) == BCType::hoextrap);
 
-            bool extdir_klo = d_bcrec[1].lo(2) == BCType::ext_dir;
-            bool extdir_khi = d_bcrec[1].hi(2) == BCType::ext_dir;
+            bool extdir_klo =    (d_bcrec[1].lo(2) == BCType::ext_dir)
+                              or (d_bcrec[1].lo(2) == BCType::hoextrap);
+            bool extdir_khi =    (d_bcrec[1].hi(2) == BCType::ext_dir)
+                              or (d_bcrec[1].hi(2) == BCType::hoextrap);
 
             if (flag(i,j,k).isConnected(0,-1,0))
             {
@@ -349,7 +365,7 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     // ****************************************************************************
     // Predict to z-faces
     // ****************************************************************************
-    extdir_lohi = has_extdir(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
+    extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
     has_extdir_lo = extdir_lohi.first;
     has_extdir_hi = extdir_lohi.second;
 
@@ -363,14 +379,20 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         {
             Real w_val(0);
 
-            bool extdir_ilo = d_bcrec[2].lo(0) == BCType::ext_dir;
-            bool extdir_ihi = d_bcrec[2].hi(0) == BCType::ext_dir;
+            bool extdir_ilo =    (d_bcrec[2].lo(0) == BCType::ext_dir)
+                              or (d_bcrec[2].lo(0) == BCType::hoextrap);
+            bool extdir_ihi =    (d_bcrec[2].hi(0) == BCType::ext_dir)
+                              or (d_bcrec[2].hi(0) == BCType::hoextrap);
 
-            bool extdir_jlo = d_bcrec[2].lo(1) == BCType::ext_dir;
-            bool extdir_jhi = d_bcrec[2].hi(1) == BCType::ext_dir;
+            bool extdir_jlo =    (d_bcrec[2].lo(1) == BCType::ext_dir)
+                              or (d_bcrec[2].lo(1) == BCType::hoextrap);
+            bool extdir_jhi =    (d_bcrec[2].hi(1) == BCType::ext_dir)
+                              or (d_bcrec[2].hi(1) == BCType::hoextrap);
 
-            bool extdir_klo = d_bcrec[2].lo(2) == BCType::ext_dir;
-            bool extdir_khi = d_bcrec[2].hi(2) == BCType::ext_dir;
+            bool extdir_klo =    (d_bcrec[2].lo(2) == BCType::ext_dir)
+                              or (d_bcrec[2].lo(2) == BCType::hoextrap);
+            bool extdir_khi =    (d_bcrec[2].hi(2) == BCType::ext_dir)
+                              or (d_bcrec[2].hi(2) == BCType::hoextrap);
 
             if (flag(i,j,k).isConnected(0,0,-1))
             {
