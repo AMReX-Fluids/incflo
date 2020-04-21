@@ -16,18 +16,39 @@ else ()
    message(STATUS "Build type set by user to '${CMAKE_BUILD_TYPE}'.")
 endif()
 
+
+#
+# Options -- incflo uses XSDK!!! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+#
+# We want to offer the user some core options, i.e. MPI, OpenMP, CUDA, HYPRE
+# and floating-point exceptions, which require related AMReX components to
+# be enabled in the installation.
+# In STANDALONE mode, find_package will make sure these options are available
+# IN SUPERBUILD mode, These options will supersede AMReX options with the same name
+option( ENABLE_OMP    "Enable OpenMP" NO )
+option( ENABLE_MPI    "Enable MPI"   YES )
+option( ENABLE_HYPRE  "Enable HYPRE"  NO )
+option( ENABLE_CUDA   "Enable CUDA"   NO )
+option( ENABLE_FPE    "Enable Floating Point Exceptions checks" NO )
+
 #
 # Import AMReX
 #
-# If AMREX_HOME is given, AMReX will be imported as a sub-project to be built together with incflo
-# If AMREX_HOME is not given, then we will look for a valid AMReX library installation
+# If AMREX_HOME is given, AMReX will be imported as a sub-project to be built together with incflo (SUPERBUILD)
+# If AMREX_HOME is not given, then we will look for a valid AMReX library installation (STANDALONE)
 #
 set(AMREX_HOME "" CACHE PATH "Path to AMReX top-level source directory")
 
-if (AMREX_HOME)
+if (AMREX_HOME)  # SUPERBUILD MODE
 
   message(STATUS "AMReX top-level source directory path: ${AMREX_HOME}")
   set(AMREX_BINARY_DIR "${incflo_BINARY_DIR}/amrex" CACHE INTERNAL "Path to AMReX top-level binary directory")
+
+  # Set required settings for AMReX
+  set(DIM 3)
+  set(ENABLE_DP ON)
+  set(ENABLE_LINEAR_SOLVERS ON)
+  set(ENABLE_TUTORIALS OFF)
 
   # Add AMReX as a sub-project: incflo inherits all AMReX options
   add_subdirectory(${AMREX_HOME} ${AMREX_BINARY_DIR})
@@ -37,19 +58,10 @@ if (AMREX_HOME)
   # Add AMReX module path
   list(APPEND CMAKE_MODULE_PATH ${AMREX_HOME}/Tools/CMake)
 
-else()
 
-   #
-   # Options -- incflo uses XSDK!!! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-   #
-   option( ENABLE_EB   "Build EB Code" OFF )
-   option( ENABLE_MPI  "Enable MPI"  ON)
-   option( ENABLE_OMP  "Enable OpenMP" OFF)
-   option( ENABLE_CUDA "Enable GPU support via CUDA" OFF )
+else ()  # STANDALONE MODE
 
-   #
    # Find amrex
-   #
    set(AMREX_MINIMUM_VERSION 20.03 CACHE INTERNAL "Minimum required AMReX version")
    set(AMREX_REQUIRED_COMPONENTS 3D DP LSOLVERS)
 
@@ -77,6 +89,10 @@ add_executable(incflo)
 target_link_libraries(incflo PUBLIC AMReX::amrex)
 if ( NOT CMAKE_CXX_FLAGS )
    target_link_libraries(incflo PUBLIC AMReX::Flags_CXX)
+endif ()
+
+if ( ENABLE_FPE )
+   target_link_libraries(incflo PUBLIC AMReX::Flags_FPE)
 endif ()
 
 #
