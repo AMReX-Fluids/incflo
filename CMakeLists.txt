@@ -31,6 +31,10 @@ option( ENABLE_HYPRE  "Enable HYPRE"  NO )
 option( ENABLE_CUDA   "Enable CUDA"   NO )
 option( ENABLE_FPE    "Enable Floating Point Exceptions checks" NO )
 
+if (ENABLE_CUDA)
+    enable_language(CUDA)
+endif ()
+
 #
 # Import AMReX
 #
@@ -58,6 +62,16 @@ if (AMREX_HOME)  # SUPERBUILD MODE
   # Add AMReX module path
   list(APPEND CMAKE_MODULE_PATH ${AMREX_HOME}/Tools/CMake)
 
+  # If CUDA is required, enable the language BEFORE adding the AMReX directory
+  # Since AMReX_SetupCUDA has an include guard, it will be included only once here.
+  # The reason for enabling CUDA before adding the AMReX subdirectory is that
+  # the top-most directory needs to setup the CUDA language before a CUDA-enabled target
+  # from a sub-project is included via add_subdirectory.
+  # IMPORTANT: if you don't do this, AMReX will perform this step in a sub-scope and therefore
+  # it will not setup CUDA here!
+  if(ENABLE_CUDA)
+     include(AMReX_SetupCUDA)
+  endif ()
 
 else ()  # STANDALONE MODE
 
@@ -87,6 +101,7 @@ endif ()
 
 add_executable(incflo)
 target_link_libraries(incflo PUBLIC AMReX::amrex)
+
 if ( NOT CMAKE_CXX_FLAGS )
    target_link_libraries(incflo PUBLIC AMReX::Flags_CXX)
 endif ()
@@ -102,8 +117,15 @@ include(AMReXBuildInfo)
 generate_buildinfo(incflo ${CMAKE_SOURCE_DIR})
 
 
-#
-# Add cuda support >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-#
-
 add_subdirectory(src)
+
+#
+# Setup CUDA
+#
+if (ENABLE_CUDA)
+   set_cpp_sources_to_cuda_language( incflo )
+   set_target_properties( incflo
+      PROPERTIES
+      CUDA_SEPARABLE_COMPILATION ON  # This add -dc flag
+      )
+endif ()
