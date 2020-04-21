@@ -48,17 +48,6 @@ if (AMREX_HOME)  # SUPERBUILD MODE
   message(STATUS "AMReX top-level source directory path: ${AMREX_HOME}")
   set(AMREX_BINARY_DIR "${incflo_BINARY_DIR}/amrex" CACHE INTERNAL "Path to AMReX top-level binary directory")
 
-  # Set required settings for AMReX
-  set(DIM 3)
-  set(ENABLE_DP ON)
-  set(ENABLE_LINEAR_SOLVERS ON)
-  set(ENABLE_TUTORIALS OFF)
-
-  # Add AMReX as a sub-project: incflo inherits all AMReX options
-  add_subdirectory(${AMREX_HOME} ${AMREX_BINARY_DIR})
-
-  message(STATUS "AMReX binary directory: ${AMREX_BINARY_DIR}")
-
   # Add AMReX module path
   list(APPEND CMAKE_MODULE_PATH ${AMREX_HOME}/Tools/CMake)
 
@@ -72,6 +61,17 @@ if (AMREX_HOME)  # SUPERBUILD MODE
   if(ENABLE_CUDA)
      include(AMReX_SetupCUDA)
   endif ()
+
+  # Set required settings for AMReX
+  set(DIM 3)
+  set(ENABLE_DP ON)
+  set(ENABLE_LINEAR_SOLVERS ON)
+  set(ENABLE_TUTORIALS OFF)
+
+  # Add AMReX as a sub-project: incflo inherits all AMReX options
+  add_subdirectory(${AMREX_HOME} ${AMREX_BINARY_DIR})
+
+  message(STATUS "AMReX binary directory: ${AMREX_BINARY_DIR}")
 
 else ()  # STANDALONE MODE
 
