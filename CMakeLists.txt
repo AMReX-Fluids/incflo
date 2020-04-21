@@ -56,12 +56,12 @@ endif ()
 #
 # Add AMReX "build info" capabilities
 #
-message(STATUS "incflo build type: ${CMAKE_BUILD_TYPE}")
 include(AMReXBuildInfo)
-generate_buildinfo(incflo ${CMAKE_SOURCE_DIR} REQUIRED)
+generate_buildinfo(incflo ${CMAKE_SOURCE_DIR})
+
 
 #
 # Add cuda support >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+#
 
 add_subdirectory(src)
