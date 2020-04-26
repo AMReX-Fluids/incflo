@@ -110,7 +110,16 @@ incflo::average_velocity_eta_to_faces (int lev, MultiFab const& cc_eta) const
                                               dm, 1, 0, MFInfo(), fact),
                                      MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(2)),
                                               dm, 1, 0, MFInfo(), fact)};
+
+#ifdef AMREX_USE_EB
+    // Note we use the tracer bc's here only to know when the bc is ext_dir 
+    //      (this should be the same for tracer and eta)
+    EB_interp_CellCentroid_to_FaceCentroid (cc_eta, GetArrOfPtrs(r), 0, 0, 1, geom[lev], 
+                                            get_tracer_bcrec());
+#else
     amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc_eta, Geom(lev));
+#endif
+
     fixup_eta_on_domain_faces(lev, r, cc_eta);
     return r;
 }
@@ -128,7 +137,12 @@ incflo::average_tracer_eta_to_faces (int lev, int comp, MultiFab const& cc_eta) 
                                               dm, 1, 0, MFInfo(), fact),
                                      MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(2)),
                                               dm, 1, 0, MFInfo(), fact)};
+#ifdef AMREX_USE_EB
+    EB_interp_CellCentroid_to_FaceCentroid (cc, GetArrOfPtrs(r), 0, 0, 1, geom[lev], 
+                                            get_tracer_bcrec());
+#else
     amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc, Geom(lev));
+#endif
     fixup_eta_on_domain_faces(lev, r, cc);
     return r;
 }
