@@ -5,7 +5,6 @@ target_sources(incflo
    incflo_compute_advection_term.cpp
    incflo_correct_small_cells.cpp
    incflo_MAC_projection.cpp
-   incflo_convection_K.H
    incflo_MAC_bcs.cpp
    incflo_MAC_bcs.H
    incflo_mol_predict_eb.cpp
