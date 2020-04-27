@@ -229,10 +229,7 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-            // xxxxx TODO
-            amrex::single_level_redistribute(lev, divtau_tmp[lev],
-                                             *a_divtau[lev], 0, 3,
-                                             m_incflo->Geom());
+            amrex::single_level_redistribute( divtau_tmp[lev], *a_divtau[lev], 0, 3, m_incflo->Geom(lev));
         }
     }
     else

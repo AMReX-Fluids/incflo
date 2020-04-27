@@ -4,6 +4,7 @@
 
 #ifdef AMREX_USE_EB
 #include <AMReX_EBFArrayBox.H>
+#include <AMReX_EBMultiFabUtil.H>
 #endif
 
 #include <AMReX_MultiFabUtil.H>
@@ -53,7 +54,13 @@ incflo::apply_MAC_projection (Vector<MultiFab*> const& u_mac,
         rho_face[lev][1].define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));
         rho_face[lev][2].define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));
 
+#ifdef AMREX_USE_EB
+        EB_interp_CellCentroid_to_FaceCentroid (*density[lev], GetArrOfPtrs(rho_face[lev]), 0, 0, 1,
+                                                geom[lev], get_density_bcrec());
+#else
         amrex::average_cellcenter_to_face(GetArrOfPtrs(rho_face[lev]), *density[lev], geom[lev]);
+#endif
+
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
             rho_face[lev][idim].invert(1.0, 0);
         }

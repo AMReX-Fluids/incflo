@@ -1,19 +1,22 @@
 #include "incflo_godunov_plm.H" 
 #include "incflo_godunov_ppm.H" 
-#include <incflo.H>
+
+#include <Godunov.H>
 
 using namespace amrex;
 
 void
-incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
-                                   Array4<Real> const& dqdt,
-                                   Array4<Real const> const& q,
-                                   Array4<Real const> const& umac,
-                                   Array4<Real const> const& vmac,
-                                   Array4<Real const> const& wmac,
-                                   Array4<Real const> const& fq,
-                                   BCRec const* pbc, int const* iconserv,
-                                   Real* p)
+godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
+                                    Array4<Real> const& dqdt,
+                                    Array4<Real const> const& q,
+                                    Array4<Real const> const& umac,
+                                    Array4<Real const> const& vmac,
+                                    Array4<Real const> const& wmac,
+                                    Array4<Real const> const& fq,
+                                    Vector<amrex::Geometry> geom,
+                                    Real l_dt,
+                                    BCRec const* pbc, int const* iconserv,
+                                    Real* p, bool use_ppm)
 {
     Box const& xbx = amrex::surroundingNodes(bx,0);
     Box const& ybx = amrex::surroundingNodes(bx,1);
@@ -26,7 +29,6 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     const Real dx = geom[lev].CellSize(0);
     const Real dy = geom[lev].CellSize(1);
     const Real dz = geom[lev].CellSize(2);
-    Real l_dt = m_dt;
     Real dtdx = l_dt/dx;
     Real dtdy = l_dt/dy;
     Real dtdz = l_dt/dz;
@@ -68,7 +70,7 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     p +=         xyzhi.size();
 
     // Use PPM to generate Im and Ip */
-    if (m_godunov_ppm) {
+    if (use_ppm) {
         amrex::ParallelFor(bxg1, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
@@ -82,13 +84,24 @@ incflo::compute_godunov_advection (int lev, Box const& bx, int ncomp,
 
     // Use PLM to generate Im and Ip */
     } else {   
-        amrex::ParallelFor(bxg1, ncomp,
+
+        amrex::ParallelFor(xebox, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Godunov_plm_fpu_x(i, j, k, n, l_dt, dx, Imx(i,j,k,n), Ipx(i-1,j,k,n),
                               q, umac(i,j,k), pbc[n], dlo.x, dhi.x);
+        });
+
+        amrex::ParallelFor(yebox, ncomp,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
             Godunov_plm_fpu_y(i, j, k, n, l_dt, dy, Imy(i,j,k,n), Ipy(i,j-1,k,n),
                               q, vmac(i,j,k), pbc[n], dlo.y, dhi.y);
+        });
+
+        amrex::ParallelFor(zebox, ncomp,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
             Godunov_plm_fpu_z(i, j, k, n, l_dt, dz, Imz(i,j,k,n), Ipz(i,j,k-1,n),
                               q, wmac(i,j,k), pbc[n], dlo.z, dhi.z);
         });

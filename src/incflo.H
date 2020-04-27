@@ -1,5 +1,4 @@
 #ifndef INCFLO_H_
-#define INCFLO_H_
 
 #include <AMReX_AmrCore.H>
 #include <AMReX_MultiFabUtil.H>
@@ -125,157 +124,13 @@ public: // for cuda
                                   amrex::Array4<amrex::Real const> const& fv,
                                   amrex::Array4<amrex::Real const> const& ft);
 
-    //
-    // Godunov
-    //
-    void predict_godunov (int lev, amrex::Real time, amrex::MultiFab& u_mac,
-                          amrex::MultiFab& v_mac, amrex::MultiFab& w_mac,
-                          amrex::MultiFab const& vel, 
-                          amrex::MultiFab const& vel_forces);
-
-   void predict_plm (int lev, amrex::Box const& bx, int ncomp,
-                      amrex::Array4<amrex::Real> const& Imx, amrex::Array4<amrex::Real> const& Ipx,
-                      amrex::Array4<amrex::Real> const& Imy, amrex::Array4<amrex::Real> const& Ipy,
-                      amrex::Array4<amrex::Real> const& Imz, amrex::Array4<amrex::Real> const& Ipz,
-                      amrex::Array4<amrex::Real const> const& q,
-                      amrex::Array4<amrex::Real  const> const& vcc);
-
-
-    void predict_ppm (int lev, amrex::Box const& bx, int ncomp,
-                      amrex::Array4<amrex::Real> const& Imx,
-                      amrex::Array4<amrex::Real> const& Ipx,
-                      amrex::Array4<amrex::Real> const& Imy,
-                      amrex::Array4<amrex::Real> const& Ipy,
-                      amrex::Array4<amrex::Real> const& Imz,
-                      amrex::Array4<amrex::Real> const& Ipz,
-                      amrex::Array4<amrex::Real const> const& q,
-                      amrex::Array4<amrex::Real const> const& vel);
-
-    void make_trans_velocities (int lev, amrex::Box const& xbx,
-                                amrex::Box const& ybx, amrex::Box const& zbx,
-                                amrex::Array4<amrex::Real> const& u_ad,
-                                amrex::Array4<amrex::Real> const& v_ad,
-                                amrex::Array4<amrex::Real> const& w_ad,
-                                amrex::Array4<amrex::Real const> const& Imx,
-                                amrex::Array4<amrex::Real const> const& Ipx,
-                                amrex::Array4<amrex::Real const> const& Imy,
-                                amrex::Array4<amrex::Real const> const& Ipy,
-                                amrex::Array4<amrex::Real const> const& Imz,
-                                amrex::Array4<amrex::Real const> const& Ipz,
-                                amrex::Array4<amrex::Real const> const& vel,
-                                amrex::Array4<amrex::Real const> const& f);
-
-    void predict_godunov (int lev, amrex::Box const& bx, int ncomp,
-                          amrex::Box const& xbx, amrex::Box const& ybx, amrex::Box const& zbx,
-                          amrex::Array4<amrex::Real> const& qx,
-                          amrex::Array4<amrex::Real> const& qy,
-                          amrex::Array4<amrex::Real> const& qz,
-                          amrex::Array4<amrex::Real const> const& q,
-                          amrex::Array4<amrex::Real const> const& u_ad,
-                          amrex::Array4<amrex::Real const> const& v_ad,
-                          amrex::Array4<amrex::Real const> const& w_ad,
-                          amrex::Array4<amrex::Real> const& Imx,
-                          amrex::Array4<amrex::Real> const& Ipx,
-                          amrex::Array4<amrex::Real> const& Imy,
-                          amrex::Array4<amrex::Real> const& Ipy,
-                          amrex::Array4<amrex::Real> const& Imz,
-                          amrex::Array4<amrex::Real> const& Ipz,
-                          amrex::Array4<amrex::Real const> const& f,
-                          amrex::Real* p);
-
-    void compute_godunov_advection (int lev, amrex::Box const& bx, int ncomp,
-                                    amrex::Array4<amrex::Real> const& dqdt,
-                                    amrex::Array4<amrex::Real const> const& q,
-                                    amrex::Array4<amrex::Real const> const& umac,
-                                    amrex::Array4<amrex::Real const> const& vmac,
-                                    amrex::Array4<amrex::Real const> const& wmac,
-                                    amrex::Array4<amrex::Real const> const& fq,
-                                    amrex::BCRec const* d_bcrec, int const* iconserv,
-                                    amrex::Real* p);
-
-    //
-    // MOL
-    //
-    void predict_vels_on_faces (int lev,  amrex::MultiFab& u_mac,
-                                amrex::MultiFab& v_mac, amrex::MultiFab& w_mac,
-                                amrex::MultiFab const& vel);
-
-    void predict_vels_on_faces (int lev,
-                                amrex::Box const& ubx,
-                                amrex::Box const& vbx,
-                                amrex::Box const& wbx,
-                                amrex::Array4<amrex::Real> const& u,
-                                amrex::Array4<amrex::Real> const& v,
-                                amrex::Array4<amrex::Real> const& w,
-                                amrex::Array4<amrex::Real const> const& vcc);
-
-#ifdef AMREX_USE_EB
-    void predict_vels_on_faces_eb (int lev,
-                                   amrex::Box const& ccbx,
-                                   amrex::Box const& ubx,
-                                   amrex::Box const& vbx,
-                                   amrex::Box const& wbx,
-                                   amrex::Array4<amrex::Real> const& u,
-                                   amrex::Array4<amrex::Real> const& v,
-                                   amrex::Array4<amrex::Real> const& w,
-                                   amrex::Array4<amrex::Real const> const& vcc,
-                                   amrex::Array4<amrex::EBCellFlag const> const& flag,
-                                   amrex::Array4<amrex::Real const> const& fcx,
-                                   amrex::Array4<amrex::Real const> const& fcy,
-                                   amrex::Array4<amrex::Real const> const& fcz, 
-                                   amrex::Array4<amrex::Real const> const& ccc);
-#endif
      
     void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,
                                      amrex::Vector<amrex::MultiFab const*> const& u_mac,
                                      amrex::Vector<amrex::MultiFab const*> const& v_mac,
                                      amrex::Vector<amrex::MultiFab const*> const& w_mac);
 
-    void compute_convective_fluxes (int lev, amrex::Box const& bx, int ncomp,
-                                    amrex::Array4<amrex::Real> const& fx,
-                                    amrex::Array4<amrex::Real> const& fy,
-                                    amrex::Array4<amrex::Real> const& fz,
-                                    amrex::Array4<amrex::Real const> const& q,
-                                    amrex::Array4<amrex::Real const> const& umac,
-                                    amrex::Array4<amrex::Real const> const& vmac,
-                                    amrex::Array4<amrex::Real const> const& wmac,
-                                    amrex::BCRec const* h_bcrec,
-                                    amrex::BCRec const* d_bcrec);
-
-    void compute_convective_rate (int lev, amrex::Box const& bx, int ncomp,
-                                  amrex::Array4<amrex::Real> const& dUdt,
-                                  amrex::Array4<amrex::Real const> const& fx,
-                                  amrex::Array4<amrex::Real const> const& fy,
-                                  amrex::Array4<amrex::Real const> const& fz);
-
 #ifdef AMREX_USE_EB
-    void compute_convective_fluxes_eb (int lev, amrex::Box const& bx, int ncomp,
-                                       amrex::Array4<amrex::Real> const& fx,
-                                       amrex::Array4<amrex::Real> const& fy,
-                                       amrex::Array4<amrex::Real> const& fz,
-                                       amrex::Array4<amrex::Real const> const& q,
-                                       amrex::Array4<amrex::Real const> const& umac,
-                                       amrex::Array4<amrex::Real const> const& vmac,
-                                       amrex::Array4<amrex::Real const> const& wmac,
-                                       amrex::BCRec const* h_bcrec,
-                                       amrex::BCRec const* d_bcrec,
-                                       amrex::Array4<amrex::EBCellFlag const> const& flag,
-                                       amrex::Array4<amrex::Real const> const& fcx,
-                                       amrex::Array4<amrex::Real const> const& fcy,
-                                       amrex::Array4<amrex::Real const> const& fcz,
-                                       amrex::Array4<amrex::Real const> const& ccc);
-
-    void compute_convective_rate_eb (int lev, amrex::Box const& bx, int ncomp,
-                                     amrex::Array4<amrex::Real> const& dUdt,
-                                     amrex::Array4<amrex::Real const> const& fx,
-                                     amrex::Array4<amrex::Real const> const& fy,
-                                     amrex::Array4<amrex::Real const> const& fz,
-                                     amrex::Array4<amrex::EBCellFlag const> const& flag,
-                                     amrex::Array4<amrex::Real const> const& vfrac,
-                                     amrex::Array4<amrex::Real const> const& apx,
-                                     amrex::Array4<amrex::Real const> const& apy,
-                                     amrex::Array4<amrex::Real const> const& apz);
-
     void redistribute_eb (int lev, amrex::Box const& bx, int ncomp,
                           amrex::Array4<amrex::Real> const& dUdt,
                           amrex::Array4<amrex::Real const> const& dUdt_in,

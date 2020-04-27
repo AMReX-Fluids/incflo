@@ -1,19 +1,21 @@
 #include "incflo_godunov_plm.H" 
 #include "incflo_godunov_ppm.H" 
 
-#include "incflo.H"
+#include <Godunov.H>
 #include <incflo_MAC_bcs.H>
-#include <AMReX_BCRec.H>
 #include <iomanip>
 
 using namespace amrex;
 
-void incflo::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_mac,
-                              MultiFab& w_mac, MultiFab const& vel, MultiFab const& vel_forces)
+void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_mac,
+                               MultiFab& w_mac, MultiFab const& vel, MultiFab const& vel_forces,
+                               Vector<BCRec> const& h_bcrec,
+                                      BCRec  const* d_bcrec,
+                               Vector<Geometry> geom, Real l_dt, 
+                               bool use_ppm, bool use_forces_in_trans)
 {
-    Box const& domain = Geom(lev).Domain();
-    Vector<BCRec> const& h_bcrec = get_velocity_bcrec();
-    BCRec const* d_bcrec = get_velocity_bcrec_device_ptr();
+    Box const& domain = geom[lev].Domain();
+    const Real* dx    = geom[lev].CellSize();
 
     const int ncomp = AMREX_SPACEDIM;
 #ifdef _OPENMP
@@ -58,17 +60,27 @@ void incflo::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_m
             Array4<Real> w_ad = makeArray4(p,Box(bx).grow(0,1).grow(1,1).surroundingNodes(2),1);
             p +=         w_ad.size();
 
-            if (m_godunov_ppm)
-                predict_ppm (lev, bxg1, AMREX_SPACEDIM, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_vel);
+            if (use_ppm)
+                godunov::predict_ppm (lev, bxg1, AMREX_SPACEDIM, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_vel,
+                                      geom, l_dt, d_bcrec);
             else
-                predict_plm (lev, bxg1, AMREX_SPACEDIM, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_vel);
+            {
+                godunov::predict_plm_x (lev, bx, AMREX_SPACEDIM, Imx, Ipx, a_vel, a_vel,
+                                        geom, l_dt, h_bcrec, d_bcrec);
+                godunov::predict_plm_y (lev, bx, AMREX_SPACEDIM, Imy, Ipy, a_vel, a_vel,
+                                        geom, l_dt, h_bcrec, d_bcrec);
+                godunov::predict_plm_z (lev, bx, AMREX_SPACEDIM, Imz, Ipz, a_vel, a_vel,
+                                        geom, l_dt, h_bcrec, d_bcrec);
+            }
 
             make_trans_velocities(lev, Box(u_ad), Box(v_ad), Box(w_ad),
                                   u_ad, v_ad, w_ad,
-                                  Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_f);
+                                  Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_f, 
+                                  domain, l_dt, d_bcrec, use_forces_in_trans);
 
-            predict_godunov(lev, bx, ncomp, xbx, ybx, zbx, a_umac, a_vmac, a_wmac,
-                            a_vel, u_ad, v_ad, w_ad, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_f, p);
+            predict_godunov_on_box(lev, bx, ncomp, xbx, ybx, zbx, a_umac, a_vmac, a_wmac,
+                                   a_vel, u_ad, v_ad, w_ad, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_f, 
+                                   domain, dx, l_dt, d_bcrec, use_forces_in_trans, p);
 
             incflo_set_mac_bcs(domain,xbx,ybx,zbx,a_umac,a_vmac,a_wmac,a_vel,h_bcrec,d_bcrec);
 
@@ -77,27 +89,27 @@ void incflo::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_m
     }
 }
 
-void incflo::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box const& zbx,
-                                    Array4<Real> const& u_ad,
-                                    Array4<Real> const& v_ad,
-                                    Array4<Real> const& w_ad,
-                                    Array4<Real const> const& Imx,
-                                    Array4<Real const> const& Ipx,
-                                    Array4<Real const> const& Imy,
-                                    Array4<Real const> const& Ipy,
-                                    Array4<Real const> const& Imz,
-                                    Array4<Real const> const& Ipz,
-                                    Array4<Real const> const& vel,
-                                    Array4<Real const> const& f)
+void godunov::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box const& zbx,
+                                     Array4<Real> const& u_ad,
+                                     Array4<Real> const& v_ad,
+                                     Array4<Real> const& w_ad,
+                                     Array4<Real const> const& Imx,
+                                     Array4<Real const> const& Ipx,
+                                     Array4<Real const> const& Imy,
+                                     Array4<Real const> const& Ipy,
+                                     Array4<Real const> const& Imz,
+                                     Array4<Real const> const& Ipz,
+                                     Array4<Real const> const& vel,
+                                     Array4<Real const> const& f,
+                                     const Box& domain,
+                                     Real l_dt, 
+                                     BCRec  const* pbc,
+                                     bool l_use_forces_in_trans)
 {
-    Real l_dt = m_dt;
-    bool l_use_forces_in_trans = m_godunov_use_forces_in_trans;
-
-    const Box& domain = Geom(lev).Domain();
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
 
-    BCRec const* pbc = get_velocity_bcrec_device_ptr();
+    // BCRec const* pbc = get_velocity_bcrec_device_ptr();
 
     amrex::ParallelFor(xbx, ybx, zbx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -171,35 +183,37 @@ void incflo::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box
     });
 }
 
-void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
-                              Box const& xbx, Box const& ybx, Box const& zbx,
-                              Array4<Real> const& qx,
-                              Array4<Real> const& qy,
-                              Array4<Real> const& qz,
-                              Array4<Real const> const& q,
-                              Array4<Real const> const& u_ad,
-                              Array4<Real const> const& v_ad,
-                              Array4<Real const> const& w_ad,
-                              Array4<Real> const& Imx,
-                              Array4<Real> const& Ipx,
-                              Array4<Real> const& Imy,
-                              Array4<Real> const& Ipy,
-                              Array4<Real> const& Imz,
-                              Array4<Real> const& Ipz,
-                              Array4<Real const> const& f,
-                              Real* p)
+void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
+                                      Box const& xbx, Box const& ybx, Box const& zbx,
+                                      Array4<Real> const& qx,
+                                      Array4<Real> const& qy,
+                                      Array4<Real> const& qz,
+                                      Array4<Real const> const& q,
+                                      Array4<Real const> const& u_ad,
+                                      Array4<Real const> const& v_ad,
+                                      Array4<Real const> const& w_ad,
+                                      Array4<Real> const& Imx,
+                                      Array4<Real> const& Ipx,
+                                      Array4<Real> const& Imy,
+                                      Array4<Real> const& Ipy,
+                                      Array4<Real> const& Imz,
+                                      Array4<Real> const& Ipz,
+                                      Array4<Real const> const& f,
+                                      const Box& domain,
+                                      const Real* dx_arr,
+                                      Real l_dt,
+                                      BCRec  const* pbc,
+                                      bool l_use_forces_in_trans,
+                                      Real* p)
 {
-    Real l_dt = m_dt;
-    bool l_use_forces_in_trans = m_godunov_use_forces_in_trans;
-
-    const Box& domain = Geom(lev).Domain();
+    // const Box& domain = Geom(lev).Domain();
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
-    Real dx = Geom(lev).CellSize(0);
-    Real dy = Geom(lev).CellSize(1);
-    Real dz = Geom(lev).CellSize(2);
+    Real dx = dx_arr[0];
+    Real dy = dx_arr[1];
+    Real dz = dx_arr[2];
 
-    BCRec const* pbc = get_velocity_bcrec_device_ptr();
+   //  BCRec const* pbc = get_velocity_bcrec_device_ptr();
 
     Box xebox = Box(bx).grow(1,1).grow(2,1).surroundingNodes(0);
     Box yebox = Box(bx).grow(0,1).grow(2,1).surroundingNodes(1);

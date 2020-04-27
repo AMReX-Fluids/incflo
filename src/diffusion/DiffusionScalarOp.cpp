@@ -256,10 +256,9 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-            // xxxxx TODO
-            amrex::single_level_redistribute(lev, laps_tmp[lev],
+            amrex::single_level_redistribute(laps_tmp[lev],
                                              *a_laps[lev], 0, m_incflo->m_ntrac,
-                                             m_incflo->Geom());
+                                             m_incflo->Geom(lev));
         }
     }
     else

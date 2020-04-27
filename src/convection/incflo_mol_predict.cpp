@@ -1,22 +1,42 @@
-#include <incflo.H>
-#include <incflo_convection_K.H>
+#include <MOL.H>
+#include <incflo_slopes_K.H>
 #include <incflo_MAC_bcs.H>
 
 using namespace amrex;
 
-void incflo::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
-                                    MultiFab& w_mac, MultiFab const& vel)
+namespace {
+    std::pair<bool,bool> has_extdir_or_ho (BCRec const* bcrec, int ncomp, int dir)
+    {
+        std::pair<bool,bool> r{false,false};
+        for (int n = 0; n < ncomp; ++n) {
+            r.first = r.first 
+                 or (bcrec[n].lo(dir) == BCType::ext_dir)
+                 or (bcrec[n].lo(dir) == BCType::hoextrap);
+            r.second = r.second 
+                 or (bcrec[n].hi(dir) == BCType::ext_dir)
+                 or (bcrec[n].hi(dir) == BCType::hoextrap);
+        }
+        return r;
+    }
+}
+
+void 
+mol::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
+                            MultiFab& w_mac, MultiFab const& vel,
+                            Vector<BCRec> const& h_bcrec,
+                                   BCRec  const* d_bcrec,
+#ifdef AMREX_USE_EB
+                            EBFArrayBoxFactory const* ebfact,
+#endif
+                            Vector<Geometry> geom)
 {
 #ifdef AMREX_USE_EB
-    auto const& fact = this->EBFactory(lev);
-    auto const& flags = fact.getMultiEBCellFlagFab();
-    auto const& fcent = fact.getFaceCent();
-    auto const& ccent = fact.getCentroid();
+    auto const& flags = ebfact->getMultiEBCellFlagFab();
+    auto const& fcent = ebfact->getFaceCent();
+    auto const& ccent = ebfact->getCentroid();
 #endif
 
-    Box const& domain = Geom(lev).Domain();
-    Vector<BCRec> const& h_bcrec = get_velocity_bcrec();
-    BCRec const* d_bcrec = get_velocity_bcrec_device_ptr();
+    Box const& domain = geom[lev].Domain();
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -49,12 +69,14 @@ void incflo::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
                 Array4<Real const> const& fcy = fcent[1]->const_array(mfi);
                 Array4<Real const> const& fcz = fcent[2]->const_array(mfi);
                 Array4<Real const> const& ccc = ccent.const_array(mfi);
-                predict_vels_on_faces_eb(lev,bx,ubx,vbx,wbx,u,v,w,vcc,flagarr,fcx,fcy,fcz,ccc);
+                predict_vels_on_faces_eb(lev,bx,ubx,vbx,wbx,
+                                         u,v,w,vcc,flagarr,fcx,fcy,fcz,ccc,
+                                         h_bcrec,d_bcrec,geom);
             }
             else
 #endif
             {
-                predict_vels_on_faces(lev,ubx,vbx,wbx,u,v,w,vcc);
+                predict_vels_on_faces(lev,ubx,vbx,wbx,u,v,w,vcc,h_bcrec,d_bcrec,geom);
             }
 
             incflo_set_mac_bcs(domain,ubx,vbx,wbx,u,v,w,vcc,h_bcrec,d_bcrec);
@@ -62,11 +84,18 @@ void incflo::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
     }
 }
 
-void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& wbx,
-                                    Array4<Real> const& u, Array4<Real> const& v,
-                                    Array4<Real> const& w, Array4<Real const> const& vcc)
+void 
+mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& wbx,
+                            Array4<Real> const& u, Array4<Real> const& v,
+                            Array4<Real> const& w, Array4<Real const> const& vcc,
+                            Vector<BCRec> const& h_bcrec,
+                                   BCRec  const* d_bcrec,
+                            Vector<Geometry> geom)
 {
     constexpr Real small_vel = 1.e-10;
+
+    int ncomp = AMREX_SPACEDIM; // This is only used because h_bcrec and d_bcrec hold the 
+                                // bc's for all three velocity components
 
     const Box& domain_box = geom[lev].Domain();
     const int domain_ilo = domain_box.smallEnd(0);
@@ -76,28 +105,23 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
 
-    auto const bc_ilo = m_bc_type[Orientation(Direction::x,Orientation::low)];
-    auto const bc_ihi = m_bc_type[Orientation(Direction::x,Orientation::high)];
-    auto const bc_jlo = m_bc_type[Orientation(Direction::y,Orientation::low)];
-    auto const bc_jhi = m_bc_type[Orientation(Direction::y,Orientation::high)];
-    auto const bc_klo = m_bc_type[Orientation(Direction::z,Orientation::low)];
-    auto const bc_khi = m_bc_type[Orientation(Direction::z,Orientation::high)];
+    // At an ext_dir or hoextrap boundary, 
+    //    the boundary value is on the face, not cell center.
+    auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
+    bool has_extdir_lo = extdir_lohi.first;
+    bool has_extdir_hi = extdir_lohi.second;
 
-    bool extdir_ilo = (bc_ilo == BC::mass_inflow) or (bc_ilo == BC::no_slip_wall);
-    bool extdir_ihi = (bc_ihi == BC::mass_inflow) or (bc_ihi == BC::no_slip_wall);
-    bool extdir_jlo = (bc_jlo == BC::mass_inflow) or (bc_jlo == BC::no_slip_wall);
-    bool extdir_jhi = (bc_jhi == BC::mass_inflow) or (bc_jhi == BC::no_slip_wall);
-    bool extdir_klo = (bc_klo == BC::mass_inflow) or (bc_klo == BC::no_slip_wall);
-    bool extdir_khi = (bc_khi == BC::mass_inflow) or (bc_khi == BC::no_slip_wall);
-
-    // At an ext_dir boundary, the boundary value is on the face, not cell center.
-
-    if ((extdir_ilo and domain_ilo >= ubx.smallEnd(0)-1) or
-        (extdir_ihi and domain_ihi <= ubx.bigEnd(0)))
+    if ((has_extdir_lo and domain_ilo >= ubx.smallEnd(0)-1) or
+        (has_extdir_hi and domain_ihi <= ubx.bigEnd(0)))
     {
-        amrex::ParallelFor(ubx, [vcc,extdir_ilo,extdir_ihi,domain_ilo,domain_ihi,u]
+        amrex::ParallelFor(ubx, [vcc,domain_ilo,domain_ihi,u,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            bool extdir_ilo = (   (d_bcrec[0].lo(0) == BCType::ext_dir)
+                               or (d_bcrec[0].lo(0) == BCType::hoextrap) );
+            bool extdir_ihi = (   (d_bcrec[0].hi(0) == BCType::ext_dir)
+                               or (d_bcrec[0].hi(0) == BCType::hoextrap) );
+
             const Real vcc_pls = vcc(i,j,k,0);
             const Real vcc_mns = vcc(i-1,j,k,0);
 
@@ -156,12 +180,23 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         });
     }
 
-    if ((extdir_jlo and domain_jlo >= vbx.smallEnd(1)-1) or
-        (extdir_jhi and domain_jhi <= vbx.bigEnd(1)))
+    // At an ext_dir or hoextrap boundary, 
+    //    the boundary value is on the face, not cell center.
+    extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
+    has_extdir_lo = extdir_lohi.first;
+    has_extdir_hi = extdir_lohi.second;
+
+    if ((has_extdir_lo and domain_jlo >= vbx.smallEnd(1)-1) or
+        (has_extdir_hi and domain_jhi <= vbx.bigEnd(1)))
     {
-        amrex::ParallelFor(vbx, [vcc,extdir_jlo,extdir_jhi,domain_jlo,domain_jhi,v]
+        amrex::ParallelFor(vbx, [vcc,domain_jlo,domain_jhi,v,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            bool extdir_jlo = (   (d_bcrec[1].lo(1) == BCType::ext_dir)
+                               or (d_bcrec[1].lo(1) == BCType::hoextrap) );
+            bool extdir_jhi = (   (d_bcrec[1].hi(1) == BCType::ext_dir)
+                               or (d_bcrec[1].hi(1) == BCType::hoextrap) );
+
             const Real vcc_pls = vcc(i,j,k,1);
             const Real vcc_mns = vcc(i,j-1,k,1);
 
@@ -217,12 +252,23 @@ void incflo::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box
         });
     }
 
-    if ((extdir_klo and domain_klo >= wbx.smallEnd(2)-1) or
-        (extdir_khi and domain_khi <= wbx.bigEnd(2)))
+    // At an ext_dir or hoextrap boundary, 
+    //    the boundary value is on the face, not cell center.
+    extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
+    has_extdir_lo = extdir_lohi.first;
+    has_extdir_hi = extdir_lohi.second;
+
+    if ((has_extdir_lo and domain_klo >= wbx.smallEnd(2)-1) or
+        (has_extdir_hi and domain_khi <= wbx.bigEnd(2)))
     {
-        amrex::ParallelFor(wbx, [vcc,extdir_klo,extdir_khi,domain_klo,domain_khi,w]
+        amrex::ParallelFor(wbx, [vcc,domain_klo,domain_khi,w,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            bool extdir_klo = (   (d_bcrec[2].lo(2) == BCType::ext_dir)
+                               or (d_bcrec[2].lo(2) == BCType::hoextrap) );
+            bool extdir_khi = (   (d_bcrec[2].hi(2) == BCType::ext_dir)
+                               or (d_bcrec[2].hi(2) == BCType::hoextrap) );
+
             const Real vcc_pls = vcc(i,j,k,2);
             const Real vcc_mns = vcc(i,j,k-1,2);
 

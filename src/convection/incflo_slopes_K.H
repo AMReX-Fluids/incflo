@@ -24,7 +24,7 @@ amrex::Real incflo_xslope (int i, int j, int k, int n,
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real incflo_ho_xslope (int i, int j, int k, int n,
-                           amrex::Array4<amrex::Real const> const& q) noexcept
+                              amrex::Array4<amrex::Real const> const& q) noexcept
 {
     amrex::Real dlft, drgt, dcen, dfm, dfp, dlim, dsgn, dtemp;
     amrex::Real qm, qp, qi;
@@ -79,8 +79,8 @@ amrex::Real incflo_xslope_extdir (int i, int j, int k, int n,
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real incflo_ho_xslope_extdir (int i, int j, int k, int n,
-                                  amrex::Array4<amrex::Real const> const& q,
-                                  bool edlo, bool edhi, int domlo, int domhi) noexcept
+                                     amrex::Array4<amrex::Real const> const& q,
+                                     bool edlo, bool edhi, int domlo, int domhi) noexcept
 {
     amrex::Real dlft, drgt, dcen, dfm, dfp, dlim, dsgn, dtemp, dlimsh, dsgnsh;
     amrex::Real qm, qp, qi;
@@ -158,7 +158,7 @@ amrex::Real incflo_yslope (int i, int j, int k, int n,
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real incflo_ho_yslope (int i, int j, int k, int n,
-                           amrex::Array4<amrex::Real const> const& q) noexcept
+                              amrex::Array4<amrex::Real const> const& q) noexcept
 {
     amrex::Real dlft, drgt, dcen, dfm, dfp, dlim, dsgn, dtemp;
     amrex::Real qm, qp, qj;
@@ -212,8 +212,8 @@ amrex::Real incflo_yslope_extdir (int i, int j, int k, int n,
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real incflo_ho_yslope_extdir (int i, int j, int k, int n,
-                                  amrex::Array4<amrex::Real const> const& q,
-                                  bool edlo, bool edhi, int domlo, int domhi) noexcept
+                                     amrex::Array4<amrex::Real const> const& q,
+                                     bool edlo, bool edhi, int domlo, int domhi) noexcept
 {
     amrex::Real dlft, drgt, dcen, dfm, dfp, dlim, dsgn, dtemp, dlimsh,dsgnsh;
     amrex::Real qm, qp, qj;
@@ -293,7 +293,7 @@ amrex::Real incflo_zslope (int i, int j, int k, int n,
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real incflo_ho_zslope (int i, int j, int k, int n,
-                           amrex::Array4<amrex::Real const> const& q) noexcept
+                              amrex::Array4<amrex::Real const> const& q) noexcept
 {
     amrex::Real dlft, drgt, dcen, dfm, dfp, dlim, dsgn, dtemp;
     amrex::Real qm, qp, qk;
@@ -347,8 +347,8 @@ amrex::Real incflo_zslope_extdir (int i, int j, int k, int n,
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real incflo_ho_zslope_extdir (int i, int j, int k, int n,
-                                  amrex::Array4<amrex::Real const> const& q,
-                                  bool edlo, bool edhi, int domlo, int domhi) noexcept
+                                     amrex::Array4<amrex::Real const> const& q,
+                                     bool edlo, bool edhi, int domlo, int domhi) noexcept
 {
     amrex::Real dlft, drgt, dcen, dfm, dfp, dlim, dsgn, dtemp, dlimsh, dsgnsh;
     amrex::Real qm, qp, qk;
@@ -385,7 +385,7 @@ amrex::Real incflo_ho_zslope_extdir (int i, int j, int k, int n,
        drgt = 2.*(q(i,j,k+1,n)-q(i  ,j,k,n));
        dlim = (dlft*drgt >= 0.0) ? 2.0*amrex::min(std::abs(dlft), std::abs(drgt)) : 0.0;
        dsgn = std::copysign(1.e0, dtemp);
-    } else if (edlo and j == domlo+1) {
+    } else if (edlo and k == domlo+1) {
        dfm  = -16./15.*q(i,j,domlo-1,n) + .5*q(i,j,domlo,n) + 2./3.*q(i,j,domlo+1,n) -  0.1*q(i,j,domlo+2,n);
        dlft = 2.*(q(i  ,j,domlo,n)-q(i,j,domlo-1,n));
        drgt = 2.*(q(i,j,domlo+1,n)-q(i  ,j,domlo,n));
@@ -580,12 +580,12 @@ incflo_slopes_eb (int i, int j, int k, int n,
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::GpuArray<amrex::Real,3>
 incflo_slopes_extdir_eb (int i, int j, int k, int n,
-                  amrex::Array4<amrex::Real const> const& state,
-                  amrex::Array4<amrex::Real const> const& ccent,
-                  amrex::Array4<amrex::EBCellFlag const> const& flag,
-                  bool edlo_x, bool edhi_x, int domlo_x, int domhi_x,
-                  bool edlo_y, bool edhi_y, int domlo_y, int domhi_y,
-                  bool edlo_z, bool edhi_z, int domlo_z, int domhi_z) noexcept
+                         amrex::Array4<amrex::Real const> const& state,
+                         amrex::Array4<amrex::Real const> const& ccent,
+                         amrex::Array4<amrex::EBCellFlag const> const& flag,
+                         bool edlo_x, bool edhi_x, int domlo_x, int domhi_x,
+                         bool edlo_y, bool edhi_y, int domlo_y, int domhi_y,
+                         bool edlo_z, bool edhi_z, int domlo_z, int domhi_z) noexcept
 {
     // First get EB-aware slope that doesn't know about extdir
     amrex::GpuArray<amrex::Real,3> eb_slope = incflo_slopes_eb (i,j,k,n,state,ccent,flag);

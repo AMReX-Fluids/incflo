@@ -201,6 +201,10 @@ void incflo::InitialIterations ()
 {
     BL_PROFILE("incflo::InitialIterations()");
 
+    copy_from_new_to_old_velocity();
+    copy_from_new_to_old_density();
+    copy_from_new_to_old_tracer();
+
     int initialisation = 1;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
     ComputeDt(initialisation, explicit_diffusion);
@@ -210,9 +214,6 @@ void incflo::InitialIterations ()
         amrex::Print() << "Doing initial pressure iterations with dt = " << m_dt << std::endl;
     }
 
-    copy_from_new_to_old_velocity();
-    copy_from_new_to_old_density();
-    copy_from_new_to_old_tracer();
     for(int lev = 0; lev <= finest_level; ++lev) m_t_old[lev] = m_t_new[lev];
 
     int ng = nghost_state();
