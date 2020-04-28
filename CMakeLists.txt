@@ -77,7 +77,7 @@ if (AMREX_HOME)  # SUPERBUILD MODE
 else ()  # STANDALONE MODE
 
    # Find amrex
-   set(AMREX_MINIMUM_VERSION 20.03 CACHE INTERNAL "Minimum required AMReX version")
+   set(AMREX_MINIMUM_VERSION 20.04 CACHE INTERNAL "Minimum required AMReX version")
    set(AMREX_REQUIRED_COMPONENTS 3D DP LSOLVERS)
 
    if (ENABLE_EB)
