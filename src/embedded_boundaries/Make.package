@@ -9,3 +9,5 @@ CEXE_sources += eb_spherecube.cpp
 CEXE_sources += eb_tuscan.cpp
 CEXE_sources += eb_twocylinders.cpp
 CEXE_sources += writeEBsurface.cpp
+
+CEXE_headers += eb_if.H
