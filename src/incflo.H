@@ -620,8 +620,6 @@ private:
 
     void Advance ();
     bool writeNow ();
-    void AverageDown ();
-    void AverageDownTo (int crse_lev);
 
     ///////////////////////////////////////////////////////////////////////////
     //

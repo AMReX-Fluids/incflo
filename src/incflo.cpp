@@ -209,23 +209,6 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
     }
 }
 
-// Set covered coarse cells to be the average of overlying fine cells
-// TODO: Move somewhere else, for example setup/incflo_arrays.cpp
-void incflo::AverageDown()
-{
-    BL_PROFILE("incflo::AverageDown()");
-
-    for (int lev = finest_level - 1; lev >= 0; --lev)
-    {
-        AverageDownTo(lev);
-    }
-}
-
-void incflo::AverageDownTo(int crse_lev)
-{
-    amrex::Abort("xxxxx TODO AverageDownTo");
-}
-
 bool
 incflo::writeNow()
 {

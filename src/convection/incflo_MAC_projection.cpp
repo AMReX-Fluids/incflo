@@ -79,9 +79,16 @@ incflo::apply_MAC_projection (Vector<MultiFab*> const& u_mac,
     //
     // Perform MAC projection
     //
-    MacProjector macproj(mac_vec, GetVecOfArrOfConstPtrs(rho_face), Geom(0,finest_level), lp_info);
+#if AMREX_USE_EB
+    MacProjector macproj(mac_vec                         , MLMG::Location::FaceCentroid, // Location of mac_vec   
+                         GetVecOfArrOfConstPtrs(rho_face), MLMG::Location::FaceCentroid, // Location of beta   
+                                                           MLMG::Location::FaceCenter  , // Location of solution variable phi
+                         Geom(0,finest_level), lp_info);
+#else
+    MacProjector macproj(mac_vec,GetVecOfArrOfConstPtrs(rho_face),Geom(0,finest_level), lp_info);
+#endif
 
     macproj.setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
 
-    macproj.project(m_mac_mg_rtol,m_mac_mg_atol,MLMG::Location::FaceCentroid);
+    macproj.project(m_mac_mg_rtol,m_mac_mg_atol);
 }
