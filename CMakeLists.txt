@@ -63,6 +63,7 @@ if (AMREX_HOME)  # SUPERBUILD MODE
   endif ()
 
   # Set required settings for AMReX
+  set(USE_XSDK_DEFAULTS ON)
   set(DIM 3)
   set(ENABLE_DP ON)
   set(ENABLE_LINEAR_SOLVERS ON)
