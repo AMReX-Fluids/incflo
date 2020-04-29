@@ -209,13 +209,20 @@ void incflo::init_bcs ()
             auto const bct = m_bc_type[ori];
             if (bct == BC::pressure_inflow  or
                 bct == BC::pressure_outflow or
-                bct == BC::slip_wall        or
                 bct == BC::no_slip_wall)
             {
                 if (side == Orientation::low) {
                     m_bcrec_density[0].setLo(dir, BCType::foextrap);
                 } else {
                     m_bcrec_density[0].setHi(dir, BCType::foextrap);
+                }
+            }
+            else if (bct == BC::slip_wall)
+            {
+                if (side == Orientation::low) {
+                    m_bcrec_density[0].setLo(dir, BCType::hoextrap);
+                } else {
+                    m_bcrec_density[0].setHi(dir, BCType::hoextrap);
                 }
             }
             else if (bct == BC::mass_inflow)
@@ -254,13 +261,20 @@ void incflo::init_bcs ()
             auto const bct = m_bc_type[ori];
             if (bct == BC::pressure_inflow  or
                 bct == BC::pressure_outflow or
-                bct == BC::slip_wall        or
                 bct == BC::no_slip_wall)
             {
                 if (side == Orientation::low) {
                     for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::foextrap);
                 } else {
                     for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::foextrap);
+                }
+            }
+            else if (bct == BC::slip_wall)
+            {
+                if (side == Orientation::low) {
+                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::hoextrap);
+                } else {
+                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::hoextrap);
                 }
             }
             else if (bct == BC::mass_inflow)

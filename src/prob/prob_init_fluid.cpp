@@ -15,6 +15,8 @@ void incflo::prob_init_fluid (int lev)
     ld.gp.setVal(0.0);
 
     ld.density.setVal(m_ro_0);
+    ld.density_o.setVal(m_ro_0);
+
     ld.velocity.setVal(m_ic_u, 0, 1);
     ld.velocity.setVal(m_ic_v, 1, 1);
     ld.velocity.setVal(m_ic_w, 2, 1);
@@ -24,7 +26,7 @@ void incflo::prob_init_fluid (int lev)
     {
         const Box& vbx = mfi.validbox();
         const Box& gbx = mfi.fabbox();
-        if (0 == m_probtype)
+        if (0 == m_probtype || 114 == m_probtype )
         { }
         else if (1 == m_probtype)
         {
@@ -71,6 +73,15 @@ void incflo::prob_init_fluid (int lev)
                         ld.tracer.array(mfi),
                         domain, dx, problo, probhi);
         }
+        else if (111 == m_probtype || 112 == m_probtype || 113 == m_probtype)
+        {
+            init_boussinesq_bubble(vbx, gbx,
+                                   ld.p.array(mfi),
+                                   ld.velocity.array(mfi),
+                                   ld.density.array(mfi),
+                                   ld.tracer.array(mfi),
+                                   domain, dx, problo, probhi);
+        }
         else if (12 == m_probtype)
         {
             init_periodic_tracer(vbx, gbx,
@@ -89,7 +100,9 @@ void incflo::prob_init_fluid (int lev)
                                     ld.tracer.array(mfi),
                                     domain, dx, problo, probhi);
         }
-        else if (31 == m_probtype or 32 == m_probtype or 33 == m_probtype)
+        else if (31  == m_probtype or 32  == m_probtype or 33  == m_probtype or 
+                 311 == m_probtype or 322 == m_probtype or 333 == m_probtype or
+                 41  == m_probtype)
         {
             init_plane_poiseuille(vbx, gbx,
                                   ld.p.array(mfi),
@@ -178,24 +191,34 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& gbx,
                                    GpuArray<Real, AMREX_SPACEDIM> const& problo,
                                    GpuArray<Real, AMREX_SPACEDIM> const& probhi)
 {
-    static constexpr Real pi = 3.1415926535897932;
+    static constexpr Real pi   = 3.1415926535897932;
+    static constexpr Real half = 0.5;
     static constexpr Real rho_1 = 0.5;
     static constexpr Real rho_2 = 2.0;
+    static constexpr Real tra_1 = 0.0;
+    static constexpr Real tra_2 = 1.0;
+
+    static constexpr Real width = 0.005;
+
     const Real splitx = 0.5*(problo[0] + probhi[0]);
     const Real splity = 0.5*(problo[1] + probhi[1]);
     const Real L_x = probhi[0] - problo[0];
 
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        Real x = problo[0] + (i+0.5)*dx[0];
-        Real y = problo[1] + (j+0.5)*dx[1];
-        Real z = problo[2] + (k+0.5)*dx[2];
-        const Real r2d = amrex::min(std::hypot((x-splitx),(y-splity)), 0.5*L_x);
-        const Real pertheight = 0.5 - 0.01*std::cos(2.0*pi*r2d/L_x);
-        density(i,j,k) = rho_1 + ((rho_2-rho_1)/2.0)*(1.0+std::tanh((z-pertheight)/0.005));
         vel(i,j,k,0) = 0.0;
         vel(i,j,k,1) = 0.0;
         vel(i,j,k,2) = 0.0;
+
+        Real x = problo[0] + (i+0.5)*dx[0];
+        Real y = problo[1] + (j+0.5)*dx[1];
+        Real z = problo[2] + (k+0.5)*dx[2];
+
+        const Real r2d = amrex::min(std::hypot((x-splitx),(y-splity)), half*L_x);
+        const Real pertheight = 0.5 - 0.01*std::cos(2.0*pi*r2d/L_x);
+
+        density(i,j,k) = rho_1 + ((rho_2-rho_1)/2.0)*(1.0+std::tanh((z-pertheight)/width));
+        tracer(i,j,k)  = tra_1 + ((tra_2-tra_1)/2.0)*(1.0+std::tanh((z-pertheight)/width));
     });
 }
 
@@ -220,9 +243,81 @@ void incflo::init_tuscan (Box const& vbx, Box const& gbx,
             tracer(i,j,k) = 0.0;
         } else {
             tracer(i,j,k) = 0.01;
-        }
+         }
     });
 }
+
+void incflo::init_boussinesq_bubble (Box const& vbx, Box const& gbx,
+                                     Array4<Real> const& p,
+                                     Array4<Real> const& vel,
+                                     Array4<Real> const& density,
+                                     Array4<Real> const& tracer,
+                                     Box const& domain,
+                                     GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                                     GpuArray<Real, AMREX_SPACEDIM> const& problo,
+                                     GpuArray<Real, AMREX_SPACEDIM> const& probhi)
+{
+    if (111 == m_probtype)
+    {
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            vel(i,j,k,0) = 0.0;
+            vel(i,j,k,1) = 0.0;
+            vel(i,j,k,2) = 0.0;
+            density(i,j,k) = 1.0;
+
+            Real x = (i+0.5)*dx[0];
+            Real y = (j+0.5)*dx[1];
+            Real z = (k+0.5)*dx[2];
+
+            Real r = std::sqrt((x-0.5 )*(x-0.5 ) + (y-0.25)*(y-0.25) + (z-0.25)*(z-0.25));
+
+            if(r < .1)
+                tracer(i,j,k,0) = 0.0;
+            else
+                tracer(i,j,k,0) = 0.01;
+        });
+    } else if (112 == m_probtype) {
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            vel(i,j,k,0) = 0.0;
+            vel(i,j,k,1) = 0.0;
+            vel(i,j,k,2) = 0.0;
+            density(i,j,k) = 1.0;
+
+            Real x = (i+0.5)*dx[0];
+            Real y = (j+0.5)*dx[1];
+            Real z = (k+0.5)*dx[2];
+
+            Real r = std::sqrt((x-0.25)*(x-0.25) + (y-0.5 )*(y-0.5 ) + (z-0.25)*(z-0.25));
+
+            if(r < .1)
+                tracer(i,j,k,0) = 0.0;
+            else
+                tracer(i,j,k,0) = 0.01;
+        });
+    } else if (113 == m_probtype) {
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            vel(i,j,k,0) = 0.0;
+            vel(i,j,k,1) = 0.0;
+            vel(i,j,k,2) = 0.0;
+            density(i,j,k) = 1.0;
+
+            Real x = (i+0.5)*dx[0];
+            Real y = (j+0.5)*dx[1];
+            Real z = (k+0.5)*dx[2];
+
+            Real r = std::sqrt((x-0.25)*(x-0.25) + (y-0.25)*(y-0.25) + (z-0.5 )*(z-0.5 ));
+
+            if(r < .1)
+                tracer(i,j,k,0) = 0.0;
+            else
+                tracer(i,j,k,0) = 0.01;
+        });
+    }
+}
+
 void incflo::init_periodic_tracer (Box const& vbx, Box const& gbx,
                                    Array4<Real> const& p,
                                    Array4<Real> const& vel,
@@ -268,6 +363,12 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
             vel(i,j,k,0) = std::tanh(30.0*(0.25-amrex::Math::abs(y-0.5)));
             vel(i,j,k,1) = 0.05*std::sin(twopi*x);
             vel(i,j,k,2) = 0.0;
+
+            Real r = std::sqrt((x-0.5)*(x-0.5) + (y-0.25)*(y-0.25));
+            if (r < .1)
+                tracer(i,j,k,0) = 0.0;
+            else
+                tracer(i,j,k,0) = 0.01;
         });
     }
     else if (22 == m_probtype)
@@ -279,6 +380,12 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
             vel(i,j,k,1) = std::tanh(30.0*(0.25-amrex::Math::abs(z-0.5)));
             vel(i,j,k,2) = 0.05*std::sin(twopi*y);
             vel(i,j,k,0) = 0.0;
+
+            Real r = std::sqrt((y-0.5)*(y-0.5) + (z-0.5)*(z-0.5));
+            if (r < .1)
+                tracer(i,j,k,0) = 0.0;
+            else
+                tracer(i,j,k,0) = 0.01;
         });
     }
     else if (23 == m_probtype)
@@ -290,6 +397,12 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
             vel(i,j,k,2) = std::tanh(30.0*(0.25-amrex::Math::abs(x-0.5)));
             vel(i,j,k,0) = 0.05*std::sin(twopi*z);
             vel(i,j,k,1) = 0.0;
+
+            Real r = std::sqrt((x-0.5)*(x-0.5) + (z-0.5)*(z-0.5));
+            if (r < .1)
+                tracer(i,j,k,0) = 0.0;
+            else
+                tracer(i,j,k,0) = 0.01;
         });
     }
     else
@@ -333,6 +446,44 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
         });
     }
+    else if (311 == m_probtype)
+    {
+        Real u = m_ic_u;
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            Real z = (k+0.5)*dzinv;
+            vel(i,j,k,0) = 6. * u * z * (1.-z);
+            vel(i,j,k,1) = 0.0;
+            vel(i,j,k,2) = 0.0;
+
+            const int nt = tracer.nComp();
+            for (int n = 0; n < nt; ++n) {
+                tracer(i,j,k,n) = 0.0;
+            }
+            if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
+        });
+    }
+    else if (41 == m_probtype)
+    {
+        Real u = m_ic_u;
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            Real z = (k+0.5)*dzinv;
+            vel(i,j,k,0) = 0.5*z;
+            vel(i,j,k,1) = 0.0;
+            vel(i,j,k,2) = 0.0;
+
+            const int nt = tracer.nComp();
+            for (int n = 0; n < nt; ++n) {
+                tracer(i,j,k,n) = 0.0;
+            }
+            if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
+        });
+    }
     else if (32 == m_probtype)
     {
         Real v = m_ic_v;
@@ -341,6 +492,25 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             Real z = (k+0.5)*dzinv;
             vel(i,j,k,0) = 0.0;
             vel(i,j,k,1) = 6. * v * z * (1.-z);
+            vel(i,j,k,2) = 0.0;
+
+            const int nt = tracer.nComp();
+            for (int n = 0; n < nt; ++n) {
+                tracer(i,j,k,n) = 0.0;
+            }
+            if (nt > 0 and j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 and j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 and j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
+        });
+    }
+    else if (322 == m_probtype)
+    {
+        Real v = m_ic_v;
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            Real x = (i+0.5)*dxinv;
+            vel(i,j,k,0) = 0.0;
+            vel(i,j,k,1) = 6. * v * x * (1.-x);
             vel(i,j,k,2) = 0.0;
 
             const int nt = tracer.nComp();
@@ -361,6 +531,25 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             vel(i,j,k,0) = 0.0;
             vel(i,j,k,1) = 0.0;
             vel(i,j,k,2) = 6. * w * x * (1.-x);
+
+            const int nt = tracer.nComp();
+            for (int n = 0; n < nt; ++n) {
+                tracer(i,j,k,n) = 0.0;
+            }
+            if (nt > 0 and k <= dhi.z/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 and k <= dhi.z/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 and k <= dhi.z*3/4) tracer(i,j,k,2) = 3.0;
+        });
+    }
+    else if (333 == m_probtype)
+    {
+        Real w = m_ic_w;
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            Real y = (j+0.5)*dyinv;
+            vel(i,j,k,0) = 0.0;
+            vel(i,j,k,1) = 0.0;
+            vel(i,j,k,2) = 6. * w * y * (1.-y);
 
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {

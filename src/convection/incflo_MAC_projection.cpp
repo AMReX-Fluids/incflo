@@ -4,6 +4,7 @@
 
 #ifdef AMREX_USE_EB
 #include <AMReX_EBFArrayBox.H>
+#include <AMReX_EBMultiFabUtil.H>
 #endif
 
 #include <AMReX_MultiFabUtil.H>
@@ -53,7 +54,13 @@ incflo::apply_MAC_projection (Vector<MultiFab*> const& u_mac,
         rho_face[lev][1].define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));
         rho_face[lev][2].define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));
 
+#ifdef AMREX_USE_EB
+        EB_interp_CellCentroid_to_FaceCentroid (*density[lev], GetArrOfPtrs(rho_face[lev]), 0, 0, 1,
+                                                geom[lev], get_density_bcrec());
+#else
         amrex::average_cellcenter_to_face(GetArrOfPtrs(rho_face[lev]), *density[lev], geom[lev]);
+#endif
+
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
             rho_face[lev][idim].invert(1.0, 0);
         }
@@ -72,9 +79,16 @@ incflo::apply_MAC_projection (Vector<MultiFab*> const& u_mac,
     //
     // Perform MAC projection
     //
-    MacProjector macproj(mac_vec, GetVecOfArrOfConstPtrs(rho_face), Geom(0,finest_level), lp_info);
+#if AMREX_USE_EB
+    MacProjector macproj(mac_vec                         , MLMG::Location::FaceCentroid, // Location of mac_vec   
+                         GetVecOfArrOfConstPtrs(rho_face), MLMG::Location::FaceCentroid, // Location of beta   
+                                                           MLMG::Location::CellCenter  , // Location of solution variable phi
+                         Geom(0,finest_level), lp_info);
+#else
+    MacProjector macproj(mac_vec,GetVecOfArrOfConstPtrs(rho_face),Geom(0,finest_level), lp_info);
+#endif
 
     macproj.setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
 
-    macproj.project(m_mac_mg_rtol,m_mac_mg_atol,MLMG::Location::FaceCentroid);
+    macproj.project(m_mac_mg_rtol,m_mac_mg_atol);
 }

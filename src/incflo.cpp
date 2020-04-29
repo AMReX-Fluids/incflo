@@ -1,4 +1,3 @@
-
 #include <incflo.H>
 
 // Need this for TagCutCells
@@ -40,7 +39,7 @@ void incflo::InitData ()
     BL_PROFILE("incflo::InitData()");
 
     int restart_flag = 0;
-    if(m_restart_file.empty())
+    if (m_restart_file.empty())
     {
         // This tells the AmrMesh class not to iterate when creating the initial
         // grid hierarchy
@@ -67,36 +66,37 @@ void incflo::InitData ()
         // xxxxx TODO averagedown ???
 
         if (m_check_int > 0) { WriteCheckPointFile(); }
+
+        // Plot initial distribution
+        if (m_plot_int > 0 || m_plot_per_exact > 0 || m_plot_per_approx > 0)
+        {
+            WritePlotFile();
+            m_last_plt = 0;
+        }
+        if (m_KE_int > 0)
+        {
+            amrex::Abort("xxxxx m_KE_int todo");
+//          amrex::Print() << "Time, Kinetic Energy: " << m_cur_time << ", " << ComputeKineticEnergy() << std::endl;
+        }
     }
     else
     {
         restart_flag = 1;
         // Read starting configuration from chk file.
         ReadCheckpointFile();
-    }
 
-    // Plot initial distribution
-    if((m_plot_int > 0 || m_plot_per_exact > 0 || m_plot_per_approx > 0) && !restart_flag)
-    {
-        WritePlotFile();
-        m_last_plt = 0;
-    }
-    if(m_KE_int > 0 && !restart_flag)
-    {
-        amrex::Abort("xxxxx m_KE_int todo");
-//        amrex::Print() << "Time, Kinetic Energy: " << m_cur_time << ", " << ComputeKineticEnergy() << std::endl;
+        if (m_plotfile_on_restart)
+        {
+            WritePlotFile();
+            m_last_plt = 0;
+        }
     }
 
 #ifdef AMREX_USE_EB
     ParmParse pp("incflo");
     bool write_eb_surface = false;
     pp.query("write_eb_surface", write_eb_surface);
-    if (write_eb_surface)
-    {
-        amrex::Print() << "Writing the geometry to a vtp file.\n" << std::endl;
-        amrex::Warning("xxxxx WriteMyEBSurface todo");
-  //      WriteMyEBSurface();
-    }
+    if (write_eb_surface) WriteMyEBSurface();
 #endif
 
     if (m_verbose > 0 and ParallelDescriptor::IOProcessor()) {
@@ -120,7 +120,7 @@ void incflo::Evolve()
 
         if (m_regrid_int > 0 and m_nstep > 0 and m_nstep%m_regrid_int == 0)
         {
-            if (m_verbose > 0) amrex::Print() << "Regriding...\n";
+            if (m_verbose > 0) amrex::Print() << "Regridding...\n";
             regrid(0, m_cur_time);
             if (m_verbose > 0 and ParallelDescriptor::IOProcessor()) {
                 printGridSummary(amrex::OutStream(), 0, finest_level);
@@ -207,23 +207,6 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
     if (m_restart_file.empty()) {
         prob_init_fluid(lev);
     }
-}
-
-// Set covered coarse cells to be the average of overlying fine cells
-// TODO: Move somewhere else, for example setup/incflo_arrays.cpp
-void incflo::AverageDown()
-{
-    BL_PROFILE("incflo::AverageDown()");
-
-    for (int lev = finest_level - 1; lev >= 0; --lev)
-    {
-        AverageDownTo(lev);
-    }
-}
-
-void incflo::AverageDownTo(int crse_lev)
-{
-    amrex::Abort("xxxxx TODO AverageDownTo");
 }
 
 bool

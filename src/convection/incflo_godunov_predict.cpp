@@ -1,18 +1,21 @@
+#include "incflo_godunov_plm.H" 
 #include "incflo_godunov_ppm.H" 
-#include "incflo.H"
+
+#include <Godunov.H>
 #include <incflo_MAC_bcs.H>
-#include <AMReX_BCRec.H>
 #include <iomanip>
 
 using namespace amrex;
 
-void incflo::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_mac,
-                              MultiFab& w_mac, MultiFab const& vel, MultiFab const& rho,
-                              MultiFab const& vel_forces)
+void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_mac,
+                               MultiFab& w_mac, MultiFab const& vel, MultiFab const& vel_forces,
+                               Vector<BCRec> const& h_bcrec,
+                                      BCRec  const* d_bcrec,
+                               Vector<Geometry> geom, Real l_dt, 
+                               bool use_ppm, bool use_forces_in_trans)
 {
-    Box const& domain = Geom(lev).Domain();
-    Vector<BCRec> const& h_bcrec = get_velocity_bcrec();
-    BCRec const* d_bcrec = get_velocity_bcrec_device_ptr();
+    Box const& domain = geom[lev].Domain();
+    const Real* dx    = geom[lev].CellSize();
 
     const int ncomp = AMREX_SPACEDIM;
 #ifdef _OPENMP
@@ -57,14 +60,27 @@ void incflo::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_m
             Array4<Real> w_ad = makeArray4(p,Box(bx).grow(0,1).grow(1,1).surroundingNodes(2),1);
             p +=         w_ad.size();
 
-            make_ppm_integrals (lev, bxg1, AMREX_SPACEDIM, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_vel);
+            if (use_ppm)
+                godunov::predict_ppm (lev, bxg1, AMREX_SPACEDIM, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_vel,
+                                      geom, l_dt, d_bcrec);
+            else
+            {
+                godunov::predict_plm_x (lev, bx, AMREX_SPACEDIM, Imx, Ipx, a_vel, a_vel,
+                                        geom, l_dt, h_bcrec, d_bcrec);
+                godunov::predict_plm_y (lev, bx, AMREX_SPACEDIM, Imy, Ipy, a_vel, a_vel,
+                                        geom, l_dt, h_bcrec, d_bcrec);
+                godunov::predict_plm_z (lev, bx, AMREX_SPACEDIM, Imz, Ipz, a_vel, a_vel,
+                                        geom, l_dt, h_bcrec, d_bcrec);
+            }
 
             make_trans_velocities(lev, Box(u_ad), Box(v_ad), Box(w_ad),
                                   u_ad, v_ad, w_ad,
-                                  Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_f);
+                                  Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_f, 
+                                  domain, l_dt, d_bcrec, use_forces_in_trans);
 
-            predict_godunov(lev, bx, ncomp, xbx, ybx, zbx, a_umac, a_vmac, a_wmac,
-                            a_vel, u_ad, v_ad, w_ad, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_f, p);
+            predict_godunov_on_box(lev, bx, ncomp, xbx, ybx, zbx, a_umac, a_vmac, a_wmac,
+                                   a_vel, u_ad, v_ad, w_ad, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_f, 
+                                   domain, dx, l_dt, d_bcrec, use_forces_in_trans, p);
 
             incflo_set_mac_bcs(domain,xbx,ybx,zbx,a_umac,a_vmac,a_wmac,a_vel,h_bcrec,d_bcrec);
 
@@ -73,52 +89,27 @@ void incflo::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_m
     }
 }
 
-void incflo::make_ppm_integrals (int lev, Box const& bx, int ncomp,
-                                 Array4<Real> const& Imx,
-                                 Array4<Real> const& Ipx,
-                                 Array4<Real> const& Imy,
-                                 Array4<Real> const& Ipy,
-                                 Array4<Real> const& Imz,
-                                 Array4<Real> const& Ipz,
-                                 Array4<Real const> const& q,
-                                 Array4<Real const> const& vel)
+void godunov::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box const& zbx,
+                                     Array4<Real> const& u_ad,
+                                     Array4<Real> const& v_ad,
+                                     Array4<Real> const& w_ad,
+                                     Array4<Real const> const& Imx,
+                                     Array4<Real const> const& Ipx,
+                                     Array4<Real const> const& Imy,
+                                     Array4<Real const> const& Ipy,
+                                     Array4<Real const> const& Imz,
+                                     Array4<Real const> const& Ipz,
+                                     Array4<Real const> const& vel,
+                                     Array4<Real const> const& f,
+                                     const Box& domain,
+                                     Real l_dt, 
+                                     BCRec  const* pbc,
+                                     bool l_use_forces_in_trans)
 {
-    Real l_dt = m_dt;
-    const auto dx = Geom(lev).CellSizeArray();
-    const Box& domain = Geom(lev).Domain();
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
 
-    BCRec const* pbc = get_velocity_bcrec_device_ptr();
-
-    amrex::ParallelFor(bx, AMREX_SPACEDIM,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        Godunov_ppm_pred_x(i,j,k,n,l_dt,dx[0],q,vel,Imx,Ipx,pbc[0],dlo.x,dhi.x);
-        Godunov_ppm_pred_y(i,j,k,n,l_dt,dx[1],q,vel,Imy,Ipy,pbc[1],dlo.y,dhi.y);
-        Godunov_ppm_pred_z(i,j,k,n,l_dt,dx[2],q,vel,Imz,Ipz,pbc[2],dlo.z,dhi.z);
-    });
-}
-
-void incflo::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box const& zbx,
-                                    Array4<Real> const& u_ad,
-                                    Array4<Real> const& v_ad,
-                                    Array4<Real> const& w_ad,
-                                    Array4<Real const> const& Imx,
-                                    Array4<Real const> const& Ipx,
-                                    Array4<Real const> const& Imy,
-                                    Array4<Real const> const& Ipy,
-                                    Array4<Real const> const& Imz,
-                                    Array4<Real const> const& Ipz,
-                                    Array4<Real const> const& vel,
-                                    Array4<Real const> const& f)
-{
-    Real l_dt = m_dt;
-    bool l_use_forces_in_trans = m_use_forces_in_trans;
-
-    const Box& domain = Geom(lev).Domain();
-
-    BCRec const* pbc = get_velocity_bcrec_device_ptr();
+    // BCRec const* pbc = get_velocity_bcrec_device_ptr();
 
     amrex::ParallelFor(xbx, ybx, zbx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -136,14 +127,12 @@ void incflo::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box
         }
 
         auto bc = pbc[n];
-        Godunov_trans_xbc_lo(i, j, k, n, vel, lo, hi, lo, bc.lo(0),
-                             domain.loVect(), domain.hiVect(), false, false);
-        Godunov_trans_xbc_hi(i, j, k, n, vel, lo, hi, lo, bc.hi(0), 
-                             domain.loVect(), domain.hiVect(), false, false);
-        constexpr Real eps = 1e-6;
+        Godunov_trans_xbc(i, j, k, n, vel, lo, hi, lo, bc.lo(0), bc.hi(0), dlo.x, dhi.x);
+
+        constexpr Real small_vel = 1e-10;
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < eps) );
+        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
         u_ad(i,j,k) = ltm ? 0. : st;
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -161,14 +150,12 @@ void incflo::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box
         }
 
         auto bc = pbc[n];
-        Godunov_trans_ybc_lo(i, j, k, n, vel, lo, hi, lo, bc.lo(1),
-                             domain.loVect(), domain.hiVect(), false, false);
-        Godunov_trans_ybc_hi(i, j, k, n, vel, lo, hi, lo, bc.hi(1),
-                             domain.loVect(), domain.hiVect(), false, false);
-        constexpr Real eps = 1e-6;
+        Godunov_trans_ybc(i, j, k, n, vel, lo, hi, lo, bc.lo(1), bc.hi(1), dlo.y, dhi.y);
+
+        constexpr Real small_vel = 1e-10;
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < eps) );
+        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
         v_ad(i,j,k) = ltm ? 0. : st;
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -186,48 +173,47 @@ void incflo::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Box
         }
 
         auto bc = pbc[n];
-        Godunov_trans_zbc_lo(i, j, k, n, vel, lo, hi, lo, bc.lo(2),
-                             domain.loVect(), domain.hiVect(), false, false);
-        Godunov_trans_zbc_hi(i, j, k, n, vel, lo, hi, lo, bc.hi(2),
-                             domain.loVect(), domain.hiVect(), false, false);
+        Godunov_trans_zbc(i, j, k, n, vel, lo, hi, lo, bc.lo(2), bc.hi(2), dlo.z, dhi.z);
 
-        constexpr Real eps = 1e-6;
+        constexpr Real small_vel = 1e-10;
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < eps) );
+        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
         w_ad(i,j,k) = ltm ? 0. : st;
     });
 }
 
-void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
-                              Box const& xbx, Box const& ybx, Box const& zbx,
-                              Array4<Real> const& qx,
-                              Array4<Real> const& qy,
-                              Array4<Real> const& qz,
-                              Array4<Real const> const& q,
-                              Array4<Real const> const& u_ad,
-                              Array4<Real const> const& v_ad,
-                              Array4<Real const> const& w_ad,
-                              Array4<Real> const& Imx,
-                              Array4<Real> const& Ipx,
-                              Array4<Real> const& Imy,
-                              Array4<Real> const& Ipy,
-                              Array4<Real> const& Imz,
-                              Array4<Real> const& Ipz,
-                              Array4<Real const> const& f,
-                              Real* p)
+void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
+                                      Box const& xbx, Box const& ybx, Box const& zbx,
+                                      Array4<Real> const& qx,
+                                      Array4<Real> const& qy,
+                                      Array4<Real> const& qz,
+                                      Array4<Real const> const& q,
+                                      Array4<Real const> const& u_ad,
+                                      Array4<Real const> const& v_ad,
+                                      Array4<Real const> const& w_ad,
+                                      Array4<Real> const& Imx,
+                                      Array4<Real> const& Ipx,
+                                      Array4<Real> const& Imy,
+                                      Array4<Real> const& Ipy,
+                                      Array4<Real> const& Imz,
+                                      Array4<Real> const& Ipz,
+                                      Array4<Real const> const& f,
+                                      const Box& domain,
+                                      const Real* dx_arr,
+                                      Real l_dt,
+                                      BCRec  const* pbc,
+                                      bool l_use_forces_in_trans,
+                                      Real* p)
 {
-    Real l_dt = m_dt;
-    bool l_use_forces_in_trans = m_use_forces_in_trans;
-
-    const Box& domain = Geom(lev).Domain();
+    // const Box& domain = Geom(lev).Domain();
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
-    Real dx = Geom(lev).CellSize(0);
-    Real dy = Geom(lev).CellSize(1);
-    Real dz = Geom(lev).CellSize(2);
+    Real dx = dx_arr[0];
+    Real dy = dx_arr[1];
+    Real dz = dx_arr[2];
 
-    BCRec const* pbc = get_velocity_bcrec_device_ptr();
+   //  BCRec const* pbc = get_velocity_bcrec_device_ptr();
 
     Box xebox = Box(bx).grow(1,1).grow(2,1).surroundingNodes(0);
     Box yebox = Box(bx).grow(0,1).grow(2,1).surroundingNodes(1);
@@ -260,17 +246,15 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
             Real uad = u_ad(i,j,k);
             auto bc = pbc[n];
 
-            Godunov_trans_xbc_lo(i, j, k, n, q, lo, hi, uad, bc.lo(0),
-                                 domain.loVect(), domain.hiVect(), false, false);
-            Godunov_trans_xbc_hi(i, j, k, n, q, lo, hi, uad, bc.hi(0),
-                                 domain.loVect(), domain.hiVect(), false, false);
+            Godunov_trans_xbc(i, j, k, n, q, lo, hi, uad, bc.lo(0), bc.hi(0), dlo.x, dhi.x);
+
             xlo(i,j,k,n) = lo;
             xhi(i,j,k,n) = hi;
 
-            constexpr Real eps = 1e-6;
+            constexpr Real small_vel = 1e-10;
 
             Real st = (uad >= 0.) ? lo : hi;
-            Real fu = (amrex::Math::abs(uad) < eps) ? 0.0 : 1.0;
+            Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
             Imx(i, j, k, n) = fu*st + (1.0 - fu) *0.5 * (hi + lo); // store xedge
         },
         yebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -287,17 +271,15 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
             Real vad = v_ad(i,j,k);
             auto bc = pbc[n];
 
-            Godunov_trans_ybc_lo(i, j, k, n, q, lo, hi, vad, bc.lo(1),
-                                 domain.loVect(), domain.hiVect(), false, false);
-            Godunov_trans_ybc_hi(i, j, k, n, q, lo, hi, vad, bc.hi(1),
-                                 domain.loVect(), domain.hiVect(), false, false);
+            Godunov_trans_ybc(i, j, k, n, q, lo, hi, vad, bc.lo(1), bc.hi(1), dlo.y, dhi.y);
+
             ylo(i,j,k,n) = lo;
             yhi(i,j,k,n) = hi;
 
-            constexpr Real eps = 1e-6;
+            constexpr Real small_vel = 1e-10;
 
             Real st = (vad >= 0.) ? lo : hi;
-            Real fu = (amrex::Math::abs(vad) < eps) ? 0.0 : 1.0;
+            Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
             Imy(i, j, k, n) = fu*st + (1.0 - fu)*0.5*(hi + lo); // store yedge
         },
         zebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -313,18 +295,16 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
 
             Real wad = w_ad(i,j,k);
             auto bc = pbc[n];
-            Godunov_trans_zbc_lo(i, j, k, n, q, lo, hi, wad, bc.lo(2),
-                                 domain.loVect(), domain.hiVect(), false, false);
-            Godunov_trans_zbc_hi(i, j, k, n, q, lo, hi, wad, bc.hi(2),
-                                 domain.loVect(), domain.hiVect(), false, false);
+            
+            Godunov_trans_zbc(i, j, k, n, q, lo, hi, wad, bc.lo(2), bc.hi(2), dlo.z, dhi.z);
 
             zlo(i,j,k,n) = lo;
             zhi(i,j,k,n) = hi;
 
-            constexpr Real eps = 1e-6;
+            constexpr Real small_vel = 1e-10;
 
             Real st = (wad >= 0.) ? lo : hi;
-            Real fu = (amrex::Math::abs(wad) < eps) ? 0.0 : 1.0;
+            Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
             Imz(i, j, k, n) = fu*st + (1.0 - fu)*0.5*(hi + lo); // store zedge
         });
 
@@ -361,15 +341,12 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
                                  q, divu, v_ad, yedge);
 
         Real wad = w_ad(i,j,k);
-        Godunov_trans_zbc_lo(i, j, k, n, q, l_zylo, l_zyhi, wad, bc.lo(2),
-                             domain.loVect(), domain.hiVect(), false, true);
-        Godunov_trans_zbc_hi(i, j, k, n, q, l_zylo, l_zyhi, wad, bc.hi(2),
-                             domain.loVect(), domain.hiVect(), false, true);
+        Godunov_trans_zbc(i, j, k, n, q, l_zylo, l_zyhi, wad, bc.lo(2), bc.hi(2), dlo.z, dhi.z);
 
-        constexpr Real eps = 1.e-6;
+        constexpr Real small_vel = 1.e-10;
 
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
-        Real fu = (amrex::Math::abs(wad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
         zylo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_zyhi + l_zylo);
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -383,15 +360,12 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
                                  q, divu, w_ad, zedge);
 
         Real vad = v_ad(i,j,k);
-        Godunov_trans_ybc_lo(i, j, k, n, q, l_yzlo, l_yzhi, vad, bc.lo(1),
-                             domain.loVect(), domain.hiVect(), false, true);
-        Godunov_trans_ybc_hi(i, j, k, n, q, l_yzlo, l_yzhi, vad, bc.hi(1),
-                             domain.loVect(), domain.hiVect(), false, true);
+        Godunov_trans_ybc(i, j, k, n, q, l_yzlo, l_yzhi, vad, bc.lo(1), bc.hi(1), dlo.y, dhi.y);
 
-        constexpr Real eps = 1.e-6;
+        constexpr Real small_vel = 1.e-10;
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
-        Real fu = (amrex::Math::abs(vad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
         yzlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_yzhi + l_yzlo);
     });
     //
@@ -399,26 +373,26 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
     {
         constexpr int n = 0;
         auto bc = pbc[n];
-        Real stl = xlo(i,j,k,n) - (0.25*l_dt/dy)*(v_ad(i-1,j+1,k)+v_ad(i-1,j,k))*
-                                  (yzlo(i-1,j+1,k) - yzlo(i-1,j,k))
-                                - (0.25*l_dt/dz)*(w_ad(i-1,j,k+1)+w_ad(i-1,j,k))*
-                                  (zylo(i-1,j,k+1) - zylo(i-1,j,k));
-        Real sth = xhi(i,j,k,n) - (0.25*l_dt/dy)*(v_ad(i,j+1,k)+v_ad(i,j,k))*
-                                  (yzlo(i,j+1,k) - yzlo(i,j,k))
-                                - (0.25*l_dt/dz)*(w_ad(i,j,k+1)+w_ad(i,j,k))*
-                                  (zylo(i,j,k+1) - zylo(i,j,k));
-
+        Real stl = xlo(i,j,k,n) - (0.25*l_dt/dy)*(v_ad(i-1,j+1,k  )+v_ad(i-1,j,k))*
+                                                 (yzlo(i-1,j+1,k  )-yzlo(i-1,j,k))
+                                - (0.25*l_dt/dz)*(w_ad(i-1,j  ,k+1)+w_ad(i-1,j,k))*
+                                                 (zylo(i-1,j  ,k+1)-zylo(i-1,j,k));
+        Real sth = xhi(i,j,k,n) - (0.25*l_dt/dy)*(v_ad(i  ,j+1,k  )+v_ad(i  ,j,k))*
+                                                 (yzlo(i  ,j+1,k  )-yzlo(i  ,j,k))
+                                - (0.25*l_dt/dz)*(w_ad(i  ,j  ,k+1)+w_ad(i  ,j,k))*
+                                                 (zylo(i  ,j  ,k+1)-zylo(i  ,j,k));
         if (!l_use_forces_in_trans) {
             stl += 0.5 * l_dt * f(i-1,j,k,n);
             sth += 0.5 * l_dt * f(i  ,j,k,n);
         }
 
-        Godunov_cc_xbc(i, j, k, n, q, stl, sth, u_ad, bc.lo(0), bc.hi(0), dlo.x, dhi.x);
+        Godunov_cc_xbc_lo(i, j, k, n, q, stl, sth, u_ad, bc.lo(0), dlo.x);
+        Godunov_cc_xbc_hi(i, j, k, n, q, stl, sth, u_ad, bc.hi(0), dhi.x);
 
-        constexpr Real eps = 1e-6;
+        constexpr Real small_vel = 1.e-10;
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < eps) );
+        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
         qx(i,j,k) = ltm ? 0. : st;
     });
 
@@ -445,15 +419,12 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
                                  q, divu, w_ad, zedge);
 
         Real uad = u_ad(i,j,k);
-        Godunov_trans_xbc_lo(i, j, k, n, q, l_xzlo, l_xzhi, uad, bc.lo(0),
-                             domain.loVect(), domain.hiVect(), false, true);
-        Godunov_trans_xbc_hi(i, j, k, n, q, l_xzlo, l_xzhi, uad, bc.hi(0),
-                             domain.loVect(), domain.hiVect(), false, true);
+        Godunov_trans_xbc(i, j, k, n, q, l_xzlo, l_xzhi, uad, bc.lo(0), bc.hi(0), dlo.x, dhi.x);
 
-        constexpr Real eps = 1.e-6;
+        constexpr Real small_vel = 1.e-10;
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
-        Real fu = (amrex::Math::abs(uad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
         xzlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_xzhi + l_xzlo);
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -467,15 +438,12 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
                                  q, divu, u_ad, xedge);
 
         Real wad = w_ad(i,j,k);
-        Godunov_trans_zbc_lo(i, j, k, n, q, l_zxlo, l_zxhi, wad, bc.lo(2),
-                             domain.loVect(), domain.hiVect(), true, false);
-        Godunov_trans_zbc_hi(i, j, k, n, q, l_zxlo, l_zxhi, wad, bc.hi(2),
-                             domain.loVect(), domain.hiVect(), true, false);
+        Godunov_trans_zbc(i, j, k, n, q, l_zxlo, l_zxhi, wad, bc.lo(2), bc.hi(2), dlo.z, dhi.z);
 
-        constexpr Real eps = 1.e-6;
+        constexpr Real small_vel = 1.e-10;
 
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
-        Real fu = (amrex::Math::abs(wad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
         zxlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_zxhi + l_zxlo);
     });
     //
@@ -483,26 +451,26 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
     {
         constexpr int n = 1;
         auto bc = pbc[n];
-        Real stl = ylo(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j-1,k)+u_ad(i,j-1,k))*
-                                  (xzlo(i+1,j-1,k) - xzlo(i,j-1,k))
-                                - (0.25*l_dt/dz)*(w_ad(i,j-1,k+1)+w_ad(i,j-1,k))*
-                                  (zxlo(i,j-1,k+1) - zxlo(i,j-1,k));
-        Real sth = yhi(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j,k)+u_ad(i,j,k))*
-                                  (xzlo(i+1,j,k) - xzlo(i,j,k))
-                                - (0.25*l_dt/dz)*(w_ad(i,j,k+1)+w_ad(i,j,k))*
-                                  (zxlo(i,j,k+1) - zxlo(i,j,k));
-
+        Real stl = ylo(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j-1,k  )+u_ad(i,j-1,k))*
+                                                 (xzlo(i+1,j-1,k  )-xzlo(i,j-1,k))
+                                - (0.25*l_dt/dz)*(w_ad(i  ,j-1,k+1)+w_ad(i,j-1,k))*
+                                                 (zxlo(i  ,j-1,k+1)-zxlo(i,j-1,k));
+        Real sth = yhi(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j  ,k  )+u_ad(i,j  ,k))*
+                                                 (xzlo(i+1,j  ,k  )-xzlo(i,j  ,k))
+                                - (0.25*l_dt/dz)*(w_ad(i  ,j  ,k+1)+w_ad(i,j  ,k))*
+                                                 (zxlo(i  ,j  ,k+1)-zxlo(i,j  ,k));
         if (!l_use_forces_in_trans) {
            stl += 0.5 * l_dt * f(i,j-1,k,n);
            sth += 0.5 * l_dt * f(i,j  ,k,n);
         }
 
-        Godunov_cc_ybc(i, j, k, n, q, stl, sth, v_ad, bc.lo(1), bc.hi(1), dlo.y, dhi.y);
+        Godunov_cc_ybc_lo(i, j, k, n, q, stl, sth, v_ad, bc.lo(1), dlo.y);
+        Godunov_cc_ybc_hi(i, j, k, n, q, stl, sth, v_ad, bc.hi(1), dhi.y);
 
-        constexpr Real eps = 1e-6;
+        constexpr Real small_vel = 1.e-10;
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < eps) );
+        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
         qy(i,j,k) = ltm ? 0. : st;
     });
 
@@ -513,11 +481,11 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
     Array4<Real> xylo = makeArray4(Ipy.dataPtr(), amrex::surroundingNodes(zbxtmp,0), 1);
     Array4<Real> yxlo = makeArray4(Ipz.dataPtr(), amrex::surroundingNodes(zbxtmp,1), 1);
 
+    amrex::ParallelFor(Box(xylo), Box(yxlo),
+    //
     // Add d/dy term to x-faces
     // Start with {xlo,xhi} --> {xylo, xyhi} and upwind using u_ad to {xylo}
-    // Add d/dx term to y-faces and upwind using v_ad to {yxlo}
-    // Start with {ylo,yhi} --> {yxlo, yxhi}
-    amrex::ParallelFor(Box(xylo), Box(yxlo),
+    //
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 2;
@@ -529,17 +497,18 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
                                  q, divu, v_ad, yedge);
 
         Real uad = u_ad(i,j,k);
-        Godunov_trans_xbc_lo(i, j, k, n, q, l_xylo, l_xyhi, uad, bc.lo(0),
-                             domain.loVect(), domain.hiVect(), true, false);
-        Godunov_trans_xbc_hi(i, j, k, n, q, l_xylo, l_xyhi, uad, bc.hi(0),
-                             domain.loVect(), domain.hiVect(), true, false);
+        Godunov_trans_xbc(i, j, k, n, q, l_xylo, l_xyhi, uad, bc.lo(0), bc.hi(0), dlo.x, dhi.x);
 
-        constexpr Real eps = 1.e-6;
+        constexpr Real small_vel = 1.e-10;
 
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
-        Real fu = (amrex::Math::abs(uad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
         xylo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_xyhi + l_xylo);
     },
+    //
+    // Add d/dx term to y-faces
+    // Start with {ylo,yhi} --> {yxlo, yxhi} and upwind using v_ad to {yxlo}
+    //
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 2;
@@ -551,15 +520,12 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
                                  q, divu, u_ad, xedge);
 
         Real vad = v_ad(i,j,k);
-        Godunov_trans_ybc_lo(i, j, k, n, q, l_yxlo, l_yxhi, vad, bc.lo(1),
-                             domain.loVect(), domain.hiVect(), true, false);
-        Godunov_trans_ybc_hi(i, j, k, n, q, l_yxlo, l_yxhi, vad, bc.hi(1),
-                             domain.loVect(), domain.hiVect(), true, false);
+        Godunov_trans_ybc(i, j, k, n, q, l_yxlo, l_yxhi, vad, bc.lo(1), bc.hi(1), dlo.y, dhi.y);
 
-        constexpr Real eps = 1.e-6;
+        constexpr Real small_vel = 1.e-10;
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
-        Real fu = (amrex::Math::abs(vad) < eps) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
         yxlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_yxhi + l_yxlo);
     });
     //
@@ -567,26 +533,27 @@ void incflo::predict_godunov (int lev, Box const& bx, int ncomp,
     {
         constexpr int n = 2;
         auto bc = pbc[n];
-        Real stl = zlo(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j,k-1)+u_ad(i,j,k-1))*
-                                  (xylo(i+1,j,k-1) - xylo(i,j,k-1))
-                                - (0.25*l_dt/dy)*(v_ad(i,j+1,k-1)+v_ad(i,j,k-1))*
-                                  (yxlo(i,j+1,k-1) - yxlo(i,j,k-1));
-        Real sth = zhi(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j,k)+u_ad(i,j,k))*
-                                  (xylo(i+1,j,k) - xylo(i,j,k))
-                                - (0.25*l_dt/dy)*(v_ad(i,j+1,k)+v_ad(i,j,k))*
-                                  (yxlo(i,j+1,k) - yxlo(i,j,k));
+        Real stl = zlo(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j  ,k-1)+u_ad(i,j,k-1))*
+                                                 (xylo(i+1,j  ,k-1)-xylo(i,j,k-1))
+                                - (0.25*l_dt/dy)*(v_ad(i  ,j+1,k-1)+v_ad(i,j,k-1))*
+                                                 (yxlo(i  ,j+1,k-1)-yxlo(i,j,k-1));
+        Real sth = zhi(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j  ,k  )+u_ad(i,j,k  ))*
+                                                 (xylo(i+1,j  ,k  )-xylo(i,j,k  ))
+                                - (0.25*l_dt/dy)*(v_ad(i  ,j+1,k  )+v_ad(i,j,k  ))*
+                                                 (yxlo(i  ,j+1,k  )-yxlo(i,j,k  ));
 
         if (!l_use_forces_in_trans) {
            stl += 0.5 * l_dt * f(i,j,k-1,n);
            sth += 0.5 * l_dt * f(i,j,k  ,n);
         }
 
-        Godunov_cc_zbc(i, j, k, n, q, stl, sth, w_ad, bc.lo(2), bc.hi(2), dlo.z, dhi.z);
+        Godunov_cc_zbc_lo(i, j, k, n, q, stl, sth, w_ad, bc.lo(2), dlo.z);
+        Godunov_cc_zbc_hi(i, j, k, n, q, stl, sth, w_ad, bc.hi(2), dhi.z);
 
-        constexpr Real eps = 1e-6;
+        constexpr Real small_vel = 1.e-10;
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < eps) );
+        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
         qz(i,j,k) = ltm ? 0. : st;
     });
 }

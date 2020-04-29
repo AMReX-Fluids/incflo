@@ -6,7 +6,7 @@ void incflo::set_background_pressure ()
 {
     m_p000 = m_ic_p;
 
-    if (m_probtype == 11) {
+    if (m_probtype == 11 || m_probtype == 111 || m_probtype == 112 || m_probtype == 113) {
         m_use_boussinesq = true;
     } else {
         const auto problo = geom[0].ProbLoArray();
@@ -49,7 +49,7 @@ void incflo::set_background_pressure ()
             if (std::abs(dpdx) > std::numeric_limits<Real>::epsilon()) {
                 if (delp_dir == -1) {
                     delp_dir = dir;
-                    m_gp0[dir] = -dpdx;
+                    m_gp0[dir] = dpdx;
                 } else {
                     amrex::Abort("set_background_pressure: how did this happen?");
                 }

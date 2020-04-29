@@ -18,13 +18,12 @@ public:
     void diffuse_scalar (amrex::Vector<amrex::MultiFab*> const& phi,
                          amrex::Vector<amrex::MultiFab*> const& density,
                          amrex::Vector<amrex::MultiFab const*> const& eta,
-                         amrex::Real t, amrex::Real dt);
+                         amrex::Real dt);
 
     void compute_laps (amrex::Vector<amrex::MultiFab*> const& laps,
                        amrex::Vector<amrex::MultiFab const*> const& phi,
                        amrex::Vector<amrex::MultiFab const*> const& density,
-                       amrex::Vector<amrex::MultiFab const*> const& eta,
-                       amrex::Real t);
+                       amrex::Vector<amrex::MultiFab const*> const& eta);
 
 private:
 
@@ -50,8 +49,13 @@ private:
     int m_mg_max_fmg_iter = 0;
     int m_mg_max_coarsening_level = 100;
     int m_mg_maxorder = 2;
+#ifdef AMREX_USE_FLOAT
+    amrex::Real m_mg_rtol = 1.0e-4;
+    amrex::Real m_mg_atol = 1.0e-7;
+#else
     amrex::Real m_mg_rtol = 1.0e-11;
     amrex::Real m_mg_atol = 1.0e-14;
+#endif
     std::string m_bottom_solver_type = "bicgstab";
 };
 

@@ -52,11 +52,17 @@ void incflo::ReadParameters ()
 	pp.queryarr("delp", m_delp, 0, AMREX_SPACEDIM);
 	pp.queryarr("gravity", m_gravity, 0, AMREX_SPACEDIM);
 
-        pp.query("constant_density", m_constant_density);
-        pp.query("advect_tracer"   , m_advect_tracer);
+        pp.query("constant_density"         , m_constant_density);
+        pp.query("advect_tracer"            , m_advect_tracer);
         pp.query("test_tracer_conservation" , m_test_tracer_conservation);
-        pp.query("use_godunov"        , m_use_godunov);
-        pp.query("use_forces_in_trans", m_use_forces_in_trans);
+
+        // Godunov-related flags
+        pp.query("use_godunov"                      , m_use_godunov);
+        pp.query("use_ppm"                          , m_godunov_ppm);
+        pp.query("godunov_use_forces_in_trans"      , m_godunov_use_forces_in_trans);
+        pp.query("godunov_include_diff_in_forcing"  , m_godunov_include_diff_in_forcing);
+
+        if (!m_use_godunov) m_godunov_include_diff_in_forcing = false;
 
         // The default for diffusion_type is 2, i.e. the default m_diff_type is DiffusionType::Implicit
         int diffusion_type = 2;
@@ -131,6 +137,8 @@ void incflo::ReadIOParameters()
     pp.query("check_int", m_check_int);
     pp.query("restart", m_restart_file);
 
+    pp.query("plotfile_on_restart", m_plotfile_on_restart);
+
     pp.query("plot_file", m_plot_file);
     pp.query("plot_int"       , m_plot_int);
     pp.query("plot_per_exact" , m_plot_per_exact);
@@ -160,7 +168,6 @@ void incflo::ReadIOParameters()
         m_plt_eta        = 0;
         m_plt_vort       = 0;
         m_plt_strainrate = 0;
-        m_plt_stress     = 0;
         m_plt_divu       = 0;
         m_plt_vfrac      = 0;
     }
@@ -181,9 +188,10 @@ void incflo::ReadIOParameters()
     pp.query("plt_eta",        m_plt_eta   );
     pp.query("plt_vort",       m_plt_vort  );
     pp.query("plt_strainrate", m_plt_strainrate);
-    pp.query("plt_stress"    , m_plt_stress);
     pp.query("plt_divu",       m_plt_divu  );
     pp.query("plt_vfrac",      m_plt_vfrac );
+
+    pp.query("plt_forcing",    m_plt_forcing );
 }
 
 //
@@ -192,6 +200,10 @@ void incflo::ReadIOParameters()
 void incflo::InitialIterations ()
 {
     BL_PROFILE("incflo::InitialIterations()");
+
+    copy_from_new_to_old_velocity();
+    copy_from_new_to_old_density();
+    copy_from_new_to_old_tracer();
 
     int initialisation = 1;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
@@ -202,9 +214,6 @@ void incflo::InitialIterations ()
         amrex::Print() << "Doing initial pressure iterations with dt = " << m_dt << std::endl;
     }
 
-    copy_from_new_to_old_velocity();
-    copy_from_new_to_old_density();
-    copy_from_new_to_old_tracer();
     for(int lev = 0; lev <= finest_level; ++lev) m_t_old[lev] = m_t_new[lev];
 
     int ng = nghost_state();
@@ -243,7 +252,7 @@ void incflo::InitialProjection()
 
     Real dummy_dt = 1.0;
     bool incremental = false;
-    ApplyProjection(m_cur_time, dummy_dt, incremental);
+    ApplyProjection(get_density_new_const(), m_cur_time, dummy_dt, incremental);
 
     // We set p and gp back to zero (p0 may still be still non-zero)
     for (int lev = 0; lev <= finest_level; lev++)

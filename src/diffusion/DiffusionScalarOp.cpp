@@ -86,7 +86,7 @@ void
 DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
                                    Vector<MultiFab*> const& density,
                                    Vector<MultiFab const*> const& eta,
-                                   Real t, Real dt)
+                                   Real dt)
 {
     //
     //      alpha a - beta div ( b grad )   <--->   rho - dt div ( mu grad )
@@ -166,6 +166,9 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 #ifdef AMREX_USE_EB
             if (m_eb_solve_op) {
                 m_eb_solve_op->setLevelBC(lev, &phi[lev]);
+
+                // For when we use the stencil for centroid values
+                // m_eb_solve_op->setPhiOnCentroid();  
             } else
 #endif
             {
@@ -204,8 +207,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                                       Vector<MultiFab const*> const& a_tracer,
                                       Vector<MultiFab const*> const& a_density,
-                                      Vector<MultiFab const*> const& a_eta,
-                                      Real t)
+                                      Vector<MultiFab const*> const& a_eta)
 {
     BL_PROFILE("DiffusionScalarOp::compute_laps");
 
@@ -234,6 +236,11 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
         // We want to return div (mu grad)) phi
         m_eb_apply_op->setScalars(0.0, -1.0);
+
+        // For when we use the stencil for centroid values
+        // m_eb_solve_op->setPhiOnCentroid();  
+
+        // This should have no effect since the first scalar is 0
         for (int lev = 0; lev <= finest_level; ++lev) {
             m_eb_apply_op->setACoeffs(lev, *a_density[lev]);
         }
@@ -246,7 +253,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                 tracer_comp.emplace_back(tracer[lev],amrex::make_alias,comp,1);
                 Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_tracer_eta_to_faces(lev, comp, *a_eta[lev]);
                 m_eb_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b));
-                m_eb_apply_op->setLevelBC(lev, &laps_comp[lev]);
+                m_eb_apply_op->setLevelBC(lev, &tracer_comp[lev]);
             }
 
             MLMG mlmg(*m_eb_apply_op);
@@ -255,10 +262,9 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-            // xxxxx TODO
-            amrex::single_level_redistribute(lev, laps_tmp[lev],
+            amrex::single_level_redistribute(laps_tmp[lev],
                                              *a_laps[lev], 0, m_incflo->m_ntrac,
-                                             m_incflo->Geom());
+                                             m_incflo->Geom(lev));
         }
     }
     else
@@ -266,6 +272,8 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
     {
         // We want to return div (mu grad)) phi
         m_reg_apply_op->setScalars(0.0, -1.0);
+
+        // This should have no effect since the first scalar is 0
         for (int lev = 0; lev <= finest_level; ++lev) {
             m_reg_apply_op->setACoeffs(lev, *a_density[lev]);
         }
@@ -278,27 +286,11 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                 tracer_comp.emplace_back(tracer[lev],amrex::make_alias,comp,1);
                 Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_tracer_eta_to_faces(lev, comp, *a_eta[lev]);
                 m_reg_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b));
-                m_reg_apply_op->setLevelBC(lev, &laps_comp[lev]);
+                m_reg_apply_op->setLevelBC(lev, &tracer_comp[lev]);
             }
 
             MLMG mlmg(*m_reg_apply_op);
             mlmg.apply(GetVecOfPtrs(laps_comp), GetVecOfPtrs(tracer_comp));
-        }
-    }
-
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion());
-#endif
-    for (int lev = 0; lev <= finest_level; ++lev) {
-        for (MFIter mfi(*a_laps[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-            Box const& bx = mfi.tilebox();
-            Array4<Real> const& laps_arr = a_laps[lev]->array(mfi);
-            Array4<Real const> const& rho_arr = a_density[lev]->const_array(mfi);
-            amrex::ParallelFor(bx, m_incflo->m_ntrac,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                laps_arr(i,j,k,n) /= rho_arr(i,j,k);
-            });
         }
     }
 }

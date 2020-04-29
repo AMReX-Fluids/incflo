@@ -1,5 +1,4 @@
 #ifndef INCFLO_H_
-#define INCFLO_H_
 
 #include <AMReX_AmrCore.H>
 #include <AMReX_MultiFabUtil.H>
@@ -66,10 +65,20 @@ public:
 public: // for cuda
 
     void ComputeDt (int initialisation, bool explicit_diffusion);
-    void compute_forces (amrex::Vector<amrex::MultiFab*> const& vel_forces,
-                         amrex::Vector<amrex::MultiFab*> const& tra_forces,
-                         amrex::Vector<amrex::MultiFab const*> const& density,
-                         amrex::Vector<amrex::MultiFab const*> const& tracer);
+
+    void compute_tra_forces (amrex::Vector<amrex::MultiFab*> const& tra_forces,
+                             amrex::Vector<amrex::MultiFab const*> const& density);
+    void compute_vel_forces (amrex::Vector<amrex::MultiFab*> const& vel_forces,
+                             amrex::Vector<amrex::MultiFab const*> const& velocity,
+                             amrex::Vector<amrex::MultiFab const*> const& density,
+                             amrex::Vector<amrex::MultiFab const*> const& tracer_old,
+                             amrex::Vector<amrex::MultiFab const*> const& tracer_new);
+    void compute_vel_forces_on_level ( int lev,
+                                       amrex::MultiFab& vel_forces,
+                                       const amrex::MultiFab& velocity,
+                                       const amrex::MultiFab& density,
+                                       const amrex::MultiFab& tracer_old,
+                                       const amrex::MultiFab& tracer_new);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -116,148 +125,13 @@ public: // for cuda
                                   amrex::Array4<amrex::Real const> const& fv,
                                   amrex::Array4<amrex::Real const> const& ft);
 
-    //
-    // Godunov
-    //
-    void predict_godunov (int lev, amrex::Real time, amrex::MultiFab& u_mac,
-                          amrex::MultiFab& v_mac, amrex::MultiFab& w_mac,
-                          amrex::MultiFab const& vel, amrex::MultiFab const& rho,
-                          amrex::MultiFab const& vel_forces);
-
-    void make_ppm_integrals (int lev, amrex::Box const& bx, int ncomp,
-                             amrex::Array4<amrex::Real> const& Imx,
-                             amrex::Array4<amrex::Real> const& Ipx,
-                             amrex::Array4<amrex::Real> const& Imy,
-                             amrex::Array4<amrex::Real> const& Ipy,
-                             amrex::Array4<amrex::Real> const& Imz,
-                             amrex::Array4<amrex::Real> const& Ipz,
-                             amrex::Array4<amrex::Real const> const& q,
-                             amrex::Array4<amrex::Real const> const& vel);
-
-    void make_trans_velocities (int lev, amrex::Box const& xbx,
-                                amrex::Box const& ybx, amrex::Box const& zbx,
-                                amrex::Array4<amrex::Real> const& u_ad,
-                                amrex::Array4<amrex::Real> const& v_ad,
-                                amrex::Array4<amrex::Real> const& w_ad,
-                                amrex::Array4<amrex::Real const> const& Imx,
-                                amrex::Array4<amrex::Real const> const& Ipx,
-                                amrex::Array4<amrex::Real const> const& Imy,
-                                amrex::Array4<amrex::Real const> const& Ipy,
-                                amrex::Array4<amrex::Real const> const& Imz,
-                                amrex::Array4<amrex::Real const> const& Ipz,
-                                amrex::Array4<amrex::Real const> const& vel,
-                                amrex::Array4<amrex::Real const> const& f);
-
-    void predict_godunov (int lev, amrex::Box const& bx, int ncomp,
-                          amrex::Box const& xbx, amrex::Box const& ybx, amrex::Box const& zbx,
-                          amrex::Array4<amrex::Real> const& qx,
-                          amrex::Array4<amrex::Real> const& qy,
-                          amrex::Array4<amrex::Real> const& qz,
-                          amrex::Array4<amrex::Real const> const& q,
-                          amrex::Array4<amrex::Real const> const& u_ad,
-                          amrex::Array4<amrex::Real const> const& v_ad,
-                          amrex::Array4<amrex::Real const> const& w_ad,
-                          amrex::Array4<amrex::Real> const& Imx,
-                          amrex::Array4<amrex::Real> const& Ipx,
-                          amrex::Array4<amrex::Real> const& Imy,
-                          amrex::Array4<amrex::Real> const& Ipy,
-                          amrex::Array4<amrex::Real> const& Imz,
-                          amrex::Array4<amrex::Real> const& Ipz,
-                          amrex::Array4<amrex::Real const> const& f,
-                          amrex::Real* p);
-
-    void compute_godunov_advection (int lev, amrex::Box const& bx, int ncomp,
-                                    amrex::Array4<amrex::Real> const& dqdt,
-                                    amrex::Array4<amrex::Real const> const& q,
-                                    amrex::Array4<amrex::Real const> const& umac,
-                                    amrex::Array4<amrex::Real const> const& vmac,
-                                    amrex::Array4<amrex::Real const> const& wmac,
-                                    amrex::Array4<amrex::Real const> const& fq,
-                                    amrex::BCRec const* d_bcrec, int const* iconserv,
-                                    amrex::Real* p);
-
-    //
-    // MOL
-    //
-    void predict_vels_on_faces (int lev, amrex::Real time, amrex::MultiFab& u_mac,
-                                amrex::MultiFab& v_mac, amrex::MultiFab& w_mac,
-                                amrex::MultiFab const& vel);
-
-    void predict_vels_on_faces (int lev,
-                                amrex::Box const& ubx,
-                                amrex::Box const& vbx,
-                                amrex::Box const& wbx,
-                                amrex::Array4<amrex::Real> const& u,
-                                amrex::Array4<amrex::Real> const& v,
-                                amrex::Array4<amrex::Real> const& w,
-                                amrex::Array4<amrex::Real const> const& vcc);
-
-#ifdef AMREX_USE_EB
-    void predict_vels_on_faces_eb (int lev,
-                                   amrex::Box const& ccbx,
-                                   amrex::Box const& ubx,
-                                   amrex::Box const& vbx,
-                                   amrex::Box const& wbx,
-                                   amrex::Array4<amrex::Real> const& u,
-                                   amrex::Array4<amrex::Real> const& v,
-                                   amrex::Array4<amrex::Real> const& w,
-                                   amrex::Array4<amrex::Real const> const& vcc,
-                                   amrex::Array4<amrex::EBCellFlag const> const& flag,
-                                   amrex::Array4<amrex::Real const> const& fcx,
-                                   amrex::Array4<amrex::Real const> const& fcy,
-                                   amrex::Array4<amrex::Real const> const& fcz);
-#endif
      
     void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,
                                      amrex::Vector<amrex::MultiFab const*> const& u_mac,
                                      amrex::Vector<amrex::MultiFab const*> const& v_mac,
                                      amrex::Vector<amrex::MultiFab const*> const& w_mac);
 
-    void compute_convective_fluxes (int lev, amrex::Box const& bx, int ncomp,
-                                    amrex::Array4<amrex::Real> const& fx,
-                                    amrex::Array4<amrex::Real> const& fy,
-                                    amrex::Array4<amrex::Real> const& fz,
-                                    amrex::Array4<amrex::Real const> const& q,
-                                    amrex::Array4<amrex::Real const> const& umac,
-                                    amrex::Array4<amrex::Real const> const& vmac,
-                                    amrex::Array4<amrex::Real const> const& wmac,
-                                    amrex::BCRec const* h_bcrec,
-                                    amrex::BCRec const* d_bcrec);
-
-    void compute_convective_rate (int lev, amrex::Box const& bx, int ncomp,
-                                  amrex::Array4<amrex::Real> const& dUdt,
-                                  amrex::Array4<amrex::Real const> const& fx,
-                                  amrex::Array4<amrex::Real const> const& fy,
-                                  amrex::Array4<amrex::Real const> const& fz);
-
 #ifdef AMREX_USE_EB
-    void compute_convective_fluxes_eb (int lev, amrex::Box const& bx, int ncomp,
-                                       amrex::Array4<amrex::Real> const& fx,
-                                       amrex::Array4<amrex::Real> const& fy,
-                                       amrex::Array4<amrex::Real> const& fz,
-                                       amrex::Array4<amrex::Real const> const& q,
-                                       amrex::Array4<amrex::Real const> const& umac,
-                                       amrex::Array4<amrex::Real const> const& vmac,
-                                       amrex::Array4<amrex::Real const> const& wmac,
-                                       amrex::BCRec const* h_bcrec,
-                                       amrex::BCRec const* d_bcrec,
-                                       amrex::Array4<amrex::EBCellFlag const> const& flag,
-                                       amrex::Array4<amrex::Real const> const& fcx,
-                                       amrex::Array4<amrex::Real const> const& fcy,
-                                       amrex::Array4<amrex::Real const> const& fcz,
-                                       amrex::Array4<amrex::Real> const& qface);
-
-    void compute_convective_rate_eb (int lev, amrex::Box const& bx, int ncomp,
-                                     amrex::Array4<amrex::Real> const& dUdt,
-                                     amrex::Array4<amrex::Real const> const& fx,
-                                     amrex::Array4<amrex::Real const> const& fy,
-                                     amrex::Array4<amrex::Real const> const& fz,
-                                     amrex::Array4<amrex::EBCellFlag const> const& flag,
-                                     amrex::Array4<amrex::Real const> const& vfrac,
-                                     amrex::Array4<amrex::Real const> const& apx,
-                                     amrex::Array4<amrex::Real const> const& apy,
-                                     amrex::Array4<amrex::Real const> const& apz);
-
     void redistribute_eb (int lev, amrex::Box const& bx, int ncomp,
                           amrex::Array4<amrex::Real> const& dUdt,
                           amrex::Array4<amrex::Real const> const& dUdt_in,
@@ -313,7 +187,8 @@ public: // for cuda
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ApplyProjection(amrex::Real time, amrex::Real scaling_factor, bool incremental);
+    void ApplyProjection(amrex::Vector<amrex::MultiFab const*> density,
+                         amrex::Real time, amrex::Real scaling_factor, bool incremental);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -334,7 +209,6 @@ public: // for cuda
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    amrex::Real volWgtSum (int lev, const amrex::MultiFab& mf, int comp, bool local=false);
     bool SteadyStateReached ();
 
 private:
@@ -388,14 +262,66 @@ private:
     int m_refine_cutcells = 1;
     int m_regrid_int = -1;
 
+    // ***************************************************************
+    // MAC projection
+    // ***************************************************************
+    // Verbosity and MLMG parameters are now ParmParse with "mac_proj" in the
+    // inputs file
+    // Examples: mac_proj.verbose = 1
+    //           mac_proj.bottom_verbose = 1
+    //           mac_proj.maxiter
+    //           mac_proj.bottom_maxiter
+    //           mac_proj.bottom_rtol
+    //           mac_proj.bottom_atol
+    //           mac_proj.bottom_solver
+    // More info at "amrex/Src/LinearSolvers/Projections/AMReX_MacProjector.cpp"
+
     int m_mac_mg_verbose = 0;
     int m_mac_mg_cg_verbose = 0;
     int m_mac_mg_maxiter = 200;
     int m_mac_mg_cg_maxiter = 200;
     int m_mac_mg_max_coarsening_level = 100;
+
+#ifdef AMREX_USE_FLOAT
+    amrex::Real m_mac_mg_rtol = 1.0e-4;
+    amrex::Real m_mac_mg_atol = 1.0e-7;
+#else
     amrex::Real m_mac_mg_rtol = 1.0e-11;
     amrex::Real m_mac_mg_atol = 1.0e-14;
+#endif
+
     std::string m_mac_bottom_solver_type;
+
+    // ***************************************************************
+    // Nodal solve
+    // ***************************************************************
+
+    // Verbosity and MLMG parameters are now ParmParse with "nodal_proj" in the
+    // inputs file
+    // Examples: nodal_proj.verbose = 1
+    //           nodal_proj.bottom_verbose = 1
+    //           nodal_proj.maxiter
+    //           nodal_proj.bottom_maxiter
+    //           nodal_proj.bottom_rtol
+    //           nodal_proj.bottom_atol
+    //           nodal_proj.bottom_solver
+    // More info at "amrex/Src/LinearSolvers/Projections/AMReX_NodalProjector.cpp"
+    // Verbosity
+
+    // Control MLMG behavior
+#ifdef AMREX_USE_FLOAT
+    amrex::Real nodal_mg_rtol = 1.0e-4;
+    amrex::Real nodal_mg_atol = 1.0e-7;
+#else
+    amrex::Real nodal_mg_rtol = 1.0e-11;
+    amrex::Real nodal_mg_atol = 1.0e-14;
+#endif
+
+    // Max coarsening level
+    int nodal_mg_max_coarsening_level = 100;
+
+    // ***************************************************************
+    // ***************************************************************
 
     amrex::Real m_p000 = 0.0; // background pressure at node (0,0,0).
     amrex::Vector<amrex::Real> m_gp0{{0.0, 0.0, 0.0}};
@@ -412,8 +338,19 @@ private:
     bool m_advect_tracer    = false;
     bool m_test_tracer_conservation = false;
 
+    // Default to MOL (not Godunov)
     bool m_use_godunov         = false;
-    bool m_use_forces_in_trans = false;
+
+    // If using Godunov, default to PPM (not PLM)
+    bool m_godunov_ppm         = true;
+
+    // If using Godunov, default to including viscous/diffusive
+    //    terms in the forcing terms
+    bool m_godunov_include_diff_in_forcing = true;
+
+    // If using Godunov, when to add the forcing terms in 
+    //    the construction of the "trans" velocities
+    bool m_godunov_use_forces_in_trans = false;
 
     enum struct DiffusionType {
         Invalid, Explicit, Crank_Nicolson, Implicit
@@ -444,6 +381,12 @@ private:
     int m_KE_int = -1;
     std::string m_check_file{"chk"};
     std::string m_restart_file{""};
+    std::string m_tag_file{""};
+
+    bool m_plotfile_on_restart = false;
+
+    amrex::Vector<amrex::Real> tag_region_lo;
+    amrex::Vector<amrex::Real> tag_region_hi;
 
     // Flags for saving fluid data in plot files
     int m_plt_velx        = 1;
@@ -457,8 +400,8 @@ private:
     int m_plt_p           = 0;
     int m_plt_eta         = 0;
     int m_plt_vort        = 1;
+    int m_plt_forcing     = 0;
     int m_plt_strainrate  = 0;
-    int m_plt_stress      = 0;
     int m_plt_divu        = 0;
     int m_plt_vfrac       = 1;
 
@@ -579,7 +522,7 @@ private:
 #endif
 
     bool need_divtau () const {
-        return !(!m_use_godunov and DiffusionType::Implicit == m_diff_type);
+        return !(!m_godunov_include_diff_in_forcing and DiffusionType::Implicit == m_diff_type);
     }
 
     DiffusionTensorOp* get_diffusion_tensor_op ();
@@ -678,8 +621,6 @@ private:
 
     void Advance ();
     bool writeNow ();
-    void AverageDown ();
-    void AverageDownTo (int crse_lev);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -718,6 +659,7 @@ private:
     void make_eb_regular ();
     void make_eb_sphere ();
     void make_eb_spherecube ();
+    void make_eb_cyl_tuscan ();
     void make_eb_tuscan ();
 #endif
 
