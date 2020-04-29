@@ -116,6 +116,7 @@ incflo::average_velocity_eta_to_faces (int lev, MultiFab const& cc_eta) const
     //      (this should be the same for tracer and eta)
     EB_interp_CellCentroid_to_FaceCentroid (cc_eta, GetArrOfPtrs(r), 0, 0, 1, geom[lev], 
                                             get_tracer_bcrec());
+    // amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc_eta, Geom(lev));
 #else
     amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc_eta, Geom(lev));
 #endif

@@ -166,6 +166,9 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 #ifdef AMREX_USE_EB
             if (m_eb_solve_op) {
                 m_eb_solve_op->setLevelBC(lev, &phi[lev]);
+
+                // For when we use the stencil for centroid values
+                // m_eb_solve_op->setPhiOnCentroid();  
             } else
 #endif
             {
@@ -233,6 +236,9 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
         // We want to return div (mu grad)) phi
         m_eb_apply_op->setScalars(0.0, -1.0);
+
+        // For when we use the stencil for centroid values
+        // m_eb_solve_op->setPhiOnCentroid();  
 
         // This should have no effect since the first scalar is 0
         for (int lev = 0; lev <= finest_level; ++lev) {

@@ -108,11 +108,17 @@ DiffusionTensorOp::diffuse_velocity (Vector<MultiFab*> const& velocity,
 #ifdef AMREX_USE_EB
     if (m_eb_solve_op)
     {
+        // For when we use the stencil for centroid values
+        // m_eb_solve_op->setPhiOnCentroid();
+
         m_eb_solve_op->setScalars(1.0, dt);
         for (int lev = 0; lev <= finest_level; ++lev) {
             m_eb_solve_op->setACoeffs(lev, *density[lev]);
+
             Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_velocity_eta_to_faces(lev, *eta[lev]);
+
             m_eb_solve_op->setShearViscosity(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
+
             m_eb_solve_op->setEBShearViscosity(lev, *eta[lev]);
         }
     }
@@ -216,10 +222,17 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
         // We want to return div (mu grad)) phi
         m_eb_apply_op->setScalars(0.0, -1.0);
+
+        // For when we use the stencil for centroid values
+        // m_eb_solve_op->setPhiOnCentroid();
+
         for (int lev = 0; lev <= finest_level; ++lev) {
             m_eb_apply_op->setACoeffs(lev, *a_density[lev]);
+
             Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_velocity_eta_to_faces(lev, *a_eta[lev]);
+
             m_eb_apply_op->setShearViscosity(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
+
             m_eb_apply_op->setEBShearViscosity(lev, *a_eta[lev]);
             m_eb_apply_op->setLevelBC(lev, &velocity[lev]);
         }
