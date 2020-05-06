@@ -82,8 +82,6 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
                                    a_vel, u_ad, v_ad, w_ad, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_f, 
                                    domain, dx, l_dt, d_bcrec, use_forces_in_trans, p);
 
-            incflo_set_mac_bcs(domain,xbx,ybx,zbx,a_umac,a_vmac,a_wmac,a_vel,h_bcrec,d_bcrec);
-
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
         }
     }
