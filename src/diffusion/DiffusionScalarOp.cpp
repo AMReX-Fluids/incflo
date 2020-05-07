@@ -67,7 +67,7 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
 void
 DiffusionScalarOp::readParameters ()
 {
-    ParmParse pp("diffusion");
+    ParmParse pp("scalar_diffusion");
 
     pp.query("verbose", m_verbose);
     pp.query("mg_verbose", m_mg_verbose);
@@ -80,6 +80,9 @@ DiffusionScalarOp::readParameters ()
     pp.query("mg_rtol", m_mg_rtol);
     pp.query("mg_atol", m_mg_atol);
     pp.query("bottom_solver_type", m_bottom_solver_type);
+
+    pp.query("num_pre_smooth", m_num_pre_smooth);
+    pp.query("num_post_smooth", m_num_post_smooth);
 }
 
 void
@@ -199,6 +202,9 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
         // Verbosity for MultiGrid / ConjugateGradients
         mlmg.setVerbose(m_mg_verbose);
         mlmg.setCGVerbose(m_mg_cg_verbose);
+
+        mlmg.setPreSmooth(m_num_pre_smooth);
+        mlmg.setPostSmooth(m_num_post_smooth);
 
         mlmg.solve(GetVecOfPtrs(phi), GetVecOfConstPtrs(rhs), m_mg_rtol, m_mg_atol);
     }

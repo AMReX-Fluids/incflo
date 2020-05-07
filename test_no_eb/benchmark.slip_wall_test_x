@@ -67,8 +67,10 @@ incflo.steady_state_tol   = 1.e-5       # Tolerance for steady-state
 #              VERBOSITY                #
 #.......................................#
 incflo.verbose          =   2           # incflo_level
-diffusion.verbose       =   0           # DiffusionEquation
 mac_proj.verbose        =   0           # MAC Projector
 nodal_proj.verbose      =   0           # Nodal Projector
+
+scalar_diffusion.verbose       =   0           # DiffusionEquation
+tensor_diffusion.verbose       =   0           # DiffusionEquation
 
 amr.plt_ccse_regtest    =   1

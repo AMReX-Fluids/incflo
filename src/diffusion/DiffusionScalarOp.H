@@ -49,6 +49,10 @@ private:
     int m_mg_max_fmg_iter = 0;
     int m_mg_max_coarsening_level = 100;
     int m_mg_maxorder = 2;
+
+    int m_num_pre_smooth = 2;
+    int m_num_post_smooth = 2;
+
 #ifdef AMREX_USE_FLOAT
     amrex::Real m_mg_rtol = 1.0e-4;
     amrex::Real m_mg_atol = 1.0e-7;
