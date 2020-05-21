@@ -1,6 +1,5 @@
 #include <MOL.H>
 #include <incflo_slopes_K.H>
-#include <incflo_MAC_bcs.H>
 
 using namespace amrex;
 
@@ -78,8 +77,6 @@ mol::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
             {
                 predict_vels_on_faces(lev,ubx,vbx,wbx,u,v,w,vcc,h_bcrec,d_bcrec,geom);
             }
-
-            incflo_set_mac_bcs(domain,ubx,vbx,wbx,u,v,w,vcc,h_bcrec,d_bcrec);
         }
     }
 }

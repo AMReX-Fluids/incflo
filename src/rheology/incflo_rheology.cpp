@@ -48,17 +48,26 @@ struct NonNewtonianViscosity
 }
 
 void incflo::compute_viscosity (Vector<MultiFab*> const& vel_eta,
-                                Vector<MultiFab*> const& tra_eta,
-                                Vector<MultiFab const*> const& rho,
-                                Vector<MultiFab const*> const& vel,
-                                Vector<MultiFab const*> const& tra,
+                                Vector<MultiFab*> const& rho,
+                                Vector<MultiFab*> const& vel,
                                 Real time, int nghost)
+{
+    for (int lev = 0; lev <= finest_level; ++lev) 
+    {
+        compute_viscosity_at_level(lev, vel_eta[lev], rho[lev], vel[lev], geom[lev], time, nghost);
+    }
+}
+
+void incflo::compute_viscosity_at_level (int lev,
+                                         MultiFab* vel_eta,
+                                         MultiFab* rho,
+                                         MultiFab* vel,
+                                         Geometry& lev_geom,
+                                         Real time, int nghost)
 {
     if (m_fluid_model == FluidModel::Newtonian)
     {
-        for (auto mf : vel_eta) {
-            mf->setVal(m_mu, 0, 1, nghost);
-        }
+        vel_eta->setVal(m_mu, 0, 1, nghost);
     }
     else
     {
@@ -70,24 +79,23 @@ void incflo::compute_viscosity (Vector<MultiFab*> const& vel_eta,
         non_newtonian_viscosity.eta_0 = m_eta_0;
         non_newtonian_viscosity.papa_reg = m_papa_reg;
 
-        for (int lev = 0; lev <= finest_level; ++lev) {
 #ifdef AMREX_USE_EB
-            auto const& fact = EBFactory(lev);
-            auto const& flags = fact.getMultiEBCellFlagFab();
+        auto const& fact = EBFactory(lev);
+        auto const& flags = fact.getMultiEBCellFlagFab();
 #endif
 
-            Real idx = 1.0 / geom[lev].CellSize(0);
-            Real idy = 1.0 / geom[lev].CellSize(1);
-            Real idz = 1.0 / geom[lev].CellSize(2);
+        Real idx = 1.0 / lev_geom.CellSize(0);
+        Real idy = 1.0 / lev_geom.CellSize(1);
+        Real idz = 1.0 / lev_geom.CellSize(2);
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-            for (MFIter mfi(*vel_eta[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
+        for (MFIter mfi(*vel_eta,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
                 Box const& bx = mfi.growntilebox(nghost);
-                Array4<Real> const& eta_arr = vel_eta[lev]->array(mfi);
-                Array4<Real const> const& vel_arr = vel[lev]->const_array(mfi);
+                Array4<Real> const& eta_arr = vel_eta->array(mfi);
+                Array4<Real const> const& vel_arr = vel->const_array(mfi);
 #ifdef AMREX_USE_EB
                 auto const& flag_fab = flags[mfi];
                 auto typ = flag_fab.getType(bx);
@@ -116,10 +124,12 @@ void incflo::compute_viscosity (Vector<MultiFab*> const& vel_eta,
                         eta_arr(i,j,k) = non_newtonian_viscosity(sr);
                     });
                 }
-            }
         }
     }
+}
 
+void incflo::compute_tracer_diff_coeff (Vector<MultiFab*> const& tra_eta, int nghost)
+{
     for (auto mf : tra_eta) {
         for (int n = 0; n < m_ntrac; ++n) {
             mf->setVal(m_mu_s[n], n, 1, nghost);

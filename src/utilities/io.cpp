@@ -316,7 +316,7 @@ void incflo::WritePlotFile()
 {
     BL_PROFILE("incflo::WritePlotFile()");
 
-    if (m_plt_vort or m_plt_divu or m_plt_forcing) {
+    if (m_plt_vort or m_plt_divu or m_plt_forcing or m_plt_eta or m_plt_strainrate) {
         for (int lev = 0; lev <= finest_level; ++lev) {
 #ifdef AMREX_USE_EB
             const int ng = (EBFactory(0).isAllRegular()) ? 1 : 2;
@@ -447,7 +447,15 @@ void incflo::WritePlotFile()
         ++icomp;
     }
     if (m_plt_eta) {
-        amrex::Abort("plt_eta: xxxxx TODO");
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            MultiFab vel_eta(mf[lev], amrex::make_alias, icomp, 1);
+            compute_viscosity_at_level(lev,
+                                       &vel_eta,
+                                       &m_leveldata[lev]->density,
+                                       &m_leveldata[lev]->velocity,
+                                       Geom(lev),
+                                       m_cur_time, 0);
+        }
         pltscaVarsName.push_back("eta");
         ++icomp;
     }
@@ -474,7 +482,15 @@ void incflo::WritePlotFile()
         icomp += 3;
     }
     if (m_plt_strainrate) {
-        amrex::Abort("plt_strainrate: xxxxx TODO");
+        
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            MultiFab strainrate(mf[lev], amrex::make_alias, icomp, 1);
+            compute_strainrate_at_level(lev,
+                                        &strainrate,
+                                        &m_leveldata[lev]->velocity,
+                                        Geom(lev),
+                                        m_cur_time, 0);
+        }
         pltscaVarsName.push_back("strainrate");
         ++icomp;
     }

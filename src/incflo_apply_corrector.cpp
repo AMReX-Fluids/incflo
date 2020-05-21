@@ -135,9 +135,10 @@ void incflo::ApplyCorrector()
     // *************************************************************************************
     // Compute viscosity / diffusive coefficients
     // *************************************************************************************
-    compute_viscosity(GetVecOfPtrs(vel_eta), GetVecOfPtrs(tra_eta),
-                      get_density_new_const(), get_velocity_new_const(), get_tracer_new_const(),
+    compute_viscosity(GetVecOfPtrs(vel_eta), 
+                      get_density_new(), get_velocity_new(),
                       new_time, 1);
+    compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
 
     // Here we create divtau of the (n+1,*) state that was computed in the predictor;
     //      we use this laps only if DiffusionType::Explicit

@@ -155,8 +155,8 @@ void incflo::init_taylor_green3d (Box const& vbx, Box const& gbx,
         Real y = (j+0.5)*dx[1];
         Real z = (k+0.5)*dx[2];
         constexpr Real twopi = 2.*3.1415926535897932;
-        vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y) *std::cos(twopi*z);
-        vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y) *std::cos(twopi*z);
+        vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y) * std::cos(twopi*z);
+        vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y) * std::cos(twopi*z);
         vel(i,j,k,2) = 0.0;
     });
 }

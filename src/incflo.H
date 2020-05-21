@@ -146,12 +146,17 @@ public: // for cuda
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ComputeStrainrate (amrex::Real time);
     void ComputeVorticity (int lev, amrex::Real time, amrex::MultiFab& vort,
                            amrex::MultiFab const& vel);
     void ComputeDivU (amrex::Real time);
     void ComputeDrag ();
     amrex::Real ComputeKineticEnergy () const;
+
+    virtual void compute_strainrate_at_level (int lev,
+                                              amrex::MultiFab* sr,
+                                              amrex::MultiFab* vel,
+                                              amrex::Geometry& lev_geom,
+                                              amrex::Real time, int nghost);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -196,12 +201,18 @@ public: // for cuda
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    virtual void compute_viscosity (amrex::Vector<amrex::MultiFab*> const& vel_eta,
-                                    amrex::Vector<amrex::MultiFab*> const& tra_eta,
-                                    amrex::Vector<amrex::MultiFab const*> const& rho,
-                                    amrex::Vector<amrex::MultiFab const*> const& vel,
-                                    amrex::Vector<amrex::MultiFab const*> const& tra,
+    virtual void compute_viscosity (amrex::Vector<amrex::MultiFab*> const& eta,
+                                    amrex::Vector<amrex::MultiFab*> const& rho,
+                                    amrex::Vector<amrex::MultiFab*> const& vel,
                                     amrex::Real time, int nghost);
+    virtual void compute_viscosity_at_level (int lev,
+                                             amrex::MultiFab* eta,
+                                             amrex::MultiFab* rho,
+                                             amrex::MultiFab* vel,
+                                             amrex::Geometry& lev_geom,
+                                             amrex::Real time, int nghost);
+    virtual void compute_tracer_diff_coeff (amrex::Vector<amrex::MultiFab*> const& tra_eta,
+                                            int nghost);
 
     ///////////////////////////////////////////////////////////////////////////
     //

@@ -79,9 +79,11 @@ incflo.ic_p             =   0.0         #
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              VERBOSITY                #
 #.......................................#
-incflo.verbose          =   1           # incflo itself
-mac_proj.verbose        =   1           # MAC Projector
-nodal_proj.verbose      =   1           # Nodal Projector
-diffusion.verbose       =   1           # Diffusion operator
+incflo.verbose           =   1          # incflo itself
+mac_proj.verbose         =   1          # MAC Projector
+nodal_proj.verbose       =   1          # Nodal Projector
+
+scalar_diffusion.verbose  =   1         # Scalar Diffusion 
+tensor_diffusion.verbose  =   1         # Tensor Diffusion
 
 amr.plt_ccse_regtest    =   1
