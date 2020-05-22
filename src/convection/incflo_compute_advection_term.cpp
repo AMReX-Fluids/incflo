@@ -132,7 +132,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         return;
     }
 
-    bool regular = (flagfab.getType(amrex::grow(bx,1)) == FabType::regular);
+    bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
 
     Array4<Real const> fcx, fcy, fcz, ccc, vfrac, apx, apy, apz;
     if (!regular) {
