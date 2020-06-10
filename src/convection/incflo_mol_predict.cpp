@@ -54,7 +54,7 @@ mol::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
             Box const& bx = mfi.tilebox();
             EBCellFlagFab const& flagfab = flags[mfi];
             Array4<EBCellFlag const> const& flagarr = flagfab.const_array();
-            auto const typ = flagfab.getType(amrex::grow(bx,1));
+            auto const typ = flagfab.getType(amrex::grow(bx,2));
             if (typ == FabType::covered)
             {
                 amrex::ParallelFor(ubx, vbx, wbx,
