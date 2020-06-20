@@ -379,16 +379,16 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
         Godunov_cc_xbc_hi(i, j, k, n, q, stl, sth, u_ad, bc.hi(0), dhi.x);
 
         // Prevent backflow
-        if ( (i==dlo.x) and (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
-        {
-            sth = amrex::min(sth,0.);
-            stl = sth;
-        }
-        if ( (i==dhi.x+1) and (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
-        {
-             stl = amrex::max(stl,0.);
-             sth = stl;
-        }
+        // if ( (i==dlo.x) and (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
+        // {
+        //     sth = amrex::min(sth,0.);
+        //     stl = sth;
+        // }
+        // if ( (i==dhi.x+1) and (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
+        // {
+        //      stl = amrex::max(stl,0.);
+        //      sth = stl;
+        // }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
@@ -465,16 +465,16 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
         Godunov_cc_ybc_hi(i, j, k, n, q, stl, sth, v_ad, bc.hi(1), dhi.y);
 
         // Prevent backflow
-        if ( (j==dlo.y) and (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
-        {
-            sth = amrex::min(sth,0.);
-            stl = sth;
-        }
-        if ( (j==dhi.y+1) and (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
-        {
-            stl = amrex::max(stl,0.);
-            sth = stl;
-        }
+        // if ( (j==dlo.y) and (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
+        // {
+        //     sth = amrex::min(sth,0.);
+        //     stl = sth;
+        // }
+        // if ( (j==dhi.y+1) and (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
+        // {
+        //     stl = amrex::max(stl,0.);
+        //     sth = stl;
+        // }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
@@ -556,16 +556,16 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
         Godunov_cc_zbc_hi(i, j, k, n, q, stl, sth, w_ad, bc.hi(2), dhi.z);
 
         // Prevent backflow
-        if ( (k==dlo.z) and (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
-        {
-            sth = amrex::min(sth,0.);
-            stl = sth;
-        }
-        if ( (k==dhi.z+1) and (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
-        {
-            stl = amrex::max(stl,0.);
-            sth = stl;
-        }
+        // if ( (k==dlo.z) and (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
+        // {
+        //     sth = amrex::min(sth,0.);
+        //     stl = sth;
+        // }
+        // if ( (k==dhi.z+1) and (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
+        // {
+        //     stl = amrex::max(stl,0.);
+        //     sth = stl;
+        // }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
