@@ -160,7 +160,6 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         },
         zebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            constexpr Real small_vel = 1.e-10;
 
             Real wad = wmac(i,j,k);
             Real fuz = (amrex::Math::abs(wad) < small_vel) ? 0. : 1.;
