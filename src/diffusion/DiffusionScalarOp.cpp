@@ -31,7 +31,6 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                             m_incflo->DistributionMap(0,finest_level),
                                             info_solve, ebfact));
         m_eb_solve_op->setMaxOrder(m_mg_maxorder);
-        //                            m_incflo->get_diffuse_scalar_bc(Orientation::high));
 
         if (m_incflo->need_divtau()) {
             m_eb_apply_op.reset(new MLEBABecLap(m_incflo->Geom(0,finest_level),
@@ -127,6 +126,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& scalar,
             m_eb_solve_op->setScalars(1.0, dt);
             for (int lev = 0; lev <= finest_level; ++lev) {
                 m_eb_solve_op->setACoeffs(lev, *density[lev]);
+                m_eb_solve_op->setEBHomogDirichlet(lev, *eta[lev]);
             }
     
             if (is_vel)
@@ -262,11 +262,16 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
         }
 
         if (is_vel)
+        {
             m_eb_apply_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
                                        m_incflo->get_diffuse_tensor_bc(Orientation::high));
-        else
+            for (int lev = 0; lev <= finest_level; ++lev) {
+                m_eb_apply_op->setEBHomogDirichlet(lev, *a_eta[lev]);
+            }
+        } else {
             m_eb_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
                                        m_incflo->get_diffuse_scalar_bc(Orientation::high));
+        }
 
         // We want to return div (mu grad)) phi
         m_eb_apply_op->setScalars(0.0, -1.0);
