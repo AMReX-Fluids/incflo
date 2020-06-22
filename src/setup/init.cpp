@@ -77,6 +77,9 @@ void incflo::ReadParameters ()
             amrex::Abort("We currently require diffusion_type = 0 for explicit, 1 for Crank-Nicolson or 2 for implicit");
         }
 
+        // Default is true; should we use tensor solve instead of separate solves for each component?
+        pp.query("use_tensor_solve",use_tensor_solve);
+
         if (!m_use_godunov && m_cfl > 0.5) {
             amrex::Abort("We currently require cfl <= 0.5 when using the MOL advection scheme");
         }

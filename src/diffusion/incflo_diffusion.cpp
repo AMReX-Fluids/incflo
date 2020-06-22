@@ -2,6 +2,56 @@
 
 using namespace amrex;
 
+void
+incflo::compute_divtau(Vector<MultiFab      *> const& divtau, 
+                       Vector<MultiFab const*> const& vel,
+                       Vector<MultiFab const*> const& density,
+                       Vector<MultiFab const*> const& eta)
+{
+    if (use_tensor_solve) {
+        get_diffusion_tensor_op()->compute_divtau(divtau, vel, density, eta);
+    } else {
+        bool is_vel = true;
+        get_diffusion_scalar_op()->compute_laps(divtau, vel, density, eta, is_vel);
+    }
+}
+
+
+void
+incflo::compute_laps(Vector<MultiFab      *> const& laps, 
+                     Vector<MultiFab const*> const& scalar,
+                     Vector<MultiFab const*> const& density,
+                     Vector<MultiFab const*> const& eta)
+{
+    bool is_vel = false;
+    get_diffusion_scalar_op()->compute_laps(laps, scalar, density, eta, is_vel);
+}
+
+void
+incflo::diffuse_scalar(Vector<MultiFab      *> const& scalar,
+                       Vector<MultiFab      *> const& density,
+                       Vector<MultiFab const*> const& eta,
+                       Real dt_diff)
+{
+    bool is_vel = false;
+    get_diffusion_scalar_op()->diffuse_scalar(scalar, density, eta, dt_diff, is_vel);
+}
+
+
+void
+incflo::diffuse_velocity(Vector<MultiFab      *> const& vel,
+                         Vector<MultiFab      *> const& density,
+                         Vector<MultiFab const*> const& eta,
+                         Real dt_diff)
+{
+    if (use_tensor_solve) {
+        get_diffusion_tensor_op()->diffuse_velocity(vel, density, eta, dt_diff);
+    } else {
+        bool is_vel = true;
+        get_diffusion_scalar_op()->diffuse_scalar(vel, density, eta, dt_diff, is_vel);
+    }
+}
+
 DiffusionTensorOp*
 incflo::get_diffusion_tensor_op ()
 {
@@ -112,8 +162,8 @@ incflo::average_velocity_eta_to_faces (int lev, MultiFab const& cc_eta) const
                                               dm, 1, 0, MFInfo(), fact)};
 
 #ifdef AMREX_USE_EB
-    // Note we use the tracer bc's here only to know when the bc is ext_dir 
-    //      (this should be the same for tracer and eta)
+    // Note we use the scalar bc's here only to know when the bc is ext_dir 
+    //      (this should be the same for scalar and eta)
     EB_interp_CellCentroid_to_FaceCentroid (cc_eta, GetArrOfPtrs(r), 0, 0, 1, geom[lev], 
                                             get_tracer_bcrec());
     // amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc_eta, Geom(lev));
@@ -126,7 +176,7 @@ incflo::average_velocity_eta_to_faces (int lev, MultiFab const& cc_eta) const
 }
 
 Array<MultiFab,AMREX_SPACEDIM>
-incflo::average_tracer_eta_to_faces (int lev, int comp, MultiFab const& cc_eta) const
+incflo::average_scalar_eta_to_faces (int lev, int comp, MultiFab const& cc_eta) const
 {
     const auto& ba = cc_eta.boxArray();
     const auto& dm = cc_eta.DistributionMap();

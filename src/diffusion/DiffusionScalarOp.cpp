@@ -25,21 +25,23 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
         for (int lev = 0; lev <= finest_level; ++lev) {
             ebfact.push_back(&(m_incflo->EBFactory(lev)));
         }
+
         m_eb_solve_op.reset(new MLEBABecLap(m_incflo->Geom(0,finest_level),
                                             m_incflo->boxArray(0,finest_level),
                                             m_incflo->DistributionMap(0,finest_level),
                                             info_solve, ebfact));
         m_eb_solve_op->setMaxOrder(m_mg_maxorder);
-        m_eb_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
-                                   m_incflo->get_diffuse_scalar_bc(Orientation::high));
+        // m_eb_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
+        //                            m_incflo->get_diffuse_scalar_bc(Orientation::high));
+
         if (m_incflo->need_divtau()) {
             m_eb_apply_op.reset(new MLEBABecLap(m_incflo->Geom(0,finest_level),
                                                 m_incflo->boxArray(0,finest_level),
                                                 m_incflo->DistributionMap(0,finest_level),
                                                 info_apply, ebfact));
             m_eb_apply_op->setMaxOrder(m_mg_maxorder);
-            m_eb_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
-                                       m_incflo->get_diffuse_scalar_bc(Orientation::high));
+        //     m_eb_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
+        //                                m_incflo->get_diffuse_scalar_bc(Orientation::high));
         }
     }
     else
@@ -50,16 +52,16 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                  m_incflo->DistributionMap(0,m_incflo->finestLevel()),
                                                  info_solve));
         m_reg_solve_op->setMaxOrder(m_mg_maxorder);
-        m_reg_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
-                                    m_incflo->get_diffuse_scalar_bc(Orientation::high));
+        // m_reg_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
+        //                             m_incflo->get_diffuse_scalar_bc(Orientation::high));
         if (m_incflo->need_divtau()) {
             m_reg_apply_op.reset(new MLABecLaplacian(m_incflo->Geom(0,m_incflo->finestLevel()),
                                                      m_incflo->boxArray(0,m_incflo->finestLevel()),
                                                      m_incflo->DistributionMap(0,m_incflo->finestLevel()),
                                                      info_apply));
             m_reg_apply_op->setMaxOrder(m_mg_maxorder);
-            m_reg_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
-                                        m_incflo->get_diffuse_scalar_bc(Orientation::high));
+        //     m_reg_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
+        //                                 m_incflo->get_diffuse_scalar_bc(Orientation::high));
         }
     }
 }
@@ -86,10 +88,10 @@ DiffusionScalarOp::readParameters ()
 }
 
 void
-DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
+DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& scalar,
                                    Vector<MultiFab*> const& density,
                                    Vector<MultiFab const*> const& eta,
-                                   Real dt)
+                                   Real dt, bool is_vel)
 {
     //
     //      alpha a - beta div ( b grad )   <--->   rho - dt div ( mu grad )
@@ -102,14 +104,19 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
     //      b: mu
 
     if (m_verbose > 0) {
-        amrex::Print() << "Diffusing scalars one at a time ..." << std::endl;
+        if (is_vel)
+            amrex::Print() << "Diffusing velocity components one at a time ..." << std::endl;
+        else
+            amrex::Print() << "Diffusing scalars one at a time ..." << std::endl;
     }
+
+    if (is_vel) AMREX_ASSERT(a_scalar[lev]->nComp() == AMREX_SPACEDIM);
 
     const int finest_level = m_incflo->finestLevel();
 
     Vector<MultiFab> rhs(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
-        rhs[lev].define(tracer[lev]->boxArray(), tracer[lev]->DistributionMap(), 1, 0);
+        rhs[lev].define(scalar[lev]->boxArray(), scalar[lev]->DistributionMap(), 1, 0);
     }
 
 #ifdef AMREX_USE_EB
@@ -119,6 +126,12 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
         for (int lev = 0; lev <= finest_level; ++lev) {
             m_eb_solve_op->setACoeffs(lev, *density[lev]);
         }
+        if (is_vel)
+            m_eb_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
+                                       m_incflo->get_diffuse_tensor_bc(Orientation::high));
+        else
+            m_eb_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
+                                       m_incflo->get_diffuse_scalar_bc(Orientation::high));
     }
     else
 #endif
@@ -127,15 +140,21 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
         for (int lev = 0; lev <= finest_level; ++lev) {
             m_reg_solve_op->setACoeffs(lev, *density[lev]);
         }
+        if (is_vel)
+            m_reg_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
+                                        m_incflo->get_diffuse_tensor_bc(Orientation::high));
+        else
+            m_reg_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
+                                        m_incflo->get_diffuse_scalar_bc(Orientation::high));
     }
 
-    for (int comp = 0; comp < tracer[0]->nComp(); ++comp)
+    for (int comp = 0; comp < scalar[0]->nComp(); ++comp)
     {
 #ifdef AMREX_USE_EB
         if (m_eb_solve_op)
         {
             for (int lev = 0; lev <= finest_level; ++lev) {
-                Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_tracer_eta_to_faces(lev, comp, *eta[lev]);
+                Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_scalar_eta_to_faces(lev, comp, *eta[lev]);
                 m_eb_solve_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
             }
         }
@@ -143,21 +162,21 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 #endif
         {
             for (int lev = 0; lev <= finest_level; ++lev) {
-                Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_tracer_eta_to_faces(lev, comp, *eta[lev]);
+                Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_scalar_eta_to_faces(lev, comp, *eta[lev]);
                 m_reg_solve_op->setBCoeffs(lev, GetArrOfConstPtrs(b));
             }
         }
 
         Vector<MultiFab> phi;
         for (int lev = 0; lev <= finest_level; ++lev) {
-            phi.emplace_back(*tracer[lev], amrex::make_alias, comp, 1);
+            phi.emplace_back(*scalar[lev], amrex::make_alias, comp, 1);
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
             for (MFIter mfi(rhs[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
                 Box const& bx = mfi.tilebox();
                 Array4<Real> const& rhs_a = rhs[lev].array(mfi);
-                Array4<Real const> const& tra_a = tracer[lev]->const_array(mfi,comp);
+                Array4<Real const> const& tra_a = scalar[lev]->const_array(mfi,comp);
                 Array4<Real const> const& rho_a = density[lev]->const_array(mfi);
                 amrex::ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -211,21 +230,25 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 }
 
 void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
-                                      Vector<MultiFab const*> const& a_tracer,
+                                      Vector<MultiFab const*> const& a_scalar,
                                       Vector<MultiFab const*> const& a_density,
-                                      Vector<MultiFab const*> const& a_eta)
+                                      Vector<MultiFab const*> const& a_eta,
+                                      bool is_vel)
 {
     BL_PROFILE("DiffusionScalarOp::compute_laps");
 
     int finest_level = m_incflo->finestLevel();
 
-    Vector<MultiFab> tracer(finest_level+1);
+    if (is_vel) AMREX_ASSERT(a_scalar[lev]->nComp() == AMREX_SPACEDIM);
+
+    Vector<MultiFab> scalar(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
-        tracer[lev].define(a_tracer[lev]->boxArray(),
-                           a_tracer[lev]->DistributionMap(),
+        AMREX_ASSERT(a_scalar[lev]->nComp() == a_laps[lev]->nComp());
+        scalar[lev].define(a_scalar[lev]->boxArray(),
+                           a_scalar[lev]->DistributionMap(),
                            m_incflo->m_ntrac, 1, MFInfo(),
-                           a_tracer[lev]->Factory());
-        MultiFab::Copy(tracer[lev], *a_tracer[lev], 0, 0, m_incflo->m_ntrac, 1);
+                           a_scalar[lev]->Factory());
+        MultiFab::Copy(scalar[lev], *a_scalar[lev], 0, 0, m_incflo->m_ntrac, 1);
     }
 
 #ifdef AMREX_USE_EB
@@ -240,6 +263,13 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
             laps_tmp[lev].setVal(0.0);
         }
 
+        if (is_vel)
+            m_eb_apply_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
+                                       m_incflo->get_diffuse_tensor_bc(Orientation::high));
+        else
+            m_eb_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
+                                       m_incflo->get_diffuse_scalar_bc(Orientation::high));
+
         // We want to return div (mu grad)) phi
         m_eb_apply_op->setScalars(0.0, -1.0);
 
@@ -253,17 +283,17 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
         for (int comp = 0; comp < m_incflo->m_ntrac; ++comp) {
             Vector<MultiFab> laps_comp;
-            Vector<MultiFab> tracer_comp;
+            Vector<MultiFab> scalar_comp;
             for (int lev = 0; lev <= finest_level; ++lev) {
                 laps_comp.emplace_back(laps_tmp[lev],amrex::make_alias,comp,1);
-                tracer_comp.emplace_back(tracer[lev],amrex::make_alias,comp,1);
-                Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_tracer_eta_to_faces(lev, comp, *a_eta[lev]);
+                scalar_comp.emplace_back(scalar[lev],amrex::make_alias,comp,1);
+                Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_scalar_eta_to_faces(lev, comp, *a_eta[lev]);
                 m_eb_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
-                m_eb_apply_op->setLevelBC(lev, &tracer_comp[lev]);
+                m_eb_apply_op->setLevelBC(lev, &scalar_comp[lev]);
             }
 
             MLMG mlmg(*m_eb_apply_op);
-            mlmg.apply(GetVecOfPtrs(laps_comp), GetVecOfPtrs(tracer_comp));
+            mlmg.apply(GetVecOfPtrs(laps_comp), GetVecOfPtrs(scalar_comp));
         }
 
         for(int lev = 0; lev <= finest_level; lev++)
@@ -276,6 +306,13 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
     else
 #endif
     {
+        if (is_vel)
+            m_reg_apply_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
+                                        m_incflo->get_diffuse_tensor_bc(Orientation::high));
+        else
+            m_reg_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
+                                        m_incflo->get_diffuse_scalar_bc(Orientation::high));
+
         // We want to return div (mu grad)) phi
         m_reg_apply_op->setScalars(0.0, -1.0);
 
@@ -286,17 +323,17 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
         for (int comp = 0; comp < m_incflo->m_ntrac; ++comp) {
             Vector<MultiFab> laps_comp;
-            Vector<MultiFab> tracer_comp;
+            Vector<MultiFab> scalar_comp;
             for (int lev = 0; lev <= finest_level; ++lev) {
                 laps_comp.emplace_back(*a_laps[lev],amrex::make_alias,comp,1);
-                tracer_comp.emplace_back(tracer[lev],amrex::make_alias,comp,1);
-                Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_tracer_eta_to_faces(lev, comp, *a_eta[lev]);
+                scalar_comp.emplace_back(scalar[lev],amrex::make_alias,comp,1);
+                Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_scalar_eta_to_faces(lev, comp, *a_eta[lev]);
                 m_reg_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b));
-                m_reg_apply_op->setLevelBC(lev, &tracer_comp[lev]);
+                m_reg_apply_op->setLevelBC(lev, &scalar_comp[lev]);
             }
 
             MLMG mlmg(*m_reg_apply_op);
-            mlmg.apply(GetVecOfPtrs(laps_comp), GetVecOfPtrs(tracer_comp));
+            mlmg.apply(GetVecOfPtrs(laps_comp), GetVecOfPtrs(scalar_comp));
         }
     }
 }

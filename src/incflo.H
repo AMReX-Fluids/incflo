@@ -167,8 +167,28 @@ public: // for cuda
     amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
     average_velocity_eta_to_faces (int lev, amrex::MultiFab const& cc_eta) const;
 
+    void compute_divtau  (amrex::Vector<amrex::MultiFab      *> const& divtau,
+                          amrex::Vector<amrex::MultiFab const*> const& velocity,
+                          amrex::Vector<amrex::MultiFab const*> const& density,
+                          amrex::Vector<amrex::MultiFab const*> const& eta);
+
+    void diffuse_velocity (amrex::Vector<amrex::MultiFab      *> const&  velocity,
+                           amrex::Vector<amrex::MultiFab      *> const&  density,
+                           amrex::Vector<amrex::MultiFab const*> const& eta,
+                           amrex::Real dt_diff); 
+
     amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
-    average_tracer_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
+    average_scalar_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
+
+    void compute_laps (amrex::Vector<amrex::MultiFab      *> const& laps,
+                       amrex::Vector<amrex::MultiFab const*> const& scalar,
+                       amrex::Vector<amrex::MultiFab const*> const& density,
+                       amrex::Vector<amrex::MultiFab const*> const& eta);
+
+    void diffuse_scalar (amrex::Vector<amrex::MultiFab      *> const& scalar,
+                         amrex::Vector<amrex::MultiFab      *> const& density,
+                         amrex::Vector<amrex::MultiFab const*> const& eta,
+                         amrex::Real dt_diff); 
 
     void fixup_eta_on_domain_faces (int lev,
                                     amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>& fc,
@@ -268,6 +288,9 @@ private:
 
     // Use Boussinesq approximation for buoyancy?
     bool m_use_boussinesq = false;
+
+    // Use tensor solve (as opposed to separate solves for each velocity component)
+    bool use_tensor_solve = true;
 
     // AMR / refinement settings
     int m_refine_cutcells = 1;
