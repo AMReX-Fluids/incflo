@@ -117,6 +117,56 @@ incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
 }
 
 Array<LinOpBCType,AMREX_SPACEDIM>
+incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcept
+{
+    Vector<Array<LinOpBCType,AMREX_SPACEDIM>> r(3);
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        if (Geom(0).isPeriodic(dir)) {
+            r[0][dir] = LinOpBCType::Periodic;
+            r[1][dir] = LinOpBCType::Periodic;
+            r[2][dir] = LinOpBCType::Periodic;
+        } else {
+            auto bc = m_bc_type[Orientation(dir,side)];
+            switch (bc)
+            {
+            case BC::pressure_inflow:
+            case BC::pressure_outflow:
+            {
+                // All three components are Neumann
+                r[0][dir] = LinOpBCType::Neumann;
+                r[1][dir] = LinOpBCType::Neumann;
+                r[2][dir] = LinOpBCType::Neumann;
+                break;
+            }
+            case BC::mass_inflow:
+            case BC::no_slip_wall:
+            {
+                // All three components are Dirichlet
+                r[0][dir] = LinOpBCType::Dirichlet;
+                r[1][dir] = LinOpBCType::Dirichlet;
+                r[2][dir] = LinOpBCType::Dirichlet;
+                break;
+            }
+            case BC::slip_wall:
+            {
+                // Tangential components are Neumann
+                // Normal     component  is  Dirichlet
+                r[0][dir] = LinOpBCType::Neumann;
+                r[1][dir] = LinOpBCType::Neumann;
+                r[2][dir] = LinOpBCType::Neumann;
+
+                r[dir][dir] = LinOpBCType::Dirichlet;
+                break;
+            }
+            default:
+                amrex::Abort("get_diffuse_tensor_bc: undefined BC type");
+            };
+        }
+    }
+    return r[comp];
+}
+
+Array<LinOpBCType,AMREX_SPACEDIM>
 incflo::get_diffuse_scalar_bc (Orientation::Side side) const noexcept
 {
     Array<LinOpBCType,AMREX_SPACEDIM> r;
