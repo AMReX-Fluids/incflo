@@ -60,36 +60,36 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
     // At an ext_dir or hoextrap boundary,
     //    the boundary value is on the face, not cell center.
     auto extdir_lohi = has_extdir_or_ho(h_bcrec, ncomp, static_cast<int>(Direction::x));
-    bool has_extdir_lo = extdir_lohi.first;
-    bool has_extdir_hi = extdir_lohi.second;
+    bool has_extdir_or_ho_lo = extdir_lohi.first;
+    bool has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_lo and domain_ilo >= xbx.smallEnd(0)-1) or
-        (has_extdir_hi and domain_ihi <= xbx.bigEnd(0)))
+    if ((has_extdir_or_ho_lo and domain_ilo >= xbx.smallEnd(0)-1) or
+        (has_extdir_or_ho_hi and domain_ihi <= xbx.bigEnd(0)))
     {
         amrex::ParallelFor(xbx, ncomp,
         [d_bcrec,domain_ilo,domain_jlo,domain_klo,domain_ihi,domain_jhi,domain_khi,
         q,ccc,fcx,flag,umac,small_vel,fx]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-           bool extdir_ilo = (d_bcrec[n].lo(0) == BCType::ext_dir) or
-                             (d_bcrec[n].lo(0) == BCType::hoextrap);
-           bool extdir_ihi = (d_bcrec[n].hi(0) == BCType::ext_dir) or
-                             (d_bcrec[n].hi(0) == BCType::hoextrap);
-           bool extdir_jlo = (d_bcrec[n].lo(1) == BCType::ext_dir) or
-                             (d_bcrec[n].lo(1) == BCType::hoextrap);
-           bool extdir_jhi = (d_bcrec[n].hi(1) == BCType::ext_dir) or
-                             (d_bcrec[n].hi(1) == BCType::hoextrap);
-           bool extdir_klo = (d_bcrec[n].lo(2) == BCType::ext_dir) or
-                             (d_bcrec[n].lo(2) == BCType::hoextrap);
-           bool extdir_khi = (d_bcrec[n].hi(2) == BCType::ext_dir) or
-                             (d_bcrec[n].hi(2) == BCType::hoextrap);
+           bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == BCType::ext_dir) or
+                                   (d_bcrec[n].lo(0) == BCType::hoextrap);
+           bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == BCType::ext_dir) or
+                                   (d_bcrec[n].hi(0) == BCType::hoextrap);
+           bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == BCType::ext_dir) or
+                                   (d_bcrec[n].lo(1) == BCType::hoextrap);
+           bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == BCType::ext_dir) or
+                                   (d_bcrec[n].hi(1) == BCType::hoextrap);
+           bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == BCType::ext_dir) or
+                                   (d_bcrec[n].lo(2) == BCType::hoextrap);
+           bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == BCType::ext_dir) or
+                                   (d_bcrec[n].hi(2) == BCType::hoextrap);
            Real qs;
 
            if (flag(i,j,k).isConnected(-1,0,0)) 
            {
-               if (extdir_ilo and i <= domain_ilo) {
+               if (i <= domain_ilo && (d_bcrec[n].lo(0) == BCType::ext_dir)) {
                    qs = q(domain_ilo-1,j,k,n);
-               } else if (extdir_ihi and i >= domain_ihi+1) {
+               } else if (i >= domain_ihi+1 && (d_bcrec[n].hi(0) == BCType::ext_dir)) {
                    qs = q(domain_ihi+1,j,k,n);
                } else {
 
@@ -109,9 +109,9 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
      
                    // Compute slopes of component "n" of q
                    const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,n,q,ccc,flag,
-                                              extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                              extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                              extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                              extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                              extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                              extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
  
                    Real qpls = q(i  ,j,k,n) - delta_x * slopes_eb_hi[0]
                                             + delta_y * slopes_eb_hi[1]
@@ -129,9 +129,9 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
 
                    // Compute slopes of component "n" of q
                    const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i-1,j,k,n,q,ccc,flag,
-                                              extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                              extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                              extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                              extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                              extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                              extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
     
                    Real qmns = q(i-1,j,k,n) + delta_x * slopes_eb_lo[0]
                                             + delta_y * slopes_eb_lo[1]
@@ -227,10 +227,11 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
     // At an ext_dir or hoextrap boundary,
     //    the boundary value is on the face, not cell center.
     extdir_lohi = has_extdir_or_ho(h_bcrec, ncomp,  static_cast<int>(Direction::y));
-    has_extdir_lo = extdir_lohi.first;
-    has_extdir_hi = extdir_lohi.second;
-    if ((has_extdir_lo and domain_jlo >= ybx.smallEnd(1)-1) or
-        (has_extdir_hi and domain_jhi <= ybx.bigEnd(1)))
+    has_extdir_or_ho_lo = extdir_lohi.first;
+    has_extdir_or_ho_hi = extdir_lohi.second;
+
+    if ((has_extdir_or_ho_lo and domain_jlo >= ybx.smallEnd(1)-1) or
+        (has_extdir_or_ho_hi and domain_jhi <= ybx.bigEnd(1)))
     {
         amrex::ParallelFor(ybx, ncomp,
         [d_bcrec,domain_ilo,domain_jlo,domain_klo,domain_ihi,domain_jhi,domain_khi,
@@ -240,22 +241,22 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
             Real qs;
             if (flag(i,j,k).isConnected(0,-1,0)) 
             {
-                bool extdir_ilo = (d_bcrec[n].lo(0) == BCType::ext_dir) or
-                                  (d_bcrec[n].lo(0) == BCType::hoextrap);
-                bool extdir_ihi = (d_bcrec[n].hi(0) == BCType::ext_dir) or
-                                  (d_bcrec[n].hi(0) == BCType::hoextrap);
-                bool extdir_jlo = (d_bcrec[n].lo(1) == BCType::ext_dir) or
-                                  (d_bcrec[n].lo(1) == BCType::hoextrap);
-                bool extdir_jhi = (d_bcrec[n].hi(1) == BCType::ext_dir) or
-                                  (d_bcrec[n].hi(1) == BCType::hoextrap);
-                bool extdir_klo = (d_bcrec[n].lo(2) == BCType::ext_dir) or
-                                  (d_bcrec[n].lo(2) == BCType::hoextrap);
-                bool extdir_khi = (d_bcrec[n].hi(2) == BCType::ext_dir) or
-                                  (d_bcrec[n].hi(2) == BCType::hoextrap);
+                bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == BCType::ext_dir) or
+                                        (d_bcrec[n].lo(0) == BCType::hoextrap);
+                bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == BCType::ext_dir) or
+                                        (d_bcrec[n].hi(0) == BCType::hoextrap);
+                bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == BCType::ext_dir) or
+                                        (d_bcrec[n].lo(1) == BCType::hoextrap);
+                bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == BCType::ext_dir) or
+                                        (d_bcrec[n].hi(1) == BCType::hoextrap);
+                bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == BCType::ext_dir) or
+                                        (d_bcrec[n].lo(2) == BCType::hoextrap);
+                bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == BCType::ext_dir) or
+                                        (d_bcrec[n].hi(2) == BCType::hoextrap);
 
-                if (extdir_jlo and j <= domain_jlo) {
+                if (j <= domain_jlo && (d_bcrec[n].lo(1) == BCType::ext_dir)) {
                     qs = q(i,domain_jlo-1,k,n);
-                } else if (extdir_jhi and j >= domain_jhi+1) {
+                } else if (j >= domain_jhi+1 && (d_bcrec[n].hi(1) == BCType::ext_dir)) {
                     qs = q(i,domain_jhi+1,k,n);
                 } else {
 
@@ -275,9 +276,9 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
      
                    // Compute slopes of component "n" of q
                    const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,n,q,ccc,flag,
-                                              extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                              extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                              extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                              extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                              extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                              extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
  
                    Real qpls = q(i,j  ,k,n) + delta_x * slopes_eb_hi[0]
                                             - delta_y * slopes_eb_hi[1]
@@ -295,9 +296,9 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
 
                    // Compute slopes of component "n" of q
                    const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j-1,k,n,q,ccc,flag,
-                                              extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                              extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                              extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                              extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                              extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                              extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
     
                    Real qmns = q(i,j-1,k,n) + delta_x * slopes_eb_lo[0]
                                             + delta_y * slopes_eb_lo[1]
@@ -393,10 +394,11 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
     // At an ext_dir or hoextrap boundary,
     //    the boundary value is on the face, not cell center.
     extdir_lohi = has_extdir_or_ho(h_bcrec, ncomp, static_cast<int>(Direction::z));
-    has_extdir_lo = extdir_lohi.first;
-    has_extdir_hi = extdir_lohi.second;
-    if ((has_extdir_lo and domain_klo >= zbx.smallEnd(2)-1) or
-        (has_extdir_hi and domain_khi <= zbx.bigEnd(2)))
+    has_extdir_or_ho_lo = extdir_lohi.first;
+    has_extdir_or_ho_hi = extdir_lohi.second;
+
+    if ((has_extdir_or_ho_lo and domain_klo >= zbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi and domain_khi <= zbx.bigEnd(2)))
     {
         amrex::ParallelFor(zbx, ncomp,
         [d_bcrec,domain_ilo,domain_jlo,domain_klo,domain_ihi,domain_jhi,domain_khi,
@@ -405,23 +407,23 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
         {
             if (flag(i,j,k).isConnected(0,0,-1)) {
 
-                bool extdir_ilo = (d_bcrec[n].lo(0) == BCType::ext_dir) or
-                                  (d_bcrec[n].lo(0) == BCType::hoextrap);
-                bool extdir_ihi = (d_bcrec[n].hi(0) == BCType::ext_dir) or
-                                  (d_bcrec[n].hi(0) == BCType::hoextrap);
-                bool extdir_jlo = (d_bcrec[n].lo(1) == BCType::ext_dir) or
-                                  (d_bcrec[n].lo(1) == BCType::hoextrap);
-                bool extdir_jhi = (d_bcrec[n].hi(1) == BCType::ext_dir) or
-                                  (d_bcrec[n].hi(1) == BCType::hoextrap);
-                bool extdir_klo = (d_bcrec[n].lo(2) == BCType::ext_dir) or
-                                  (d_bcrec[n].lo(2) == BCType::hoextrap);
-                bool extdir_khi = (d_bcrec[n].hi(2) == BCType::ext_dir) or
-                                  (d_bcrec[n].hi(2) == BCType::hoextrap);
+                bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == BCType::ext_dir) or
+                                        (d_bcrec[n].lo(0) == BCType::hoextrap);
+                bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == BCType::ext_dir) or
+                                        (d_bcrec[n].hi(0) == BCType::hoextrap);
+                bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == BCType::ext_dir) or
+                                        (d_bcrec[n].lo(1) == BCType::hoextrap);
+                bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == BCType::ext_dir) or
+                                        (d_bcrec[n].hi(1) == BCType::hoextrap);
+                bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == BCType::ext_dir) or
+                                        (d_bcrec[n].lo(2) == BCType::hoextrap);
+                bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == BCType::ext_dir) or
+                                        (d_bcrec[n].hi(2) == BCType::hoextrap);
 
                 Real qs;
-                if (extdir_klo and k <= domain_klo) {
+                if (k <= domain_klo && (d_bcrec[n].lo(2) == BCType::ext_dir)) {
                     qs = q(i,j,domain_klo-1,n);
-                } else if (extdir_khi and k >= domain_khi+1) {
+                } else if (k >= domain_khi+1 && (d_bcrec[n].hi(2) == BCType::ext_dir)) {
                     qs = q(i,j,domain_khi+1,n);
                 } else {
 
@@ -441,9 +443,9 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
      
                     // Compute slopes of component "n" of q
                     const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,n,q,ccc,flag,
-                                               extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                               extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                               extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                               extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                               extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                               extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
  
                     Real qpls = q(i,j,k  ,n) + delta_x * slopes_eb_hi[0]
                                              + delta_y * slopes_eb_hi[1]
@@ -461,9 +463,9 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
 
                     // Compute slopes of component "n" of q
                     const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j,k-1,n,q,ccc,flag,
-                                               extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                               extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                               extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                               extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                               extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                               extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
     
                     Real qmns = q(i,j,k-1,n) + delta_x * slopes_eb_lo[0]
                                              + delta_y * slopes_eb_lo[1]

@@ -105,28 +105,28 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
     // At an ext_dir or hoextrap boundary, 
     //    the boundary value is on the face, not cell center.
     auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
-    bool has_extdir_lo = extdir_lohi.first;
-    bool has_extdir_hi = extdir_lohi.second;
+    bool has_extdir_or_ho_lo = extdir_lohi.first;
+    bool has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_lo and domain_ilo >= ubx.smallEnd(0)-1) or
-        (has_extdir_hi and domain_ihi <= ubx.bigEnd(0)))
+    if ((has_extdir_or_ho_lo and domain_ilo >= ubx.smallEnd(0)-1) or
+        (has_extdir_or_ho_hi and domain_ihi <= ubx.bigEnd(0)))
     {
         amrex::ParallelFor(ubx, [vcc,domain_ilo,domain_ihi,u,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            bool extdir_ilo = (   (d_bcrec[0].lo(0) == BCType::ext_dir)
-                               or (d_bcrec[0].lo(0) == BCType::hoextrap) );
-            bool extdir_ihi = (   (d_bcrec[0].hi(0) == BCType::ext_dir)
-                               or (d_bcrec[0].hi(0) == BCType::hoextrap) );
+            bool extdir_or_ho_ilo = (d_bcrec[0].lo(0) == BCType::ext_dir) or
+                                    (d_bcrec[0].lo(0) == BCType::hoextrap);
+            bool extdir_or_ho_ihi = (d_bcrec[0].hi(0) == BCType::ext_dir) or
+                                    (d_bcrec[0].hi(0) == BCType::hoextrap);
 
             const Real vcc_pls = vcc(i,j,k,0);
             const Real vcc_mns = vcc(i-1,j,k,0);
 
             Real upls = vcc_pls - 0.5 * incflo_xslope_extdir
-                (i,j,k,0,vcc, extdir_ilo, extdir_ihi, domain_ilo, domain_ihi);
+                (i,j,k,0,vcc, extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
 
             Real umns = vcc_mns + 0.5 * incflo_xslope_extdir
-                (i-1,j,k,0,vcc, extdir_ilo, extdir_ihi, domain_ilo, domain_ihi);
+                (i-1,j,k,0,vcc, extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
 
             Real u_val(0);
 
@@ -142,9 +142,9 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
                 }
             }
 
-            if (extdir_ilo and i == domain_ilo) {
+            if (i == domain_ilo && (d_bcrec[0].lo(0) == BCType::ext_dir)) {
                 u_val = vcc_mns;
-            } else if (extdir_ihi and i == domain_ihi+1) {
+            } else if (i == domain_ihi+1 && (d_bcrec[0].hi(0) == BCType::ext_dir)) {
                 u_val = vcc_pls;
             }
 
@@ -180,27 +180,27 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
     // At an ext_dir or hoextrap boundary, 
     //    the boundary value is on the face, not cell center.
     extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
-    has_extdir_lo = extdir_lohi.first;
-    has_extdir_hi = extdir_lohi.second;
+    has_extdir_or_ho_lo = extdir_lohi.first;
+    has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_lo and domain_jlo >= vbx.smallEnd(1)-1) or
-        (has_extdir_hi and domain_jhi <= vbx.bigEnd(1)))
+    if ((has_extdir_or_ho_lo and domain_jlo >= vbx.smallEnd(1)-1) or
+        (has_extdir_or_ho_hi and domain_jhi <= vbx.bigEnd(1)))
     {
         amrex::ParallelFor(vbx, [vcc,domain_jlo,domain_jhi,v,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            bool extdir_jlo = (   (d_bcrec[1].lo(1) == BCType::ext_dir)
-                               or (d_bcrec[1].lo(1) == BCType::hoextrap) );
-            bool extdir_jhi = (   (d_bcrec[1].hi(1) == BCType::ext_dir)
-                               or (d_bcrec[1].hi(1) == BCType::hoextrap) );
+            bool extdir_or_ho_jlo = (d_bcrec[1].lo(1) == BCType::ext_dir) or
+                                    (d_bcrec[1].lo(1) == BCType::hoextrap);
+            bool extdir_or_ho_jhi = (d_bcrec[1].hi(1) == BCType::ext_dir) or
+                                    (d_bcrec[1].hi(1) == BCType::hoextrap);
 
             const Real vcc_pls = vcc(i,j,k,1);
             const Real vcc_mns = vcc(i,j-1,k,1);
 
             Real vpls = vcc_pls - 0.5 * incflo_yslope_extdir
-                (i,j,k,1,vcc, extdir_jlo, extdir_jhi, domain_jlo, domain_jhi);
+                (i,j,k,1,vcc, extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi);
             Real vmns = vcc_mns + 0.5 * incflo_yslope_extdir
-                (i,j-1,k,1,vcc, extdir_jlo, extdir_jhi, domain_jlo, domain_jhi);
+                (i,j-1,k,1,vcc, extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi);
 
             Real v_val(0);
 
@@ -215,9 +215,9 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
                 }
             }
 
-            if (extdir_jlo and j == domain_jlo) {
+            if (j == domain_jlo && (d_bcrec[1].lo(1) == BCType::ext_dir)) {
                 v_val = vcc_mns;
-            } else if (extdir_jhi and j == domain_jhi+1) {
+            } else if (j == domain_jhi+1 && (d_bcrec[1].hi(1) == BCType::ext_dir)) {
                 v_val = vcc_pls;
             }
 
@@ -252,27 +252,27 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
     // At an ext_dir or hoextrap boundary, 
     //    the boundary value is on the face, not cell center.
     extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
-    has_extdir_lo = extdir_lohi.first;
-    has_extdir_hi = extdir_lohi.second;
+    has_extdir_or_ho_lo = extdir_lohi.first;
+    has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_lo and domain_klo >= wbx.smallEnd(2)-1) or
-        (has_extdir_hi and domain_khi <= wbx.bigEnd(2)))
+    if ((has_extdir_or_ho_lo and domain_klo >= wbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi and domain_khi <= wbx.bigEnd(2)))
     {
         amrex::ParallelFor(wbx, [vcc,domain_klo,domain_khi,w,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            bool extdir_klo = (   (d_bcrec[2].lo(2) == BCType::ext_dir)
-                               or (d_bcrec[2].lo(2) == BCType::hoextrap) );
-            bool extdir_khi = (   (d_bcrec[2].hi(2) == BCType::ext_dir)
-                               or (d_bcrec[2].hi(2) == BCType::hoextrap) );
+            bool extdir_or_ho_klo = (d_bcrec[2].lo(2) == BCType::ext_dir) or
+                                    (d_bcrec[2].lo(2) == BCType::hoextrap);
+            bool extdir_or_ho_khi = (d_bcrec[2].hi(2) == BCType::ext_dir) or
+                                    (d_bcrec[2].hi(2) == BCType::hoextrap);
 
             const Real vcc_pls = vcc(i,j,k,2);
             const Real vcc_mns = vcc(i,j,k-1,2);
 
             Real wpls = vcc_pls - 0.5 * incflo_zslope_extdir
-                (i,j,k,2,vcc, extdir_klo, extdir_khi, domain_klo, domain_khi);
+                (i,j,k,2,vcc, extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
             Real wmns = vcc_mns + 0.5 * incflo_zslope_extdir(
-                i,j,k-1,2,vcc, extdir_klo, extdir_khi, domain_klo, domain_khi);
+                i,j,k-1,2,vcc, extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
 
             Real w_val(0);
 
@@ -287,9 +287,9 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
                 }
             }
 
-            if (extdir_klo and k == domain_klo) {
+            if (k == domain_klo && (d_bcrec[2].lo(2) == BCType::ext_dir)) {
                 w_val = vcc_mns;
-            } else if (extdir_khi and k == domain_khi+1) {
+            } else if (k == domain_khi+1 && (d_bcrec[2].hi(2) == BCType::ext_dir)) {
                 w_val = vcc_pls;
             }
 

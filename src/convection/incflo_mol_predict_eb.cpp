@@ -49,14 +49,14 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
     auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
-    bool has_extdir_lo = extdir_lohi.first;
-    bool has_extdir_hi = extdir_lohi.second;
+    bool has_extdir_or_ho_lo = extdir_lohi.first;
+    bool has_extdir_or_ho_hi = extdir_lohi.second;
 
     // ****************************************************************************
     // Predict to x-faces
     // ****************************************************************************
-    if ((has_extdir_lo and domain_ilo >= ubx.smallEnd(0)-1) or
-        (has_extdir_hi and domain_ihi <= ubx.bigEnd(0)))
+    if ((has_extdir_or_ho_lo and domain_ilo >= ubx.smallEnd(0)-1) or
+        (has_extdir_or_ho_hi and domain_ihi <= ubx.bigEnd(0)))
     {
         amrex::ParallelFor(Box(ubx),
         [u,vcc,flag,fcx,ccc,d_bcrec,
@@ -65,20 +65,20 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         {
             Real u_val(0);
 
-            bool extdir_ilo =    (d_bcrec[0].lo(0) == BCType::ext_dir)
-                              or (d_bcrec[0].lo(0) == BCType::hoextrap);
-            bool extdir_ihi =    (d_bcrec[0].hi(0) == BCType::ext_dir)
-                              or (d_bcrec[0].hi(0) == BCType::hoextrap);
+            bool extdir_or_ho_ilo = (d_bcrec[0].lo(0) == BCType::ext_dir) or
+                                    (d_bcrec[0].lo(0) == BCType::hoextrap);
+            bool extdir_or_ho_ihi = (d_bcrec[0].hi(0) == BCType::ext_dir) or
+                                    (d_bcrec[0].hi(0) == BCType::hoextrap);
 
-            bool extdir_jlo =    (d_bcrec[0].lo(1) == BCType::ext_dir)
-                              or (d_bcrec[0].lo(1) == BCType::hoextrap);
-            bool extdir_jhi =    (d_bcrec[0].hi(1) == BCType::ext_dir)
-                              or (d_bcrec[0].hi(1) == BCType::hoextrap);
+            bool extdir_or_ho_jlo = (d_bcrec[0].lo(1) == BCType::ext_dir) or
+                                    (d_bcrec[0].lo(1) == BCType::hoextrap);
+            bool extdir_or_ho_jhi = (d_bcrec[0].hi(1) == BCType::ext_dir) or
+                                    (d_bcrec[0].hi(1) == BCType::hoextrap);
 
-            bool extdir_klo =    (d_bcrec[0].lo(2) == BCType::ext_dir)
-                              or (d_bcrec[0].lo(2) == BCType::hoextrap);
-            bool extdir_khi =    (d_bcrec[0].hi(2) == BCType::ext_dir)
-                              or (d_bcrec[0].hi(2) == BCType::hoextrap);
+            bool extdir_or_ho_klo = (d_bcrec[0].lo(2) == BCType::ext_dir) or
+                                    (d_bcrec[0].lo(2) == BCType::hoextrap);
+            bool extdir_or_ho_khi = (d_bcrec[0].hi(2) == BCType::ext_dir) or
+                                    (d_bcrec[0].hi(2) == BCType::hoextrap);
 
             if (flag(i,j,k).isConnected(-1,0,0))
             {
@@ -97,9 +97,9 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "0" of vcc
                const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,0,vcc,ccc,flag,
-                                          extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                          extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                          extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
 
                Real upls = vcc_pls - delta_x * slopes_eb_hi[0]
                                    + delta_y * slopes_eb_hi[1]
@@ -113,9 +113,9 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "0" of vcc
                const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i-1,j,k,0,vcc,ccc,flag,
-                                          extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                          extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                          extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
 
                Real umns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]
@@ -134,9 +134,9 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                   }
                }
 
-               if (extdir_ilo and i == domain_ilo) {
+               if (i == domain_ilo && (d_bcrec[0].lo(0) == BCType::ext_dir)) {
                    u_val = vcc_mns;
-               } else if (extdir_ihi and i == domain_ihi+1) {
+               } else if (i == domain_ihi+1 && (d_bcrec[0].hi(0) == BCType::ext_dir)) {
                    u_val = vcc_pls;
                }
             }
@@ -209,11 +209,11 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     // Predict to y-faces
     // ****************************************************************************
     extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
-    has_extdir_lo = extdir_lohi.first;
-    has_extdir_hi = extdir_lohi.second;
+    has_extdir_or_ho_lo = extdir_lohi.first;
+    has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_lo and domain_jlo >= vbx.smallEnd(1)-1) or
-        (has_extdir_hi and domain_jhi <= vbx.bigEnd(1)))
+    if ((has_extdir_or_ho_lo and domain_jlo >= vbx.smallEnd(1)-1) or
+        (has_extdir_or_ho_hi and domain_jhi <= vbx.bigEnd(1)))
     {
         amrex::ParallelFor(Box(vbx),
         [v,vcc,flag,fcy,ccc,d_bcrec,
@@ -222,20 +222,20 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         {
             Real v_val(0);
 
-            bool extdir_ilo =    (d_bcrec[1].lo(0) == BCType::ext_dir)
-                              or (d_bcrec[1].lo(0) == BCType::hoextrap);
-            bool extdir_ihi =    (d_bcrec[1].hi(0) == BCType::ext_dir)
-                              or (d_bcrec[1].hi(0) == BCType::hoextrap);
+            bool extdir_or_ho_ilo = (d_bcrec[1].lo(0) == BCType::ext_dir) or
+                                    (d_bcrec[1].lo(0) == BCType::hoextrap);
+            bool extdir_or_ho_ihi = (d_bcrec[1].hi(0) == BCType::ext_dir) or
+                                    (d_bcrec[1].hi(0) == BCType::hoextrap);
 
-            bool extdir_jlo =    (d_bcrec[1].lo(1) == BCType::ext_dir)
-                              or (d_bcrec[1].lo(1) == BCType::hoextrap);
-            bool extdir_jhi =    (d_bcrec[1].hi(1) == BCType::ext_dir)
-                              or (d_bcrec[1].hi(1) == BCType::hoextrap);
+            bool extdir_or_ho_jlo = (d_bcrec[1].lo(1) == BCType::ext_dir) or
+                                    (d_bcrec[1].lo(1) == BCType::hoextrap);
+            bool extdir_or_ho_jhi = (d_bcrec[1].hi(1) == BCType::ext_dir) or
+                                    (d_bcrec[1].hi(1) == BCType::hoextrap);
 
-            bool extdir_klo =    (d_bcrec[1].lo(2) == BCType::ext_dir)
-                              or (d_bcrec[1].lo(2) == BCType::hoextrap);
-            bool extdir_khi =    (d_bcrec[1].hi(2) == BCType::ext_dir)
-                              or (d_bcrec[1].hi(2) == BCType::hoextrap);
+            bool extdir_or_ho_klo = (d_bcrec[1].lo(2) == BCType::ext_dir) or
+                                    (d_bcrec[1].lo(2) == BCType::hoextrap);
+            bool extdir_or_ho_khi = (d_bcrec[1].hi(2) == BCType::ext_dir) or
+                                    (d_bcrec[1].hi(2) == BCType::hoextrap);
 
             if (flag(i,j,k).isConnected(0,-1,0))
             {
@@ -254,9 +254,9 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "1" of vcc
                const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,1,vcc,ccc,flag,
-                                          extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                          extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                          extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
 
                Real vpls = vcc_pls + delta_x * slopes_eb_hi[0]
                                    - delta_y * slopes_eb_hi[1]
@@ -270,9 +270,9 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "1" of vcc
                const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j-1,k,1,vcc,ccc,flag,
-                                          extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                          extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                          extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
 
                Real vmns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]
@@ -291,10 +291,10 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                   }
                }
 
-               if (extdir_jlo and j == domain_jlo) {
+               if (j == domain_jlo && (d_bcrec[1].lo(1) == BCType::ext_dir)) {
                    v_val = vcc_mns;
                } 
-               else if (extdir_jhi and j == domain_jhi+1) {
+               else if (j == domain_jhi+1 && (d_bcrec[1].hi(1) == BCType::ext_dir)) {
                    v_val = vcc_pls;
                }
             }
@@ -366,11 +366,11 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     // Predict to z-faces
     // ****************************************************************************
     extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
-    has_extdir_lo = extdir_lohi.first;
-    has_extdir_hi = extdir_lohi.second;
+    has_extdir_or_ho_lo = extdir_lohi.first;
+    has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_lo and domain_klo >= wbx.smallEnd(2)-1) or
-        (has_extdir_hi and domain_khi <= wbx.bigEnd(2)))
+    if ((has_extdir_or_ho_lo and domain_klo >= wbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi and domain_khi <= wbx.bigEnd(2)))
     {
         amrex::ParallelFor(Box(wbx),
         [w,vcc,flag,fcz,ccc,d_bcrec,
@@ -379,20 +379,20 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         {
             Real w_val(0);
 
-            bool extdir_ilo =    (d_bcrec[2].lo(0) == BCType::ext_dir)
-                              or (d_bcrec[2].lo(0) == BCType::hoextrap);
-            bool extdir_ihi =    (d_bcrec[2].hi(0) == BCType::ext_dir)
-                              or (d_bcrec[2].hi(0) == BCType::hoextrap);
+            bool extdir_or_ho_ilo = (d_bcrec[2].lo(0) == BCType::ext_dir) or
+                                    (d_bcrec[2].lo(0) == BCType::hoextrap);
+            bool extdir_or_ho_ihi = (d_bcrec[2].hi(0) == BCType::ext_dir) or
+                                    (d_bcrec[2].hi(0) == BCType::hoextrap);
 
-            bool extdir_jlo =    (d_bcrec[2].lo(1) == BCType::ext_dir)
-                              or (d_bcrec[2].lo(1) == BCType::hoextrap);
-            bool extdir_jhi =    (d_bcrec[2].hi(1) == BCType::ext_dir)
-                              or (d_bcrec[2].hi(1) == BCType::hoextrap);
+            bool extdir_or_ho_jlo = (d_bcrec[2].lo(1) == BCType::ext_dir) or
+                                    (d_bcrec[2].lo(1) == BCType::hoextrap);
+            bool extdir_or_ho_jhi = (d_bcrec[2].hi(1) == BCType::ext_dir) or
+                                    (d_bcrec[2].hi(1) == BCType::hoextrap);
 
-            bool extdir_klo =    (d_bcrec[2].lo(2) == BCType::ext_dir)
-                              or (d_bcrec[2].lo(2) == BCType::hoextrap);
-            bool extdir_khi =    (d_bcrec[2].hi(2) == BCType::ext_dir)
-                              or (d_bcrec[2].hi(2) == BCType::hoextrap);
+            bool extdir_or_ho_klo = (d_bcrec[2].lo(2) == BCType::ext_dir) or
+                                    (d_bcrec[2].lo(2) == BCType::hoextrap);
+            bool extdir_or_ho_khi = (d_bcrec[2].hi(2) == BCType::ext_dir) or
+                                    (d_bcrec[2].hi(2) == BCType::hoextrap);
 
             if (flag(i,j,k).isConnected(0,0,-1))
             {
@@ -411,9 +411,9 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,2,vcc,ccc,flag,
-                                          extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                          extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                          extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
 
                Real wpls = vcc_pls + delta_x * slopes_eb_hi[0]
                                    + delta_y * slopes_eb_hi[1]
@@ -427,9 +427,9 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j,k-1,2,vcc,ccc,flag,
-                                          extdir_ilo, extdir_ihi, domain_ilo, domain_ihi,
-                                          extdir_jlo, extdir_jhi, domain_jlo, domain_jhi,
-                                          extdir_klo, extdir_khi, domain_klo, domain_khi);
+                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
+                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
+                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
 
                Real wmns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]
@@ -448,10 +448,10 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                   }
                }
 
-                if (extdir_klo and k == domain_klo) {
+                if (k == domain_klo && (d_bcrec[2].lo(2) == BCType::ext_dir)) {
                     w_val = vcc_mns;
                 }
-                else if (extdir_khi and k == domain_khi+1) {
+                else if (k == domain_khi+1 && (d_bcrec[2].hi(2) == BCType::ext_dir)) {
                     w_val = vcc_pls;
                 }
             }
