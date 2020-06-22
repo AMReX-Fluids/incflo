@@ -110,7 +110,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& scalar,
             amrex::Print() << "Diffusing scalars one at a time ..." << std::endl;
     }
 
-    if (is_vel) AMREX_ASSERT(scalar[lev]->nComp() == AMREX_SPACEDIM);
+    if (is_vel) AMREX_ASSERT(scalar[0]->nComp() == AMREX_SPACEDIM);
 
     const int finest_level = m_incflo->finestLevel();
 
@@ -239,7 +239,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
     int finest_level = m_incflo->finestLevel();
 
-    if (is_vel) AMREX_ASSERT(a_scalar[lev]->nComp() == AMREX_SPACEDIM);
+    if (is_vel) AMREX_ASSERT(a_scalar[0]->nComp() == AMREX_SPACEDIM);
 
     Vector<MultiFab> scalar(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
