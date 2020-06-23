@@ -559,6 +559,10 @@ private:
         return !(!m_godunov_include_diff_in_forcing and DiffusionType::Implicit == m_diff_type);
     }
 
+    bool useTensorSolve () const {
+        return use_tensor_solve;
+    }
+
     DiffusionTensorOp* get_diffusion_tensor_op ();
     DiffusionScalarOp* get_diffusion_scalar_op ();
 

@@ -18,13 +18,23 @@ public:
     void diffuse_scalar (amrex::Vector<amrex::MultiFab*> const& phi,
                          amrex::Vector<amrex::MultiFab*> const& density,
                          amrex::Vector<amrex::MultiFab const*> const& eta,
-                         amrex::Real dt, bool is_vel);
+                         amrex::Real dt);
+
+    void diffuse_vel_components (
+                         amrex::Vector<amrex::MultiFab*> const& phi,
+                         amrex::Vector<amrex::MultiFab*> const& density,
+                         amrex::Vector<amrex::MultiFab const*> const& eta,
+                         amrex::Real dt);
 
     void compute_laps (amrex::Vector<amrex::MultiFab*> const& laps,
                        amrex::Vector<amrex::MultiFab const*> const& phi,
                        amrex::Vector<amrex::MultiFab const*> const& density,
-                       amrex::Vector<amrex::MultiFab const*> const& eta,
-                       bool is_vel);
+                       amrex::Vector<amrex::MultiFab const*> const& eta);
+
+    void compute_divtau (amrex::Vector<amrex::MultiFab*> const& laps,
+                         amrex::Vector<amrex::MultiFab const*> const& phi,
+                         amrex::Vector<amrex::MultiFab const*> const& density,
+                         amrex::Vector<amrex::MultiFab const*> const& eta);
 
 private:
 
@@ -33,11 +43,15 @@ private:
     incflo* m_incflo;
 
 #ifdef AMREX_USE_EB
-    std::unique_ptr<amrex::MLEBABecLap> m_eb_solve_op;
-    std::unique_ptr<amrex::MLEBABecLap> m_eb_apply_op;
+    std::unique_ptr<amrex::MLEBABecLap> m_eb_scal_solve_op;
+    std::unique_ptr<amrex::MLEBABecLap> m_eb_scal_apply_op;
+    std::unique_ptr<amrex::MLEBABecLap> m_eb_vel_solve_op;
+    std::unique_ptr<amrex::MLEBABecLap> m_eb_vel_apply_op;
 #endif
-    std::unique_ptr<amrex::MLABecLaplacian> m_reg_solve_op;
-    std::unique_ptr<amrex::MLABecLaplacian> m_reg_apply_op;
+    std::unique_ptr<amrex::MLABecLaplacian> m_reg_scal_solve_op;
+    std::unique_ptr<amrex::MLABecLaplacian> m_reg_scal_apply_op;
+    std::unique_ptr<amrex::MLABecLaplacian> m_reg_vel_solve_op;
+    std::unique_ptr<amrex::MLABecLaplacian> m_reg_vel_apply_op;
 
     // DiffusionOp verbosity
     int m_verbose = 0;

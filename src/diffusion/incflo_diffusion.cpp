@@ -11,8 +11,7 @@ incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
     if (use_tensor_solve) {
         get_diffusion_tensor_op()->compute_divtau(divtau, vel, density, eta);
     } else {
-        bool is_vel = true;
-        get_diffusion_scalar_op()->compute_laps(divtau, vel, density, eta, is_vel);
+        get_diffusion_scalar_op()->compute_divtau(divtau, vel, density, eta);
     }
 }
 
@@ -23,8 +22,7 @@ incflo::compute_laps(Vector<MultiFab      *> const& laps,
                      Vector<MultiFab const*> const& density,
                      Vector<MultiFab const*> const& eta)
 {
-    bool is_vel = false;
-    get_diffusion_scalar_op()->compute_laps(laps, scalar, density, eta, is_vel);
+    get_diffusion_scalar_op()->compute_laps(laps, scalar, density, eta);
 }
 
 void
@@ -33,8 +31,7 @@ incflo::diffuse_scalar(Vector<MultiFab      *> const& scalar,
                        Vector<MultiFab const*> const& eta,
                        Real dt_diff)
 {
-    bool is_vel = false;
-    get_diffusion_scalar_op()->diffuse_scalar(scalar, density, eta, dt_diff, is_vel);
+    get_diffusion_scalar_op()->diffuse_scalar(scalar, density, eta, dt_diff);
 }
 
 
@@ -47,8 +44,7 @@ incflo::diffuse_velocity(Vector<MultiFab      *> const& vel,
     if (use_tensor_solve) {
         get_diffusion_tensor_op()->diffuse_velocity(vel, density, eta, dt_diff);
     } else {
-        bool is_vel = true;
-        get_diffusion_scalar_op()->diffuse_scalar(vel, density, eta, dt_diff, is_vel);
+        get_diffusion_scalar_op()->diffuse_scalar(vel, density, eta, dt_diff);
     }
 }
 
