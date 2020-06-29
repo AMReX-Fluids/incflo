@@ -75,7 +75,7 @@ private:
     amrex::Real m_mg_rtol = 1.0e-11;
     amrex::Real m_mg_atol = 1.0e-14;
 #endif
-    std::string m_bottom_solver_type = "bicgstab";
+    std::string m_bottom_solver = "bicgstab";
 };
 
 #endif

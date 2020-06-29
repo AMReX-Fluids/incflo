@@ -80,7 +80,7 @@ DiffusionTensorOp::readParameters ()
     pp.query("mg_maxorder", m_mg_maxorder);
     pp.query("mg_rtol", m_mg_rtol);
     pp.query("mg_atol", m_mg_atol);
-    pp.query("bottom_solver_type", m_bottom_solver_type);
+    pp.query("bottom_solver", m_bottom_solver);
 
     pp.query("num_pre_smooth", m_num_pre_smooth);
     pp.query("num_post_smooth", m_num_post_smooth);
@@ -173,11 +173,11 @@ DiffusionTensorOp::diffuse_velocity (Vector<MultiFab*> const& velocity,
 #endif
 
     // The default bottom solver is BiCG
-    if (m_bottom_solver_type == "smoother")
+    if (m_bottom_solver == "smoother")
     {
         mlmg.setBottomSolver(MLMG::BottomSolver::smoother);
     }
-    else if (m_bottom_solver_type == "hypre")
+    else if (m_bottom_solver == "hypre")
     {
         mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
     }

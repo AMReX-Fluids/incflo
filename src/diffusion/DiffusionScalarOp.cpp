@@ -125,7 +125,7 @@ DiffusionScalarOp::readParameters ()
     pp.query("mg_maxorder", m_mg_maxorder);
     pp.query("mg_rtol", m_mg_rtol);
     pp.query("mg_atol", m_mg_atol);
-    pp.query("bottom_solver_type", m_bottom_solver_type);
+    pp.query("bottom_solver", m_bottom_solver);
 
     pp.query("num_pre_smooth", m_num_pre_smooth);
     pp.query("num_post_smooth", m_num_post_smooth);
@@ -232,11 +232,11 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 #endif
 
         // The default bottom solver is BiCG
-        if (m_bottom_solver_type == "smoother")
+        if (m_bottom_solver == "smoother")
         {
             mlmg.setBottomSolver(MLMG::BottomSolver::smoother);
         }
-        else if (m_bottom_solver_type == "hypre")
+        else if (m_bottom_solver == "hypre")
         {
             mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
         }
@@ -284,7 +284,6 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& scalar,
     for (int lev = 0; lev <= finest_level; ++lev) {
         rhs[lev].define(scalar[lev]->boxArray(), scalar[lev]->DistributionMap(), 1, 0);
     }
-
 
     for (int comp = 0; comp < scalar[0]->nComp(); ++comp)
     {
@@ -361,11 +360,11 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& scalar,
 #endif
 
         // The default bottom solver is BiCG
-        if (m_bottom_solver_type == "smoother")
+        if (m_bottom_solver == "smoother")
         {
             mlmg.setBottomSolver(MLMG::BottomSolver::smoother);
         }
-        else if (m_bottom_solver_type == "hypre")
+        else if (m_bottom_solver == "hypre")
         {
             mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
         }
