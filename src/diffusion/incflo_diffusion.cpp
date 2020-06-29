@@ -44,7 +44,7 @@ incflo::diffuse_velocity(Vector<MultiFab      *> const& vel,
     if (use_tensor_solve) {
         get_diffusion_tensor_op()->diffuse_velocity(vel, density, eta, dt_diff);
     } else {
-        get_diffusion_scalar_op()->diffuse_scalar(vel, density, eta, dt_diff);
+        get_diffusion_scalar_op()->diffuse_vel_components(vel, density, eta, dt_diff);
     }
 }
 
