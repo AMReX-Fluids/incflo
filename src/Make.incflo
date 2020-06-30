@@ -6,7 +6,7 @@ include $(AMREX_HOME)/Tools/GNUMake/Make.defs
 #These are the directories in incflo/src
 Bdirs := src
 Bdirs += src/boundary_conditions
-Bdirs += src/convection
+Bdirs += src/convection_$(DIM)d
 Bdirs += src/derive
 Bdirs += src/diffusion
 Bdirs += src/prob

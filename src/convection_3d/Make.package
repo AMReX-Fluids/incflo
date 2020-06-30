@@ -1,0 +1,22 @@
+CEXE_sources += incflo_compute_advection_term.cpp
+CEXE_sources += incflo_correct_small_cells.cpp
+CEXE_sources += incflo_MAC_projection.cpp
+
+CEXE_headers += Godunov.H
+CEXE_headers += MOL.H
+CEXE_headers += incflo_slopes_K.H
+
+CEXE_sources += incflo_mol_predict_eb.cpp
+CEXE_sources += incflo_mol_predict.cpp
+
+CEXE_sources += incflo_mol_fluxes_eb.cpp
+CEXE_sources += incflo_mol_fluxes.cpp
+
+CEXE_sources += incflo_godunov_predict.cpp
+CEXE_sources += incflo_godunov_advection.cpp
+CEXE_sources += incflo_godunov_plm.cpp
+CEXE_sources += incflo_godunov_ppm.cpp
+
+CEXE_headers += incflo_godunov_plm.H
+CEXE_headers += incflo_godunov_ppm.H
+
