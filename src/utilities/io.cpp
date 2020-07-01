@@ -338,12 +338,16 @@ void incflo::WritePlotFile()
     // Velocity components
     if (m_plt_velx) ++ncomp;
     if (m_plt_vely) ++ncomp;
+#if (AMREX_SPACEDIM == 3)
     if (m_plt_velz) ++ncomp;
+#endif
 
     // Pressure gradient components
     if (m_plt_gpx) ++ncomp;
     if (m_plt_gpy) ++ncomp;
+#if (AMREX_SPACEDIM == 3)
     if (m_plt_gpz) ++ncomp;
+#endif
 
     // Density
     if (m_plt_rho) ++ncomp;
@@ -395,6 +399,7 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("vely");
         ++icomp;
     }
+#if (AMREX_SPACEDIM == 3)
     if (m_plt_velz) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 2, icomp, 1, 0);
@@ -402,6 +407,7 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("velz");
         ++icomp;
     }
+#endif
     if (m_plt_gpx) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->gp, 0, icomp, 1, 0);
@@ -416,6 +422,7 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("gpy");
         ++icomp;
     }
+#if (AMREX_SPACEDIM == 3)
     if (m_plt_gpz) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->gp, 2, icomp, 1, 0);
@@ -423,6 +430,7 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("gpz");
         ++icomp;
     }
+#endif
     if (m_plt_rho) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->density, 0, icomp, 1, 0);

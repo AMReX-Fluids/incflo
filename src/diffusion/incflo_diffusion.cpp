@@ -65,12 +65,12 @@ incflo::get_diffusion_scalar_op ()
 Vector<Array<LinOpBCType,AMREX_SPACEDIM> >
 incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
 {
-    Vector<Array<LinOpBCType,AMREX_SPACEDIM>> r(3);
+    Vector<Array<LinOpBCType,AMREX_SPACEDIM>> r(AMREX_SPACEDIM);
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
         if (Geom(0).isPeriodic(dir)) {
             r[0][dir] = LinOpBCType::Periodic;
             r[1][dir] = LinOpBCType::Periodic;
-            r[2][dir] = LinOpBCType::Periodic;
+            //r[2][dir] = LinOpBCType::Periodic;
         } else {
             auto bc = m_bc_type[Orientation(dir,side)];
             switch (bc)
@@ -81,7 +81,7 @@ incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
                 // All three components are Neumann
                 r[0][dir] = LinOpBCType::Neumann;
                 r[1][dir] = LinOpBCType::Neumann;
-                r[2][dir] = LinOpBCType::Neumann;
+                //r[2][dir] = LinOpBCType::Neumann;
                 break;
             }
             case BC::mass_inflow:
@@ -90,7 +90,7 @@ incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
                 // All three components are Dirichlet
                 r[0][dir] = LinOpBCType::Dirichlet;
                 r[1][dir] = LinOpBCType::Dirichlet;
-                r[2][dir] = LinOpBCType::Dirichlet;
+                //r[2][dir] = LinOpBCType::Dirichlet;
                 break;
             }
             case BC::slip_wall:
@@ -99,7 +99,7 @@ incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
                 // Normal     component  is  Dirichlet
                 r[0][dir] = LinOpBCType::Neumann;
                 r[1][dir] = LinOpBCType::Neumann;
-                r[2][dir] = LinOpBCType::Neumann;
+                //r[2][dir] = LinOpBCType::Neumann;
 
                 r[dir][dir] = LinOpBCType::Dirichlet;
                 break;
@@ -115,12 +115,12 @@ incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
 Array<LinOpBCType,AMREX_SPACEDIM>
 incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcept
 {
-    Vector<Array<LinOpBCType,AMREX_SPACEDIM>> r(3);
+    Vector<Array<LinOpBCType,AMREX_SPACEDIM>> r(AMREX_SPACEDIM);
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
         if (Geom(0).isPeriodic(dir)) {
             r[0][dir] = LinOpBCType::Periodic;
             r[1][dir] = LinOpBCType::Periodic;
-            r[2][dir] = LinOpBCType::Periodic;
+            //r[2][dir] = LinOpBCType::Periodic;
         } else {
             auto bc = m_bc_type[Orientation(dir,side)];
             switch (bc)
@@ -131,7 +131,7 @@ incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcep
                 // All three components are Neumann
                 r[0][dir] = LinOpBCType::Neumann;
                 r[1][dir] = LinOpBCType::Neumann;
-                r[2][dir] = LinOpBCType::Neumann;
+                //r[2][dir] = LinOpBCType::Neumann;
                 break;
             }
             case BC::mass_inflow:
@@ -140,7 +140,7 @@ incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcep
                 // All three components are Dirichlet
                 r[0][dir] = LinOpBCType::Dirichlet;
                 r[1][dir] = LinOpBCType::Dirichlet;
-                r[2][dir] = LinOpBCType::Dirichlet;
+                //r[2][dir] = LinOpBCType::Dirichlet;
                 break;
             }
             case BC::slip_wall:
@@ -149,7 +149,7 @@ incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcep
                 // Normal     component  is  Dirichlet
                 r[0][dir] = LinOpBCType::Neumann;
                 r[1][dir] = LinOpBCType::Neumann;
-                r[2][dir] = LinOpBCType::Neumann;
+                //r[2][dir] = LinOpBCType::Neumann;
 
                 r[dir][dir] = LinOpBCType::Dirichlet;
                 break;
@@ -297,6 +297,7 @@ incflo::fixup_eta_on_domain_faces (int lev, Array<MultiFab,AMREX_SPACEDIM>& fc,
             }
         }
 
+#if (AMREX_SPACEDIM == 3)
         idim = 2;
         if (!gm.isPeriodic(idim)) {
             Array4<Real> const& fca = fc[idim].array(mfi);
@@ -315,5 +316,6 @@ incflo::fixup_eta_on_domain_faces (int lev, Array<MultiFab,AMREX_SPACEDIM>& fc,
                 });
             }
         }
+#endif
     }
 }

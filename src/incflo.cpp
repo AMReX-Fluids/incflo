@@ -59,7 +59,6 @@ void incflo::InitData ()
         if (m_initial_iterations > 0) {
             InitialIterations();
         }
-
         // Set m_nstep to 0 before entering time loop
         m_nstep = 0;
 

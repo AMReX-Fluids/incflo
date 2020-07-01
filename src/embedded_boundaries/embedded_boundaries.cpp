@@ -42,12 +42,12 @@ void incflo::MakeEBGeometry()
     {
 	amrex::Print() << "\n Building annulus geometry." << std::endl;
         make_eb_annulus();
-    }/*
+    }
     else if(geom_type == "sphere")
     {
 	amrex::Print() << "\n Building sphere geometry." << std::endl;
         make_eb_sphere();
-    }
+    }/*
     else if(geom_type == "spherecube")
     {
 	amrex::Print() << "\n Building spherecube geometry." << std::endl;

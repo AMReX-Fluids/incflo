@@ -13,7 +13,9 @@ void incflo::init_bcs ()
         m_bc_density[ori] = 1.0;
         m_bc_velocity[ori][0] = 0.0; // default
         m_bc_velocity[ori][1] = 0.0;
+#if (AMREX_SPACEDIM == 3)
         m_bc_velocity[ori][2] = 0.0;
+#endif
         m_bc_tracer[ori].resize(m_ntrac,0.0);
 
         ParmParse pp(bcid);
@@ -144,11 +146,15 @@ void incflo::init_bcs ()
                 if (side == Orientation::low) {
                     m_bcrec_velocity[0].setLo(dir, BCType::foextrap);
                     m_bcrec_velocity[1].setLo(dir, BCType::foextrap);
+#if (AMREX_SPACEDIM == 3)
                     m_bcrec_velocity[2].setLo(dir, BCType::foextrap);
+#endif
                 } else {
                     m_bcrec_velocity[0].setHi(dir, BCType::foextrap);
                     m_bcrec_velocity[1].setHi(dir, BCType::foextrap);
+#if (AMREX_SPACEDIM == 3)
                     m_bcrec_velocity[2].setHi(dir, BCType::foextrap);
+#endif
                 }
             }
             else if (bct == BC::mass_inflow or bct == BC::no_slip_wall)
@@ -156,11 +162,15 @@ void incflo::init_bcs ()
                 if (side == Orientation::low) {
                     m_bcrec_velocity[0].setLo(dir, BCType::ext_dir);
                     m_bcrec_velocity[1].setLo(dir, BCType::ext_dir);
+#if (AMREX_SPACEDIM == 3)
                     m_bcrec_velocity[2].setLo(dir, BCType::ext_dir);
+#endif
                 } else {
                     m_bcrec_velocity[0].setHi(dir, BCType::ext_dir);
                     m_bcrec_velocity[1].setHi(dir, BCType::ext_dir);
+#if (AMREX_SPACEDIM == 3)
                     m_bcrec_velocity[2].setHi(dir, BCType::ext_dir);
+#endif
                 }
             }
             else if (bct == BC::slip_wall)
@@ -169,8 +179,9 @@ void incflo::init_bcs ()
                     // Tangential directions have hoextrap
                     m_bcrec_velocity[0].setLo(dir, BCType::hoextrap);
                     m_bcrec_velocity[1].setLo(dir, BCType::hoextrap);
+#if (AMREX_SPACEDIM == 3)
                     m_bcrec_velocity[2].setLo(dir, BCType::hoextrap);
-
+#endif
                     // Only normal direction has ext_dir
                     m_bcrec_velocity[dir].setLo(dir, BCType::ext_dir);
 
@@ -178,8 +189,9 @@ void incflo::init_bcs ()
                     // Tangential directions have hoextrap
                     m_bcrec_velocity[0].setHi(dir, BCType::hoextrap);
                     m_bcrec_velocity[1].setHi(dir, BCType::hoextrap);
+#if (AMREX_SPACEDIM == 3)
                     m_bcrec_velocity[2].setHi(dir, BCType::hoextrap);
-
+#endif
                     // Only normal direction has ext_dir
                     m_bcrec_velocity[dir].setHi(dir, BCType::ext_dir);
                 }
@@ -189,11 +201,15 @@ void incflo::init_bcs ()
                 if (side == Orientation::low) {
                     m_bcrec_velocity[0].setLo(dir, BCType::int_dir);
                     m_bcrec_velocity[1].setLo(dir, BCType::int_dir);
+#if (AMREX_SPACEDIM == 3)
                     m_bcrec_velocity[2].setLo(dir, BCType::int_dir);
+#endif
                 } else {
                     m_bcrec_velocity[0].setHi(dir, BCType::int_dir);
                     m_bcrec_velocity[1].setHi(dir, BCType::int_dir);
+#if (AMREX_SPACEDIM == 3)
                     m_bcrec_velocity[2].setHi(dir, BCType::int_dir);
+#endif
                 }
             }
         }

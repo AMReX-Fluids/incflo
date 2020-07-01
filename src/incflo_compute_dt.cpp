@@ -64,8 +64,8 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                            {
                                if (!f(i,j,k).isCovered()) {
                                    mx = amrex::max(amrex::Math::abs(v(i,j,k,0))*dxinv[0],
-                                                   amrex::Math::abs(v(i,j,k,1))*dxinv[1],
-                                                   amrex::Math::abs(v(i,j,k,2))*dxinv[2], mx);
+                                                   amrex::Math::abs(v(i,j,k,1))*dxinv[1], mx);
+                                                   //amrex::Math::abs(v(i,j,k,2))*dxinv[2], mx);
                                }
                            });
                            return mx;
@@ -106,8 +106,8 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                       {
                           if (!f(i,j,k).isCovered()) {
                               mx = amrex::max(std::abs(vf(i,j,k,0))*dxinv[0],
-                                              std::abs(vf(i,j,k,1))*dxinv[1],
-                                              std::abs(vf(i,j,k,2))*dxinv[2], mx);
+                                              std::abs(vf(i,j,k,1))*dxinv[1], mx);
+                                              //std::abs(vf(i,j,k,2))*dxinv[2], mx);
                           }
                       });
                       return mx;
@@ -123,8 +123,8 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                            amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                            {
                                mx = amrex::max(amrex::Math::abs(v(i,j,k,0))*dxinv[0],
-                                               amrex::Math::abs(v(i,j,k,1))*dxinv[1],
-                                               amrex::Math::abs(v(i,j,k,2))*dxinv[2], mx);
+                                               amrex::Math::abs(v(i,j,k,1))*dxinv[1], mx);
+                                               //amrex::Math::abs(v(i,j,k,2))*dxinv[2], mx);
                            });
                            return mx;
                        });
@@ -160,8 +160,8 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                       amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                       {
                           mx = amrex::max(std::abs(vf(i,j,k,0))*dxinv[0],
-                                          std::abs(vf(i,j,k,1))*dxinv[1],
-                                          std::abs(vf(i,j,k,2))*dxinv[2], mx);
+                                          std::abs(vf(i,j,k,1))*dxinv[1], mx);
+                                          //std::abs(vf(i,j,k,2))*dxinv[2], mx);
                       });
                       return mx;
                   });

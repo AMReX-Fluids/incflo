@@ -25,7 +25,7 @@ void incflo::make_eb_sphere()
     pp.query("internal_flow", inside);
     pp.query("radius", radius);
     pp.getarr("center", centervec, 0, 3);
-    Array<Real, 3> center = {centervec[0], centervec[1], centervec[2]};
+    Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0], centervec[1], centervec[2])};
 
     // Print info about sphere
     amrex::Print() << " " << std::endl;

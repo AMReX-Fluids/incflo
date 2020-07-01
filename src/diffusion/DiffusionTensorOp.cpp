@@ -248,7 +248,7 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-            amrex::single_level_redistribute( divtau_tmp[lev], *a_divtau[lev], 0, 3, m_incflo->Geom(lev));
+            amrex::single_level_redistribute( divtau_tmp[lev], *a_divtau[lev], 0, AMREX_SPACEDIM, m_incflo->Geom(lev));
         }
     }
     else
@@ -281,7 +281,7 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
                 Real rhoinv = 1.0/rho_arr(i,j,k);
                 divtau_arr(i,j,k,0) *= rhoinv;
                 divtau_arr(i,j,k,1) *= rhoinv;
-                divtau_arr(i,j,k,2) *= rhoinv;
+                //divtau_arr(i,j,k,2) *= rhoinv;
             });
         }
     }

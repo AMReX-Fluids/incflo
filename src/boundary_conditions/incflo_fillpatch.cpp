@@ -16,7 +16,7 @@ void incflo::fillpatch_velocity (int lev, Real time, MultiFab& vel, int ng)
         FillPatchSingleLevel(vel, IntVect(ng), time,
                              {&(m_leveldata[lev]->velocity_o),
                               &(m_leveldata[lev]->velocity)},
-                             {m_t_old[lev], m_t_new[lev]}, 0, 0, 3, geom[lev],
+                             {m_t_old[lev], m_t_new[lev]}, 0, 0, AMREX_SPACEDIM, geom[lev],
                              physbc, 0);
     } else {
         const auto& bcrec = get_velocity_bcrec();
