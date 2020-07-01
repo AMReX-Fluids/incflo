@@ -80,6 +80,7 @@ struct IncfloVelFill
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::y,Orientation::high)][vcomp];
             }
 
+#if (AMREX_SPACEDIM == 3)
             if (bc.lo(2) == BCType::ext_dir and k < domain_box.smallEnd(2))
             {
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::z,Orientation::low)][vcomp];
@@ -98,6 +99,7 @@ struct IncfloVelFill
             {
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::z,Orientation::high)][vcomp];
             }
+#endif
         }
     }
 };
@@ -145,7 +147,7 @@ struct IncfloDenFill
         {
             rho(i,j,k) = bcv[Orientation(Direction::y,Orientation::high)];
         }
-
+#if (AMREX_SPACEDIM == 3)
         if (bc.lo(2) == BCType::ext_dir and k < domain_box.smallEnd(2))
         {
             rho(i,j,k) = bcv[Orientation(Direction::z,Orientation::low)];
@@ -154,6 +156,7 @@ struct IncfloDenFill
         {
             rho(i,j,k) = bcv[Orientation(Direction::z,Orientation::high)];
         }
+#endif
     }
 };
 
@@ -204,7 +207,7 @@ struct IncfloTracFill
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::y,Orientation::high)][n];
             }
-
+#if (AMREX_SPACEDIM == 3)
             if (bc.lo(2) == BCType::ext_dir and k < domain_box.smallEnd(2))
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::z,Orientation::low)][n];
@@ -213,6 +216,7 @@ struct IncfloTracFill
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::z,Orientation::high)][n];
             }
+#endif
         }
     }
 };

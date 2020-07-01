@@ -158,6 +158,7 @@ mol::compute_convective_fluxes (int lev, Box const& bx, int ncomp,
         });
     }
 
+#if (AMREX_SPACEDIM == 3)
     // At an ext_dir or hoextrap boundary, 
     //    the boundary value is on the face, not cell center.
     extdir_lohi = has_extdir_or_ho(h_bcrec, ncomp, static_cast<int>(Direction::z));
@@ -213,5 +214,6 @@ mol::compute_convective_fluxes (int lev, Box const& bx, int ncomp,
             fz(i,j,k,n) = qs * wmac(i,j,k);
         });
     }
+#endif
 }
 

@@ -69,7 +69,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         MFItInfo mfi_info;
         // if (Gpu::notInLaunchRegion()) mfi_info.EnableTiling(IntVect(1024,16,16)).SetDynamic(true);
-        if (Gpu::notInLaunchRegion()) mfi_info.EnableTiling(IntVect(1024,1024,1024)).SetDynamic(true);
+        if (Gpu::notInLaunchRegion()) mfi_info.EnableTiling(IntVect(AMREX_D_DECL(1024,1024,1024))).SetDynamic(true);
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -331,7 +331,7 @@ mol::compute_convective_rate_eb (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(bx, ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (!dbox.contains(IntVect(i,j,k)) or flag(i,j,k).isCovered()) {
+        if (!dbox.contains(IntVect(AMREX_D_DECL(i,j,k))) or flag(i,j,k).isCovered()) {
             dUdt(i,j,k,n) = 0.0;
         } else if (flag(i,j,k).isRegular()) {
             dUdt(i,j,k,n) = dxinv[0] * (fx(i,j,k,n) - fx(i+1,j,k,n))
@@ -366,7 +366,7 @@ void incflo::redistribute_eb (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        wgt(i,j,k) = (dbox.contains(IntVect(i,j,k))) ? 1.0 : 0.0;
+        wgt(i,j,k) = (dbox.contains(IntVect(AMREX_D_DECL(i,j,k)))) ? 1.0 : 0.0;
     });
 
     amrex::ParallelFor(bxg1, ncomp,
@@ -380,7 +380,7 @@ void incflo::redistribute_eb (int lev, Box const& bx, int ncomp,
             for (int ii = -1; ii <= 1; ++ii) {
                 if ((ii != 0 or jj != 0 or kk != 0) and
                     flag(i,j,k).isConnected(ii,jj,kk) and
-                    dbox.contains(IntVect(i+ii,j+jj,k+kk)))
+                    dbox.contains(IntVect(AMREX_D_DECL(i+ii,j+jj,k+kk))))
                 {
                     Real vf = vfrac(i+ii,j+jj,k+kk);
                     vtot += vf;
@@ -417,7 +417,7 @@ void incflo::redistribute_eb (int lev, Box const& bx, int ncomp,
             for (int jj = -1; jj <= 1; ++jj) {
             for (int ii = -1; ii <= 1; ++ii) {
                 if ((ii != 0 or jj != 0 or kk != 0) and
-                    bx.contains(IntVect(i+ii,j+jj,k+kk)) and
+                    bx.contains(IntVect(AMREX_D_DECL(i+ii,j+jj,k+kk))) and
                     flag(i,j,k).isConnected(ii,jj,kk))
                 {
                     Gpu::Atomic::Add(&tmp(i+ii,j+jj,k+kk,n), dtmp*wgt(i+ii,j+jj,k+kk));

@@ -200,12 +200,12 @@ incflo::average_velocity_eta_to_faces (int lev, MultiFab const& cc_eta) const
     const auto& ba = cc_eta.boxArray();
     const auto& dm = cc_eta.DistributionMap();
     const auto& fact = cc_eta.Factory();
-    Array<MultiFab,AMREX_SPACEDIM> r{MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(0)),
+    Array<MultiFab,AMREX_SPACEDIM> r{AMREX_D_DECL(MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(0)),
                                               dm, 1, 0, MFInfo(), fact),
                                      MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(1)),
                                               dm, 1, 0, MFInfo(), fact),
                                      MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(2)),
-                                              dm, 1, 0, MFInfo(), fact)};
+                                              dm, 1, 0, MFInfo(), fact))};
 
 #ifdef AMREX_USE_EB
     // Note we use the scalar bc's here only to know when the bc is ext_dir 
@@ -228,12 +228,12 @@ incflo::average_scalar_eta_to_faces (int lev, int comp, MultiFab const& cc_eta) 
     const auto& dm = cc_eta.DistributionMap();
     const auto& fact = cc_eta.Factory();
     MultiFab cc(cc_eta, amrex::make_alias, comp, 1);
-    Array<MultiFab,AMREX_SPACEDIM> r{MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(0)),
+    Array<MultiFab,AMREX_SPACEDIM> r{AMREX_D_DECL(MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(0)),
                                               dm, 1, 0, MFInfo(), fact),
                                      MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(1)),
                                               dm, 1, 0, MFInfo(), fact),
                                      MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(2)),
-                                              dm, 1, 0, MFInfo(), fact)};
+                                              dm, 1, 0, MFInfo(), fact))};
 #ifdef AMREX_USE_EB
     EB_interp_CellCentroid_to_FaceCentroid (cc, GetArrOfPtrs(r), 0, 0, 1, geom[lev], 
                                             get_tracer_bcrec());

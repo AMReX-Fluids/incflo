@@ -4,10 +4,10 @@ CEXE_sources += eb_box.cpp
 CEXE_sources += eb_cylinder.cpp
 CEXE_sources += eb_cyl_tuscan.cpp
 CEXE_sources += eb_regular.cpp
-CEXE_sources += eb_sphere.cpp
-CEXE_sources += eb_spherecube.cpp
-CEXE_sources += eb_tuscan.cpp
-CEXE_sources += eb_twocylinders.cpp
+#CEXE_sources += eb_sphere.cpp
+#CEXE_sources += eb_spherecube.cpp
+#CEXE_sources += eb_tuscan.cpp
+#CEXE_sources += eb_twocylinders.cpp
 CEXE_sources += writeEBsurface.cpp
 
 CEXE_headers += eb_if.H

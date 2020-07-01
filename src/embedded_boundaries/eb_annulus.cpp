@@ -30,8 +30,8 @@ void incflo::make_eb_annulus()
     pp.query("inner_radius", inner_radius);
     pp.getarr("outer_center", outer_centervec, 0, 3);
     pp.getarr("inner_center", inner_centervec, 0, 3);
-    Array<Real, 3> outer_center = {outer_centervec[0], outer_centervec[1], outer_centervec[2]};
-    Array<Real, 3> inner_center = {inner_centervec[0], inner_centervec[1], inner_centervec[2]};
+    Array<Real, AMREX_SPACEDIM> outer_center = {AMREX_D_DECL(outer_centervec[0], outer_centervec[1], outer_centervec[2])};
+    Array<Real, AMREX_SPACEDIM> inner_center = {AMREX_D_DECL(inner_centervec[0], inner_centervec[1], inner_centervec[2])};
 
     // make_eb_annulus: outer and inner cylinders must have same center coordinate per direction
     AMREX_ASSERT(outer_center[direction] == inner_center[direction]);

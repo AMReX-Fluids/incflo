@@ -45,7 +45,9 @@ void incflo::init_bcs ()
 
             std::vector<Real> v;
             if (pp.queryarr("velocity", v, 0, AMREX_SPACEDIM)) {
-               m_bc_velocity[ori] = {v[0],v[1],v[2]};
+               for (int i=0; i<AMREX_SPACEDIM; i++){
+                   m_bc_velocity[ori][i] = v[i];
+               }
             }
 
             pp.query("density", m_bc_density[ori]);
@@ -66,7 +68,9 @@ void incflo::init_bcs ()
             std::vector<Real> v;
             if (pp.queryarr("velocity", v, 0, AMREX_SPACEDIM)) {
                 v[ori.coordDir()] = 0.0;
-                m_bc_velocity[ori] = {v[0],v[1],v[2]};
+                for (int i=0; i<AMREX_SPACEDIM; i++){
+                    m_bc_velocity[ori][i] = v[i];
+                }
             }
         }
         else if (bc_type == "slip_wall" or bc_type == "sw")
@@ -98,8 +102,10 @@ void incflo::init_bcs ()
     f("xhi", Orientation(Direction::x,Orientation::high));
     f("ylo", Orientation(Direction::y,Orientation::low));
     f("yhi", Orientation(Direction::y,Orientation::high));
+#if (AMREX_SPACEDIM == 3)
     f("zlo", Orientation(Direction::z,Orientation::low));
     f("zhi", Orientation(Direction::z,Orientation::high));
+#endif
 
     if (m_ntrac > 0) {
         Vector<Real> h_data(m_ntrac*AMREX_SPACEDIM*2);

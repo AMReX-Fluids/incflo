@@ -27,7 +27,7 @@ void incflo::make_eb_cylinder()
     pp.query("radius", radius);
     pp.query("direction", direction);
     pp.getarr("center", centervec, 0, 3);
-    Array<Real, 3> center = {centervec[0], centervec[1], centervec[2]};
+    Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0], centervec[1], centervec[2])};
 
     // Print info about cylinder
     amrex::Print() << " " << std::endl;

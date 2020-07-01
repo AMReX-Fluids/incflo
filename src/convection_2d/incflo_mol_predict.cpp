@@ -249,6 +249,7 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
         });
     }
 
+#if (AMREX_SPACEDIM == 3)
     // At an ext_dir or hoextrap boundary, 
     //    the boundary value is on the face, not cell center.
     extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
@@ -320,4 +321,5 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
             w(i,j,k) = w_val;
         });
     }
+#endif
 }

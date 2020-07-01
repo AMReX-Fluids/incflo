@@ -79,7 +79,7 @@ void incflo::make_eb_box()
             zlo = 2.0 * geom[0].ProbLo(2) - geom[0].ProbHi(2);
             zhi = 2.0 * geom[0].ProbHi(2) - geom[0].ProbLo(2);
         }
-
+/* --- To solve
         Array<Real, 3> point_lox{xlo, 0.0, 0.0};
         Array<Real, 3> normal_lox{-1.0, 0.0, 0.0};
         Array<Real, 3> point_hix{xhi, 0.0, 0.0};
@@ -112,6 +112,6 @@ void incflo::make_eb_box()
         // Build index space
         int max_level_here = 0;
         int max_coarsening_level = 100;
-        EB2::Build(gshop, geom.back(), max_level_here, max_level_here + max_coarsening_level);
+        EB2::Build(gshop, geom.back(), max_level_here, max_level_here + max_coarsening_level);*/
     }
 }

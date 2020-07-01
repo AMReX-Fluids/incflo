@@ -362,6 +362,7 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         });
     }
 
+#if (AMREX_SPACEDIM == 3)
     // ****************************************************************************
     // Predict to z-faces
     // ****************************************************************************
@@ -518,5 +519,6 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
             w(i,j,k) = w_val;
         });
     }
+#endif
 }
 #endif

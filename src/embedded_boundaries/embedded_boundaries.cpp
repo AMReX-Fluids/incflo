@@ -33,16 +33,16 @@ void incflo::MakeEBGeometry()
 	amrex::Print() << "\n Building cylinder geometry." << std::endl;
         make_eb_cylinder();
     }
-    else if(geom_type == "twocylinders")
+    /*else if(geom_type == "twocylinders")
     {
 	amrex::Print() << "\n Building twocylinders geometry." << std::endl;
         make_eb_twocylinders();
-    }
+    }*/
     else if(geom_type == "annulus")
     {
 	amrex::Print() << "\n Building annulus geometry." << std::endl;
         make_eb_annulus();
-    }
+    }/*
     else if(geom_type == "sphere")
     {
 	amrex::Print() << "\n Building sphere geometry." << std::endl;
@@ -57,7 +57,7 @@ void incflo::MakeEBGeometry()
     {
 	amrex::Print() << "\n Building tuscan geometry." << std::endl;
         make_eb_tuscan();
-    }
+    }*/
     else if(geom_type == "jcap")
     {
 	amrex::Print() << "\n Building JCAP geometry." << std::endl;

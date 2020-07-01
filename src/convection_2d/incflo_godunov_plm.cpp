@@ -165,6 +165,7 @@ void godunov::predict_plm_z (int lev, Box const& bx_in, int ncomp,
                             Vector<BCRec> const& h_bcrec,
                             BCRec const* pbc)
 {
+#if (AMREX_SPACEDIM == 3)
     Box zebox = Box(bx_in).grow(0,1).grow(1,1).surroundingNodes(2);
 
     const Real dz = geom[lev].CellSize(2);
@@ -222,5 +223,6 @@ void godunov::predict_plm_z (int lev, Box const& bx_in, int ncomp,
             Imz(i,j,k  ,n) = wpls;
         });
     }
+#endif
 }
 
