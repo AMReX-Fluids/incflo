@@ -342,15 +342,15 @@ private:
 
     // Control MLMG behavior
 #ifdef AMREX_USE_FLOAT
-    amrex::Real nodal_mg_rtol = 1.0e-4;
-    amrex::Real nodal_mg_atol = 1.0e-7;
+    amrex::Real m_nodal_mg_rtol = 1.0e-4;
+    amrex::Real m_nodal_mg_atol = 1.0e-7;
 #else
-    amrex::Real nodal_mg_rtol = 1.0e-11;
-    amrex::Real nodal_mg_atol = 1.0e-14;
+    amrex::Real m_nodal_mg_rtol = 1.0e-11;
+    amrex::Real m_nodal_mg_atol = 1.0e-14;
 #endif
 
     // Max coarsening level
-    int nodal_mg_max_coarsening_level = 100;
+    int m_nodal_mg_max_coarsening_level = 100;
 
     // ***************************************************************
     // ***************************************************************

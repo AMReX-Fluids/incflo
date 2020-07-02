@@ -125,7 +125,8 @@ DiffusionScalarOp::readParameters ()
     pp.query("mg_maxorder", m_mg_maxorder);
     pp.query("mg_rtol", m_mg_rtol);
     pp.query("mg_atol", m_mg_atol);
-    pp.query("bottom_solver", m_bottom_solver);
+    pp.query("bottom_solver", m_mg_bottom_solver);
+    pp.query("bottom_verbose", m_mg_bottom_verbose);
 
     pp.query("num_pre_smooth", m_num_pre_smooth);
     pp.query("num_post_smooth", m_num_post_smooth);
@@ -232,11 +233,11 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 #endif
 
         // The default bottom solver is BiCG
-        if (m_bottom_solver == "smoother")
+        if (m_mg_bottom_solver == "smoother")
         {
             mlmg.setBottomSolver(MLMG::BottomSolver::smoother);
         }
-        else if (m_bottom_solver == "hypre")
+        else if (m_mg_bottom_solver == "hypre")
         {
             mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
         }
@@ -248,6 +249,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
         // Verbosity for MultiGrid / ConjugateGradients
         mlmg.setVerbose(m_mg_verbose);
         mlmg.setCGVerbose(m_mg_cg_verbose);
+        mlmg.setBottomVerbose(m_mg_bottom_verbose);
 
         mlmg.setPreSmooth(m_num_pre_smooth);
         mlmg.setPostSmooth(m_num_post_smooth);
@@ -360,11 +362,11 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& scalar,
 #endif
 
         // The default bottom solver is BiCG
-        if (m_bottom_solver == "smoother")
+        if (m_mg_bottom_solver == "smoother")
         {
             mlmg.setBottomSolver(MLMG::BottomSolver::smoother);
         }
-        else if (m_bottom_solver == "hypre")
+        else if (m_mg_bottom_solver == "hypre")
         {
             mlmg.setBottomSolver(MLMG::BottomSolver::hypre);
         }
@@ -376,6 +378,7 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& scalar,
         // Verbosity for MultiGrid / ConjugateGradients
         mlmg.setVerbose(m_mg_verbose);
         mlmg.setCGVerbose(m_mg_cg_verbose);
+        mlmg.setBottomVerbose(m_mg_bottom_verbose);
 
         mlmg.setPreSmooth(m_num_pre_smooth);
         mlmg.setPostSmooth(m_num_post_smooth);
