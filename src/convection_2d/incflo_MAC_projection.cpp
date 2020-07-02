@@ -43,7 +43,7 @@ incflo::apply_MAC_projection (Vector<MultiFab*> const& u_mac,
 {
     BL_PROFILE("incflo::apply_MAC_projection()");
 
-    if (m_verbose > 2) amrex::Print() << "MAC Projection:\n";
+    if (1) amrex::Print() << "MAC Projection:\n";
 
     // This will hold (1/rho) on faces
     Vector<Array<MultiFab ,AMREX_SPACEDIM> > rho_face(finest_level+1);
@@ -52,7 +52,7 @@ incflo::apply_MAC_projection (Vector<MultiFab*> const& u_mac,
     {
         rho_face[lev][0].define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));
         rho_face[lev][1].define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));
-        rho_face[lev][2].define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));
+        //rho_face[lev][2].define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));
 
 #ifdef AMREX_USE_EB
         EB_interp_CellCentroid_to_FaceCentroid (*density[lev], GetArrOfPtrs(rho_face[lev]), 0, 0, 1,
@@ -67,7 +67,7 @@ incflo::apply_MAC_projection (Vector<MultiFab*> const& u_mac,
 
         mac_vec[lev][0] = u_mac[lev];
         mac_vec[lev][1] = v_mac[lev];
-        mac_vec[lev][2] = w_mac[lev];
+        //mac_vec[lev][2] = w_mac[lev];
     }
 
     //

@@ -67,7 +67,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // We use the new time value for things computed on the "*" state
     Real new_time = m_cur_time + m_dt;
 
-    if (m_verbose > 2)
+    if (m_verbose)
     {
         amrex::Print() << "Before predictor step:" << std::endl;
         PrintMaxValues(new_time);
@@ -186,7 +186,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                             GetVecOfPtrs(w_mac), 
                             GetVecOfConstPtrs(vel_forces), GetVecOfConstPtrs(tra_forces),
                             m_cur_time);
-
+    
     // *************************************************************************************
     // Define local variables for lambda to capture.
     // *************************************************************************************
@@ -357,7 +357,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 {
                     vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0));
                     vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1));
-                    vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2));
+                    //vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2));
                 });
             } 
             else if (m_diff_type == DiffusionType::Crank_Nicolson) 
@@ -368,7 +368,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 {
                     vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+0.5*divtau_o(i,j,k,0));
                     vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+0.5*divtau_o(i,j,k,1));
-                    vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+0.5*divtau_o(i,j,k,2));
+                    //vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+0.5*divtau_o(i,j,k,2));
                 });
             }
             else if (m_diff_type == DiffusionType::Explicit) 
@@ -378,7 +378,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 {
                     vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+divtau_o(i,j,k,0));
                     vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+divtau_o(i,j,k,1));
-                    vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+divtau_o(i,j,k,2));
+                    //vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+divtau_o(i,j,k,2));
                 });
             }
         } // mfi

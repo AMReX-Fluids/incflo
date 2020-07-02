@@ -174,7 +174,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
 
     if (m_use_godunov)
     {
-        FArrayBox tmpfab(amrex::grow(bx,1), nmaxcomp*14+1);
+        FArrayBox tmpfab(amrex::grow(bx,1), nmaxcomp*10+1);
 //        Elixir eli = tmpfab.elixir();
 
         godunov::compute_godunov_advection(lev, bx, AMREX_SPACEDIM,
