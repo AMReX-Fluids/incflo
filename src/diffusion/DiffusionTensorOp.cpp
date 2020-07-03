@@ -281,7 +281,9 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
                 Real rhoinv = 1.0/rho_arr(i,j,k);
                 divtau_arr(i,j,k,0) *= rhoinv;
                 divtau_arr(i,j,k,1) *= rhoinv;
-                //divtau_arr(i,j,k,2) *= rhoinv;
+#if (AMREX_SPACEDIM == 3)
+                divtau_arr(i,j,k,2) *= rhoinv;
+#endif
             });
         }
     }

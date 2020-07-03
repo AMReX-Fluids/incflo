@@ -95,7 +95,9 @@ void incflo::ApplyProjection (Vector<MultiFab const*> density,
                     Real soverrho = scaling_factor / rho(i,j,k);
                     u(i,j,k,0) += gp(i,j,k,0) * soverrho;
                     u(i,j,k,1) += gp(i,j,k,1) * soverrho;
-                    //u(i,j,k,2) += gp(i,j,k,2) * soverrho;
+#if (AMREX_SPACEDIM == 3)
+                    u(i,j,k,2) += gp(i,j,k,2) * soverrho;
+#endif
                 });
             }
         }

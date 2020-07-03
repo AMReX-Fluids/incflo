@@ -137,7 +137,7 @@ void incflo::init_taylor_green (Box const& vbx, Box const& gbx,
         constexpr Real twopi = 2.*3.1415926535897932;
         vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y);
         vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y);
-        //vel(i,j,k,2) = 0.0;
+        vel(i,j,k,2) = 0.0;
     });
 }
 
@@ -159,7 +159,7 @@ void incflo::init_taylor_green3d (Box const& vbx, Box const& gbx,
         constexpr Real twopi = 2.*3.1415926535897932;
         vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y) * std::cos(twopi*z);
         vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y) * std::cos(twopi*z);
-        //vel(i,j,k,2) = 0.0;
+        vel(i,j,k,2) = 0.0;
     });
 }
 
@@ -179,7 +179,7 @@ void incflo::init_couette (Box const& vbx, Box const& gbx,
         Real y = (j+0.5) / num_cells_y;
         vel(i,j,k,0) *= (y-0.5);
         vel(i,j,k,1) = 0.0;
-        //vel(i,j,k,2) = 0.0;
+        vel(i,j,k,2) = 0.0;
     });
 }
 
@@ -425,7 +425,11 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
 {
     Real dxinv = 1.0 / domain.length(0);
     Real dyinv = 1.0 / domain.length(1);
-    Real dzinv = 0.0;//1.0 / domain.length(2);
+#if (AMREX_SPACEDIM == 3)
+    Real dzinv = 1.0 / domain.length(2);
+#else
+    Real dzinv = 0.0;
+#endif
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
 
@@ -437,8 +441,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             Real y = (j+0.5)*dyinv;
             vel(i,j,k,0) = 6. * u * y * (1.-y);
             vel(i,j,k,1) = 0.0;
-            //vel(i,j,k,2) = 0.0;
-
+#if (AMREX_SPACEDIM == 3)
+            vel(i,j,k,2) = 0.0;
+#endif
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
@@ -456,8 +461,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             Real z = (k+0.5)*dzinv;
             vel(i,j,k,0) = 6. * u * z * (1.-z);
             vel(i,j,k,1) = 0.0;
-            //vel(i,j,k,2) = 0.0;
-
+#if (AMREX_SPACEDIM == 3)
+            vel(i,j,k,2) = 0.0;
+#endif
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
@@ -475,8 +481,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             Real z = (k+0.5)*dzinv;
             vel(i,j,k,0) = 0.5*z;
             vel(i,j,k,1) = 0.0;
-            //vel(i,j,k,2) = 0.0;
-
+#if (AMREX_SPACEDIM == 3)
+            vel(i,j,k,2) = 0.0;
+#endif
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
@@ -494,8 +501,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             Real z = (k+0.5)*dzinv;
             vel(i,j,k,0) = 0.0;
             vel(i,j,k,1) = 6. * v * z * (1.-z);
-            //vel(i,j,k,2) = 0.0;
-
+#if (AMREX_SPACEDIM == 3)
+            vel(i,j,k,2) = 0.0;
+#endif
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
@@ -513,8 +521,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             Real x = (i+0.5)*dxinv;
             vel(i,j,k,0) = 0.0;
             vel(i,j,k,1) = 6. * v * x * (1.-x);
-            //vel(i,j,k,2) = 0.0;
-
+#if (AMREX_SPACEDIM == 3)
+            vel(i,j,k,2) = 0.0;
+#endif
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
@@ -532,8 +541,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             Real x = (i+0.5)*dxinv;
             vel(i,j,k,0) = 0.0;
             vel(i,j,k,1) = 0.0;
-            //vel(i,j,k,2) = 6. * w * x * (1.-x);
-
+#if (AMREX_SPACEDIM == 3)
+            vel(i,j,k,2) = 6. * w * x * (1.-x);
+#endif
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
@@ -551,8 +561,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             Real y = (j+0.5)*dyinv;
             vel(i,j,k,0) = 0.0;
             vel(i,j,k,1) = 0.0;
-            //vel(i,j,k,2) = 6. * w * y * (1.-y);
-
+#if (AMREX_SPACEDIM == 3)
+            vel(i,j,k,2) = 6. * w * y * (1.-y);
+#endif
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;

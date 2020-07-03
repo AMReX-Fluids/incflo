@@ -21,13 +21,11 @@ void godunov::predict_ppm (int lev, Box const& bx, int ncomp,
     const auto dx = geom[lev].CellSizeArray();
     Real l_dtdx = dt / dx[0];
     Real l_dtdy = dt / dx[1];
-    Real l_dtdz = 0.0;//dt / dx[2];
 
     amrex::ParallelFor(bx, AMREX_SPACEDIM, 
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         Godunov_ppm_pred_x(i,j,k,n,l_dtdx,vel(i,j,k,0),q,Imx,Ipx,pbc[n],dlo.x,dhi.x);
         Godunov_ppm_pred_y(i,j,k,n,l_dtdy,vel(i,j,k,1),q,Imy,Ipy,pbc[n],dlo.y,dhi.y);
-        //Godunov_ppm_pred_z(i,j,k,n,l_dtdz,vel(i,j,k,2),q,Imz,Ipz,pbc[n],dlo.z,dhi.z);
     });
 }

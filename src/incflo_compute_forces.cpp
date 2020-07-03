@@ -79,7 +79,9 @@ void incflo::compute_vel_forces_on_level (int lev,
 
                     vel_f(i,j,k,0) = -gradp(i,j,k,0)*rhoinv + l_gravity[0] * ft;
                     vel_f(i,j,k,1) = -gradp(i,j,k,1)*rhoinv + l_gravity[1] * ft;
-                    //vel_f(i,j,k,2) = -gradp(i,j,k,2)*rhoinv + l_gravity[2] * ft; 
+#if (AMREX_SPACEDIM == 3)
+                    vel_f(i,j,k,2) = -gradp(i,j,k,2)*rhoinv + l_gravity[2] * ft; 
+#endif
                 });
 
             } else {
@@ -89,7 +91,9 @@ void incflo::compute_vel_forces_on_level (int lev,
 
                     vel_f(i,j,k,0) = -(gradp(i,j,k,0)+l_gp0[0])*rhoinv + l_gravity[0];
                     vel_f(i,j,k,1) = -(gradp(i,j,k,1)+l_gp0[1])*rhoinv + l_gravity[1];
-                    //vel_f(i,j,k,2) = -(gradp(i,j,k,2)+l_gp0[2])*rhoinv + l_gravity[2];
+#if (AMREX_SPACEDIM == 3)
+                    vel_f(i,j,k,2) = -(gradp(i,j,k,2)+l_gp0[2])*rhoinv + l_gravity[2];
+#endif
                 });
             }
     }

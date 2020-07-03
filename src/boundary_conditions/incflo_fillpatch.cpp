@@ -37,7 +37,7 @@ void incflo::fillpatch_velocity (int lev, Real time, MultiFab& vel, int ng)
                            {&(m_leveldata[lev]->velocity_o),
                             &(m_leveldata[lev]->velocity)},
                            {m_t_old[lev], m_t_new[lev]},
-                           0, 0, 3, geom[lev-1], geom[lev],
+                           0, 0, AMREX_SPACEDIM, geom[lev-1], geom[lev],
                            cphysbc, 0, fphysbc, 0,
                            refRatio(lev-1), mapper, bcrec, 0);
     }
@@ -186,7 +186,7 @@ void incflo::fillcoarsepatch_velocity (int lev, Real time, MultiFab& vel, int ng
     Interpolater* mapper = &cell_cons_interp;
 #endif
     amrex::InterpFromCoarseLevel(vel, IntVect(ng), time,
-                                 m_leveldata[lev-1]->velocity, 0, 0, 3,
+                                 m_leveldata[lev-1]->velocity, 0, 0, AMREX_SPACEDIM,
                                  geom[lev-1], geom[lev],
                                  cphysbc, 0, fphysbc, 0,
                                  refRatio(lev-1), mapper, bcrec, 0);
@@ -248,7 +248,7 @@ void incflo::fillcoarsepatch_gradp (int lev, Real time, MultiFab& gp, int ng)
     Interpolater* mapper = &cell_cons_interp;
 #endif
     amrex::InterpFromCoarseLevel(gp, IntVect(ng), time,
-                                 m_leveldata[lev-1]->gp, 0, 0, 3,
+                                 m_leveldata[lev-1]->gp, 0, 0, AMREX_SPACEDIM,
                                  geom[lev-1], geom[lev],
                                  cphysbc, 0, fphysbc, 0,
                                  refRatio(lev-1), mapper, bcrec, 0);

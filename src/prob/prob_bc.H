@@ -28,7 +28,11 @@ struct IncfloVelFill
         // do something for external Dirichlet (BCType::ext_dir)
         const int i = iv[0];
         const int j = iv[1];
-        const int k = 0;//iv[2];
+#if (AMREX_SPACEDIM == 3)
+        const int k = iv[2];
+#else
+        const int k = 0;
+#endif
 
         const Box& domain_box = geom.Domain();
 
@@ -125,7 +129,11 @@ struct IncfloDenFill
         // do something for external Dirichlet (BCType::ext_dir)
         const int i = iv[0];
         const int j = iv[1];
-        const int k = 0;//iv[2];
+#if (AMREX_SPACEDIM == 3)
+        const int k = iv[2];
+#else
+        const int k = 0;
+#endif
 
         const Box& domain_box = geom.Domain();
         const BCRec& bc = bcr[bcomp];
@@ -182,7 +190,11 @@ struct IncfloTracFill
         // do something for external Dirichlet (BCType::ext_dir)
         const int i = iv[0];
         const int j = iv[1];
-        const int k = 0;//iv[2];
+#if (AMREX_SPACEDIM == 3)
+        const int k = iv[2];
+#else
+        const int k = 0;
+#endif
 
         const Box& domain_box = geom.Domain();
 
