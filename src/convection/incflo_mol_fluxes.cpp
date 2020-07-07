@@ -22,13 +22,13 @@ namespace {
 
 void
 mol::compute_convective_fluxes (int lev, Box const& bx, int ncomp,
-                                Array4<Real> const& fx,
-                                Array4<Real> const& fy,
-                                Array4<Real> const& fz,
+                                AMREX_D_DECL(Array4<Real> const& fx,
+                                             Array4<Real> const& fy,
+                                             Array4<Real> const& fz),
                                 Array4<Real const> const& q,
-                                Array4<Real const> const& umac,
-                                Array4<Real const> const& vmac,
-                                Array4<Real const> const& wmac,
+                                AMREX_D_DECL(Array4<Real const> const& umac,
+                                             Array4<Real const> const& vmac,
+                                             Array4<Real const> const& wmac),
                                 BCRec const* h_bcrec, BCRec const* d_bcrec,
                                 Vector<Geometry> geom)
 {
@@ -39,12 +39,14 @@ mol::compute_convective_fluxes (int lev, Box const& bx, int ncomp,
     const int domain_ihi = domain_box.bigEnd(0);
     const int domain_jlo = domain_box.smallEnd(1);
     const int domain_jhi = domain_box.bigEnd(1);
+#if (AMREX_SPACEDIM == 3)
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
+#endif
 
-    Box const& xbx = amrex::surroundingNodes(bx,0);
-    Box const& ybx = amrex::surroundingNodes(bx,1);
-    Box const& zbx = amrex::surroundingNodes(bx,2);
+    AMREX_D_TERM(Box const& xbx = amrex::surroundingNodes(bx,0);,
+                 Box const& ybx = amrex::surroundingNodes(bx,1);,
+                 Box const& zbx = amrex::surroundingNodes(bx,2););
 
     // At an ext_dir or hoextrap boundary, 
     //    the boundary value is on the face, not cell center.
