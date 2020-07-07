@@ -77,6 +77,9 @@ void incflo::ReadParameters ()
             amrex::Abort("We currently require diffusion_type = 0 for explicit, 1 for Crank-Nicolson or 2 for implicit");
         }
 
+        // Default is true; should we use tensor solve instead of separate solves for each component?
+        pp.query("use_tensor_solve",use_tensor_solve);
+
         if (!m_use_godunov && m_cfl > 0.5) {
             amrex::Abort("We currently require cfl <= 0.5 when using the MOL advection scheme");
         }
@@ -126,6 +129,13 @@ void incflo::ReadParameters ()
         pp_mac.query( "mg_cg_maxiter", m_mac_mg_cg_maxiter );
         pp_mac.query( "mg_max_coarsening_level", m_mac_mg_max_coarsening_level );
     } // end prefix mac
+
+    { // Prefix nodal
+        ParmParse pp_nodal("nodal_proj");
+        pp_nodal.query( "mg_max_coarsening_level", m_nodal_mg_max_coarsening_level );
+        pp_nodal.query( "mg_rtol"                , m_nodal_mg_rtol );
+        pp_nodal.query( "mg_atol"                , m_nodal_mg_atol );
+    } // end prefix nodal
 }
 
 void incflo::ReadIOParameters()

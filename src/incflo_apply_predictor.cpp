@@ -148,10 +148,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Compute explicit viscous term 
     // *************************************************************************************
     if (need_divtau()) {
-        get_diffusion_tensor_op()->compute_divtau(get_divtau_old(),
-                                                  get_velocity_old_const(),
-                                                  get_density_old_const(),
-                                                  GetVecOfConstPtrs(vel_eta));
+        compute_divtau(get_divtau_old(),get_velocity_old_const(),
+                       get_density_old_const(),GetVecOfConstPtrs(vel_eta));
+
         if (m_godunov_include_diff_in_forcing)
             for (int lev = 0; lev <= finest_level; ++lev)  
                 MultiFab::Add(vel_forces[lev], m_leveldata[lev]->divtau_o, 0, 0, AMREX_SPACEDIM, 0);
@@ -161,10 +160,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Compute explicit diffusive terms
     // *************************************************************************************
     if (m_advect_tracer && need_divtau()) {
-        get_diffusion_scalar_op()->compute_laps(get_laps_old(),
-                                                get_tracer_old_const(),
-                                                get_density_old_const(),
-                                                GetVecOfConstPtrs(tra_eta));
+        compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
+                     GetVecOfConstPtrs(tra_eta));
+
         if (m_godunov_include_diff_in_forcing)
             for (int lev = 0; lev <= finest_level; ++lev) 
                 MultiFab::Add(tra_forces[lev], m_leveldata[lev]->laps_o, 0, 0, m_ntrac, 0);
@@ -324,10 +322,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
             fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
 
         Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
-        get_diffusion_scalar_op()->diffuse_scalar(get_tracer_new(),
-                                                  get_density_new(),
-                                                  GetVecOfConstPtrs(tra_eta),
-                                                  dt_diff);
+        diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
+
     } // if (m_advect_tracer)
 
     // *************************************************************************************
@@ -400,10 +396,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
         }
 
         Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
-        get_diffusion_tensor_op()->diffuse_velocity(get_velocity_new(),
-                                                    get_density_new(),
-                                                    GetVecOfConstPtrs(vel_eta),
-                                                    dt_diff);
+        diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
 
     // **********************************************************************************************

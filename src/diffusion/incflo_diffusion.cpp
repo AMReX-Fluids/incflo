@@ -2,6 +2,52 @@
 
 using namespace amrex;
 
+void
+incflo::compute_divtau(Vector<MultiFab      *> const& divtau, 
+                       Vector<MultiFab const*> const& vel,
+                       Vector<MultiFab const*> const& density,
+                       Vector<MultiFab const*> const& eta)
+{
+    if (use_tensor_solve) {
+        get_diffusion_tensor_op()->compute_divtau(divtau, vel, density, eta);
+    } else {
+        get_diffusion_scalar_op()->compute_divtau(divtau, vel, density, eta);
+    }
+}
+
+
+void
+incflo::compute_laps(Vector<MultiFab      *> const& laps, 
+                     Vector<MultiFab const*> const& scalar,
+                     Vector<MultiFab const*> const& density,
+                     Vector<MultiFab const*> const& eta)
+{
+    get_diffusion_scalar_op()->compute_laps(laps, scalar, density, eta);
+}
+
+void
+incflo::diffuse_scalar(Vector<MultiFab      *> const& scalar,
+                       Vector<MultiFab      *> const& density,
+                       Vector<MultiFab const*> const& eta,
+                       Real dt_diff)
+{
+    get_diffusion_scalar_op()->diffuse_scalar(scalar, density, eta, dt_diff);
+}
+
+
+void
+incflo::diffuse_velocity(Vector<MultiFab      *> const& vel,
+                         Vector<MultiFab      *> const& density,
+                         Vector<MultiFab const*> const& eta,
+                         Real dt_diff)
+{
+    if (use_tensor_solve) {
+        get_diffusion_tensor_op()->diffuse_velocity(vel, density, eta, dt_diff);
+    } else {
+        get_diffusion_scalar_op()->diffuse_vel_components(vel, density, eta, dt_diff);
+    }
+}
+
 DiffusionTensorOp*
 incflo::get_diffusion_tensor_op ()
 {
@@ -67,6 +113,56 @@ incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
 }
 
 Array<LinOpBCType,AMREX_SPACEDIM>
+incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcept
+{
+    Vector<Array<LinOpBCType,AMREX_SPACEDIM>> r(3);
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        if (Geom(0).isPeriodic(dir)) {
+            r[0][dir] = LinOpBCType::Periodic;
+            r[1][dir] = LinOpBCType::Periodic;
+            r[2][dir] = LinOpBCType::Periodic;
+        } else {
+            auto bc = m_bc_type[Orientation(dir,side)];
+            switch (bc)
+            {
+            case BC::pressure_inflow:
+            case BC::pressure_outflow:
+            {
+                // All three components are Neumann
+                r[0][dir] = LinOpBCType::Neumann;
+                r[1][dir] = LinOpBCType::Neumann;
+                r[2][dir] = LinOpBCType::Neumann;
+                break;
+            }
+            case BC::mass_inflow:
+            case BC::no_slip_wall:
+            {
+                // All three components are Dirichlet
+                r[0][dir] = LinOpBCType::Dirichlet;
+                r[1][dir] = LinOpBCType::Dirichlet;
+                r[2][dir] = LinOpBCType::Dirichlet;
+                break;
+            }
+            case BC::slip_wall:
+            {
+                // Tangential components are Neumann
+                // Normal     component  is  Dirichlet
+                r[0][dir] = LinOpBCType::Neumann;
+                r[1][dir] = LinOpBCType::Neumann;
+                r[2][dir] = LinOpBCType::Neumann;
+
+                r[dir][dir] = LinOpBCType::Dirichlet;
+                break;
+            }
+            default:
+                amrex::Abort("get_diffuse_tensor_bc: undefined BC type");
+            };
+        }
+    }
+    return r[comp];
+}
+
+Array<LinOpBCType,AMREX_SPACEDIM>
 incflo::get_diffuse_scalar_bc (Orientation::Side side) const noexcept
 {
     Array<LinOpBCType,AMREX_SPACEDIM> r;
@@ -112,8 +208,8 @@ incflo::average_velocity_eta_to_faces (int lev, MultiFab const& cc_eta) const
                                               dm, 1, 0, MFInfo(), fact)};
 
 #ifdef AMREX_USE_EB
-    // Note we use the tracer bc's here only to know when the bc is ext_dir 
-    //      (this should be the same for tracer and eta)
+    // Note we use the scalar bc's here only to know when the bc is ext_dir 
+    //      (this should be the same for scalar and eta)
     EB_interp_CellCentroid_to_FaceCentroid (cc_eta, GetArrOfPtrs(r), 0, 0, 1, geom[lev], 
                                             get_tracer_bcrec());
     // amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc_eta, Geom(lev));
@@ -126,7 +222,7 @@ incflo::average_velocity_eta_to_faces (int lev, MultiFab const& cc_eta) const
 }
 
 Array<MultiFab,AMREX_SPACEDIM>
-incflo::average_tracer_eta_to_faces (int lev, int comp, MultiFab const& cc_eta) const
+incflo::average_scalar_eta_to_faces (int lev, int comp, MultiFab const& cc_eta) const
 {
     const auto& ba = cc_eta.boxArray();
     const auto& dm = cc_eta.DistributionMap();

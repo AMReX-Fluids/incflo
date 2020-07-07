@@ -167,8 +167,28 @@ public: // for cuda
     amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
     average_velocity_eta_to_faces (int lev, amrex::MultiFab const& cc_eta) const;
 
+    void compute_divtau  (amrex::Vector<amrex::MultiFab      *> const& divtau,
+                          amrex::Vector<amrex::MultiFab const*> const& velocity,
+                          amrex::Vector<amrex::MultiFab const*> const& density,
+                          amrex::Vector<amrex::MultiFab const*> const& eta);
+
+    void diffuse_velocity (amrex::Vector<amrex::MultiFab      *> const&  velocity,
+                           amrex::Vector<amrex::MultiFab      *> const&  density,
+                           amrex::Vector<amrex::MultiFab const*> const& eta,
+                           amrex::Real dt_diff); 
+
     amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
-    average_tracer_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
+    average_scalar_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
+
+    void compute_laps (amrex::Vector<amrex::MultiFab      *> const& laps,
+                       amrex::Vector<amrex::MultiFab const*> const& scalar,
+                       amrex::Vector<amrex::MultiFab const*> const& density,
+                       amrex::Vector<amrex::MultiFab const*> const& eta);
+
+    void diffuse_scalar (amrex::Vector<amrex::MultiFab      *> const& scalar,
+                         amrex::Vector<amrex::MultiFab      *> const& density,
+                         amrex::Vector<amrex::MultiFab const*> const& eta,
+                         amrex::Real dt_diff); 
 
     void fixup_eta_on_domain_faces (int lev,
                                     amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>& fc,
@@ -269,6 +289,9 @@ private:
     // Use Boussinesq approximation for buoyancy?
     bool m_use_boussinesq = false;
 
+    // Use tensor solve (as opposed to separate solves for each velocity component)
+    bool use_tensor_solve = true;
+
     // AMR / refinement settings
     int m_refine_cutcells = 1;
     int m_regrid_int = -1;
@@ -301,8 +324,6 @@ private:
     amrex::Real m_mac_mg_atol = 1.0e-14;
 #endif
 
-    std::string m_mac_bottom_solver_type;
-
     // ***************************************************************
     // Nodal solve
     // ***************************************************************
@@ -321,15 +342,15 @@ private:
 
     // Control MLMG behavior
 #ifdef AMREX_USE_FLOAT
-    amrex::Real nodal_mg_rtol = 1.0e-4;
-    amrex::Real nodal_mg_atol = 1.0e-7;
+    amrex::Real m_nodal_mg_rtol = 1.0e-4;
+    amrex::Real m_nodal_mg_atol = 1.0e-7;
 #else
-    amrex::Real nodal_mg_rtol = 1.0e-11;
-    amrex::Real nodal_mg_atol = 1.0e-14;
+    amrex::Real m_nodal_mg_rtol = 1.0e-11;
+    amrex::Real m_nodal_mg_atol = 1.0e-14;
 #endif
 
     // Max coarsening level
-    int nodal_mg_max_coarsening_level = 100;
+    int m_nodal_mg_max_coarsening_level = 100;
 
     // ***************************************************************
     // ***************************************************************
@@ -536,6 +557,10 @@ private:
         return !(!m_godunov_include_diff_in_forcing and DiffusionType::Implicit == m_diff_type);
     }
 
+    bool useTensorSolve () const {
+        return use_tensor_solve;
+    }
+
     DiffusionTensorOp* get_diffusion_tensor_op ();
     DiffusionScalarOp* get_diffusion_scalar_op ();
 
@@ -594,6 +619,9 @@ private:
 
     amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
     get_projection_bc (amrex::Orientation::Side side) const noexcept;
+
+    amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
+    get_diffuse_velocity_bc (amrex::Orientation::Side side, int comp) const noexcept;
 
     amrex::Vector<amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM> >
     get_diffuse_tensor_bc (amrex::Orientation::Side side) const noexcept;

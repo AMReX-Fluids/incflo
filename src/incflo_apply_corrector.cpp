@@ -143,15 +143,12 @@ void incflo::ApplyCorrector()
     // Here we create divtau of the (n+1,*) state that was computed in the predictor;
     //      we use this laps only if DiffusionType::Explicit
     if (m_diff_type == DiffusionType::Explicit) {
-        get_diffusion_tensor_op()->compute_divtau(get_divtau_new(),
-                                                  get_velocity_new_const(),
-                                                  get_density_new_const(),
-                                                  GetVecOfConstPtrs(vel_eta));
+        compute_divtau(get_divtau_new(), get_velocity_new_const(),
+                       get_density_new_const(), GetVecOfConstPtrs(vel_eta));
+
         if (m_advect_tracer) {
-            get_diffusion_scalar_op()->compute_laps(get_laps_new(),
-                                                    get_tracer_new_const(),
-                                                    get_density_new_const(),
-                                                    GetVecOfConstPtrs(tra_eta));
+            compute_laps(get_laps_new(), get_tracer_new_const(),
+                         get_density_new_const(), GetVecOfConstPtrs(tra_eta));
         }
     }
 
@@ -297,10 +294,7 @@ void incflo::ApplyCorrector()
             fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
 
         Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
-        get_diffusion_scalar_op()->diffuse_scalar(get_tracer_new(),
-                                                  get_density_new(),
-                                                  GetVecOfConstPtrs(tra_eta),
-                                                  dt_diff);
+        diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
     }
 
     // *************************************************************************************
@@ -386,10 +380,7 @@ void incflo::ApplyCorrector()
         }
 
         Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
-        get_diffusion_tensor_op()->diffuse_velocity(get_velocity_new(),
-                                                    get_density_new(),
-                                                    GetVecOfConstPtrs(vel_eta),
-                                                    dt_diff);
+        diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
 
     // **********************************************************************************************
