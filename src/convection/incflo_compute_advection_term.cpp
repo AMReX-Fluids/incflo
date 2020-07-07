@@ -23,9 +23,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                  Vector<MultiFab const*> const& vel,
                                  Vector<MultiFab const*> const& density,
                                  Vector<MultiFab const*> const& tracer,
-                                 Vector<MultiFab*> const& u_mac,
-                                 Vector<MultiFab*> const& v_mac,
-                                 Vector<MultiFab*> const& w_mac,
+                                 AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
+                                              Vector<MultiFab*> const& v_mac,
+                                              Vector<MultiFab*> const& w_mac),
                                  Vector<MultiFab const*> const& vel_forces,
                                  Vector<MultiFab const*> const& tra_forces,
                                  Real time)
@@ -43,28 +43,28 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
         if (m_use_godunov) {
-            godunov::predict_godunov(lev, time, *u_mac[lev], *v_mac[lev], *w_mac[lev], *vel[lev], *vel_forces[lev],
+            godunov::predict_godunov(lev, time, AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]), *vel[lev], *vel_forces[lev],
                                      get_velocity_bcrec(), get_velocity_bcrec_device_ptr(), 
                                      Geom(), l_dt, m_godunov_ppm, m_godunov_use_forces_in_trans);
         } else {
-
+/*
             mol::predict_vels_on_faces(lev, *u_mac[lev], *v_mac[lev], *w_mac[lev], *vel[lev],
                                        get_velocity_bcrec(), get_velocity_bcrec_device_ptr(), 
 #ifdef AMREX_USE_EB
                                        ebfact,
 #endif
-                                       Geom()); 
+                                       Geom()); */
         }
     }
 
-    apply_MAC_projection(u_mac, v_mac, w_mac, density, time);
+    apply_MAC_projection(AMREX_D_DECL(u_mac, v_mac, w_mac), density, time);
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
         if (ngmac > 0) {
-            u_mac[lev]->FillBoundary(geom[lev].periodicity());
-            v_mac[lev]->FillBoundary(geom[lev].periodicity());
-            w_mac[lev]->FillBoundary(geom[lev].periodicity());
+            AMREX_D_TERM(u_mac[lev]->FillBoundary(geom[lev].periodicity());,
+                         v_mac[lev]->FillBoundary(geom[lev].periodicity());,
+                         w_mac[lev]->FillBoundary(geom[lev].periodicity()););
         }
 
         MFItInfo mfi_info;
@@ -83,9 +83,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                     vel[lev]->const_array(mfi),
                                     density[lev]->array(mfi),
                                     (m_ntrac>0) ? tracer[lev]->const_array(mfi) : Array4<Real const>{},
-                                    u_mac[lev]->const_array(mfi),
-                                    v_mac[lev]->const_array(mfi),
-                                    w_mac[lev]->const_array(mfi),
+                                    AMREX_D_DECL(u_mac[lev]->const_array(mfi),
+                                                 v_mac[lev]->const_array(mfi),
+                                                 w_mac[lev]->const_array(mfi)),
                                     (!vel_forces.empty()) ? vel_forces[lev]->const_array(mfi)
                                                           : Array4<Real const>{},
                                     (!tra_forces.empty()) ? tra_forces[lev]->const_array(mfi)
@@ -102,9 +102,9 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
                                  Array4<Real const> const& vel,
                                  Array4<Real const> const& rho,
                                  Array4<Real const> const& tra,
-                                 Array4<Real const> const& umac,
-                                 Array4<Real const> const& vmac,
-                                 Array4<Real const> const& wmac,
+                                 AMREX_D_DECL(Array4<Real const> const& umac,
+                                              Array4<Real const> const& vmac,
+                                              Array4<Real const> const& wmac),
                                  Array4<Real const> const& fvel,
                                  Array4<Real const> const& ftra)
 {
@@ -174,12 +174,16 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
 
     if (m_use_godunov)
     {
+#if (AMREX_SPACEDIM == 3)
+        FArrayBox tmpfab(amrex::grow(bx,1), nmaxcomp*14+1);
+#else
         FArrayBox tmpfab(amrex::grow(bx,1), nmaxcomp*10+1);
+#endif
 //        Elixir eli = tmpfab.elixir();
 
         godunov::compute_godunov_advection(lev, bx, AMREX_SPACEDIM,
                                            dvdt, vel,
-                                           umac, vmac, wmac, fvel, 
+                                           AMREX_D_DECL(umac, vmac, wmac), fvel, 
                                            geom, m_dt, 
                                            get_velocity_bcrec_device_ptr(),
                                            get_velocity_iconserv_device_ptr(),
@@ -187,7 +191,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         if (!m_constant_density) {
             godunov::compute_godunov_advection(lev, bx, 1,
                                                drdt, rho,
-                                               umac, vmac, wmac, {},
+                                               AMREX_D_DECL(umac, vmac, wmac), {},
                                                geom, m_dt, 
                                                get_density_bcrec_device_ptr(),
                                                get_density_iconserv_device_ptr(),
@@ -196,7 +200,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         if (m_advect_tracer) {
             godunov::compute_godunov_advection(lev, bx, m_ntrac,
                                                dtdt, rhotrac,
-                                               umac, vmac, wmac, ftra,
+                                               AMREX_D_DECL(umac, vmac, wmac), ftra,
                                                geom, m_dt, 
                                                get_tracer_bcrec_device_ptr(),
                                                get_tracer_iconserv_device_ptr(),
@@ -224,7 +228,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         Array4<Real> fy = tmpfab.array(nmaxcomp);
         Array4<Real> fz = tmpfab.array(nmaxcomp*2);
 
-#ifdef AMREX_USE_EB
+#ifdef AMREX_USE_EB 
         if (!regular)
         {
             Array4<Real> scratch = tmpfab.array(0);
@@ -266,8 +270,8 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         else
 #endif
         {
-            // velocity
-            mol::compute_convective_fluxes(lev, bx, AMREX_SPACEDIM, fx, fy, fz, vel,
+            // velocity -- to do 2D
+/*            mol::compute_convective_fluxes(lev, bx, AMREX_SPACEDIM, fx, fy, fz, vel,
                                            umac, vmac, wmac,
                                            get_velocity_bcrec().data(),
                                            get_velocity_bcrec_device_ptr(), Geom());
@@ -289,7 +293,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
                                                get_tracer_bcrec().data(),
                                                get_tracer_bcrec_device_ptr(), Geom());
                 mol::compute_convective_rate(lev, bx, m_ntrac, dtdt, fx, fy, fz, Geom());
-            }
+            }*/
         }
     }
 }

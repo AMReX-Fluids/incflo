@@ -11,11 +11,9 @@ void incflo::init_bcs ()
     auto f = [this] (std::string const& bcid, Orientation ori)
     {
         m_bc_density[ori] = 1.0;
-        m_bc_velocity[ori][0] = 0.0; // default
-        m_bc_velocity[ori][1] = 0.0;
-#if (AMREX_SPACEDIM == 3)
-        m_bc_velocity[ori][2] = 0.0;
-#endif
+        AMREX_D_TERM(m_bc_velocity[ori][0] = 0.0;, // default
+                     m_bc_velocity[ori][1] = 0.0;,
+                     m_bc_velocity[ori][2] = 0.0;);
         m_bc_tracer[ori].resize(m_ntrac,0.0);
 
         ParmParse pp(bcid);
@@ -144,54 +142,42 @@ void incflo::init_bcs ()
                 bct == BC::pressure_outflow)
             {
                 if (side == Orientation::low) {
-                    m_bcrec_velocity[0].setLo(dir, BCType::foextrap);
-                    m_bcrec_velocity[1].setLo(dir, BCType::foextrap);
-#if (AMREX_SPACEDIM == 3)
-                    m_bcrec_velocity[2].setLo(dir, BCType::foextrap);
-#endif
+                    AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::foextrap);,
+                                 m_bcrec_velocity[1].setLo(dir, BCType::foextrap);,
+                                 m_bcrec_velocity[2].setLo(dir, BCType::foextrap););
                 } else {
-                    m_bcrec_velocity[0].setHi(dir, BCType::foextrap);
-                    m_bcrec_velocity[1].setHi(dir, BCType::foextrap);
-#if (AMREX_SPACEDIM == 3)
-                    m_bcrec_velocity[2].setHi(dir, BCType::foextrap);
-#endif
+                    AMREX_D_TERM(m_bcrec_velocity[0].setHi(dir, BCType::foextrap);,
+                                 m_bcrec_velocity[1].setHi(dir, BCType::foextrap);,
+                                 m_bcrec_velocity[2].setHi(dir, BCType::foextrap););
                 }
             }
             else if (bct == BC::mass_inflow or bct == BC::no_slip_wall)
             {
                 if (side == Orientation::low) {
-                    m_bcrec_velocity[0].setLo(dir, BCType::ext_dir);
-                    m_bcrec_velocity[1].setLo(dir, BCType::ext_dir);
-#if (AMREX_SPACEDIM == 3)
-                    m_bcrec_velocity[2].setLo(dir, BCType::ext_dir);
-#endif
+                    AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::ext_dir);,
+                                 m_bcrec_velocity[1].setLo(dir, BCType::ext_dir);,
+                                 m_bcrec_velocity[2].setLo(dir, BCType::ext_dir););
                 } else {
-                    m_bcrec_velocity[0].setHi(dir, BCType::ext_dir);
-                    m_bcrec_velocity[1].setHi(dir, BCType::ext_dir);
-#if (AMREX_SPACEDIM == 3)
-                    m_bcrec_velocity[2].setHi(dir, BCType::ext_dir);
-#endif
+                    AMREX_D_TERM(m_bcrec_velocity[0].setHi(dir, BCType::ext_dir);,
+                                 m_bcrec_velocity[1].setHi(dir, BCType::ext_dir);,
+                                 m_bcrec_velocity[2].setHi(dir, BCType::ext_dir););
                 }
             }
             else if (bct == BC::slip_wall)
             {
                 if (side == Orientation::low) {
                     // Tangential directions have hoextrap
-                    m_bcrec_velocity[0].setLo(dir, BCType::hoextrap);
-                    m_bcrec_velocity[1].setLo(dir, BCType::hoextrap);
-#if (AMREX_SPACEDIM == 3)
-                    m_bcrec_velocity[2].setLo(dir, BCType::hoextrap);
-#endif
+                    AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::hoextrap);,
+                                 m_bcrec_velocity[1].setLo(dir, BCType::hoextrap);,
+                                 m_bcrec_velocity[2].setLo(dir, BCType::hoextrap););
                     // Only normal direction has ext_dir
                     m_bcrec_velocity[dir].setLo(dir, BCType::ext_dir);
 
                 } else {
                     // Tangential directions have hoextrap
-                    m_bcrec_velocity[0].setHi(dir, BCType::hoextrap);
-                    m_bcrec_velocity[1].setHi(dir, BCType::hoextrap);
-#if (AMREX_SPACEDIM == 3)
-                    m_bcrec_velocity[2].setHi(dir, BCType::hoextrap);
-#endif
+                    AMREX_D_TERM(m_bcrec_velocity[0].setHi(dir, BCType::hoextrap);,
+                                 m_bcrec_velocity[1].setHi(dir, BCType::hoextrap);,
+                                 m_bcrec_velocity[2].setHi(dir, BCType::hoextrap););
                     // Only normal direction has ext_dir
                     m_bcrec_velocity[dir].setHi(dir, BCType::ext_dir);
                 }
@@ -199,17 +185,13 @@ void incflo::init_bcs ()
             else if (bct == BC::periodic)
             {
                 if (side == Orientation::low) {
-                    m_bcrec_velocity[0].setLo(dir, BCType::int_dir);
-                    m_bcrec_velocity[1].setLo(dir, BCType::int_dir);
-#if (AMREX_SPACEDIM == 3)
-                    m_bcrec_velocity[2].setLo(dir, BCType::int_dir);
-#endif
+                    AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::int_dir);,
+                                 m_bcrec_velocity[1].setLo(dir, BCType::int_dir);,
+                                 m_bcrec_velocity[2].setLo(dir, BCType::int_dir););
                 } else {
-                    m_bcrec_velocity[0].setHi(dir, BCType::int_dir);
-                    m_bcrec_velocity[1].setHi(dir, BCType::int_dir);
-#if (AMREX_SPACEDIM == 3)
-                    m_bcrec_velocity[2].setHi(dir, BCType::int_dir);
-#endif
+                    AMREX_D_TERM(m_bcrec_velocity[0].setHi(dir, BCType::int_dir);,
+                                 m_bcrec_velocity[1].setHi(dir, BCType::int_dir);,
+                                 m_bcrec_velocity[2].setHi(dir, BCType::int_dir););
                 }
             }
         }

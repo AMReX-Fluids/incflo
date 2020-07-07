@@ -68,11 +68,9 @@ incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
     Vector<Array<LinOpBCType,AMREX_SPACEDIM>> r(AMREX_SPACEDIM);
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
         if (Geom(0).isPeriodic(dir)) {
-            r[0][dir] = LinOpBCType::Periodic;
-            r[1][dir] = LinOpBCType::Periodic;
-#if (AMREX_SPACEDIM == 3)
-            r[2][dir] = LinOpBCType::Periodic;
-#endif
+            AMREX_D_TERM(r[0][dir] = LinOpBCType::Periodic;,
+                         r[1][dir] = LinOpBCType::Periodic;,
+                         r[2][dir] = LinOpBCType::Periodic;);
         } else {
             auto bc = m_bc_type[Orientation(dir,side)];
             switch (bc)
@@ -81,33 +79,27 @@ incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
             case BC::pressure_outflow:
             {
                 // All three components are Neumann
-                r[0][dir] = LinOpBCType::Neumann;
-                r[1][dir] = LinOpBCType::Neumann;
-#if (AMREX_SPACEDIM == 3)
-                r[2][dir] = LinOpBCType::Neumann;
-#endif
+                AMREX_D_TERM(r[0][dir] = LinOpBCType::Neumann;,
+                             r[1][dir] = LinOpBCType::Neumann;,
+                             r[2][dir] = LinOpBCType::Neumann;);
                 break;
             }
             case BC::mass_inflow:
             case BC::no_slip_wall:
             {
                 // All three components are Dirichlet
-                r[0][dir] = LinOpBCType::Dirichlet;
-                r[1][dir] = LinOpBCType::Dirichlet;
-#if (AMREX_SPACEDIM == 3)
-                r[2][dir] = LinOpBCType::Dirichlet;
-#endif
+                AMREX_D_TERM(r[0][dir] = LinOpBCType::Dirichlet;,
+                             r[1][dir] = LinOpBCType::Dirichlet;,
+                             r[2][dir] = LinOpBCType::Dirichlet;);
                 break;
             }
             case BC::slip_wall:
             {
                 // Tangential components are Neumann
                 // Normal     component  is  Dirichlet
-                r[0][dir] = LinOpBCType::Neumann;
-                r[1][dir] = LinOpBCType::Neumann;
-#if (AMREX_SPACEDIM == 3)
-                r[2][dir] = LinOpBCType::Neumann;
-#endif
+                AMREX_D_TERM(r[0][dir] = LinOpBCType::Neumann;,
+                             r[1][dir] = LinOpBCType::Neumann;,
+                             r[2][dir] = LinOpBCType::Neumann;);
                 r[dir][dir] = LinOpBCType::Dirichlet;
                 break;
             }
@@ -125,11 +117,9 @@ incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcep
     Vector<Array<LinOpBCType,AMREX_SPACEDIM>> r(AMREX_SPACEDIM);
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
         if (Geom(0).isPeriodic(dir)) {
-            r[0][dir] = LinOpBCType::Periodic;
-            r[1][dir] = LinOpBCType::Periodic;
-#if (AMREX_SPACEDIM == 3)
-            r[2][dir] = LinOpBCType::Periodic;
-#endif
+            AMREX_D_TERM(r[0][dir] = LinOpBCType::Periodic;,
+                         r[1][dir] = LinOpBCType::Periodic;,
+                         r[2][dir] = LinOpBCType::Periodic;);
         } else {
             auto bc = m_bc_type[Orientation(dir,side)];
             switch (bc)
@@ -138,33 +128,27 @@ incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcep
             case BC::pressure_outflow:
             {
                 // All three components are Neumann
-                r[0][dir] = LinOpBCType::Neumann;
-                r[1][dir] = LinOpBCType::Neumann;
-#if (AMREX_SPACEDIM == 3)
-                r[2][dir] = LinOpBCType::Neumann;
-#endif
+                AMREX_D_TERM(r[0][dir] = LinOpBCType::Neumann;,
+                             r[1][dir] = LinOpBCType::Neumann;,
+                             r[2][dir] = LinOpBCType::Neumann;);
                 break;
             }
             case BC::mass_inflow:
             case BC::no_slip_wall:
             {
                 // All three components are Dirichlet
-                r[0][dir] = LinOpBCType::Dirichlet;
-                r[1][dir] = LinOpBCType::Dirichlet;
-#if (AMREX_SPACEDIM == 3)
-                r[2][dir] = LinOpBCType::Dirichlet;
-#endif
+                AMREX_D_TERM(r[0][dir] = LinOpBCType::Dirichlet;,
+                             r[1][dir] = LinOpBCType::Dirichlet;,
+                             r[2][dir] = LinOpBCType::Dirichlet;);
                 break;
             }
             case BC::slip_wall:
             {
                 // Tangential components are Neumann
                 // Normal     component  is  Dirichlet
-                r[0][dir] = LinOpBCType::Neumann;
-                r[1][dir] = LinOpBCType::Neumann;
-#if (AMREX_SPACEDIM == 3)
-                r[2][dir] = LinOpBCType::Neumann;
-#endif
+                AMREX_D_TERM(r[0][dir] = LinOpBCType::Neumann;,
+                             r[1][dir] = LinOpBCType::Neumann;,
+                             r[2][dir] = LinOpBCType::Neumann;);
                 r[dir][dir] = LinOpBCType::Dirichlet;
                 break;
             }

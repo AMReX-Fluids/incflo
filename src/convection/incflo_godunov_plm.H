@@ -85,6 +85,7 @@ void Godunov_plm_fpu_y (const int i, const int j, const int k, const int n,
     }
 }
 
+#if (AMREX_SPACEDIM == 3)
 // This version is called after the MAC projection
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 void Godunov_plm_fpu_z (const int i, const int j, const int k, const int n,
@@ -121,7 +122,7 @@ void Godunov_plm_fpu_z (const int i, const int j, const int k, const int n,
         Im = wpls;
     }
 }
-
+#endif
 
 }
 #endif 

@@ -102,12 +102,9 @@ public: // for cuda
                                   amrex::Vector<amrex::MultiFab const*> const& vel,
                                   amrex::Vector<amrex::MultiFab const*> const& density,
                                   amrex::Vector<amrex::MultiFab const*> const& tracer,
-//                                amrex::Vector<amrex::MultiFab const*> const& u_mac,
-//                                amrex::Vector<amrex::MultiFab const*> const& v_mac,
-//                                amrex::Vector<amrex::MultiFab const*> const& w_mac,
-                                  amrex::Vector<amrex::MultiFab*> const& u_mac,
-                                  amrex::Vector<amrex::MultiFab*> const& v_mac,
-                                  amrex::Vector<amrex::MultiFab*> const& w_mac,
+                                  AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
+                                               amrex::Vector<amrex::MultiFab*> const& v_mac,
+                                               amrex::Vector<amrex::MultiFab*> const& w_mac),
                                   amrex::Vector<amrex::MultiFab const*> const& vel_forces,
                                   amrex::Vector<amrex::MultiFab const*> const& tra_forces,
                                   amrex::Real time);
@@ -119,17 +116,17 @@ public: // for cuda
                                   amrex::Array4<amrex::Real const> const& vel,
                                   amrex::Array4<amrex::Real const> const& rho,
                                   amrex::Array4<amrex::Real const> const& tra,
-                                  amrex::Array4<amrex::Real const> const& umac,
-                                  amrex::Array4<amrex::Real const> const& vmac,
-                                  amrex::Array4<amrex::Real const> const& wmac,
+                                  AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                               amrex::Array4<amrex::Real const> const& vmac,
+                                               amrex::Array4<amrex::Real const> const& wmac),
                                   amrex::Array4<amrex::Real const> const& fv,
                                   amrex::Array4<amrex::Real const> const& ft);
 
      
     void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,
-                                     amrex::Vector<amrex::MultiFab const*> const& u_mac,
-                                     amrex::Vector<amrex::MultiFab const*> const& v_mac,
-                                     amrex::Vector<amrex::MultiFab const*> const& w_mac);
+                                     AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
+                                                  amrex::Vector<amrex::MultiFab const*> const& v_mac,
+                                                  amrex::Vector<amrex::MultiFab const*> const& w_mac));
 
 #ifdef AMREX_USE_EB
     void redistribute_eb (int lev, amrex::Box const& bx, int ncomp,
@@ -677,9 +674,9 @@ private:
 
     void init_advection ();
 
-    void apply_MAC_projection (amrex::Vector<amrex::MultiFab*> const& u_mac,
-                               amrex::Vector<amrex::MultiFab*> const& v_mac,
-                               amrex::Vector<amrex::MultiFab*> const& w_mac,
+    void apply_MAC_projection (AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
+                                            amrex::Vector<amrex::MultiFab*> const& v_mac,
+                                            amrex::Vector<amrex::MultiFab*> const& w_mac),
                                amrex::Vector<amrex::MultiFab const*> const& density,
                                amrex::Real time);
 

@@ -78,20 +78,20 @@ void incflo::ApplyCorrector()
     // *************************************************************************************
     // Allocate space for the MAC velocities
     // *************************************************************************************
-    Vector<MultiFab> u_mac(finest_level+1), v_mac(finest_level+1), w_mac(finest_level+1);
+    Vector<MultiFab> AMREX_D_DECL(u_mac(finest_level+1), v_mac(finest_level+1), w_mac(finest_level+1));
     int ngmac = nghost_mac();
 
     for (int lev = 0; lev <= finest_level; ++lev) {
-        u_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));
-        v_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));
-        w_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));
+        AMREX_D_TERM(u_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev));,
+                     v_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev));,
+                     w_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev)););
         if (ngmac > 0) {
-            u_mac[lev].setBndry(0.0);
-            v_mac[lev].setBndry(0.0);
-            w_mac[lev].setBndry(0.0);
+            AMREX_D_TERM(u_mac[lev].setBndry(0.0);,
+                         v_mac[lev].setBndry(0.0);,
+                         w_mac[lev].setBndry(0.0););
         }
     }
 
@@ -128,8 +128,8 @@ void incflo::ApplyCorrector()
     // *************************************************************************************
     compute_convective_term(get_conv_velocity_new(), get_conv_density_new(), get_conv_tracer_new(),
                             get_velocity_new_const(), get_density_new_const(), get_tracer_new_const(),
-                            GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                            GetVecOfPtrs(w_mac), 
+                            AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
+                            GetVecOfPtrs(w_mac)), 
                             {}, {}, new_time);
 
     // *************************************************************************************
@@ -395,6 +395,6 @@ void incflo::ApplyCorrector()
     // 
     // **********************************************************************************************
     incflo_correct_small_cells(get_velocity_new(),
-                               GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
-                               GetVecOfConstPtrs(w_mac));
+                               AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
+                               GetVecOfConstPtrs(w_mac)));
 }

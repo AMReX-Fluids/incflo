@@ -35,23 +35,24 @@ using namespace amrex;
 //       div(ep*grad(phi)/rho) = div(ep * u*)
 // 
 void 
-incflo::apply_MAC_projection (Vector<MultiFab*> const& u_mac,
-                              Vector<MultiFab*> const& v_mac,
-                              Vector<MultiFab*> const& w_mac,
+incflo::apply_MAC_projection (AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
+                                           Vector<MultiFab*> const& v_mac,
+                                           Vector<MultiFab*> const& w_mac),
                               Vector<MultiFab const*> const& density,
                               Real time)
 {
     BL_PROFILE("incflo::apply_MAC_projection()");
 
-    if (1) amrex::Print() << "MAC Projection:\n";
+    if (m_verbose > 2) amrex::Print() << "MAC Projection:\n";
 
     // This will hold (1/rho) on faces
     Vector<Array<MultiFab ,AMREX_SPACEDIM> > rho_face(finest_level+1);
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
     for (int lev=0; lev <= finest_level; ++lev)
     {
-        rho_face[lev][0].define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));
-        rho_face[lev][1].define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));
+        AMREX_D_TERM(rho_face[lev][0].define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
+                     rho_face[lev][1].define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
+                     rho_face[lev][2].define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev)););
 
 #ifdef AMREX_USE_EB
         EB_interp_CellCentroid_to_FaceCentroid (*density[lev], GetArrOfPtrs(rho_face[lev]), 0, 0, 1,
@@ -64,8 +65,9 @@ incflo::apply_MAC_projection (Vector<MultiFab*> const& u_mac,
             rho_face[lev][idim].invert(1.0, 0);
         }
 
-        mac_vec[lev][0] = u_mac[lev];
-        mac_vec[lev][1] = v_mac[lev];
+        AMREX_D_TERM(mac_vec[lev][0] = u_mac[lev];,
+                     mac_vec[lev][1] = v_mac[lev];,
+                     mac_vec[lev][2] = w_mac[lev];);
     }
 
     //

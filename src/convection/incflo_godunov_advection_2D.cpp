@@ -11,7 +11,6 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
                                     Array4<Real const> const& q,
                                     Array4<Real const> const& umac,
                                     Array4<Real const> const& vmac,
-                                    Array4<Real const> const& wmac,
                                     Array4<Real const> const& fq,
                                     Vector<amrex::Geometry> geom,
                                     Real l_dt,
@@ -26,10 +25,8 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
 
     const Real dx = geom[lev].CellSize(0);
     const Real dy = geom[lev].CellSize(1);
-    const Real dz = 0.0;
     Real dtdx = l_dt/dx;
     Real dtdy = l_dt/dy;
-    Real dtdz = 0.0;
 
     Box const& domain = geom[lev].Domain();
     const auto dlo = amrex::lbound(domain);
