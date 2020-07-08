@@ -232,7 +232,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         if (!regular)
         {
             Array4<Real> scratch = tmpfab.array(0);
-            Array4<Real> dUdt_tmp = tmpfab.array(nmaxcomp*3);
+            Array4<Real> dUdt_tmp = tmpfab.array(nmaxcomp*AMREX_SPACEDIM);
 
             // velocity
             mol::compute_convective_fluxes_eb(lev, gbx, AMREX_SPACEDIM,
@@ -365,7 +365,7 @@ mol::compute_convective_rate_eb (int lev, Box const& bx, int ncomp,
         } else {
             dUdt(i,j,k,n) = (1.0/vfrac(i,j,k)) *
                 ( dxinv[0] * (apx(i,j,k)*fx(i,j,k,n) - apx(i+1,j,k)*fx(i+1,j,k,n))
-                + dxinv[1] * (apy(i,j,k)*fy(i,j,k,n) - apy(i,j+1,k)*fy(i,j+1,k,n));
+                + dxinv[1] * (apy(i,j,k)*fy(i,j,k,n) - apy(i,j+1,k)*fy(i,j+1,k,n)) );
         }
 #endif
     });

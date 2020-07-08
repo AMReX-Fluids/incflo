@@ -58,19 +58,25 @@ mol::predict_vels_on_faces (int lev,
             auto const typ = flagfab.getType(amrex::grow(bx,2));
             if (typ == FabType::covered)
             {
+#if (AMREX_SPACEDIM == 3)
                 amrex::ParallelFor(ubx, vbx, wbx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept { u(i,j,k) = 0.0; },
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept { v(i,j,k) = 0.0; },
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept { w(i,j,k) = 0.0; });
+#else
+                amrex::ParallelFor(ubx, vbx,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept { u(i,j,k) = 0.0; },
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept { v(i,j,k) = 0.0; });
+#endif
             }
             else if (typ == FabType::singlevalued)
             {
-                Array4<Real const> const& fcx = fcent[0]->const_array(mfi);
-                Array4<Real const> const& fcy = fcent[1]->const_array(mfi);
-                Array4<Real const> const& fcz = fcent[2]->const_array(mfi);
+                AMREX_D_TERM(Array4<Real const> const& fcx = fcent[0]->const_array(mfi);,
+                             Array4<Real const> const& fcy = fcent[1]->const_array(mfi);,
+                             Array4<Real const> const& fcz = fcent[2]->const_array(mfi););
                 Array4<Real const> const& ccc = ccent.const_array(mfi);
-                predict_vels_on_faces_eb(lev,bx,ubx,vbx,wbx,
-                                         u,v,w,vcc,flagarr,fcx,fcy,fcz,ccc,
+                predict_vels_on_faces_eb(lev,bx,AMREX_D_DECL(ubx,vbx,wbx),
+                                         AMREX_D_DECL(u,v,w),vcc,flagarr,AMREX_D_DECL(fcx,fcy,fcz),ccc,
                                          h_bcrec,d_bcrec,geom);
             }
             else
