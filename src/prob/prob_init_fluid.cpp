@@ -158,9 +158,9 @@ void incflo::init_taylor_green3d (Box const& vbx, Box const& gbx,
         Real y = (j+0.5)*dx[1];
         Real z = (k+0.5)*dx[2];
         constexpr Real twopi = 2.*3.1415926535897932;
-        vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y) * std::cos(twopi*z);
-        vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y) * std::cos(twopi*z);
-        vel(i,j,k,2) = 0.0;
+        AMREX_D_TERM(vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y) * std::cos(twopi*z);,
+                     vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y) * std::cos(twopi*z);,
+                     vel(i,j,k,2) = 0.0;);
     });
 }
 
@@ -178,9 +178,9 @@ void incflo::init_couette (Box const& vbx, Box const& gbx,
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real y = (j+0.5) / num_cells_y;
-        vel(i,j,k,0) *= (y-0.5);
-        vel(i,j,k,1) = 0.0;
-        vel(i,j,k,2) = 0.0;
+        AMREX_D_TERM(vel(i,j,k,0) *= (y-0.5);,
+                     vel(i,j,k,1) = 0.0;,
+                     vel(i,j,k,2) = 0.0;);
     });
 }
 
@@ -257,9 +257,9 @@ void incflo::init_tuscan (Box const& vbx, Box const& gbx,
     int half_num_cells = domain.length(2) / 2;
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        vel(i,j,k,0) = 0.0;
-        vel(i,j,k,1) = 0.0;
-        vel(i,j,k,2) = 0.0;
+        AMREX_D_TERM(vel(i,j,k,0) = 0.0;,
+                     vel(i,j,k,1) = 0.0;,
+                     vel(i,j,k,2) = 0.0;);
         density(i,j,k) = 1.0;
         if (k <= half_num_cells) {
             tracer(i,j,k) = 0.0;
