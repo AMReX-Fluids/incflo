@@ -14,7 +14,7 @@ target_sources(incflo
    )
 
 add_subdirectory(boundary_conditions)
-add_subdirectory(convection_(DIM)d)
+add_subdirectory(convection)
 add_subdirectory(derive)
 add_subdirectory(diffusion)
 add_subdirectory(prob)
