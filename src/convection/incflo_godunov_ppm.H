@@ -1,15 +1,15 @@
 #ifndef GODUNOV_PPM_H
 #define GODUNOV_PPM_H
 
-#include <AMReX_Gpu.H> 
+#include <AMReX_Gpu.H>
 #include <AMReX_FArrayBox.H>
-#include <AMReX_BCRec.H> 
+#include <AMReX_BCRec.H>
 #include <AMReX_BC_TYPES.H>
 #include <AMReX_Array.H>
 #include <iomanip>
 
-/* This header file contains the inlined __host__ __device__ functions required for 
-   the scalar advection routines for 3D Godunov. It also contains function declarations 
+/* This header file contains the inlined __host__ __device__ functions required for
+   the scalar advection routines for 3D Godunov. It also contains function declarations
    for controlling host functions.  */
 
 namespace {
@@ -24,16 +24,16 @@ amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real 
     amrex::Real dsc = 0.5e0*(b - c);
     amrex::Real dsl = 2.e0*(a - c);
     amrex::Real dsr = 2.e0*(b - a);
-    return (dsl*dsr > small_qty_sq) ? 
+    return (dsl*dsr > small_qty_sq) ?
         amrex::Math::copysign(1., dsc)*amrex::min(amrex::Math::abs(dsc),amrex::min(amrex::Math::abs(dsl), amrex::Math::abs(dsr))) : 0.;
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void Godunov_ppm_xbc(const int i, const int j, const int k, const int n,
-                     amrex::Real &sm, amrex::Real &sp, 
-                     amrex::Real &sedge1, amrex::Real &sedge2, 
-                     const amrex::Array4<const amrex::Real> &s, 
-                     const int bclo, const int bchi, 
+                     amrex::Real &sm, amrex::Real &sp,
+                     amrex::Real &sedge1, amrex::Real &sedge2,
+                     const amrex::Array4<const amrex::Real> &s,
+                     const int bclo, const int bchi,
                      const int domlo, const int domhi)
 {
     using namespace amrex;
@@ -42,7 +42,7 @@ void Godunov_ppm_xbc(const int i, const int j, const int k, const int n,
     {
         if (i == domlo)
         {
-            sedge2 = -0.2*s(domlo-1,j,k,n) + 0.75*s(domlo,j, k, n) 
+            sedge2 = -0.2*s(domlo-1,j,k,n) + 0.75*s(domlo,j, k, n)
                    +  0.5*s(domlo+1,j,k,n) - 0.05*s(domlo+2,j,k,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(domlo+1,j,k,n), s(domlo,j,k,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(domlo+1,j,k,n), s(domlo,j,k,n)));
@@ -52,7 +52,7 @@ void Godunov_ppm_xbc(const int i, const int j, const int k, const int n,
 
         } else if (i == domlo+1) {
 
-            sedge1 = -0.2*s(domlo-1,j,k,n) + 0.75*s(domlo  ,j,k,n) 
+            sedge1 = -0.2*s(domlo-1,j,k,n) + 0.75*s(domlo  ,j,k,n)
                    +  0.5*s(domlo+1,j,k,n) - 0.05*s(domlo+2,j,k,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(domlo+1,j,k,n), s(domlo,j,k,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(domlo+1,j,k,n), s(domlo,j,k,n)));
@@ -75,8 +75,8 @@ void Godunov_ppm_xbc(const int i, const int j, const int k, const int n,
     if (bchi == BCType::ext_dir || bchi == BCType::hoextrap)
     {
         if (i == domhi)
-        { 
-            sedge1 =  -0.2*s(domhi+1,j,k,n) + 0.75*s(domhi,j,k, n) 
+        {
+            sedge1 =  -0.2*s(domhi+1,j,k,n) + 0.75*s(domhi,j,k, n)
                       +0.5*s(domhi-1,j,k,n) - 0.05*s(domhi-2,j,k,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(domhi-1,j,k,n), s(domhi,j,k,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(domhi-1,j,k,n), s(domhi,j,k,n)));
@@ -86,7 +86,7 @@ void Godunov_ppm_xbc(const int i, const int j, const int k, const int n,
 
         } else if (i == domhi-1) {
 
-            sedge2 = -0.2*s(domhi+1,j,k,n) + 0.75*s(domhi  ,j,k,n) 
+            sedge2 = -0.2*s(domhi+1,j,k,n) + 0.75*s(domhi  ,j,k,n)
                      +0.5*s(domhi-1,j,k,n) - 0.05*s(domhi-2,j,k,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(domhi-1,j,k,n), s(domhi,j,k,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(domhi-1,j,k,n), s(domhi,j,k,n)));
@@ -109,10 +109,10 @@ void Godunov_ppm_xbc(const int i, const int j, const int k, const int n,
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void Godunov_ppm_ybc(const int i, const int j, const int k, const int n,
-                           amrex::Real &sm, amrex::Real &sp, 
-                           amrex::Real &sedge1, amrex::Real &sedge2, 
-                           const amrex::Array4<const amrex::Real> &s, 
-                           const int bclo, const int bchi, 
+                           amrex::Real &sm, amrex::Real &sp,
+                           amrex::Real &sedge1, amrex::Real &sedge2,
+                           const amrex::Array4<const amrex::Real> &s,
+                           const int bclo, const int bchi,
                            const int domlo, const int domhi)
 {
     using namespace amrex;
@@ -121,7 +121,7 @@ void Godunov_ppm_ybc(const int i, const int j, const int k, const int n,
     {
         if (j == domlo)
         {
-            sedge2 = -0.2*s(i,domlo-1,k,n) + 0.75*s(i,domlo  ,k,n) 
+            sedge2 = -0.2*s(i,domlo-1,k,n) + 0.75*s(i,domlo  ,k,n)
                      +0.5*s(i,domlo+1,k,n) - 0.05*s(i,domlo+2,k,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(i,domlo+1,k,n), s(i,domlo,k,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(i,domlo+1,k,n), s(i,domlo,k,n)));
@@ -131,7 +131,7 @@ void Godunov_ppm_ybc(const int i, const int j, const int k, const int n,
 
         } else if (j == domlo+1) {
 
-            sedge1 = -0.2*s(i,domlo-1,k,n) + 0.75*s(i,domlo  ,k,n) 
+            sedge1 = -0.2*s(i,domlo-1,k,n) + 0.75*s(i,domlo  ,k,n)
                      +0.5*s(i,domlo+1,k,n) - 0.05*s(i,domlo+2,k,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(i,domlo+1,k,n), s(i,domlo,k,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(i,domlo+1,k,n), s(i,domlo,k,n)));
@@ -155,7 +155,7 @@ void Godunov_ppm_ybc(const int i, const int j, const int k, const int n,
     {
         if (j == domhi)
         {
-            sedge1 =  -0.2*s(i,domhi+1,k,n) + 0.75*s(i,domhi  ,k,n) 
+            sedge1 =  -0.2*s(i,domhi+1,k,n) + 0.75*s(i,domhi  ,k,n)
                       +0.5*s(i,domhi-1,k,n) - 0.05*s(i,domhi-2,k,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(i,domhi-1,k,n), s(i,domhi,k,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(i,domhi-1,k,n), s(i,domhi,k,n)));
@@ -165,7 +165,7 @@ void Godunov_ppm_ybc(const int i, const int j, const int k, const int n,
 
         } else if (j == domhi-1) {
 
-            sedge2 =  -0.2*s(i,domhi+1,k,n) + 0.75*s(i,domhi  ,k,n) 
+            sedge2 =  -0.2*s(i,domhi+1,k,n) + 0.75*s(i,domhi  ,k,n)
                       +0.5*s(i,domhi-1,k,n) - 0.05*s(i,domhi-2,k,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(i,domhi-1,k,n), s(i,domhi,k,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(i,domhi-1,k,n), s(i,domhi,k,n)));
@@ -177,10 +177,10 @@ void Godunov_ppm_ybc(const int i, const int j, const int k, const int n,
                 sp = s(i,domhi-1,k,n);
                 sm = s(i,domhi-1,k,n);
             }
-            else if(amrex::Math::abs(sp - s(i,domhi-1,k,n)) >= 2.*amrex::Math::abs(sm - s(i,domhi-1,k,n))) 
+            else if(amrex::Math::abs(sp - s(i,domhi-1,k,n)) >= 2.*amrex::Math::abs(sm - s(i,domhi-1,k,n)))
                 sp = 3.*s(i,domhi-1,k,n) - 2.*sm;
 
-            else if(amrex::Math::abs(sm - s(i,domhi-1,k,n)) >= 2.*amrex::Math::abs(sp - s(i,domhi-1,k,n))) 
+            else if(amrex::Math::abs(sm - s(i,domhi-1,k,n)) >= 2.*amrex::Math::abs(sp - s(i,domhi-1,k,n)))
                 sm = 3.*s(i,domhi-1,k,n) - 2.*sp;
         }
     }
@@ -188,10 +188,10 @@ void Godunov_ppm_ybc(const int i, const int j, const int k, const int n,
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void Godunov_ppm_zbc(const int i, const int j, const int k, const int n,
-                           amrex::Real &sm, amrex::Real &sp, 
-                           amrex::Real &sedge1, amrex::Real &sedge2, 
-                           const amrex::Array4<const amrex::Real> &s, 
-                           const int bclo, const int bchi, 
+                           amrex::Real &sm, amrex::Real &sp,
+                           amrex::Real &sedge1, amrex::Real &sedge2,
+                           const amrex::Array4<const amrex::Real> &s,
+                           const int bclo, const int bchi,
                            const int domlo, const int domhi)
 {
     using namespace amrex;
@@ -201,7 +201,7 @@ void Godunov_ppm_zbc(const int i, const int j, const int k, const int n,
 
         if (k == domlo)
         {
-            sedge2 = -0.2*s(i,j,domlo-1,n) + 0.75*s(i,j,domlo  ,n) 
+            sedge2 = -0.2*s(i,j,domlo-1,n) + 0.75*s(i,j,domlo  ,n)
                      +0.5*s(i,j,domlo+1,n) - 0.05*s(i,j,domlo+2,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(i,j,domlo+1,n), s(i,j,domlo,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(i,j,domlo+1,n), s(i,j,domlo,n)));
@@ -211,7 +211,7 @@ void Godunov_ppm_zbc(const int i, const int j, const int k, const int n,
 
         } else if (k == domlo+1) {
 
-            sedge1 = -0.2*s(i,j,domlo-1,n) + 0.75*s(i,j,domlo  ,n) 
+            sedge1 = -0.2*s(i,j,domlo-1,n) + 0.75*s(i,j,domlo  ,n)
                      +0.5*s(i,j,domlo+1,n) - 0.05*s(i,j,domlo+2,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(i,j,domlo+1,n), s(i,j,domlo,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(i,j,domlo+1,n), s(i,j,domlo,n)));
@@ -224,7 +224,7 @@ void Godunov_ppm_zbc(const int i, const int j, const int k, const int n,
                 sp = s(i,j,domlo+1,n);
                 sm = s(i,j,domlo+1,n);
             }
-            else if(amrex::Math::abs(sp - s(i,j,domlo+1,n)) >= 2.*amrex::Math::abs(sm - s(i,j,domlo+1,n))) 
+            else if(amrex::Math::abs(sp - s(i,j,domlo+1,n)) >= 2.*amrex::Math::abs(sm - s(i,j,domlo+1,n)))
                 sp = 3.*s(i,j,domlo+1,n) - 2.*sm;
 
             else if(amrex::Math::abs(sm - s(i,j,domlo+1,n)) >= 2.*amrex::Math::abs(sp - s(i,j,domlo+1,n)))
@@ -234,9 +234,9 @@ void Godunov_ppm_zbc(const int i, const int j, const int k, const int n,
 
     if (bchi == BCType::ext_dir || bchi == BCType::hoextrap)
     {
-        if (k == domhi) 
-        { 
-            sedge1 =  -0.2*s(i,j,domhi+1,n) + 0.75*s(i,j,domhi  ,n) 
+        if (k == domhi)
+        {
+            sedge1 =  -0.2*s(i,j,domhi+1,n) + 0.75*s(i,j,domhi  ,n)
                       +0.5*s(i,j,domhi-1,n) - 0.05*s(i,j,domhi-2,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(i,j,domhi-1,n), s(i,j,domhi,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(i,j,domhi-1,n), s(i,j,domhi,n)));
@@ -246,7 +246,7 @@ void Godunov_ppm_zbc(const int i, const int j, const int k, const int n,
 
         } else if (k == domhi-1) {
 
-            sedge2 = -0.2*s(i,j,domhi+1,n) + 0.75*s(i,j,domhi  ,n) 
+            sedge2 = -0.2*s(i,j,domhi+1,n) + 0.75*s(i,j,domhi  ,n)
                      +0.5*s(i,j,domhi-1,n) - 0.05*s(i,j,domhi-2,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(i,j,domhi-1,n), s(i,j,domhi,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(i,j,domhi-1,n), s(i,j,domhi,n)));
@@ -261,22 +261,22 @@ void Godunov_ppm_zbc(const int i, const int j, const int k, const int n,
             }
             else if(amrex::Math::abs(sp - s(i,j,domhi-1,n)) >= 2.*amrex::Math::abs(sm - s(i,j,domhi-1,n)))
                 sp = 3.*s(i,j,domhi-1,n) - 2.*sm;
-            
-            else if(amrex::Math::abs(sm - s(i,j,domhi-1,n)) >= 2.*amrex::Math::abs(sp - s(i,j,domhi-1,n))) 
+
+            else if(amrex::Math::abs(sm - s(i,j,domhi-1,n)) >= 2.*amrex::Math::abs(sp - s(i,j,domhi-1,n)))
                 sm = 3.*s(i,j,domhi-1,n) - 2.*sp;
-              
+
         }
     }
-} 
+}
 
 // Right now only ppm type 1 is supported on GPU
 // This version is called before the MAC projection, when we use the cell-centered velocity
 //      for upwinding
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void Godunov_ppm_pred_x(const int i, const int j, const int k, const int n,
-                        const amrex::Real dtdx, const amrex::Real v_ad, 
-                        const amrex::Array4<const amrex::Real> &S, 
-                        const amrex::Array4<amrex::Real> &Im, 
+                        const amrex::Real dtdx, const amrex::Real v_ad,
+                        const amrex::Array4<const amrex::Real> &S,
+                        const amrex::Array4<amrex::Real> &Im,
                         const amrex::Array4<amrex::Real> &Ip,
                         const amrex::BCRec bc, const int domlo, const int domhi)
 {
@@ -285,7 +285,7 @@ void Godunov_ppm_pred_x(const int i, const int j, const int k, const int n,
     constexpr amrex::Real sixth = 1.0/6.0;
 
     amrex::Real sedge1, sedge2, sp, sm;
- 
+
     amrex::Real sm2 = S(i-2,j,k,n);
     amrex::Real sm1 = S(i-1,j,k,n);
     amrex::Real s0  = S(i  ,j,k,n);
@@ -303,7 +303,7 @@ void Godunov_ppm_pred_x(const int i, const int j, const int k, const int n,
 
     sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
     sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
-    
+
     sm = sedge1;
     sp = sedge2;
 
@@ -333,7 +333,7 @@ void Godunov_ppm_pred_x(const int i, const int j, const int k, const int n,
     {
         Ip(i,j,k,n) = S(i,j,k,n);
         Im(i,j,k,n) = sm + (0.5*sigma)*((sp-sm) + (1.0 - 2.0/3.0*sigma)*s6);
-    } else 
+    } else
     {
         Ip(i,j,k,n) = S(i,j,k,n);
         Im(i,j,k,n) = S(i,j,k,n);
@@ -342,7 +342,7 @@ void Godunov_ppm_pred_x(const int i, const int j, const int k, const int n,
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void Godunov_ppm_pred_y(const int i, const int j, const int k, const int n,
-                        const amrex::Real dtdy, const amrex::Real v_ad, 
+                        const amrex::Real dtdy, const amrex::Real v_ad,
                         const amrex::Array4<const amrex::Real> &S,
                         const amrex::Array4<amrex::Real> &Im,
                         const amrex::Array4<amrex::Real> &Ip,
@@ -353,7 +353,7 @@ void Godunov_ppm_pred_y(const int i, const int j, const int k, const int n,
     constexpr amrex::Real sixth = 1.0/6.0;
 
     amrex::Real sedge1, sedge2, sp, sm;
- 
+
     amrex::Real sm2 = S(i,j-2,k,n);
     amrex::Real sm1 = S(i,j-1,k,n);
     amrex::Real s0  = S(i,j  ,k,n);
@@ -371,7 +371,7 @@ void Godunov_ppm_pred_y(const int i, const int j, const int k, const int n,
 
     sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
     sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
-    
+
     sm = sedge1;
     sp = sedge2;
 
@@ -396,12 +396,12 @@ void Godunov_ppm_pred_y(const int i, const int j, const int k, const int n,
     {
         Ip(i,j,k,n) = sp - (0.5*sigma)*((sp-sm) - (1.0 - 2.0/3.0*sigma)*s6);
         Im(i,j,k,n) = S(i,j,k,n);
-    } 
+    }
     else if (v_ad < -small_vel)
     {
         Ip(i,j,k,n) = S(i,j,k,n);
         Im(i,j,k,n) = sm + (0.5*sigma)*((sp-sm) + (1.0 - 2.0/3.0*sigma)*s6);
-    } else 
+    } else
     {
         Ip(i,j,k,n) = S(i,j,k,n);
         Im(i,j,k,n) = S(i,j,k,n);
@@ -410,7 +410,7 @@ void Godunov_ppm_pred_y(const int i, const int j, const int k, const int n,
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void Godunov_ppm_pred_z(const int i, const int j, const int k, const int n,
-                        const amrex::Real dtdz, const amrex::Real v_ad, 
+                        const amrex::Real dtdz, const amrex::Real v_ad,
                         const amrex::Array4<const amrex::Real> &S,
                         const amrex::Array4<amrex::Real> &Im,
                         const amrex::Array4<amrex::Real> &Ip,
@@ -421,7 +421,7 @@ void Godunov_ppm_pred_z(const int i, const int j, const int k, const int n,
     constexpr amrex::Real sixth = 1.0/6.0;
 
     amrex::Real sedge1, sedge2, sp, sm;
- 
+
     amrex::Real sm2 = S(i,j,k-2,n);
     amrex::Real sm1 = S(i,j,k-1,n);
     amrex::Real s0  = S(i,j,k  ,n);
@@ -439,7 +439,7 @@ void Godunov_ppm_pred_z(const int i, const int j, const int k, const int n,
 
     sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
     sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
-    
+
     sm = sedge1;
     sp = sedge2;
 
@@ -469,7 +469,7 @@ void Godunov_ppm_pred_z(const int i, const int j, const int k, const int n,
     {
         Ip(i,j,k,n) = S(i,j,k,n);
         Im(i,j,k,n) = sm + (0.5*sigma)*((sp-sm) + (1.0 - 2.0/3.0*sigma)*s6);
-    } else 
+    } else
     {
         Ip(i,j,k,n) = S(i,j,k,n);
         Im(i,j,k,n) = S(i,j,k,n);
@@ -494,7 +494,7 @@ void Godunov_ppm_fpu_x (const int i, const int j, const int k, const int n,
     constexpr Real sixth = 1.0/6.0;
 
     amrex::Real sedge1, sedge2, sp, sm;
- 
+
     amrex::Real sm2 = S(i-2,j,k,n);
     amrex::Real sm1 = S(i-1,j,k,n);
     amrex::Real s0  = S(i  ,j,k,n);
@@ -512,7 +512,7 @@ void Godunov_ppm_fpu_x (const int i, const int j, const int k, const int n,
 
     sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
     sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
-    
+
     sm = sedge1;
     sp = sedge2;
 
@@ -534,7 +534,7 @@ void Godunov_ppm_fpu_x (const int i, const int j, const int k, const int n,
     Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
     Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
 
-    if (vel_edge(i+1,j,k) > small_vel) 
+    if (vel_edge(i+1,j,k) > small_vel)
         Ip = sp - (0.5*sigmap)*((sp - sm) - (1.e0 -2.e0/3.e0*sigmap)*s6);
     else
         Ip = S(i,j,k,n);
@@ -561,7 +561,7 @@ void Godunov_ppm_fpu_y (const int i, const int j, const int k, const int n,
     constexpr amrex::Real sixth = 1.0/6.0;
 
     Real sedge1, sedge2, sp, sm;
- 
+
     Real sm2 = S(i,j-2,k,n);
     Real sm1 = S(i,j-1,k,n);
     Real s0  = S(i,j  ,k,n);
@@ -579,7 +579,7 @@ void Godunov_ppm_fpu_y (const int i, const int j, const int k, const int n,
 
     sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
     sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
-    
+
     sm = sedge1;
     sp = sedge2;
 
@@ -587,7 +587,7 @@ void Godunov_ppm_fpu_y (const int i, const int j, const int k, const int n,
     {
         sp = s0;
         sm = s0;
-    } 
+    }
     else if (amrex::Math::abs(sedge2-S(i,j,k,n)) >= 2.0*amrex::Math::abs(sedge1-s0))
         sp = 3.0*s0 - 2.0*sedge1;
 
@@ -628,7 +628,7 @@ void Godunov_ppm_fpu_z (const int i, const int j, const int k, const int n,
     constexpr amrex::Real sixth = 1.0/6.0;
 
     Real sedge1, sedge2, sp, sm;
- 
+
     Real sm2 = S(i,j,k-2,n);
     Real sm1 = S(i,j,k-1,n);
     Real s0  = S(i,j,k  ,n);
@@ -646,7 +646,7 @@ void Godunov_ppm_fpu_z (const int i, const int j, const int k, const int n,
 
     sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
     sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
-    
+
     sm = sedge1;
     sp = sedge2;
 
@@ -654,7 +654,7 @@ void Godunov_ppm_fpu_z (const int i, const int j, const int k, const int n,
     {
         sp = s0;
         sm = s0;
-    } 
+    }
     else if (amrex::Math::abs(sedge2-S(i,j,k,n)) >= 2.0*amrex::Math::abs(sedge1-s0))
         sp = 3.0*s0 - 2.0*sedge1;
 
@@ -681,12 +681,12 @@ void Godunov_ppm_fpu_z (const int i, const int j, const int k, const int n,
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void Godunov_trans_xbc(const int i, const int j, const int k, const int n,
-                              const amrex::Array4<const amrex::Real> &s, 
+                              const amrex::Array4<const amrex::Real> &s,
                                     amrex::Real &lo,
                                     amrex::Real &hi,
                                     amrex::Real &uedge,
-                              const int bclo, const int bchi, 
-                              const int domlo, const int domhi, bool is_velocity = false)
+                              const int bclo, const int bchi,
+                              const int domlo, const int domhi, bool is_velocity)
 {
     using namespace amrex;
 
@@ -730,17 +730,17 @@ void Godunov_trans_xbc(const int i, const int j, const int k, const int n,
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void Godunov_trans_ybc(const int i, const int j, const int k, const int n,
-                              const amrex::Array4<const amrex::Real> &s, 
+                              const amrex::Array4<const amrex::Real> &s,
                                     amrex::Real &lo,
                                     amrex::Real &hi,
                                     amrex::Real vedge,
-                              const int bclo, const int bchi, 
-                              const int domlo, const int domhi, bool is_velocity = false )
+                              const int bclo, const int bchi,
+                              const int domlo, const int domhi, bool is_velocity )
 {
     using namespace amrex;
 
 
-    // Low Y 
+    // Low Y
     if (j <= domlo)
     {
         if (bclo==BCType::ext_dir)
@@ -751,7 +751,7 @@ void Godunov_trans_ybc(const int i, const int j, const int k, const int n,
 
         else if (bclo == BCType::foextrap || bclo == BCType::hoextrap || bclo == BCType::reflect_even)
             lo = hi;
-        
+
         else if(bclo == BCType::reflect_odd)
         {
             hi = 0.;
@@ -780,12 +780,12 @@ void Godunov_trans_ybc(const int i, const int j, const int k, const int n,
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void Godunov_trans_zbc(const int i, const int j, const int k, const int n,
-                              const amrex::Array4<const amrex::Real> &s, 
+                              const amrex::Array4<const amrex::Real> &s,
                                     amrex::Real &lo,
                                     amrex::Real &hi,
                                     amrex::Real wedge,
-                              const int bclo, const int bchi, 
-                              const int domlo, const int domhi, bool is_velocity = false )
+                              const int bclo, const int bchi,
+                              const int domlo, const int domhi, bool is_velocity)
 {
     using namespace amrex;
 
@@ -832,7 +832,7 @@ void Godunov_cc_xbc_lo(const int i, const int j, const int k, const int n,
                        const amrex::Array4<const amrex::Real> &s,
                        amrex::Real &lo, amrex::Real &hi,
                        const amrex::Array4< const amrex::Real> &uedge,
-                       const int bclo, const int domlo, bool is_velocity = false )
+                       const int bclo, const int domlo, bool is_velocity)
 {
     using namespace amrex;
 
@@ -860,7 +860,7 @@ void Godunov_cc_xbc_hi(const int i, const int j, const int k, const int n,
                        const amrex::Array4<const amrex::Real> &s,
                        amrex::Real &lo, amrex::Real &hi,
                        const amrex::Array4< const amrex::Real> &uedge,
-                       const int bchi, const int domhi, bool is_velocity = false )
+                       const int bchi, const int domhi, bool is_velocity )
 {
     using namespace amrex;
 
@@ -888,7 +888,7 @@ void Godunov_cc_ybc_lo(const int i, const int j, const int k, const int n,
                        const amrex::Array4<const amrex::Real> &s,
                        amrex::Real &lo, amrex::Real &hi,
                        const amrex::Array4< const amrex::Real> &vedge,
-                       const int bclo, const int domlo, bool is_velocity = false )
+                       const int bclo, const int domlo, bool is_velocity  )
 {
     using namespace amrex;
 
@@ -915,7 +915,7 @@ void Godunov_cc_ybc_hi(const int i, const int j, const int k, const int n,
                        const amrex::Array4<const amrex::Real> &s,
                        amrex::Real &lo, amrex::Real &hi,
                        const amrex::Array4<const amrex::Real> &vedge,
-                       const int bchi, const int domhi, bool is_velocity = false )
+                       const int bchi, const int domhi, bool is_velocity  )
 {
     using namespace amrex;
 
@@ -943,7 +943,7 @@ void Godunov_cc_zbc_lo(const int i, const int j, const int k, const int n,
                        const amrex::Array4<const amrex::Real> &s,
                        amrex::Real &lo, amrex::Real &hi,
                        const amrex::Array4< const amrex::Real> &wedge,
-                       const int bclo, const int domlo, bool is_velocity = false )
+                       const int bclo, const int domlo, bool is_velocity )
 {
     using namespace amrex;
 
@@ -972,7 +972,7 @@ void Godunov_cc_zbc_hi(const int i, const int j, const int k, const int n,
                        const amrex::Array4<const amrex::Real> &s,
                        amrex::Real &lo, amrex::Real &hi,
                        const amrex::Array4< const amrex::Real> &wedge,
-                       const int bchi, const int domhi, bool is_velocity = false )
+                       const int bchi, const int domhi, bool is_velocity  )
 {
     using namespace amrex;
 
@@ -1158,4 +1158,4 @@ void Godunov_corner_couple_yz (amrex::Real& lo1, amrex::Real& hi1,
 }
 
 }
-#endif 
+#endif
