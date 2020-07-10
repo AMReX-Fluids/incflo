@@ -139,10 +139,113 @@ Real incflo::ComputeKineticEnergy () const
     return 0;
 }
 
+#if (AMREX_SPACEDIM == 2)
 void incflo::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const& vel)
 {
     BL_PROFILE("incflo::ComputeVorticity");
+    const Real idx = Geom(lev).InvCellSize(0);
+    const Real idy = Geom(lev).InvCellSize(1);
 
+#ifdef AMREX_USE_EB
+    const auto& fact = EBFactory(lev);
+    const auto& flags_mf = fact.getMultiEBCellFlagFab();
+#endif
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for(MFIter mfi(vel, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        Box bx = mfi.tilebox();
+        Array4<Real const> const& ccvel_fab = vel.const_array(mfi);
+        Array4<Real> const& vort_fab = vort.array(mfi);
+
+#ifdef AMREX_USE_EB
+        const EBCellFlagFab& flags = flags_mf[mfi];
+        auto typ = flags.getType(bx);
+        if (typ == FabType::covered)
+        {
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                vort_fab(i,j,k) = 0.0;
+            });
+        }
+        else if (typ == FabType::singlevalued)
+        {
+            const auto& flag_fab = flags.const_array();
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                constexpr Real c0 = -1.5;
+                constexpr Real c1 = 2.0;
+                constexpr Real c2 = -0.5;
+
+                if (flag_fab(i,j,k).isCovered())
+                {
+                    vort_fab(i,j,k) = 0.0;
+                }
+                else
+                {
+                    Real vx, uy;
+                    // Need to check if there are covered cells in neighbours --
+                    // -- if so, use one-sided difference computation (but still quadratic)
+                    if (!flag_fab(i,j,k).isConnected( 1,0,0))
+                    {
+                        // Covered cell to the right, go fish left
+                        vx = - (c0 * ccvel_fab(i  ,j,k,1)
+                              + c1 * ccvel_fab(i-1,j,k,1)
+                              + c2 * ccvel_fab(i-2,j,k,1)) * idx;
+                    }
+                    else if (!flag_fab(i,j,k).isConnected(-1,0,0))
+                    {
+                        // Covered cell to the left, go fish right
+                        vx = (c0 * ccvel_fab(i  ,j,k,1)
+                            + c1 * ccvel_fab(i+1,j,k,1)
+                            + c2 * ccvel_fab(i+2,j,k,1)) * idx;
+                    }
+                    else
+                    {
+                        // No covered cells right or left, use standard stencil
+                        vx = 0.5 * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
+                        wx = 0.5 * (ccvel_fab(i+1,j,k,2) - ccvel_fab(i-1,j,k,2)) * idx;
+                    }
+                    // Do the same in y-direction
+                    if (!flag_fab(i,j,k).isConnected(0, 1,0))
+                    {
+                        uy = - (c0 * ccvel_fab(i,j  ,k,0)
+                              + c1 * ccvel_fab(i,j-1,k,0)
+                              + c2 * ccvel_fab(i,j-2,k,0)) * idy;
+                    }
+                    else if (!flag_fab(i,j,k).isConnected(0,-1,0))
+                    {
+                        uy = (c0 * ccvel_fab(i,j  ,k,0)
+                            + c1 * ccvel_fab(i,j+1,k,0)
+                            + c2 * ccvel_fab(i,j+2,k,0)) * idy;
+                    }
+                    else
+                    {
+                        uy = 0.5 * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
+                    }
+                    vort_fab(i,j,k) = vx-uy;
+                }
+            });
+        }
+        else
+#endif
+        {
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                Real vx = 0.5 * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
+                Real uy = 0.5 * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
+                vort_fab(i,j,k) = vx-uy;
+            });
+        }
+    }
+}
+    
+#elif (AMREX_SPACEDIM == 3)
+void incflo::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const& vel)
+{
+    BL_PROFILE("incflo::ComputeVorticity");
     const Real idx = Geom(lev).InvCellSize(0);
     const Real idy = Geom(lev).InvCellSize(1);
     const Real idz = Geom(lev).InvCellSize(2);
@@ -286,6 +389,7 @@ void incflo::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const& 
         }
     }
 }
+#endif
 
 void incflo::ComputeDrag()
 {
