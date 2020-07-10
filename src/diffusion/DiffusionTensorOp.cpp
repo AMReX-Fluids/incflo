@@ -26,14 +26,20 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
         for (int lev = 0; lev <= finest_level; ++lev) {
             ebfact.push_back(&(m_incflo->EBFactory(lev)));
         }
-        m_eb_solve_op.reset(new MLEBTensorOp(m_incflo->Geom(0,finest_level),
-                                             m_incflo->boxArray(0,finest_level),
-                                             m_incflo->DistributionMap(0,finest_level),
-                                             info_solve, ebfact));
-        m_eb_solve_op->setMaxOrder(m_mg_maxorder);
-        m_eb_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
-                                   m_incflo->get_diffuse_tensor_bc(Orientation::high));
-        if (m_incflo->need_divtau()) {
+
+        if (m_incflo->useTensorSolve()) 
+        {
+            m_eb_solve_op.reset(new MLEBTensorOp(m_incflo->Geom(0,finest_level),
+                                                 m_incflo->boxArray(0,finest_level),
+                                                 m_incflo->DistributionMap(0,finest_level),
+                                                 info_solve, ebfact));
+            m_eb_solve_op->setMaxOrder(m_mg_maxorder);
+            m_eb_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
+                                       m_incflo->get_diffuse_tensor_bc(Orientation::high));
+        }
+
+        if (m_incflo->need_divtau() || m_incflo->useTensorCorrection()) 
+        {
             m_eb_apply_op.reset(new MLEBTensorOp(m_incflo->Geom(0,finest_level),
                                                  m_incflo->boxArray(0,finest_level),
                                                  m_incflo->DistributionMap(0,finest_level),
@@ -46,14 +52,19 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
     else
 #endif
     {
-        m_reg_solve_op.reset(new MLTensorOp(m_incflo->Geom(0,finest_level),
-                                            m_incflo->boxArray(0,finest_level),
-                                            m_incflo->DistributionMap(0,finest_level),
-                                            info_solve));
-        m_reg_solve_op->setMaxOrder(m_mg_maxorder);
-        m_reg_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
-                                    m_incflo->get_diffuse_tensor_bc(Orientation::high));
-        if (m_incflo->need_divtau()) {
+        if (m_incflo->useTensorSolve()) 
+        {
+            m_reg_solve_op.reset(new MLTensorOp(m_incflo->Geom(0,finest_level),
+                                                m_incflo->boxArray(0,finest_level),
+                                                m_incflo->DistributionMap(0,finest_level),
+                                                info_solve));
+            m_reg_solve_op->setMaxOrder(m_mg_maxorder);
+            m_reg_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
+                                        m_incflo->get_diffuse_tensor_bc(Orientation::high));
+        }
+
+        if (m_incflo->need_divtau() || m_incflo->useTensorCorrection()) 
+        {
             m_reg_apply_op.reset(new MLTensorOp(m_incflo->Geom(0,finest_level),
                                                 m_incflo->boxArray(0,finest_level),
                                                 m_incflo->DistributionMap(0,finest_level),
@@ -230,7 +241,7 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
         m_eb_apply_op->setScalars(0.0, -1.0);
 
         // For when we use the stencil for centroid values
-        // m_eb_solve_op->setPhiOnCentroid();
+        // m_eb_apply_op->setPhiOnCentroid();
 
         for (int lev = 0; lev <= finest_level; ++lev) {
             m_eb_apply_op->setACoeffs(lev, *a_density[lev]);

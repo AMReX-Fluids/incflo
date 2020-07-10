@@ -79,6 +79,15 @@ void incflo::ReadParameters ()
 
         // Default is true; should we use tensor solve instead of separate solves for each component?
         pp.query("use_tensor_solve",use_tensor_solve);
+        pp.query("use_tensor_correction",use_tensor_correction);
+
+        if (use_tensor_solve && use_tensor_correction) {
+            amrex::Abort("We cannot have both use_tensor_solve and use_tensor_correction be true");
+        }
+
+        if (m_diff_type != DiffusionType::Implicit && use_tensor_correction) {
+            amrex::Abort("We cannot have use_tensor_correction be true and diffusion type not Implicit");
+        }
 
         if (!m_use_godunov && m_cfl > 0.5) {
             amrex::Abort("We currently require cfl <= 0.5 when using the MOL advection scheme");
