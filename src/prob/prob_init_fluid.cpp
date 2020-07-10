@@ -136,7 +136,9 @@ void incflo::init_taylor_green (Box const& vbx, Box const& gbx,
         constexpr Real twopi = 2.*3.1415926535897932;
         vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y);
         vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y);
+#if (AMREX_SPACEDIM == 3)
         vel(i,j,k,2) = 0.0;
+#endif
     });
 }
 
@@ -203,7 +205,25 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& gbx,
 
     const Real splitx = 0.5*(problo[0] + probhi[0]);
     const Real splity = 0.5*(problo[1] + probhi[1]);
-    const Real L_x = probhi[0] - problo[0];
+    const Real L_x    = probhi[0] - problo[0];
+
+#if (AMREX_SPACEDIM == 2)
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        vel(i,j,k,0) = 0.0;
+        vel(i,j,k,1) = 0.0;
+
+        Real x = problo[0] + (i+0.5)*dx[0];
+        Real y = problo[1] + (j+0.5)*dx[1];
+
+        const Real r2d = amrex::min(std::abs(x-splitx), 0.5*L_x);
+        const Real pertheight = 0.5 - 0.01*std::cos(2.0*pi*r2d/L_x);
+
+        density(i,j,k) = rho_1 + ((rho_2-rho_1)/2.0)*(1.0+std::tanh((y-pertheight)/width));
+        tracer(i,j,k)  = tra_1 + ((tra_2-tra_1)/2.0)*(1.0+std::tanh((y-pertheight)/width));
+    });
+
+#elseif (AMREX_SPACEDIM == 3)
 
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
@@ -221,6 +241,7 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& gbx,
         density(i,j,k) = rho_1 + ((rho_2-rho_1)/2.0)*(1.0+std::tanh((z-pertheight)/width));
         tracer(i,j,k)  = tra_1 + ((tra_2-tra_1)/2.0)*(1.0+std::tanh((z-pertheight)/width));
     });
+#endif
 }
 
 void incflo::init_tuscan (Box const& vbx, Box const& gbx,
@@ -264,20 +285,25 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& gbx,
         {
             vel(i,j,k,0) = 0.0;
             vel(i,j,k,1) = 0.0;
+#if (AMREX_SPACEDIM == 3)
             vel(i,j,k,2) = 0.0;
+#endif
             density(i,j,k) = 1.0;
 
             Real x = (i+0.5)*dx[0];
             Real y = (j+0.5)*dx[1];
+#if (AMREX_SPACEDIM == 2)
+            Real r = std::sqrt((x-0.5 )*(x-0.5 ) + (y-0.25)*(y-0.25));
+#elif  (AMREX_SPACEDIM == 3)
             Real z = (k+0.5)*dx[2];
-
             Real r = std::sqrt((x-0.5 )*(x-0.5 ) + (y-0.25)*(y-0.25) + (z-0.25)*(z-0.25));
-
-            if(r < .1)
+#endif
+            if (r < .1)
                 tracer(i,j,k,0) = 0.0;
             else
                 tracer(i,j,k,0) = 0.01;
         });
+#if (AMREX_SPACEDIM == 3)
     } else if (112 == m_probtype) {
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
@@ -317,6 +343,7 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& gbx,
                 tracer(i,j,k,0) = 0.01;
         });
     }
+#endif
 }
 
 void incflo::init_periodic_tracer (Box const& vbx, Box const& gbx,
@@ -355,7 +382,7 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
                                       GpuArray<Real, AMREX_SPACEDIM> const& probhi)
 {
     static constexpr Real twopi = 2.0 * 3.1415926535897932;
-     if (21 == m_probtype)
+    if (21 == m_probtype)
     {
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
@@ -363,8 +390,9 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
             Real y = (j+0.5) * dx[1];
             vel(i,j,k,0) = std::tanh(30.0*(0.25-amrex::Math::abs(y-0.5)));
             vel(i,j,k,1) = 0.05*std::sin(twopi*x);
+#if (AMREX_SPACEDIM == 3)
             vel(i,j,k,2) = 0.0;
-
+#endif
             Real r = std::sqrt((x-0.5)*(x-0.5) + (y-0.25)*(y-0.25));
             if (r < .1)
                 tracer(i,j,k,0) = 0.0;
@@ -372,6 +400,7 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
                 tracer(i,j,k,0) = 0.01;
         });
     }
+#if (AMREX_SPACEDIM == 3)
     else if (22 == m_probtype)
     {
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -406,6 +435,7 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
                 tracer(i,j,k,0) = 0.01;
         });
     }
+#endif
     else
     {
         amrex::Abort("Unknown double shear layer m_probtype");
