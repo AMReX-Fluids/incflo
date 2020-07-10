@@ -59,6 +59,7 @@ private:
     // Options to control MLMG behavior
     int m_mg_verbose = 0;
     int m_mg_cg_verbose = 0;
+    int m_mg_bottom_verbose = 0;
     int m_mg_max_iter = 100;
     int m_mg_cg_maxiter = 100;
     int m_mg_max_fmg_iter = 0;
@@ -75,7 +76,7 @@ private:
     amrex::Real m_mg_rtol = 1.0e-11;
     amrex::Real m_mg_atol = 1.0e-14;
 #endif
-    std::string m_bottom_solver = "bicgstab";
+    std::string m_mg_bottom_solver = "bicgstab";
 };
 
 #endif

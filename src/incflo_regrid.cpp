@@ -29,6 +29,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
         (new LevelData(ba, dm, *new_fact, m_ntrac, nghost_state(),
                        m_use_godunov,
                        m_diff_type==DiffusionType::Implicit,
+                       use_tensor_correction,
                        m_advect_tracer));
     fillcoarsepatch_velocity(lev, time, new_leveldata->velocity, 0);
     fillcoarsepatch_density(lev, time, new_leveldata->density, 0);
@@ -70,6 +71,7 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
         (new LevelData(ba, dm, *new_fact, m_ntrac, nghost_state(),
                        m_use_godunov,
                        m_diff_type==DiffusionType::Implicit,
+                       use_tensor_correction,
                        m_advect_tracer));
     fillpatch_velocity(lev, time, new_leveldata->velocity, 0);
     fillpatch_density(lev, time, new_leveldata->density, 0);

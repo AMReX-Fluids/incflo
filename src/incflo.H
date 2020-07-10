@@ -287,7 +287,10 @@ private:
     bool m_use_boussinesq = false;
 
     // Use tensor solve (as opposed to separate solves for each velocity component)
-    bool use_tensor_solve = true;
+    bool use_tensor_solve      = true;
+
+    // Use separate solves for each velocity component with lagged tensor terms
+    bool use_tensor_correction = false;
 
     // AMR / refinement settings
     int m_refine_cutcells = 1;
@@ -339,15 +342,15 @@ private:
 
     // Control MLMG behavior
 #ifdef AMREX_USE_FLOAT
-    amrex::Real nodal_mg_rtol = 1.0e-4;
-    amrex::Real nodal_mg_atol = 1.0e-7;
+    amrex::Real m_nodal_mg_rtol = 1.0e-4;
+    amrex::Real m_nodal_mg_atol = 1.0e-7;
 #else
-    amrex::Real nodal_mg_rtol = 1.0e-11;
-    amrex::Real nodal_mg_atol = 1.0e-14;
+    amrex::Real m_nodal_mg_rtol = 1.0e-11;
+    amrex::Real m_nodal_mg_atol = 1.0e-14;
 #endif
 
     // Max coarsening level
-    int nodal_mg_max_coarsening_level = 100;
+    int m_nodal_mg_max_coarsening_level = 100;
 
     // ***************************************************************
     // ***************************************************************
@@ -440,7 +443,8 @@ private:
                    amrex::DistributionMapping const& dm,
                    amrex::FabFactory<amrex::FArrayBox> const& fact,
                    int ntrac, int ng_state,
-                   bool use_godunov, bool implicit_diffusion, bool advect_tracer);
+                   bool use_godunov, bool implicit_diffusion, 
+                   bool use_tensor_correction, bool advect_tracer);
         // cell-centered multifabs
         amrex::MultiFab velocity;
         amrex::MultiFab velocity_o;
@@ -551,11 +555,15 @@ private:
 #endif
 
     bool need_divtau () const {
-        return !(!m_godunov_include_diff_in_forcing and DiffusionType::Implicit == m_diff_type);
+        return ( !(!m_godunov_include_diff_in_forcing and DiffusionType::Implicit == m_diff_type) );
     }
 
     bool useTensorSolve () const {
         return use_tensor_solve;
+    }
+
+    bool useTensorCorrection () const {
+        return use_tensor_correction;
     }
 
     DiffusionTensorOp* get_diffusion_tensor_op ();

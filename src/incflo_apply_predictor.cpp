@@ -147,7 +147,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     // Compute explicit viscous term 
     // *************************************************************************************
-    if (need_divtau()) {
+    if (need_divtau() || use_tensor_correction) 
+    {
         compute_divtau(get_divtau_old(),get_velocity_old_const(),
                        get_density_old_const(),GetVecOfConstPtrs(vel_eta));
 
@@ -159,7 +160,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     // Compute explicit diffusive terms
     // *************************************************************************************
-    if (m_advect_tracer && need_divtau()) {
+    if (m_advect_tracer && need_divtau()) 
+    {
         compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
                      GetVecOfConstPtrs(tra_eta));
 
@@ -353,12 +355,24 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
             if (m_diff_type == DiffusionType::Implicit) {
 
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                if (use_tensor_correction)
                 {
-                    AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0));,
-                                 vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1));,
-                                 vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)););
-                });
+                    Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        // Here divtau_o is the difference of tensor and scalar divtau_o!
+                        AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+divtau_o(i,j,k,0));,
+                                     vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+divtau_o(i,j,k,1));,
+                                     vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+divtau_o(i,j,k,2)););
+                    });
+                } else {
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0));,
+                                     vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1));,
+                                     vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)););
+                    });
+                }
             } 
             else if (m_diff_type == DiffusionType::Crank_Nicolson) 
             {

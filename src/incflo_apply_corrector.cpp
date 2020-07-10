@@ -142,14 +142,15 @@ void incflo::ApplyCorrector()
 
     // Here we create divtau of the (n+1,*) state that was computed in the predictor;
     //      we use this laps only if DiffusionType::Explicit
-    if (m_diff_type == DiffusionType::Explicit) {
+    if ( (m_diff_type == DiffusionType::Explicit) || use_tensor_correction ) 
+    {
         compute_divtau(get_divtau_new(), get_velocity_new_const(),
                        get_density_new_const(), GetVecOfConstPtrs(vel_eta));
+    }
 
-        if (m_advect_tracer) {
-            compute_laps(get_laps_new(), get_tracer_new_const(),
-                         get_density_new_const(), GetVecOfConstPtrs(tra_eta));
-        }
+    if (m_advect_tracer and m_diff_type == DiffusionType::Explicit) {
+        compute_laps(get_laps_new(), get_tracer_new_const(),
+                     get_density_new_const(), GetVecOfConstPtrs(tra_eta));
     }
 
     // *************************************************************************************
@@ -352,14 +353,30 @@ void incflo::ApplyCorrector()
             }
             else if (m_diff_type == DiffusionType::Implicit)
             {
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                if (use_tensor_correction) 
                 {
-                    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-                        vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
-                             0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
-                            +        vel_f(i,j,k,idim) );
-                    }
-                });
+                    Array4<Real const> const& divtau   = ld.divtau.const_array(mfi);
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) 
+                        {
+                            // Here divtau is the difference of tensor and scalar divtau!
+                            vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
+                                 0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
+                                +        vel_f(i,j,k,idim) + divtau(i,j,k,idim));
+                        }
+                    });
+                } else {
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) 
+                        {
+                            vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
+                                 0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
+                                +        vel_f(i,j,k,idim) );
+                        }
+                    });
+                }
             } 
         }
     }
