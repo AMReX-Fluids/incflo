@@ -19,7 +19,7 @@ void Godunov_plm_fpu_x (const int i, const int j, const int k, const int n,
                         const amrex::Array4<const amrex::Real> &S,
                         const amrex::Real& umac,
                         const amrex::BCRec bc,
-                        const int domain_ilo, const int domain_ihi)
+                        const int domain_ilo, const int domain_ihi, bool is_velocity = false)
 {
     using namespace amrex;
     {
@@ -32,7 +32,7 @@ void Godunov_plm_fpu_x (const int i, const int j, const int k, const int n,
 
         if (i == domain_ilo && (bc.lo(0) == BCType::ext_dir)) {
             umns = S(i-1,j,k,n);
-            if(n ==0 )
+            if(n ==0 and is_velocity)
             {
               upls = S(i-1,j,k,n);
             } else {
@@ -41,7 +41,7 @@ void Godunov_plm_fpu_x (const int i, const int j, const int k, const int n,
             }
         } else if (i == domain_ihi+1 && (bc.hi(0) == BCType::ext_dir)) {
             upls = S(i  ,j,k,n);
-            if(n ==0 )
+            if(n ==0 and is_velocity)
             {
               umns = S(i,j,k,n);
             } else {
@@ -68,7 +68,7 @@ void Godunov_plm_fpu_y (const int i, const int j, const int k, const int n,
                         const amrex::Array4<const amrex::Real> &S,
                         const amrex::Real& vmac,
                         const amrex::BCRec bc,
-                        const int domain_jlo, const int domain_jhi)
+                        const int domain_jlo, const int domain_jhi, bool is_velocity = false)
 {
     using namespace amrex;
     {
@@ -82,7 +82,7 @@ void Godunov_plm_fpu_y (const int i, const int j, const int k, const int n,
 
         if (j == domain_jlo && (bc.lo(1) == BCType::ext_dir)) {
             vmns = S(i,j-1,k,n);
-            if(n==1)
+            if(n==1 and is_velocity)
             {
                 vpls = S(i,j-1,k,n);
             } else {
@@ -91,7 +91,7 @@ void Godunov_plm_fpu_y (const int i, const int j, const int k, const int n,
             }
         } else if (j == domain_jhi+1 && (bc.hi(1) == BCType::ext_dir)) {
             vpls = S(i,j  ,k,n);
-            if(n==1)
+            if(n==1 and is_velocity)
             {
                 vmns = S(i,j  ,k,n);
             } else {
@@ -120,7 +120,7 @@ void Godunov_plm_fpu_z (const int i, const int j, const int k, const int n,
                         const amrex::Array4<const amrex::Real> &S,
                         const amrex::Real& wmac,
                         const amrex::BCRec bc,
-                        const int domain_klo, const int domain_khi)
+                        const int domain_klo, const int domain_khi, bool is_velocity = false)
 {
     using namespace amrex;
     {
@@ -133,7 +133,7 @@ void Godunov_plm_fpu_z (const int i, const int j, const int k, const int n,
 
         if (k == domain_klo && (bc.lo(2) == BCType::ext_dir)) {
             wmns = S(i,j,k-1,n);
-            if(n==2)
+            if(n==2 and is_velocity)
             {
                wpls = S(i,j,k-1,n);
             } else {
@@ -142,7 +142,7 @@ void Godunov_plm_fpu_z (const int i, const int j, const int k, const int n,
             }
         } else if (k == domain_khi+1 && (bc.hi(2) == BCType::ext_dir)) {
             wpls = S(i,j,k  ,n);
-            if(n==2)
+            if(n==2 and is_velocity)
             {
                 wmns = S(i,j,k  ,n);
             } else {

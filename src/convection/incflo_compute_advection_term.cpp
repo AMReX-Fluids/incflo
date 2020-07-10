@@ -183,7 +183,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
                                            geom, m_dt, 
                                            get_velocity_bcrec_device_ptr(),
                                            get_velocity_iconserv_device_ptr(),
-                                           tmpfab.dataPtr(),m_godunov_ppm);
+                                           tmpfab.dataPtr(),m_godunov_ppm, true);
         if (!m_constant_density) {
             godunov::compute_godunov_advection(lev, bx, 1,
                                                drdt, rho,

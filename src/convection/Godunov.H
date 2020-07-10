@@ -113,7 +113,7 @@ namespace godunov {
                                     amrex::Real dt,
                                     amrex::BCRec const* d_bcrec, 
                                     int const* iconserv,
-                                    amrex::Real* p, bool use_ppm);
+                                    amrex::Real* p, bool use_ppm, bool is_velocity = false);
 
 } // namespace godunov
 
