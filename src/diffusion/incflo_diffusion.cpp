@@ -11,7 +11,9 @@ incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
     if (use_tensor_correction) {
 
         get_diffusion_tensor_op()->compute_divtau(divtau, vel, density, eta);
+#ifdef AMREX_USE_EB
         EB_set_covered(*divtau[0]     , 0.0);
+#endif
 
         Vector<MultiFab*> divtau_scal; 
         divtau_scal.push_back(new MultiFab(grids[0], dmap[0], divtau[0]->nComp(), 
@@ -19,7 +21,9 @@ incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
         divtau_scal[0]->setVal(0.);
 
         get_diffusion_scalar_op()->compute_divtau({divtau_scal}, vel, density, eta);
+#ifdef AMREX_USE_EB
         EB_set_covered(*divtau_scal[0], 0.0);
+#endif
 
         // Define divtau to be (divtau_full - divtau_separate)
         if (m_verbose > 0)
