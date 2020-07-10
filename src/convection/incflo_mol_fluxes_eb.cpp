@@ -492,9 +492,10 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
      
                     // Compute slopes of component "n" of q
                     const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,n,q,ccc,flag,
-                                               extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
-                                               extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
-                                               extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+                                               AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                               AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
+                                               AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                               AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
  
                     Real qpls = q(i,j,k  ,n) + delta_x * slopes_eb_hi[0]
                                              + delta_y * slopes_eb_hi[1]
@@ -512,9 +513,10 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
 
                     // Compute slopes of component "n" of q
                     const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j,k-1,n,q,ccc,flag,
-                                               extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
-                                               extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
-                                               extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+                                               AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                               AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
+                                               AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                               AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
     
                     Real qmns = q(i,j,k-1,n) + delta_x * slopes_eb_lo[0]
                                              + delta_y * slopes_eb_lo[1]

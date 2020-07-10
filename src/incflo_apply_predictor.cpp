@@ -67,7 +67,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // We use the new time value for things computed on the "*" state
     Real new_time = m_cur_time + m_dt;
 
-    if (m_verbose)
+    if (m_verbose > 2)
     {
         amrex::Print() << "Before predictor step:" << std::endl;
         PrintMaxValues(new_time);

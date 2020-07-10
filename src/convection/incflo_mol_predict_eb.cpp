@@ -465,9 +465,10 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,2,vcc,ccc,flag,
-                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
-                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
-                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+                                          AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                          AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
+                                          AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
 
                Real wpls = vcc_pls + delta_x * slopes_eb_hi[0]
                                    + delta_y * slopes_eb_hi[1]
@@ -481,9 +482,10 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j,k-1,2,vcc,ccc,flag,
-                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
-                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
-                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+                                          AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                          AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
+                                          AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
 
                Real wmns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]
