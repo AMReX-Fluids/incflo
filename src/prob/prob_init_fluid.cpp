@@ -223,7 +223,7 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& gbx,
         tracer(i,j,k)  = tra_1 + ((tra_2-tra_1)/2.0)*(1.0+std::tanh((y-pertheight)/width));
     });
 
-#elseif (AMREX_SPACEDIM == 3)
+#elif (AMREX_SPACEDIM == 3)
 
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
@@ -303,8 +303,9 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& gbx,
             else
                 tracer(i,j,k,0) = 0.01;
         });
+    } 
 #if (AMREX_SPACEDIM == 3)
-    } else if (112 == m_probtype) {
+    else if (112 == m_probtype) {
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             vel(i,j,k,0) = 0.0;
