@@ -87,13 +87,19 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
                 if (tag_gradrho) {
                     Real ax = amrex::Math::abs(rho(i+1,j,k) - rho(i,j,k));
                     Real ay = amrex::Math::abs(rho(i,j+1,k) - rho(i,j,k));
-                    Real az = amrex::Math::abs(rho(i,j,k+1) - rho(i,j,k));
                     ax = amrex::max(ax,amrex::Math::abs(rho(i,j,k) - rho(i-1,j,k)));
                     ay = amrex::max(ay,amrex::Math::abs(rho(i,j,k) - rho(i,j-1,k)));
+#if (AMREX_SPACEDIM == 2)
+                    if (amrex::max(ax,ay) >= gradrhoerr) {
+                        tag(i,j,k) = tagval;
+                    }
+#elif (AMREX_SPACEDIM == 3)
+                    Real az = amrex::Math::abs(rho(i,j,k+1) - rho(i,j,k));
                     az = amrex::max(az,amrex::Math::abs(rho(i,j,k) - rho(i,j,k-1)));
                     if (amrex::max(ax,ay,az) >= gradrhoerr) {
                         tag(i,j,k) = tagval;
                     }
+#endif
                 }
             });
         } 
