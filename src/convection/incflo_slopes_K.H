@@ -422,7 +422,13 @@ incflo_slopes_eb (int i, int j, int k, int n,
                   amrex::Array4<amrex::Real const> const& ccent,
                   amrex::Array4<amrex::EBCellFlag const> const& flag) noexcept
 {
-    int m_size = (int) (std::pow(3,AMREX_SPACEDIM) + 0.5);
+
+#if (AMREX_SPACEDIM == 3)
+    constexpr int m_size = 27;
+#else
+    constexpr int m_size = 9;
+#endif
+
     amrex::Real A[m_size][AMREX_SPACEDIM];
     amrex::Real du[m_size];
 
