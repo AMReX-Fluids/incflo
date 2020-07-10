@@ -59,16 +59,6 @@ void godunov::predict_plm_x (int lev, Box const& bx_in, int ncomp,
             Real umns = q(i-1,j,k,n) + 0.5 * ( 1.0 - vcc(i-1,j,k,0) * dtdx) *
                 incflo_ho_xslope_extdir(i-1,j,k,n,q, extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
 
-
-            if (i == domain_ilo && (bc.lo(0) == BCType::ext_dir)) {
-                umns = q(i-1,j,k,n);
-                if (n == 0) upls = q(i-1,j,k,n);
-            } else if (i == domain_ihi+1 && (bc.hi(0) == BCType::ext_dir)) {
-                if(n==0) umns = q(i,j,k,n);
-                upls = q(i,j,k,n);
-            }
-
-
             Ipx(i-1,j,k,n) = umns;
             Imx(i  ,j,k,n) = upls;
         });
@@ -129,15 +119,6 @@ void godunov::predict_plm_y (int lev, Box const& bx_in, int ncomp,
             Real vmns = q(i,j-1,k,n) + 0.5 * ( 1.0 - vcc(i,j-1,k,1) * dtdy) *
                 incflo_ho_yslope_extdir(i,j-1,k,n,q, extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi);
 
-            if (j == domain_jlo && (bc.lo(1) == BCType::ext_dir)) {
-                vmns = q(i,j-1,k,n);
-                if(n==1) vpls = q(i,j-1,k,n);
-            } else if (j == domain_jhi+1 && (bc.hi(1) == BCType::ext_dir)) {
-                if(n==1) vmns = q(i,j,k,n);
-                vpls = q(i,j,k,n);
-            }
-
-
             Ipy(i,j-1,k,n) = vmns;
             Imy(i,j  ,k,n) = vpls;
         });
@@ -197,15 +178,6 @@ void godunov::predict_plm_z (int lev, Box const& bx_in, int ncomp,
                 incflo_ho_zslope_extdir(i,j,k,n,q, extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
             Real wmns = q(i,j,k-1,n) + 0.5 * ( 1.0 - vcc(i,j,k-1,2) * dtdz) *
                 incflo_ho_zslope_extdir(i,j,k-1,n,q, extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
-
-
-            if (k == domain_klo && (bc.lo(2) == BCType::ext_dir)) {
-                wmns = q(i,j,k-1,n);
-                if(n==2) wpls = q(i,j,k-1,n);
-            } else if (k == domain_khi+1 && (bc.hi(2) == BCType::ext_dir)) {
-                if(n==2) wmns = q(i,j,k,n);
-                wpls = q(i,j,k,n);
-            }
 
 
             Ipz(i,j,k-1,n) = wmns;
