@@ -102,12 +102,9 @@ public: // for cuda
                                   amrex::Vector<amrex::MultiFab const*> const& vel,
                                   amrex::Vector<amrex::MultiFab const*> const& density,
                                   amrex::Vector<amrex::MultiFab const*> const& tracer,
-//                                amrex::Vector<amrex::MultiFab const*> const& u_mac,
-//                                amrex::Vector<amrex::MultiFab const*> const& v_mac,
-//                                amrex::Vector<amrex::MultiFab const*> const& w_mac,
-                                  amrex::Vector<amrex::MultiFab*> const& u_mac,
-                                  amrex::Vector<amrex::MultiFab*> const& v_mac,
-                                  amrex::Vector<amrex::MultiFab*> const& w_mac,
+                                  AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
+                                               amrex::Vector<amrex::MultiFab*> const& v_mac,
+                                               amrex::Vector<amrex::MultiFab*> const& w_mac),
                                   amrex::Vector<amrex::MultiFab const*> const& vel_forces,
                                   amrex::Vector<amrex::MultiFab const*> const& tra_forces,
                                   amrex::Real time);
@@ -119,17 +116,17 @@ public: // for cuda
                                   amrex::Array4<amrex::Real const> const& vel,
                                   amrex::Array4<amrex::Real const> const& rho,
                                   amrex::Array4<amrex::Real const> const& tra,
-                                  amrex::Array4<amrex::Real const> const& umac,
-                                  amrex::Array4<amrex::Real const> const& vmac,
-                                  amrex::Array4<amrex::Real const> const& wmac,
+                                  AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                               amrex::Array4<amrex::Real const> const& vmac,
+                                               amrex::Array4<amrex::Real const> const& wmac),
                                   amrex::Array4<amrex::Real const> const& fv,
                                   amrex::Array4<amrex::Real const> const& ft);
 
      
     void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,
-                                     amrex::Vector<amrex::MultiFab const*> const& u_mac,
-                                     amrex::Vector<amrex::MultiFab const*> const& v_mac,
-                                     amrex::Vector<amrex::MultiFab const*> const& w_mac);
+                                     AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
+                                                  amrex::Vector<amrex::MultiFab const*> const& v_mac,
+                                                  amrex::Vector<amrex::MultiFab const*> const& w_mac));
 
 #ifdef AMREX_USE_EB
     void redistribute_eb (int lev, amrex::Box const& bx, int ncomp,
@@ -290,7 +287,10 @@ private:
     bool m_use_boussinesq = false;
 
     // Use tensor solve (as opposed to separate solves for each velocity component)
-    bool use_tensor_solve = true;
+    bool use_tensor_solve      = true;
+
+    // Use separate solves for each velocity component with lagged tensor terms
+    bool use_tensor_correction = false;
 
     // AMR / refinement settings
     int m_refine_cutcells = 1;
@@ -443,7 +443,8 @@ private:
                    amrex::DistributionMapping const& dm,
                    amrex::FabFactory<amrex::FArrayBox> const& fact,
                    int ntrac, int ng_state,
-                   bool use_godunov, bool implicit_diffusion, bool advect_tracer);
+                   bool use_godunov, bool implicit_diffusion, 
+                   bool use_tensor_correction, bool advect_tracer);
         // cell-centered multifabs
         amrex::MultiFab velocity;
         amrex::MultiFab velocity_o;
@@ -554,11 +555,15 @@ private:
 #endif
 
     bool need_divtau () const {
-        return !(!m_godunov_include_diff_in_forcing and DiffusionType::Implicit == m_diff_type);
+        return ( !(!m_godunov_include_diff_in_forcing and DiffusionType::Implicit == m_diff_type) );
     }
 
     bool useTensorSolve () const {
         return use_tensor_solve;
+    }
+
+    bool useTensorCorrection () const {
+        return use_tensor_correction;
     }
 
     DiffusionTensorOp* get_diffusion_tensor_op ();
@@ -677,9 +682,9 @@ private:
 
     void init_advection ();
 
-    void apply_MAC_projection (amrex::Vector<amrex::MultiFab*> const& u_mac,
-                               amrex::Vector<amrex::MultiFab*> const& v_mac,
-                               amrex::Vector<amrex::MultiFab*> const& w_mac,
+    void apply_MAC_projection (AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
+                                            amrex::Vector<amrex::MultiFab*> const& v_mac,
+                                            amrex::Vector<amrex::MultiFab*> const& w_mac),
                                amrex::Vector<amrex::MultiFab const*> const& density,
                                amrex::Real time);
 

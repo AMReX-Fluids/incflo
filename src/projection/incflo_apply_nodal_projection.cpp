@@ -93,9 +93,9 @@ void incflo::ApplyProjection (Vector<MultiFab const*> density,
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     Real soverrho = scaling_factor / rho(i,j,k);
-                    u(i,j,k,0) += gp(i,j,k,0) * soverrho;
-                    u(i,j,k,1) += gp(i,j,k,1) * soverrho;
-                    u(i,j,k,2) += gp(i,j,k,2) * soverrho;
+                    AMREX_D_TERM(u(i,j,k,0) += gp(i,j,k,0) * soverrho;,
+                                 u(i,j,k,1) += gp(i,j,k,1) * soverrho;,
+                                 u(i,j,k,2) += gp(i,j,k,2) * soverrho;);
                 });
             }
         }

@@ -80,16 +80,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
     int ngmac = nghost_mac();
 
     for (int lev = 0; lev <= finest_level; ++lev) {
-        u_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));
-        v_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));
-        w_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));
+        AMREX_D_TERM(u_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev));,
+                     v_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev));,
+                     w_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev)););
         if (ngmac > 0) {
-            u_mac[lev].setBndry(0.0);
-            v_mac[lev].setBndry(0.0);
-            w_mac[lev].setBndry(0.0);
+            AMREX_D_TERM(u_mac[lev].setBndry(0.0);,
+                         v_mac[lev].setBndry(0.0);,
+                         w_mac[lev].setBndry(0.0););
         }
     }
 
@@ -147,7 +147,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     // Compute explicit viscous term 
     // *************************************************************************************
-    if (need_divtau()) {
+    if (need_divtau() || use_tensor_correction) 
+    {
         compute_divtau(get_divtau_old(),get_velocity_old_const(),
                        get_density_old_const(),GetVecOfConstPtrs(vel_eta));
 
@@ -159,7 +160,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     // Compute explicit diffusive terms
     // *************************************************************************************
-    if (m_advect_tracer && need_divtau()) {
+    if (m_advect_tracer && need_divtau()) 
+    {
         compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
                      GetVecOfConstPtrs(tra_eta));
 
@@ -182,11 +184,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     compute_convective_term(get_conv_velocity_old(), get_conv_density_old(), get_conv_tracer_old(),
                             get_velocity_old_const(), get_density_old_const(), get_tracer_old_const(),
-                            GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                            GetVecOfPtrs(w_mac), 
+                            AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
+                            GetVecOfPtrs(w_mac)), 
                             GetVecOfConstPtrs(vel_forces), GetVecOfConstPtrs(tra_forces),
                             m_cur_time);
-
+    
     // *************************************************************************************
     // Define local variables for lambda to capture.
     // *************************************************************************************
@@ -353,12 +355,24 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
             if (m_diff_type == DiffusionType::Implicit) {
 
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                if (use_tensor_correction)
                 {
-                    vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0));
-                    vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1));
-                    vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2));
-                });
+                    Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        // Here divtau_o is the difference of tensor and scalar divtau_o!
+                        AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+divtau_o(i,j,k,0));,
+                                     vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+divtau_o(i,j,k,1));,
+                                     vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+divtau_o(i,j,k,2)););
+                    });
+                } else {
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0));,
+                                     vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1));,
+                                     vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)););
+                    });
+                }
             } 
             else if (m_diff_type == DiffusionType::Crank_Nicolson) 
             {
@@ -366,9 +380,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+0.5*divtau_o(i,j,k,0));
-                    vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+0.5*divtau_o(i,j,k,1));
-                    vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+0.5*divtau_o(i,j,k,2));
+                    AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+0.5*divtau_o(i,j,k,0));,
+                                 vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+0.5*divtau_o(i,j,k,1));,
+                                 vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+0.5*divtau_o(i,j,k,2)););
                 });
             }
             else if (m_diff_type == DiffusionType::Explicit) 
@@ -376,9 +390,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+divtau_o(i,j,k,0));
-                    vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+divtau_o(i,j,k,1));
-                    vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+divtau_o(i,j,k,2));
+                    AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+divtau_o(i,j,k,0));,
+                                 vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+divtau_o(i,j,k,1));,
+                                 vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+divtau_o(i,j,k,2)););
                 });
             }
         } // mfi
@@ -412,6 +426,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // 
     // **********************************************************************************************
     incflo_correct_small_cells(get_velocity_new(),
-                               GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
-                               GetVecOfConstPtrs(w_mac));
+                               AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
+                               GetVecOfConstPtrs(w_mac)));
 }

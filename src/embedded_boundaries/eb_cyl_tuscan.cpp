@@ -43,8 +43,8 @@ void incflo::make_eb_cyl_tuscan()
     pp.getarr("center1", centervec1, 0, 3);
     pp.getarr("center2", centervec2, 0, 3);
 
-    Array<Real, 3> center1 = {centervec1[0], centervec1[1], centervec1[2]};
-    Array<Real, 3> center2 = {centervec2[0], centervec2[1], centervec2[2]};
+    Array<Real, AMREX_SPACEDIM> center1 = {AMREX_D_DECL(centervec1[0], centervec1[1], centervec1[2])};
+    Array<Real, AMREX_SPACEDIM> center2 = {AMREX_D_DECL(centervec2[0], centervec2[1], centervec2[2])};
 
     // Print info about cylinders
     amrex::Print() << " CYLINDER 1" << std::endl;

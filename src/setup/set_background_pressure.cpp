@@ -11,9 +11,9 @@ void incflo::set_background_pressure ()
     } else {
         const auto problo = geom[0].ProbLoArray();
         const auto probhi = geom[0].ProbHiArray();
-        GpuArray<Real,AMREX_SPACEDIM> problen{probhi[0]-problo[0],
+        GpuArray<Real,AMREX_SPACEDIM> problen{AMREX_D_DECL(probhi[0]-problo[0],
                                               probhi[1]-problo[1],
-                                              probhi[2]-problo[2]};
+                                              probhi[2]-problo[2])};
         // There are 3 exclusive sources for background pressure gradient.
         // (1) incflo.delp in inputs
         int delp_dir = -1;

@@ -22,13 +22,17 @@ namespace {
 #ifdef AMREX_USE_EB
 void 
 mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
-                               Box const& ubx, Box const& vbx, Box const& wbx,
-                               Array4<Real> const& u, Array4<Real> const& v,
-                               Array4<Real> const& w, Array4<Real const> const& vcc,
+                               AMREX_D_DECL(Box const& ubx, 
+                                            Box const& vbx, 
+                                            Box const& wbx),
+                               AMREX_D_DECL(Array4<Real> const& u, 
+                                            Array4<Real> const& v,
+                                            Array4<Real> const& w), 
+                               Array4<Real const> const& vcc,
                                Array4<EBCellFlag const> const& flag,
-                               Array4<Real const> const& fcx,
-                               Array4<Real const> const& fcy,
-                               Array4<Real const> const& fcz,
+                               AMREX_D_DECL(Array4<Real const> const& fcx,
+                                            Array4<Real const> const& fcy,
+                                            Array4<Real const> const& fcz),
                                Array4<Real const> const& ccc,
                                Vector<BCRec> const& h_bcrec,
                                       BCRec  const* d_bcrec,
@@ -41,8 +45,10 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     const int domain_ihi = domain_box.bigEnd(0);
     const int domain_jlo = domain_box.smallEnd(1);
     const int domain_jhi = domain_box.bigEnd(1);
+#if (AMREX_SPACEDIM == 3)
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
+#endif
 
     int ncomp = AMREX_SPACEDIM; // This is only used because h_bcrec and d_bcrec hold the
                                 // bc's for all three velocity components
@@ -60,34 +66,35 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     {
         amrex::ParallelFor(Box(ubx),
         [u,vcc,flag,fcx,ccc,d_bcrec,
-         domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi]
+         AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
+         AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi)]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real u_val(0);
 
-            bool extdir_or_ho_ilo = (d_bcrec[0].lo(0) == BCType::ext_dir) or
-                                    (d_bcrec[0].lo(0) == BCType::hoextrap);
-            bool extdir_or_ho_ihi = (d_bcrec[0].hi(0) == BCType::ext_dir) or
-                                    (d_bcrec[0].hi(0) == BCType::hoextrap);
+            AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[0].lo(0) == BCType::ext_dir) or
+                                                 (d_bcrec[0].lo(0) == BCType::hoextrap);,
+                         bool extdir_or_ho_jlo = (d_bcrec[0].lo(1) == BCType::ext_dir) or
+                                                 (d_bcrec[0].lo(1) == BCType::hoextrap);,
+                         bool extdir_or_ho_klo = (d_bcrec[0].lo(2) == BCType::ext_dir) or
+                                                 (d_bcrec[0].lo(2) == BCType::hoextrap););
 
-            bool extdir_or_ho_jlo = (d_bcrec[0].lo(1) == BCType::ext_dir) or
-                                    (d_bcrec[0].lo(1) == BCType::hoextrap);
-            bool extdir_or_ho_jhi = (d_bcrec[0].hi(1) == BCType::ext_dir) or
-                                    (d_bcrec[0].hi(1) == BCType::hoextrap);
-
-            bool extdir_or_ho_klo = (d_bcrec[0].lo(2) == BCType::ext_dir) or
-                                    (d_bcrec[0].lo(2) == BCType::hoextrap);
-            bool extdir_or_ho_khi = (d_bcrec[0].hi(2) == BCType::ext_dir) or
-                                    (d_bcrec[0].hi(2) == BCType::hoextrap);
+            AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[0].hi(0) == BCType::ext_dir) or
+                                                 (d_bcrec[0].hi(0) == BCType::hoextrap);,
+                         bool extdir_or_ho_jhi = (d_bcrec[0].hi(1) == BCType::ext_dir) or
+                                                 (d_bcrec[0].hi(1) == BCType::hoextrap);,
+                         bool extdir_or_ho_khi = (d_bcrec[0].hi(2) == BCType::ext_dir) or
+                                                 (d_bcrec[0].hi(2) == BCType::hoextrap););
 
             if (flag(i,j,k).isConnected(-1,0,0))
             {
                Real yf = fcx(i,j,k,0); // local (y,z) of centroid of x-face we are extrapolating to
+#if (AMREX_SPACEDIM == 3)
                Real zf = fcx(i,j,k,1);
-
-               Real delta_x = 0.5 + ccc(i,j,k,0);
-               Real delta_y = yf  - ccc(i,j,k,1);
-               Real delta_z = zf  - ccc(i,j,k,2);
+#endif
+               AMREX_D_TERM(Real delta_x = 0.5 + ccc(i,j,k,0);,
+                            Real delta_y = yf  - ccc(i,j,k,1);,
+                            Real delta_z = zf  - ccc(i,j,k,2););
 
                Real vcc_mns = vcc(i-1,j,k,0);
                Real vcc_pls = vcc(i,j,k,0);
@@ -97,30 +104,40 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "0" of vcc
                const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,0,vcc,ccc,flag,
-                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
-                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
-                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+                                          AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                          AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
+                                          AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
 
+#if (AMREX_SPACEDIM == 3)
                Real upls = vcc_pls - delta_x * slopes_eb_hi[0]
                                    + delta_y * slopes_eb_hi[1]
                                    + delta_z * slopes_eb_hi[2];
-
+#else
+               Real upls = vcc_pls - delta_x * slopes_eb_hi[0]
+                                   + delta_y * slopes_eb_hi[1];
+#endif
                upls = amrex::max(amrex::min(upls, cc_umax), cc_umin);
 
-               delta_x = 0.5 - ccc(i-1,j,k,0);
-               delta_y = yf  - ccc(i-1,j,k,1);
-               delta_z = zf  - ccc(i-1,j,k,2);
+               AMREX_D_TERM(delta_x = 0.5 - ccc(i-1,j,k,0);,
+                            delta_y = yf  - ccc(i-1,j,k,1);,
+                            delta_z = zf  - ccc(i-1,j,k,2););
 
                // Compute slopes of component "0" of vcc
                const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i-1,j,k,0,vcc,ccc,flag,
-                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
-                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
-                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+                                          AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                          AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
+                                          AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
 
+#if (AMREX_SPACEDIM == 3)
                Real umns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]
                                    + delta_z * slopes_eb_lo[2];
-
+#else
+               Real umns = vcc_mns + delta_x * slopes_eb_lo[0]
+                                   + delta_y * slopes_eb_lo[1];
+#endif
                umns = amrex::max(amrex::min(umns, cc_umax), cc_umin);
 
                if ( umns >= 0.0 or upls <= 0.0 ) {
@@ -155,11 +172,13 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
             if (flag(i,j,k).isConnected(-1,0,0))
             {
                Real yf = fcx(i,j,k,0); // local (y,z) of centroid of x-face we are extrapolating to
+#if (AMREX_SPACEDIM == 3)
                Real zf = fcx(i,j,k,1);
+#endif
 
-               Real delta_x = 0.5 + ccc(i,j,k,0);
-               Real delta_y = yf  - ccc(i,j,k,1);
-               Real delta_z = zf  - ccc(i,j,k,2);
+               AMREX_D_TERM(Real delta_x = 0.5 + ccc(i,j,k,0);,
+                            Real delta_y = yf  - ccc(i,j,k,1);,
+                            Real delta_z = zf  - ccc(i,j,k,2););
 
                const Real vcc_mns = vcc(i-1,j,k,0);
                const Real vcc_pls = vcc(i,j,k,0);
@@ -170,23 +189,31 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                // Compute slopes of component "0" of vcc
                const auto slopes_eb_hi = incflo_slopes_eb(i,j,k,0,vcc,ccc,flag);
 
+#if (AMREX_SPACEDIM == 3)
                Real upls = vcc_pls - delta_x * slopes_eb_hi[0]
                                    + delta_y * slopes_eb_hi[1]
                                    + delta_z * slopes_eb_hi[2];
-
+#else
+               Real upls = vcc_pls - delta_x * slopes_eb_hi[0]
+                                   + delta_y * slopes_eb_hi[1];
+#endif
                upls = amrex::max(amrex::min(upls, cc_umax), cc_umin);
 
-               delta_x = 0.5 - ccc(i-1,j,k,0);
-               delta_y = yf  - ccc(i-1,j,k,1);
-               delta_z = zf  - ccc(i-1,j,k,2);
+               AMREX_D_TERM(delta_x = 0.5 - ccc(i-1,j,k,0);,
+                            delta_y = yf  - ccc(i-1,j,k,1);,
+                            delta_z = zf  - ccc(i-1,j,k,2););
 
                // Compute slopes of component "0" of vcc
                const auto& slopes_eb_lo = incflo_slopes_eb(i-1,j,k,0,vcc,ccc,flag);
 
+#if (AMREX_SPACEDIM == 3)
                Real umns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]
                                    + delta_z * slopes_eb_lo[2];
-
+#else
+               Real umns = vcc_mns + delta_x * slopes_eb_lo[0]
+                                   + delta_y * slopes_eb_lo[1];
+#endif
                umns = amrex::max(amrex::min(umns, cc_umax), cc_umin);
 
                if ( umns >= 0.0 or upls <= 0.0 ) {
@@ -217,34 +244,36 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
     {
         amrex::ParallelFor(Box(vbx),
         [v,vcc,flag,fcy,ccc,d_bcrec,
-         domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi]
+         AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
+         AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi)]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real v_val(0);
 
-            bool extdir_or_ho_ilo = (d_bcrec[1].lo(0) == BCType::ext_dir) or
-                                    (d_bcrec[1].lo(0) == BCType::hoextrap);
-            bool extdir_or_ho_ihi = (d_bcrec[1].hi(0) == BCType::ext_dir) or
-                                    (d_bcrec[1].hi(0) == BCType::hoextrap);
+            AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[1].lo(0) == BCType::ext_dir) or
+                                                 (d_bcrec[1].lo(0) == BCType::hoextrap);,
+                         bool extdir_or_ho_jlo = (d_bcrec[1].lo(1) == BCType::ext_dir) or
+                                                 (d_bcrec[1].lo(1) == BCType::hoextrap);,
+                         bool extdir_or_ho_klo = (d_bcrec[1].lo(2) == BCType::ext_dir) or
+                                                 (d_bcrec[1].lo(2) == BCType::hoextrap););
 
-            bool extdir_or_ho_jlo = (d_bcrec[1].lo(1) == BCType::ext_dir) or
-                                    (d_bcrec[1].lo(1) == BCType::hoextrap);
-            bool extdir_or_ho_jhi = (d_bcrec[1].hi(1) == BCType::ext_dir) or
-                                    (d_bcrec[1].hi(1) == BCType::hoextrap);
-
-            bool extdir_or_ho_klo = (d_bcrec[1].lo(2) == BCType::ext_dir) or
-                                    (d_bcrec[1].lo(2) == BCType::hoextrap);
-            bool extdir_or_ho_khi = (d_bcrec[1].hi(2) == BCType::ext_dir) or
-                                    (d_bcrec[1].hi(2) == BCType::hoextrap);
+            AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[1].hi(0) == BCType::ext_dir) or
+                                                 (d_bcrec[1].hi(0) == BCType::hoextrap);,
+                         bool extdir_or_ho_jhi = (d_bcrec[1].hi(1) == BCType::ext_dir) or
+                                                 (d_bcrec[1].hi(1) == BCType::hoextrap);,
+                         bool extdir_or_ho_khi = (d_bcrec[1].hi(2) == BCType::ext_dir) or
+                                                 (d_bcrec[1].hi(2) == BCType::hoextrap););
 
             if (flag(i,j,k).isConnected(0,-1,0))
             {
                Real xf = fcy(i,j,k,0); // local (x,z) of centroid of y-face we are extrapolating to
+#if (AMREX_SPACEDIM == 3)
                Real zf = fcy(i,j,k,1);
+#endif
 
-               Real delta_x = xf  - ccc(i,j,k,0);
-               Real delta_y = 0.5 + ccc(i,j,k,1);
-               Real delta_z = zf  - ccc(i,j,k,2);
+               AMREX_D_TERM(Real delta_x = xf  - ccc(i,j,k,0);,
+                            Real delta_y = 0.5 + ccc(i,j,k,1);,
+                            Real delta_z = zf  - ccc(i,j,k,2););
 
                const Real vcc_mns = vcc(i,j-1,k,1);
                const Real vcc_pls = vcc(i,j,k,1);
@@ -254,29 +283,41 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "1" of vcc
                const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,1,vcc,ccc,flag,
-                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
-                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
-                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+                                          AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                          AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
+                                          AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
 
+#if (AMREX_SPACEDIM == 3)
                Real vpls = vcc_pls + delta_x * slopes_eb_hi[0]
                                    - delta_y * slopes_eb_hi[1]
                                    + delta_z * slopes_eb_hi[2];
+#else
+               Real vpls = vcc_pls + delta_x * slopes_eb_hi[0]
+                                   - delta_y * slopes_eb_hi[1];
+#endif
 
                vpls = amrex::max(amrex::min(vpls, cc_vmax), cc_vmin);
 
-               delta_x = xf  - ccc(i,j-1,k,0);
-               delta_y = 0.5 - ccc(i,j-1,k,1);
-               delta_z = zf  - ccc(i,j-1,k,2);
+               AMREX_D_TERM(delta_x = xf  - ccc(i,j-1,k,0);,
+                            delta_y = 0.5 - ccc(i,j-1,k,1);,
+                            delta_z = zf  - ccc(i,j-1,k,2););
 
                // Compute slopes of component "1" of vcc
                const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j-1,k,1,vcc,ccc,flag,
-                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
-                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
-                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+                                          AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                          AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
+                                          AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
 
+#if (AMREX_SPACEDIM == 3)
                Real vmns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]
                                    + delta_z * slopes_eb_lo[2];
+#else
+               Real vmns = vcc_mns + delta_x * slopes_eb_lo[0]
+                                   + delta_y * slopes_eb_lo[1];
+#endif
 
                vmns = amrex::max(amrex::min(vmns, cc_vmax), cc_vmin);
 
@@ -312,11 +353,13 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
             if (flag(i,j,k).isConnected(0,-1,0))
             {
                Real xf = fcy(i,j,k,0); // local (x,z) of centroid of y-face we are extrapolating to
+#if (AMREX_SPACEDIM == 3)
                Real zf = fcy(i,j,k,1);
+#endif
 
-               Real delta_x = xf  - ccc(i,j,k,0);
-               Real delta_y = 0.5 + ccc(i,j,k,1);
-               Real delta_z = zf  - ccc(i,j,k,2);
+               AMREX_D_TERM(Real delta_x = xf  - ccc(i,j,k,0);,
+                            Real delta_y = 0.5 + ccc(i,j,k,1);,
+                            Real delta_z = zf  - ccc(i,j,k,2););
 
                const Real vcc_mns = vcc(i,j-1,k,1);
                const Real vcc_pls = vcc(i,j,k,1);
@@ -327,22 +370,32 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                // Compute slopes of component "1" of vcc
                const auto slopes_eb_hi = incflo_slopes_eb(i,j,k,1,vcc,ccc,flag);
 
+#if (AMREX_SPACEDIM == 3)
                Real vpls = vcc_pls + delta_x * slopes_eb_hi[0]
                                    - delta_y * slopes_eb_hi[1]
                                    + delta_z * slopes_eb_hi[2];
+#else
+               Real vpls = vcc_pls + delta_x * slopes_eb_hi[0]
+                                   - delta_y * slopes_eb_hi[1];
+#endif
 
                vpls = amrex::max(amrex::min(vpls, cc_vmax), cc_vmin);
 
-               delta_x = xf  - ccc(i,j-1,k,0);
-               delta_y = 0.5 - ccc(i,j-1,k,1);
-               delta_z = zf  - ccc(i,j-1,k,2);
+               AMREX_D_TERM(delta_x = xf  - ccc(i,j-1,k,0);,
+                            delta_y = 0.5 - ccc(i,j-1,k,1);,
+                            delta_z = zf  - ccc(i,j-1,k,2););
 
                // Compute slopes of component "1" of vcc
                const auto& slopes_eb_lo = incflo_slopes_eb(i,j-1,k,1,vcc,ccc,flag);
 
+#if (AMREX_SPACEDIM == 3)
                Real vmns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]
                                    + delta_z * slopes_eb_lo[2];
+#else
+               Real vmns = vcc_mns + delta_x * slopes_eb_lo[0]
+                                   + delta_y * slopes_eb_lo[1];
+#endif
                                           
                vmns = amrex::max(amrex::min(vmns, cc_vmax), cc_vmin);
 
@@ -362,6 +415,7 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         });
     }
 
+#if (AMREX_SPACEDIM == 3)
     // ****************************************************************************
     // Predict to z-faces
     // ****************************************************************************
@@ -411,9 +465,10 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,2,vcc,ccc,flag,
-                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
-                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
-                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+                                          AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                          AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
+                                          AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
 
                Real wpls = vcc_pls + delta_x * slopes_eb_hi[0]
                                    + delta_y * slopes_eb_hi[1]
@@ -427,9 +482,10 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j,k-1,2,vcc,ccc,flag,
-                                          extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi,
-                                          extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi,
-                                          extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+                                          AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                          AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
+                                          AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
 
                Real wmns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]
@@ -518,5 +574,6 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
             w(i,j,k) = w_val;
         });
     }
+#endif
 }
 #endif

@@ -60,7 +60,7 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
             p +=         w_ad.size();
 
             if (use_ppm)
-                godunov::predict_ppm (lev, bxg1, AMREX_SPACEDIM, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_vel,
+                godunov::predict_ppm (lev, bxg1, AMREX_SPACEDIM, Imx, Imy, Imz, Ipx, Ipy, Ipz, a_vel, a_vel,
                                       geom, l_dt, d_bcrec);
             else
             {
@@ -74,11 +74,11 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
 
             make_trans_velocities(lev, Box(u_ad), Box(v_ad), Box(w_ad),
                                   u_ad, v_ad, w_ad,
-                                  Imx, Ipx, Imy, Ipy, Imz, Ipz, a_vel, a_f, 
+                                  Imx, Imy, Imz, Ipx, Ipy, Ipz, a_vel, a_f, 
                                   domain, l_dt, d_bcrec, use_forces_in_trans);
 
             predict_godunov_on_box(lev, bx, ncomp, xbx, ybx, zbx, a_umac, a_vmac, a_wmac,
-                                   a_vel, u_ad, v_ad, w_ad, Imx, Ipx, Imy, Ipy, Imz, Ipz, a_f, 
+                                   a_vel, u_ad, v_ad, w_ad, Imx, Imy, Imz, Ipx, Ipy, Ipz, a_f, 
                                    domain, dx, l_dt, d_bcrec, use_forces_in_trans, p);
 
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
@@ -91,10 +91,10 @@ void godunov::make_trans_velocities (int lev, Box const& xbx, Box const& ybx, Bo
                                      Array4<Real> const& v_ad,
                                      Array4<Real> const& w_ad,
                                      Array4<Real const> const& Imx,
-                                     Array4<Real const> const& Ipx,
                                      Array4<Real const> const& Imy,
-                                     Array4<Real const> const& Ipy,
                                      Array4<Real const> const& Imz,
+                                     Array4<Real const> const& Ipx,
+                                     Array4<Real const> const& Ipy,
                                      Array4<Real const> const& Ipz,
                                      Array4<Real const> const& vel,
                                      Array4<Real const> const& f,
@@ -187,10 +187,10 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
                                       Array4<Real const> const& v_ad,
                                       Array4<Real const> const& w_ad,
                                       Array4<Real> const& Imx,
-                                      Array4<Real> const& Ipx,
                                       Array4<Real> const& Imy,
-                                      Array4<Real> const& Ipy,
                                       Array4<Real> const& Imz,
+                                      Array4<Real> const& Ipx,
+                                      Array4<Real> const& Ipy,
                                       Array4<Real> const& Ipz,
                                       Array4<Real const> const& f,
                                       const Box& domain,

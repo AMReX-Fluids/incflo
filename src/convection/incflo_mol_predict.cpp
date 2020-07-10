@@ -20,8 +20,11 @@ namespace {
 }
 
 void 
-mol::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
-                            MultiFab& w_mac, MultiFab const& vel,
+mol::predict_vels_on_faces (int lev, 
+                            AMREX_D_DECL(MultiFab& u_mac, 
+                                         MultiFab& v_mac,
+                                         MultiFab& w_mac), 
+                            MultiFab const& vel,
                             Vector<BCRec> const& h_bcrec,
                                    BCRec  const* d_bcrec,
 #ifdef AMREX_USE_EB
@@ -35,20 +38,18 @@ mol::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
     auto const& ccent = ebfact->getCentroid();
 #endif
 
-    Box const& domain = geom[lev].Domain();
-
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     {
         for (MFIter mfi(vel, TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
-            Box const& ubx = mfi.nodaltilebox(0);
-            Box const& vbx = mfi.nodaltilebox(1);
-            Box const& wbx = mfi.nodaltilebox(2);
-            Array4<Real> const& u = u_mac.array(mfi);
-            Array4<Real> const& v = v_mac.array(mfi);
-            Array4<Real> const& w = w_mac.array(mfi);
+            AMREX_D_TERM(Box const& ubx = mfi.nodaltilebox(0);,
+                         Box const& vbx = mfi.nodaltilebox(1);,
+                         Box const& wbx = mfi.nodaltilebox(2););
+            AMREX_D_TERM(Array4<Real> const& u = u_mac.array(mfi);,
+                         Array4<Real> const& v = v_mac.array(mfi);,
+                         Array4<Real> const& w = w_mac.array(mfi););
             Array4<Real const> const& vcc = vel.const_array(mfi);
 #ifdef AMREX_USE_EB
             Box const& bx = mfi.tilebox();
@@ -57,34 +58,45 @@ mol::predict_vels_on_faces (int lev, MultiFab& u_mac, MultiFab& v_mac,
             auto const typ = flagfab.getType(amrex::grow(bx,2));
             if (typ == FabType::covered)
             {
+#if (AMREX_SPACEDIM == 3)
                 amrex::ParallelFor(ubx, vbx, wbx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept { u(i,j,k) = 0.0; },
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept { v(i,j,k) = 0.0; },
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept { w(i,j,k) = 0.0; });
+#else
+                amrex::ParallelFor(ubx, vbx,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept { u(i,j,k) = 0.0; },
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept { v(i,j,k) = 0.0; });
+#endif
             }
             else if (typ == FabType::singlevalued)
             {
-                Array4<Real const> const& fcx = fcent[0]->const_array(mfi);
-                Array4<Real const> const& fcy = fcent[1]->const_array(mfi);
-                Array4<Real const> const& fcz = fcent[2]->const_array(mfi);
+                AMREX_D_TERM(Array4<Real const> const& fcx = fcent[0]->const_array(mfi);,
+                             Array4<Real const> const& fcy = fcent[1]->const_array(mfi);,
+                             Array4<Real const> const& fcz = fcent[2]->const_array(mfi););
                 Array4<Real const> const& ccc = ccent.const_array(mfi);
-                predict_vels_on_faces_eb(lev,bx,ubx,vbx,wbx,
-                                         u,v,w,vcc,flagarr,fcx,fcy,fcz,ccc,
+                predict_vels_on_faces_eb(lev,bx,AMREX_D_DECL(ubx,vbx,wbx),
+                                         AMREX_D_DECL(u,v,w),vcc,flagarr,AMREX_D_DECL(fcx,fcy,fcz),ccc,
                                          h_bcrec,d_bcrec,geom);
             }
             else
 #endif
             {
-                predict_vels_on_faces(lev,ubx,vbx,wbx,u,v,w,vcc,h_bcrec,d_bcrec,geom);
+                predict_vels_on_faces(lev,AMREX_D_DECL(ubx,vbx,wbx),AMREX_D_DECL(u,v,w),vcc,h_bcrec,d_bcrec,geom);
             }
         }
     }
 }
 
 void 
-mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& wbx,
-                            Array4<Real> const& u, Array4<Real> const& v,
-                            Array4<Real> const& w, Array4<Real const> const& vcc,
+mol::predict_vels_on_faces (int lev, 
+                            AMREX_D_DECL(Box const& ubx, 
+                                         Box const& vbx, 
+                                         Box const& wbx),
+                            AMREX_D_DECL(Array4<Real> const& u, 
+                                         Array4<Real> const& v,
+                                         Array4<Real> const& w), 
+                            Array4<Real const> const& vcc,
                             Vector<BCRec> const& h_bcrec,
                                    BCRec  const* d_bcrec,
                             Vector<Geometry> geom)
@@ -99,8 +111,10 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
     const int domain_ihi = domain_box.bigEnd(0);
     const int domain_jlo = domain_box.smallEnd(1);
     const int domain_jhi = domain_box.bigEnd(1);
+#if (AMREX_SPACEDIM == 3)
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
+#endif
 
     // At an ext_dir or hoextrap boundary, 
     //    the boundary value is on the face, not cell center.
@@ -249,6 +263,7 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
         });
     }
 
+#if (AMREX_SPACEDIM == 3)
     // At an ext_dir or hoextrap boundary, 
     //    the boundary value is on the face, not cell center.
     extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
@@ -320,4 +335,5 @@ mol::predict_vels_on_faces (int lev, Box const& ubx, Box const& vbx, Box const& 
             w(i,j,k) = w_val;
         });
     }
+#endif
 }

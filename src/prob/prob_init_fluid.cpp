@@ -17,9 +17,10 @@ void incflo::prob_init_fluid (int lev)
     ld.density.setVal(m_ro_0);
     ld.density_o.setVal(m_ro_0);
 
-    ld.velocity.setVal(m_ic_u, 0, 1);
-    ld.velocity.setVal(m_ic_v, 1, 1);
-    ld.velocity.setVal(m_ic_w, 2, 1);
+    AMREX_D_TERM(ld.velocity.setVal(m_ic_u, 0, 1);,
+                 ld.velocity.setVal(m_ic_v, 1, 1);,
+                 ld.velocity.setVal(m_ic_w, 2, 1););
+
     if (m_ntrac > 0) ld.tracer.setVal(0.0);
 
     for (MFIter mfi(ld.density); mfi.isValid(); ++mfi)
@@ -423,7 +424,11 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
 {
     Real dxinv = 1.0 / domain.length(0);
     Real dyinv = 1.0 / domain.length(1);
+#if (AMREX_SPACEDIM == 3)
     Real dzinv = 1.0 / domain.length(2);
+#else
+    Real dzinv = 0.0;
+#endif
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
 
@@ -433,9 +438,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real y = (j+0.5)*dyinv;
-            vel(i,j,k,0) = 6. * u * y * (1.-y);
-            vel(i,j,k,1) = 0.0;
-            vel(i,j,k,2) = 0.0;
+            AMREX_D_TERM(vel(i,j,k,0) = 6. * u * y * (1.-y);,
+                         vel(i,j,k,1) = 0.0;,
+                         vel(i,j,k,2) = 0.0;);
 
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
@@ -452,9 +457,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real z = (k+0.5)*dzinv;
-            vel(i,j,k,0) = 6. * u * z * (1.-z);
-            vel(i,j,k,1) = 0.0;
-            vel(i,j,k,2) = 0.0;
+            AMREX_D_TERM(vel(i,j,k,0) = 6. * u * z * (1.-z);,
+                         vel(i,j,k,1) = 0.0;,
+                         vel(i,j,k,2) = 0.0;);
 
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
@@ -471,9 +476,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real z = (k+0.5)*dzinv;
-            vel(i,j,k,0) = 0.5*z;
-            vel(i,j,k,1) = 0.0;
-            vel(i,j,k,2) = 0.0;
+            AMREX_D_TERM(vel(i,j,k,0) = 0.5*z;,
+                         vel(i,j,k,1) = 0.0;,
+                         vel(i,j,k,2) = 0.0;);
 
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
@@ -490,9 +495,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real z = (k+0.5)*dzinv;
-            vel(i,j,k,0) = 0.0;
-            vel(i,j,k,1) = 6. * v * z * (1.-z);
-            vel(i,j,k,2) = 0.0;
+            AMREX_D_TERM(vel(i,j,k,0) = 0.0;,
+                         vel(i,j,k,1) = 6. * v * z * (1.-z);,
+                         vel(i,j,k,2) = 0.0;);
 
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
@@ -509,9 +514,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real x = (i+0.5)*dxinv;
-            vel(i,j,k,0) = 0.0;
-            vel(i,j,k,1) = 6. * v * x * (1.-x);
-            vel(i,j,k,2) = 0.0;
+            AMREX_D_TERM(vel(i,j,k,0) = 0.0;,
+                         vel(i,j,k,1) = 6. * v * x * (1.-x);,
+                         vel(i,j,k,2) = 0.0;);
 
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
@@ -528,9 +533,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real x = (i+0.5)*dxinv;
-            vel(i,j,k,0) = 0.0;
-            vel(i,j,k,1) = 0.0;
-            vel(i,j,k,2) = 6. * w * x * (1.-x);
+            AMREX_D_TERM(vel(i,j,k,0) = 0.0;,
+                         vel(i,j,k,1) = 0.0;,
+                         vel(i,j,k,2) = 6. * w * x * (1.-x););
 
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
@@ -547,9 +552,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real y = (j+0.5)*dyinv;
-            vel(i,j,k,0) = 0.0;
-            vel(i,j,k,1) = 0.0;
-            vel(i,j,k,2) = 6. * w * y * (1.-y);
+            AMREX_D_TERM(vel(i,j,k,0) = 0.0;,
+                         vel(i,j,k,1) = 0.0;,
+                         vel(i,j,k,2) = 6. * w * y * (1.-y););
 
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {

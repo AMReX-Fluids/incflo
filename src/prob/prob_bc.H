@@ -28,7 +28,11 @@ struct IncfloVelFill
         // do something for external Dirichlet (BCType::ext_dir)
         const int i = iv[0];
         const int j = iv[1];
+#if (AMREX_SPACEDIM == 3)
         const int k = iv[2];
+#else
+        const int k = 0;
+#endif
 
         const Box& domain_box = geom.Domain();
 
@@ -80,6 +84,7 @@ struct IncfloVelFill
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::y,Orientation::high)][vcomp];
             }
 
+#if (AMREX_SPACEDIM == 3)
             if (bc.lo(2) == BCType::ext_dir and k < domain_box.smallEnd(2))
             {
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::z,Orientation::low)][vcomp];
@@ -98,6 +103,7 @@ struct IncfloVelFill
             {
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::z,Orientation::high)][vcomp];
             }
+#endif
         }
     }
 };
@@ -123,7 +129,11 @@ struct IncfloDenFill
         // do something for external Dirichlet (BCType::ext_dir)
         const int i = iv[0];
         const int j = iv[1];
+#if (AMREX_SPACEDIM == 3)
         const int k = iv[2];
+#else
+        const int k = 0;
+#endif
 
         const Box& domain_box = geom.Domain();
         const BCRec& bc = bcr[bcomp];
@@ -145,7 +155,7 @@ struct IncfloDenFill
         {
             rho(i,j,k) = bcv[Orientation(Direction::y,Orientation::high)];
         }
-
+#if (AMREX_SPACEDIM == 3)
         if (bc.lo(2) == BCType::ext_dir and k < domain_box.smallEnd(2))
         {
             rho(i,j,k) = bcv[Orientation(Direction::z,Orientation::low)];
@@ -154,6 +164,7 @@ struct IncfloDenFill
         {
             rho(i,j,k) = bcv[Orientation(Direction::z,Orientation::high)];
         }
+#endif
     }
 };
 
@@ -179,7 +190,11 @@ struct IncfloTracFill
         // do something for external Dirichlet (BCType::ext_dir)
         const int i = iv[0];
         const int j = iv[1];
+#if (AMREX_SPACEDIM == 3)
         const int k = iv[2];
+#else
+        const int k = 0;
+#endif
 
         const Box& domain_box = geom.Domain();
 
@@ -204,7 +219,7 @@ struct IncfloTracFill
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::y,Orientation::high)][n];
             }
-
+#if (AMREX_SPACEDIM == 3)
             if (bc.lo(2) == BCType::ext_dir and k < domain_box.smallEnd(2))
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::z,Orientation::low)][n];
@@ -213,6 +228,7 @@ struct IncfloTracFill
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::z,Orientation::high)][n];
             }
+#endif
         }
     }
 };

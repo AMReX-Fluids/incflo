@@ -7,7 +7,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
                               amrex::FabFactory<FArrayBox> const& fact,
                               int ntrac, int ng_state,
                               bool use_godunov, bool implicit_diffusion,
-                              bool advect_tracer)
+                              bool use_tensor_correction, bool advect_tracer)
     : velocity  (ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),
       velocity_o(ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),
       density   (ba, dm, 1             , ng_state, MFInfo(), fact),
@@ -30,14 +30,16 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
         conv_velocity.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
         conv_density.define (ba, dm, 1             , 0, MFInfo(), fact);
         conv_tracer.define (ba, dm, ntrac         , 0, MFInfo(), fact);
-        if (!implicit_diffusion) 
+
+        if (!implicit_diffusion or use_tensor_correction) 
         {
             divtau.define  (ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
             divtau_o.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
-            if (advect_tracer) {
-                laps.define  (ba, dm, ntrac, 0, MFInfo(), fact);
-                laps_o.define(ba, dm, ntrac, 0, MFInfo(), fact);
-            }
+        }
+        if (!implicit_diffusion and advect_tracer)
+        {
+            laps.define  (ba, dm, ntrac, 0, MFInfo(), fact);
+            laps_o.define(ba, dm, ntrac, 0, MFInfo(), fact);
         }
     }
 }

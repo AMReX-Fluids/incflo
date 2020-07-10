@@ -9,8 +9,8 @@ target_sources(incflo
    incflo_mol_predict.cpp
    incflo_mol_fluxes_eb.cpp
    incflo_mol_fluxes.cpp
-   incflo_godunov_predict.cpp
-   incflo_godunov_advection.cpp
+   incflo_godunov_predict_${DIM}D.cpp
+   incflo_godunov_advection_${DIM}D.cpp
    incflo_godunov_plm.cpp
    incflo_godunov_ppm.cpp
    incflo_godunov_plm.H

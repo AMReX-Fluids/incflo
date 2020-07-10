@@ -59,7 +59,6 @@ void incflo::InitData ()
         if (m_initial_iterations > 0) {
             InitialIterations();
         }
-
         // Set m_nstep to 0 before entering time loop
         m_nstep = 0;
 
@@ -199,6 +198,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
                                          m_ntrac, nghost_state(),
                                          m_use_godunov,
                                          m_diff_type==DiffusionType::Implicit,
+                                           use_tensor_correction,
                                          m_advect_tracer));
 
     m_t_new[lev] = time;
