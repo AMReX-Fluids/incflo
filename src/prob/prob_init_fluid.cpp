@@ -293,7 +293,7 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& gbx,
             Real x = (i+0.5)*dx[0];
             Real y = (j+0.5)*dx[1];
 #if (AMREX_SPACEDIM == 2)
-            Real r = std::sqrt((x-0.5 )*(x-0.5 ) + (y-0.25)*(y-0.25));
+            Real r = std::sqrt((x-0.25)*(x-0.25) + (y-0.5)*(y-0.5));
 #elif  (AMREX_SPACEDIM == 3)
             Real z = (k+0.5)*dx[2];
             Real r = std::sqrt((x-0.5 )*(x-0.5 ) + (y-0.25)*(y-0.25) + (z-0.25)*(z-0.25));
