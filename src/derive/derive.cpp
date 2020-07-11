@@ -206,7 +206,6 @@ void incflo::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const& 
                     {
                         // No covered cells right or left, use standard stencil
                         vx = 0.5 * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
-                        wx = 0.5 * (ccvel_fab(i+1,j,k,2) - ccvel_fab(i-1,j,k,2)) * idx;
                     }
                     // Do the same in y-direction
                     if (!flag_fab(i,j,k).isConnected(0, 1,0))
