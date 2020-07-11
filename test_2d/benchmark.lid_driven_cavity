@@ -21,7 +21,7 @@ amr.restart             =   ""          # Checkpoint to restart from
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #
 #.......................................#
-incflo.gravity          =   0.  0.  0.  # Gravitational force (3D)
+incflo.gravity          =   0.  0.      # Gravitational force (3D)
 incflo.ro_0             =   1000.       # Reference density 
 
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
@@ -30,22 +30,22 @@ incflo.mu               =   1000.       # Dynamic viscosity coefficient
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   128 128 1   # Grid cells at coarsest AMRlevel
+amr.n_cell              =   128 128     # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
-geometry.prob_lo        =   0.  0.  0.   # Lo corner coordinates
-geometry.prob_hi        =   1.  1.  0.0078125 # Hi corner coordinates
-geometry.is_periodic    =   0   0   1    # Periodicity x y z (0/1)
+geometry.prob_lo        =   0.  0.      # Lo corner coordinates
+geometry.prob_hi        =   1.  1.      # Hi corner coordinates
+geometry.is_periodic    =   0   0       # Periodicity x y z (0/1)
 
 # Boundary conditions
 xlo.type                =   "nsw"
 xhi.type                =   "nsw"
 ylo.type                =   "nsw"
 yhi.type                =   "nsw"
-yhi.velocity            =   1.  0.  0.
+yhi.velocity            =   1.  0.  
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #          NUMERICAL PARAMETERS         #

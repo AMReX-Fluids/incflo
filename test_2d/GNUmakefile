@@ -5,7 +5,7 @@ EBASE = incflo
 
 BL_NO_FORT = FALSE
 
-DIM = 3
+DIM = 2
 
 PRECISION  = DOUBLE
 

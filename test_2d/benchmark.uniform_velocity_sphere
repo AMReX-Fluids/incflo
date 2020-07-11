@@ -21,14 +21,14 @@ amr.restart             =   ""          # Checkpoint to restart from
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #
 #.......................................#
-incflo.gravity          =   0.  0.  0.  # Gravitational force (3D)
+incflo.gravity          =   0.  0.      # Gravitational force (3D)
 incflo.ro_0             =   1.          # Reference density 
 incflo.mu               =   0.0002      # Dynamic viscosity coefficient
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   32  32  1   # Grid cells at coarsest AMRlevel
+amr.n_cell              =   32  32      # Grid cells at coarsest AMRlevel
 amr.max_level           =   1           # Max AMR level in hierarchy 
 amr.blocking_factor     =   1 
 amr.grid_eff            =   0.75
@@ -37,9 +37,9 @@ amr.n_error_buf         =   2
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
-geometry.prob_lo        =   0.  0.  0.  # Lo corner coordinates
-geometry.prob_hi        =   1.  1.  .03125 #Hi corner coordinates
-geometry.is_periodic    =   1   1   1   # Periodicity x y z (0/1)
+geometry.prob_lo        =   0.  0.      # Lo corner coordinates
+geometry.prob_hi        =   1.  1.      # Hi corner coordinates
+geometry.is_periodic    =   1   1       # Periodicity x y z (0/1)
 
 # Add sphere 
 incflo.geometry         =   "sphere"
