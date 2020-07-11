@@ -27,7 +27,7 @@ yhi.type                = "sw"
 
 incflo.probtype         =  5
 
-incflo.gravity          = 0. 0. -0.1
+incflo.gravity          = 0. -0.1
 
 incflo.gradrhoerr       = 0.1
 
