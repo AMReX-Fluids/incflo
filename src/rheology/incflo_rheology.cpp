@@ -111,7 +111,7 @@ void incflo::compute_viscosity_at_level (int lev,
                     auto const& flag_arr = flag_fab.const_array();
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        Real sr = incflo_strainrate_eb(i,j,k,idx,idy,idz,vel_arr,flag_arr(i,j,k));
+                        Real sr = incflo_strainrate_eb(i,j,k,AMREX_D_DECL(idx,idy,idz),vel_arr,flag_arr(i,j,k));
                         eta_arr(i,j,k) = non_newtonian_viscosity(sr);
                     });
                 }
@@ -120,7 +120,7 @@ void incflo::compute_viscosity_at_level (int lev,
                 {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        Real sr = incflo_strainrate(i,j,k,idx,idy,idz,vel_arr);
+                        Real sr = incflo_strainrate(i,j,k,AMREX_D_DECL(idx,idy,idz),vel_arr);
                         eta_arr(i,j,k) = non_newtonian_viscosity(sr);
                     });
                 }

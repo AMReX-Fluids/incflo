@@ -6,11 +6,12 @@
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real incflo_strainrate (int i, int j, int k,
-                               amrex::Real idx, amrex::Real idy, amrex::Real idz,
+                               AMREX_D_DECL(amrex::Real idx, amrex::Real idy, amrex::Real idz),
                                amrex::Array4<amrex::Real const> const& vel) noexcept
 {
     using namespace amrex;
 
+#if (AMREX_SPACEDIM == 3)
     Real ux = 0.5 * (vel(i+1,j,k,0) - vel(i-1,j,k,0)) * idx;
     Real vx = 0.5 * (vel(i+1,j,k,1) - vel(i-1,j,k,1)) * idx;
     Real wx = 0.5 * (vel(i+1,j,k,2) - vel(i-1,j,k,2)) * idx;
@@ -25,19 +26,29 @@ amrex::Real incflo_strainrate (int i, int j, int k,
 
     return std::sqrt(2.0 * ux*ux + 2.0 * vy*vy + 2.0 * wz*wz
                      + (uy+vx)*(uy+vx) + (vz+wy)*(vz+wy) + (wx+uz)*(wx+uz));
+#else
+    Real ux = 0.5 * (vel(i+1,j,k,0) - vel(i-1,j,k,0)) * idx;
+    Real vx = 0.5 * (vel(i+1,j,k,1) - vel(i-1,j,k,1)) * idx;
+
+    Real uy = 0.5 * (vel(i,j+1,k,0) - vel(i,j-1,k,0)) * idy;
+    Real vy = 0.5 * (vel(i,j+1,k,1) - vel(i,j-1,k,1)) * idy;
+
+    return std::sqrt(2.0 * ux*ux + 2.0 * vy*vy 
+                     + (uy+vx)*(uy+vx));
+#endif
 }
 
 #ifdef AMREX_USE_EB
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real incflo_strainrate_eb (int i, int j, int k,
-                                  amrex::Real idx, amrex::Real idy, amrex::Real idz,
+                                  AMREX_D_DECL(amrex::Real idx, amrex::Real idy, amrex::Real idz),
                                   amrex::Array4<amrex::Real const> const& vel,
                                   amrex::EBCellFlag flag) noexcept
 {
     using namespace amrex;
 
     if (flag.isRegular()) {
-        return incflo_strainrate(i,j,k,idx,idy,idz,vel);
+        return incflo_strainrate(i,j,k,AMREX_D_DECL(idx,idy,idz),vel);
     } else if (flag.isSingleValued()) {
         constexpr Real c0 = -1.5;
         constexpr Real c1 =  2.0;
@@ -108,7 +119,7 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
             vy = 0.5 * (vel(i,j+1,k,1) - vel(i,j-1,k,1)) * idy;
             wy = 0.5 * (vel(i,j+1,k,2) - vel(i,j-1,k,2)) * idy;
         }
-
+#if (AMREX_SPACEDIM == 3)
         // Do the same in z-direction
         if (!flag.isConnected(0,0, 1))
         {
@@ -143,6 +154,10 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
 
         return std::sqrt(2.0 * ux*ux + 2.0 * vy*vy + 2.0 * wz*wz
                          + (uy+vx)*(uy+vx) + (vz+wy)*(vz+wy) + (wx+uz)*(wx+uz));
+#else
+        return std::sqrt(2.0 * ux*ux + 2.0 * vy*vy 
+                         + (uy+vx)*(uy+vx));
+#endif
     } else {
         return 0.0;
     }

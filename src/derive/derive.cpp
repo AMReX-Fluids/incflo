@@ -53,9 +53,9 @@ void incflo::compute_strainrate_at_level (int lev,
         auto const& flags = fact.getMultiEBCellFlagFab();
 #endif
 
-        Real idx = 1.0 / lev_geom.CellSize(0);
-        Real idy = 1.0 / lev_geom.CellSize(1);
-        Real idz = 1.0 / lev_geom.CellSize(2);
+        AMREX_D_TERM(Real idx = 1.0 / lev_geom.CellSize(0);,
+                     Real idy = 1.0 / lev_geom.CellSize(1);,
+                     Real idz = 1.0 / lev_geom.CellSize(2););
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -80,7 +80,7 @@ void incflo::compute_strainrate_at_level (int lev,
                     auto const& flag_arr = flag_fab.const_array();
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        sr_arr(i,j,k) = incflo_strainrate_eb(i,j,k,idx,idy,idz,vel_arr,flag_arr(i,j,k));
+                        sr_arr(i,j,k) = incflo_strainrate_eb(i,j,k,AMREX_D_DECL(idx,idy,idz),vel_arr,flag_arr(i,j,k));
                     });
                 }
                 else
@@ -88,7 +88,7 @@ void incflo::compute_strainrate_at_level (int lev,
                 {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        sr_arr(i,j,k) = incflo_strainrate(i,j,k,idx,idy,idz,vel_arr);
+                        sr_arr(i,j,k) = incflo_strainrate(i,j,k,AMREX_D_DECL(idx,idy,idz),vel_arr);
                     });
                 }
         }
