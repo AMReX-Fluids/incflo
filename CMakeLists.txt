@@ -20,6 +20,14 @@ endif()
 #
 # Options -- incflo uses XSDK!!! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 #
+set(INCFLO_DIM_VALUES 2 3)
+set(INCFLO_DIM 3 CACHE STRING "Dimension of the incflo build. Valid values: <2,3>")
+set_property(CACHE INCFLO_DIM PROPERTY STRINGS ${INCFLO_DIM_VALUES})
+if(NOT INCFLO_DIM IN_LIST INCFLO_DIM_VALUES)
+    message(FATAL_ERROR "\nINCFLO_DIM set to ${INCFLO_DIM}. Must be one of ${INCFLO_DIM_VALUES}. ")
+endif()
+
+
 # We want to offer the user some core options, i.e. MPI, OpenMP, CUDA, HYPRE
 # and floating-point exceptions, which require related AMReX components to
 # be enabled in the installation.
@@ -64,7 +72,7 @@ if (AMREX_HOME)  # SUPERBUILD MODE
 
   # Set required settings for AMReX
   set(USE_XSDK_DEFAULTS ON)
-  set(DIM 3)
+  set(DIM ${INCFLO_DIM})
   set(XSDK_PRECISION "DOUBLE" CACHE INTERNAL "Precision:<SINGLE,DOUBLE>" )
   set(ENABLE_LINEAR_SOLVERS ON)
   set(ENABLE_TUTORIALS OFF)
@@ -78,7 +86,7 @@ else ()  # STANDALONE MODE
 
    # Find amrex
    set(AMREX_MINIMUM_VERSION 20.04 CACHE INTERNAL "Minimum required AMReX version")
-   set(AMREX_REQUIRED_COMPONENTS 3D DP LSOLVERS)
+   set(AMREX_REQUIRED_COMPONENTS ${INCFLO_DIM}D DP LSOLVERS)
 
    if (ENABLE_EB)
       list(APPEND AMREX_REQUIRED_COMPONENTS EB)

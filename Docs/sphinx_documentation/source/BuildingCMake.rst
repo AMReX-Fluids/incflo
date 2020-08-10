@@ -129,6 +129,9 @@ for an available AMReX installation.
 | CMAKE\_CUDA\    | User-defined CUDA flags      | valid CUDA       | None        |
 | _FLAGS          |                              | compiler flags   |             |
 +-----------------+------------------------------+------------------+-------------+
+| INCFLO\_DIM     | Dimensionality of the build  | 2/3              | 3           |
+|                 |                              |                  |             |
++-----------------+------------------------------+------------------+-------------+
 | ENABLE\_MPI     | Enable build with MPI        | no/yes           | yes         |
 |                 |                              |                  |             |
 +-----------------+------------------------------+------------------+-------------+
