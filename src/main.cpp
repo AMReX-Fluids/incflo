@@ -5,6 +5,13 @@ void writeBuildInfo();
 
 using namespace amrex;
 
+void add_par () {
+   ParmParse pp("eb2"); 
+   if(not pp.contains("extend_domain_face")) {
+      pp.add("extend_domain_face",true);
+   }
+};
+
 int main(int argc, char* argv[])
 {
 
@@ -18,7 +25,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    amrex::Initialize(argc, argv);
+    amrex::Initialize(argc, argv, true, MPI_COMM_WORLD, add_par);
     { /* These braces are necessary to ensure amrex::Finalize() can be called without explicitly
         deleting all the incflo member MultiFabs */
 
