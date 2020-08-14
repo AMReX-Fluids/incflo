@@ -65,6 +65,15 @@ void incflo::prob_init_fluid (int lev)
                                  ld.tracer.array(mfi),
                                  domain, dx, problo, probhi);
         }
+        else if (6 == m_probtype)
+        {   
+            init_channel_slant(vbx, gbx,
+                               ld.p.array(mfi),
+                               ld.velocity.array(mfi),
+                               ld.density.array(mfi),
+                               ld.tracer.array(mfi),
+                               domain, dx, problo, probhi);
+        }
         else if (11 == m_probtype)
         {
             init_tuscan(vbx, gbx,
@@ -181,6 +190,34 @@ void incflo::init_couette (Box const& vbx, Box const& gbx,
         AMREX_D_TERM(vel(i,j,k,0) *= (y-0.5);,
                      vel(i,j,k,1) = 0.0;,
                      vel(i,j,k,2) = 0.0;);
+    });
+}
+
+void incflo::init_channel_slant (Box const& vbx, Box const& gbx,
+                                 Array4<Real> const& p,
+                                 Array4<Real> const& vel,
+                                 Array4<Real> const& density,
+                                 Array4<Real> const& tracer,
+                                 Box const& domain,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& problo,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& probhi)
+{
+    Real num_cells_y = static_cast<Real>(domain.length(1));
+    Real rotation  = 0;
+    Real radius    = 0;
+    // Get cylinder information from inputs file.                               *
+    ParmParse pp("cylinder");
+    pp.query("rotation",   rotation);
+    rotation = (rotation/180.) * M_PI;
+    Real u = m_ic_u;
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {   
+        if (rotation > 0 and density(i,j,k)>0){
+            AMREX_D_TERM(vel(i,j,k,0) = u*std::cos(rotation);,
+                         vel(i,j,k,1) = u*std::sin(rotation);,
+                         vel(i,j,k,2) = 0.0;);
+        }
     });
 }
 

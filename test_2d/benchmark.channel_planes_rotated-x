@@ -17,7 +17,6 @@ incflo.cfl              =   0.45        # CFL factor
 amr.plot_per_exact      =   0.01        # Steps between plot files
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
-
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #
 #.......................................#
@@ -76,7 +75,7 @@ cylinder.center    =  0.0  0.0  0.0
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.probtype         =   31
+incflo.probtype         =   6
 incflo.ic_u             =   1.0         #
 incflo.ic_v             =   0.0         #
 incflo.ic_p             =   0.0         #
