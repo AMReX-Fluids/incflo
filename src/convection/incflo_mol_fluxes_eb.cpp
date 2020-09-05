@@ -1,4 +1,5 @@
 #include <incflo_slopes_K.H>
+#include <AMReX_EB_slopes_K.H>
 #include <MOL.H>
 #include <utility>
 
@@ -114,7 +115,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                    Real cc_qmin = amrex::min(q(i,j,k,n),q(i-1,j,k,n));
      
                    // Compute slopes of component "n" of q
-                   const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,n,q,ccc,flag,
+                   const auto& slopes_eb_hi = amrex_calc_slopes_extdir_eb(i,j,k,n,q,ccc,flag,
                                               AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo), 
                                               AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi), 
                                               AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo), 
@@ -139,7 +140,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                                 delta_z = zf  - zc;);
 
                    // Compute slopes of component "n" of q
-                   const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i-1,j,k,n,q,ccc,flag,
+                   const auto& slopes_eb_lo = amrex_calc_slopes_extdir_eb(i-1,j,k,n,q,ccc,flag,
                                               AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                               AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                               AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -197,7 +198,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                Real cc_qmin = amrex::min(q(i,j,k,n),q(i-1,j,k,n));
 
                // Compute slopes of component "n" of q
-               const auto& slopes_eb_hi = incflo_slopes_eb(i,j,k,n,q,ccc,flag);
+               const auto& slopes_eb_hi = amrex_calc_slopes_eb(i,j,k,n,q,ccc,flag);
 
 #if (AMREX_SPACEDIM == 3)
                Real qpls = q(i  ,j,k,n) - delta_x * slopes_eb_hi[0]
@@ -218,7 +219,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                             delta_z = zf  - zc;);
 
                // Compute slopes of component "n" of q
-               const auto& slopes_eb_lo = incflo_slopes_eb(i-1,j,k,n,q,ccc,flag);
+               const auto& slopes_eb_lo = amrex_calc_slopes_eb(i-1,j,k,n,q,ccc,flag);
 
 #if (AMREX_SPACEDIM == 3)
                Real qmns = q(i-1,j,k,n) + delta_x * slopes_eb_lo[0]
@@ -304,7 +305,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                    Real cc_qmin = amrex::min(q(i,j,k,n),q(i,j-1,k,n));
      
                    // Compute slopes of component "n" of q
-                   const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,n,q,ccc,flag,
+                   const auto& slopes_eb_hi = amrex_calc_slopes_extdir_eb(i,j,k,n,q,ccc,flag,
                                               AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                               AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                               AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -329,7 +330,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                                 delta_z = zf  - zc;);
 
                    // Compute slopes of component "n" of q
-                   const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j-1,k,n,q,ccc,flag,
+                   const auto& slopes_eb_lo = amrex_calc_slopes_extdir_eb(i,j-1,k,n,q,ccc,flag,
                                               AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                               AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                               AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -387,7 +388,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                Real cc_qmin = amrex::min(q(i,j,k,n),q(i,j-1,k,n));
 
                // Compute slopes of component "n" of q
-               const auto& slopes_eb_hi = incflo_slopes_eb(i,j,k,n,q,ccc,flag);
+               const auto& slopes_eb_hi = amrex_calc_slopes_eb(i,j,k,n,q,ccc,flag);
 
 #if (AMREX_SPACEDIM == 3)
                Real qpls = q(i,j  ,k,n) + delta_x * slopes_eb_hi[0]
@@ -408,7 +409,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                             delta_z = zf  - zc;);
 
                // Compute slopes of component "n" of q
-               const auto& slopes_eb_lo = incflo_slopes_eb(i,j-1,k,n,q,ccc,flag);
+               const auto& slopes_eb_lo = amrex_calc_slopes_eb(i,j-1,k,n,q,ccc,flag);
 
 #if (AMREX_SPACEDIM == 3)
                Real qmns = q(i,j-1,k,n) + delta_x * slopes_eb_lo[0]
@@ -491,7 +492,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                     Real cc_qmin = amrex::min(q(i,j,k,n),q(i,j,k-1,n));
      
                     // Compute slopes of component "n" of q
-                    const auto& slopes_eb_hi = incflo_slopes_extdir_eb(i,j,k,n,q,ccc,flag,
+                    const auto& slopes_eb_hi = amrex_calc_slopes_extdir_eb(i,j,k,n,q,ccc,flag,
                                                AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                                AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                                AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -512,7 +513,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                     delta_z = 0.5 - zc;
 
                     // Compute slopes of component "n" of q
-                    const auto& slopes_eb_lo = incflo_slopes_extdir_eb(i,j,k-1,n,q,ccc,flag,
+                    const auto& slopes_eb_lo = amrex_calc_slopes_extdir_eb(i,j,k-1,n,q,ccc,flag,
                                                AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                                AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                                AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -564,7 +565,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                 Real cc_qmin = amrex::min(q(i,j,k,n),q(i,j,k-1,n));
      
                 // Compute slopes of component "n" of q
-                const auto& slopes_eb_hi = incflo_slopes_eb(i,j,k,n,q,ccc,flag);
+                const auto& slopes_eb_hi = amrex_calc_slopes_eb(i,j,k,n,q,ccc,flag);
  
                 Real qpls = q(i,j,k  ,n) + delta_x * slopes_eb_hi[0]
                                          + delta_y * slopes_eb_hi[1]
@@ -581,7 +582,7 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                 delta_z = 0.5 - zc;
 
                 // Compute slopes of component "n" of q
-                const auto& slopes_eb_lo = incflo_slopes_eb(i,j,k-1,n,q,ccc,flag);
+                const auto& slopes_eb_lo = amrex_calc_slopes_eb(i,j,k-1,n,q,ccc,flag);
     
                 Real qmns = q(i,j,k-1,n) + delta_x * slopes_eb_lo[0]
                                          + delta_y * slopes_eb_lo[1]
