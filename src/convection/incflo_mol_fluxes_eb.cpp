@@ -1,7 +1,10 @@
 #include <incflo_slopes_K.H>
-#include <AMReX_EB_slopes_K.H>
 #include <MOL.H>
 #include <utility>
+
+#ifdef AMREX_USE_EB
+#include <AMReX_EB_slopes_K.H>
+#endif
 
 using namespace amrex;
 
