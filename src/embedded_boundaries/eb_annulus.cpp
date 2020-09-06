@@ -38,7 +38,7 @@ void incflo::make_eb_annulus()
 
     // Compute distance between cylinder centres
     Real offset = 0.0;
-    for(int i = 0; i < 3; i++)
+    for(int i = 0; i < AMREX_SPACEDIM; i++)
         offset += pow(outer_center[i] - inner_center[i], 2);
     offset = sqrt(offset); 
 
