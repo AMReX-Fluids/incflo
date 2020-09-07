@@ -3,6 +3,7 @@
 #.......................................#
 stop_time               =   0.025       # Max (simulated) time to evolve
 max_step                =   -1          # Max number of time steps
+max_step                =   1           # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -10,6 +11,9 @@ steady_state            =   0           # Steady-state solver?
 #.......................................#
 incflo.fixed_dt         =   -1.0        # Use this constant dt if > 0
 incflo.cfl              =   0.45        # CFL factor
+
+incflo.do_initial_proj    = 0
+incflo.initial_iterations = 0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
@@ -34,6 +38,7 @@ incflo.mu_s             =   0.001       # Scalar diffusion coefficient
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
 amr.n_cell              =   96 96       # Grid cells at coarsest AMRlevel
+amr.n_cell              =   32 32       # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.grid_eff            =   0.7 
 amr.n_error_buf         =   8
@@ -91,6 +96,3 @@ tensor_diffusion.verbose  =   1         # Tensor Diffusion
 
 amr.plt_vfrac           =   1
 amr.plt_ccse_regtest    =   1
-
-eb2.small_volfrac = 0.055
-eb2.extend_domain_face = 1
