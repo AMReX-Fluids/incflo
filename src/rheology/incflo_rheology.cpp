@@ -86,7 +86,9 @@ void incflo::compute_viscosity_at_level (int lev,
 
         Real idx = 1.0 / lev_geom.CellSize(0);
         Real idy = 1.0 / lev_geom.CellSize(1);
+#if (AMREX_SPACEDIM == 3)
         Real idz = 1.0 / lev_geom.CellSize(2);
+#endif
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())

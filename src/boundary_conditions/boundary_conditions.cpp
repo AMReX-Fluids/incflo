@@ -268,9 +268,9 @@ void incflo::init_bcs ()
                 bct == BC::no_slip_wall)
             {
                 if (side == Orientation::low) {
-                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::foextrap);
+                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::hoextrap);
                 } else {
-                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::foextrap);
+                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::hoextrap);
                 }
             }
             else if (bct == BC::slip_wall)

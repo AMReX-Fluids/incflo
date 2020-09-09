@@ -6,7 +6,6 @@
 #include <AMReX_BCRec.H>
 #include <AMReX_BC_TYPES.H>
 #include <AMReX_Array.H>
-#include <iomanip>
 
 /* This header file contains the inlined __host__ __device__ functions required for
    the scalar advection routines for 3D Godunov. It also contains function declarations

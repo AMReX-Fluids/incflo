@@ -1,8 +1,7 @@
-#include <incflo_slopes_K.H>
 #include <MOL.H>
 
 #ifdef AMREX_USE_EB
-#include "AMReX_EB_slopes_K.H"
+#include <AMReX_EB_slopes_K.H>
 #endif
 
 using namespace amrex;
@@ -69,7 +68,8 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         (has_extdir_or_ho_hi and domain_ihi <= ubx.bigEnd(0)))
     {
         amrex::ParallelFor(Box(ubx),
-        [u,vcc,flag,fcx,ccc,d_bcrec,
+        [u,vcc,flag,ccc,d_bcrec,
+         AMREX_D_DECL(fcx,fcy,fcz),
          AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
          AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi)]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -107,7 +107,8 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                Real cc_umin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "0" of vcc
-               const auto& slopes_eb_hi = amrex_calc_slopes_extdir_eb(i,j,k,0,vcc,ccc,flag,
+               const auto& slopes_eb_hi = amrex_calc_slopes_extdir_eb(i,j,k,0,vcc,ccc,
+                                          AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -128,7 +129,8 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                             delta_z = zf  - ccc(i-1,j,k,2););
 
                // Compute slopes of component "0" of vcc
-               const auto& slopes_eb_lo = amrex_calc_slopes_extdir_eb(i-1,j,k,0,vcc,ccc,flag,
+               const auto& slopes_eb_lo = amrex_calc_slopes_extdir_eb(i-1,j,k,0,vcc,ccc,
+                                          AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -247,7 +249,8 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         (has_extdir_or_ho_hi and domain_jhi <= vbx.bigEnd(1)))
     {
         amrex::ParallelFor(Box(vbx),
-        [v,vcc,flag,fcy,ccc,d_bcrec,
+        [v,vcc,flag,ccc,d_bcrec,
+         AMREX_D_DECL(fcx,fcy,fcz),
          AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
          AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi)]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -286,7 +289,8 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                Real cc_vmin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "1" of vcc
-               const auto& slopes_eb_hi = amrex_calc_slopes_extdir_eb(i,j,k,1,vcc,ccc,flag,
+               const auto& slopes_eb_hi = amrex_calc_slopes_extdir_eb(i,j,k,1,vcc,ccc,
+                                          AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -308,7 +312,8 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                             delta_z = zf  - ccc(i,j-1,k,2););
 
                // Compute slopes of component "1" of vcc
-               const auto& slopes_eb_lo = amrex_calc_slopes_extdir_eb(i,j-1,k,1,vcc,ccc,flag,
+               const auto& slopes_eb_lo = amrex_calc_slopes_extdir_eb(i,j-1,k,1,vcc,ccc,
+                                          AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -431,7 +436,8 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
         (has_extdir_or_ho_hi and domain_khi <= wbx.bigEnd(2)))
     {
         amrex::ParallelFor(Box(wbx),
-        [w,vcc,flag,fcz,ccc,d_bcrec,
+        [w,vcc,flag,ccc,d_bcrec,
+         AMREX_D_DECL(fcx,fcy,fcz),
          domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
@@ -468,7 +474,8 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                Real cc_wmin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "2" of vcc
-               const auto& slopes_eb_hi = amrex_calc_slopes_extdir_eb(i,j,k,2,vcc,ccc,flag,
+               const auto& slopes_eb_hi = amrex_calc_slopes_extdir_eb(i,j,k,2,vcc,ccc,
+                                          AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -485,7 +492,8 @@ mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
                delta_z = 0.5 - ccc(i,j,k-1,2);
 
                // Compute slopes of component "2" of vcc
-               const auto& slopes_eb_lo = amrex_calc_slopes_extdir_eb(i,j,k-1,2,vcc,ccc,flag,
+               const auto& slopes_eb_lo = amrex_calc_slopes_extdir_eb(i,j,k-1,2,vcc,ccc,
+                                          AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),

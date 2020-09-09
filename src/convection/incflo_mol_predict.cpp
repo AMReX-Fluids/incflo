@@ -1,5 +1,5 @@
 #include <MOL.H>
-#include <incflo_slopes_K.H>
+#include <AMReX_Slopes_K.H>
 
 using namespace amrex;
 
@@ -136,11 +136,13 @@ mol::predict_vels_on_faces (int lev,
             const Real vcc_pls = vcc(i,j,k,0);
             const Real vcc_mns = vcc(i-1,j,k,0);
 
-            Real upls = vcc_pls - 0.5 * incflo_xslope_extdir
-                (i,j,k,0,vcc, extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
+            int order = 2;
 
-            Real umns = vcc_mns + 0.5 * incflo_xslope_extdir
-                (i-1,j,k,0,vcc, extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
+            Real upls = vcc_pls - 0.5 * amrex_calc_xslope_extdir(
+                 i  ,j,k,0,order,vcc,extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
+
+            Real umns = vcc_mns + 0.5 * amrex_calc_xslope_extdir(
+                 i-1,j,k,0,order,vcc,extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
 
             Real u_val(0);
 
@@ -170,8 +172,10 @@ mol::predict_vels_on_faces (int lev,
         amrex::ParallelFor(ubx, [vcc,u]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            Real upls = vcc(i  ,j,k,0) - 0.5 * incflo_xslope(i  ,j,k,0,vcc);
-            Real umns = vcc(i-1,j,k,0) + 0.5 * incflo_xslope(i-1,j,k,0,vcc);
+            int order = 2;
+
+            Real upls = vcc(i  ,j,k,0) - 0.5 * amrex_calc_xslope(i  ,j,k,0,order,vcc);
+            Real umns = vcc(i-1,j,k,0) + 0.5 * amrex_calc_xslope(i-1,j,k,0,order,vcc);
 
             Real u_val(0);
 
@@ -211,10 +215,12 @@ mol::predict_vels_on_faces (int lev,
             const Real vcc_pls = vcc(i,j,k,1);
             const Real vcc_mns = vcc(i,j-1,k,1);
 
-            Real vpls = vcc_pls - 0.5 * incflo_yslope_extdir
-                (i,j,k,1,vcc, extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi);
-            Real vmns = vcc_mns + 0.5 * incflo_yslope_extdir
-                (i,j-1,k,1,vcc, extdir_or_ho_jlo, extdir_or_ho_jhi, domain_jlo, domain_jhi);
+            int order = 2;
+    
+            Real vpls = vcc_pls - 0.5 * amrex_calc_yslope_extdir(
+                 i,j,k,1,order,vcc,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
+            Real vmns = vcc_mns + 0.5 * amrex_calc_yslope_extdir(
+                 i,j-1,k,1,order,vcc,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
             Real v_val(0);
 
@@ -243,8 +249,10 @@ mol::predict_vels_on_faces (int lev,
         amrex::ParallelFor(vbx, [vcc,v]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            Real vpls = vcc(i,j  ,k,1) - 0.5 * incflo_yslope(i,j  ,k,1,vcc);
-            Real vmns = vcc(i,j-1,k,1) + 0.5 * incflo_yslope(i,j-1,k,1,vcc);
+            int order = 2;
+
+            Real vpls = vcc(i,j  ,k,1) - 0.5 * amrex_calc_yslope(i,j  ,k,1,order,vcc);
+            Real vmns = vcc(i,j-1,k,1) + 0.5 * amrex_calc_yslope(i,j-1,k,1,order,vcc);
 
             Real v_val(0);
 
@@ -284,10 +292,12 @@ mol::predict_vels_on_faces (int lev,
             const Real vcc_pls = vcc(i,j,k,2);
             const Real vcc_mns = vcc(i,j,k-1,2);
 
-            Real wpls = vcc_pls - 0.5 * incflo_zslope_extdir
-                (i,j,k,2,vcc, extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
-            Real wmns = vcc_mns + 0.5 * incflo_zslope_extdir(
-                i,j,k-1,2,vcc, extdir_or_ho_klo, extdir_or_ho_khi, domain_klo, domain_khi);
+            int order = 2;
+
+            Real wpls = vcc_pls - 0.5 * amrex_calc_zslope_extdir(
+                 i,j,k  ,2,order,vcc,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
+            Real wmns = vcc_mns + 0.5 * amrex_calc_zslope_extdir(
+                 i,j,k-1,2,order,vcc,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
             Real w_val(0);
 
@@ -316,8 +326,10 @@ mol::predict_vels_on_faces (int lev,
         amrex::ParallelFor(wbx, [vcc,w]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            Real wpls = vcc(i,j,k  ,2) - 0.5 * incflo_zslope(i,j,k  ,2,vcc);
-            Real wmns = vcc(i,j,k-1,2) + 0.5 * incflo_zslope(i,j,k-1,2,vcc);
+            int order = 2;
+
+            Real wpls = vcc(i,j,k  ,2) - 0.5 * amrex_calc_zslope(i,j,k  ,2,order,vcc);
+            Real wmns = vcc(i,j,k-1,2) + 0.5 * amrex_calc_zslope(i,j,k-1,2,order,vcc);
 
             Real w_val(0);
 
