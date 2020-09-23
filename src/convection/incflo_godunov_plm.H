@@ -51,9 +51,9 @@ void Godunov_plm_fpu_x (const int i, const int j, const int k, const int n,
             }
         } else {
             upls = S(i  ,j,k,n) + 0.5 * (-1.0 - umac * dt/dx) *
-               amrex_calc_xslope(i  ,j,k,n,order,S);
+               amrex_calc_xslope_extdir(i  ,j,k,n,order,S,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
             umns = S(i-1,j,k,n) + 0.5 * ( 1.0 - umac * dt/dx) *
-               amrex_calc_xslope(i-1,j,k,n,order,S);
+               amrex_calc_xslope_extdir(i-1,j,k,n,order,S,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
         }
 
         Ip = umns;
@@ -103,9 +103,9 @@ void Godunov_plm_fpu_y (const int i, const int j, const int k, const int n,
 
         } else {
             vpls = S(i,j  ,k,n) + 0.5 * (-1.0 - vmac * dt/dy) *
-               amrex_calc_yslope(i,j  ,k,n,order,S);
+               amrex_calc_yslope_extdir(i,j  ,k,n,order,S,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
             vmns = S(i,j-1,k,n) + 0.5 * ( 1.0 - vmac * dt/dy) *
-               amrex_calc_yslope(i,j-1,k,n,order,S);
+               amrex_calc_yslope_extdir(i,j-1,k,n,order,S,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
         }
 
 
@@ -156,9 +156,9 @@ void Godunov_plm_fpu_z (const int i, const int j, const int k, const int n,
             }
         } else {
             wpls = S(i,j,k  ,n) + 0.5 * (-1.0 - wmac * dt/dz) *
-               amrex_calc_zslope(i,j,k  ,n,order,S);
+               amrex_calc_zslope_extdir(i,j,k  ,n,order,S,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
             wmns = S(i,j,k-1,n) + 0.5 * ( 1.0 - wmac * dt/dz) *
-               amrex_calc_zslope(i,j,k-1,n,order,S);
+               amrex_calc_zslope_extdir(i,j,k-1,n,order,S,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
         }
 
 
