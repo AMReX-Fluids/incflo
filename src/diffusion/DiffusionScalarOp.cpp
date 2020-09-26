@@ -1,4 +1,4 @@
-#include <incflo.H>
+G
 #include <DiffusionScalarOp.H>
 #include <AMReX_ParmParse.H>
 
@@ -120,9 +120,9 @@ DiffusionScalarOp::readParameters ()
 
     pp.query("verbose", m_verbose);
     pp.query("mg_verbose", m_mg_verbose);
-    pp.query("mg_cg_verbose", m_mg_cg_verbose);
+    pp.query("mg_bottom_verbose", m_mg_bottom_verbose);
     pp.query("mg_max_iter", m_mg_max_iter);
-    pp.query("mg_cg_maxiter", m_mg_cg_maxiter);
+    pp.query("mg_bottom_maxiter", m_mg_bottom_maxiter);
     pp.query("mg_max_fmg_iter", m_mg_max_fmg_iter);
     pp.query("mg_max_coarsening_level", m_mg_max_coarsening_level);
     pp.query("mg_maxorder", m_mg_maxorder);
@@ -247,11 +247,10 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
         // Maximum iterations for MultiGrid / ConjugateGradients
         mlmg.setMaxIter(m_mg_max_iter);
         mlmg.setMaxFmgIter(m_mg_max_fmg_iter);
-        mlmg.setCGMaxIter(m_mg_cg_maxiter);
+        mlmg.setBottomMaxIter(m_mg_bottom_maxiter);
         
         // Verbosity for MultiGrid / ConjugateGradients
         mlmg.setVerbose(m_mg_verbose);
-        mlmg.setCGVerbose(m_mg_cg_verbose);
         mlmg.setBottomVerbose(m_mg_bottom_verbose);
 
         mlmg.setPreSmooth(m_num_pre_smooth);
@@ -377,11 +376,10 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
         // Maximum iterations for MultiGrid / ConjugateGradients
         mlmg.setMaxIter(m_mg_max_iter);
         mlmg.setMaxFmgIter(m_mg_max_fmg_iter);
-        mlmg.setCGMaxIter(m_mg_cg_maxiter);
+        mlmg.setBottomMaxIter(m_mg_bottom_maxiter);
         
         // Verbosity for MultiGrid / ConjugateGradients
         mlmg.setVerbose(m_mg_verbose);
-        mlmg.setCGVerbose(m_mg_cg_verbose);
         mlmg.setBottomVerbose(m_mg_bottom_verbose);
 
         mlmg.setPreSmooth(m_num_pre_smooth);
