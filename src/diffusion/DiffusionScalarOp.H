@@ -59,7 +59,6 @@ private:
     // Options to control MLMG behavior
     int m_mg_verbose = 0;
     int m_mg_bottom_verbose = 0;
-    int m_mg_bottom_verbose = 0;
     int m_mg_max_iter = 100;
     int m_mg_bottom_maxiter = 100;
     int m_mg_max_fmg_iter = 0;
