@@ -1,4 +1,4 @@
-G
+#include <incflo.H>
 #include <DiffusionScalarOp.H>
 #include <AMReX_ParmParse.H>
 
