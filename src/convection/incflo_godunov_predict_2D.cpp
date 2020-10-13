@@ -101,18 +101,16 @@ void godunov::make_trans_velocities (int lev, Box const& xbx, Box const& ybx,
         // We only care about x-velocity on x-faces here
         constexpr int n = 0;
 
-        Real lo, hi;
+        Real lo = Ipx(i-1,j,k,n);
+        Real hi = Imx(i  ,j,k,n);
+
         if (l_use_forces_in_trans) {
-            lo = Ipx(i-1,j,k,n) + 0.5*l_dt*f(i-1,j,k,n);
-            hi = Imx(i  ,j,k,n) + 0.5*l_dt*f(i  ,j,k,n);
-        } else {
-            lo = Ipx(i-1,j,k,n);
-            hi = Imx(i  ,j,k,n);
+            lo += 0.5*l_dt*f(i-1,j,k,n);
+            hi += 0.5*l_dt*f(i  ,j,k,n);
         }
 
         auto bc = pbc[n];
         Godunov_trans_xbc(i, j, k, n, vel, lo, hi, lo, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
-
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
         bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
@@ -123,18 +121,16 @@ void godunov::make_trans_velocities (int lev, Box const& xbx, Box const& ybx,
         // We only care about y-velocity on y-faces here
         constexpr int n = 1;
 
-        Real lo, hi;
+        Real lo = Ipy(i,j-1,k,n);
+        Real hi = Imy(i,j  ,k,n);
+
         if (l_use_forces_in_trans) {
-            lo = Ipy(i,j-1,k,n) + 0.5*l_dt*f(i,j-1,k,n);
-            hi = Imy(i,j  ,k,n) + 0.5*l_dt*f(i,j  ,k,n);
-        } else {
-            lo = Ipy(i,j-1,k,n);
-            hi = Imy(i,j  ,k,n);
+            lo += 0.5*l_dt*f(i,j-1,k,n);
+            hi += 0.5*l_dt*f(i,j  ,k,n);
         }
 
         auto bc = pbc[n];
         Godunov_trans_ybc(i, j, k, n, vel, lo, hi, lo, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
-
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
         bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
@@ -183,13 +179,12 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
     amrex::ParallelFor(
         xebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            Real lo, hi;
+            Real lo = Ipx(i-1,j,k,n);
+            Real hi = Imx(i  ,j,k,n);
+
             if (l_use_forces_in_trans) {
-                lo = Ipx(i-1,j,k,n) + 0.5*l_dt*f(i-1,j,k,n);
-                hi = Imx(i  ,j,k,n) + 0.5*l_dt*f(i  ,j,k,n);
-            } else {
-                lo = Ipx(i-1,j,k,n);
-                hi = Imx(i  ,j,k,n);
+                lo += 0.5*l_dt*f(i-1,j,k,n);
+                hi += 0.5*l_dt*f(i  ,j,k,n);
             }
 
             Real uad = u_ad(i,j,k);
@@ -206,13 +201,12 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
         },
         yebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            Real lo, hi;
+            Real lo = Ipy(i,j-1,k,n);
+            Real hi = Imy(i,j  ,k,n);
+
             if (l_use_forces_in_trans) {
-                lo = Ipy(i,j-1,k,n) + 0.5*l_dt*f(i,j-1,k,n);
-                hi = Imy(i,j  ,k,n) + 0.5*l_dt*f(i,j  ,k,n);
-            } else {
-                lo = Ipy(i,j-1,k,n);
-                hi = Imy(i,j  ,k,n);
+                lo += 0.5*l_dt*f(i,j-1,k,n);
+                hi += 0.5*l_dt*f(i,j  ,k,n);
             }
 
             Real vad = v_ad(i,j,k);
@@ -258,7 +252,6 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
         l_yzhi = yhi(i,j,k,n);
         Real vad = v_ad(i,j,k);
         Godunov_trans_ybc(i, j, k, n, q, l_yzlo, l_yzhi, vad, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
-
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -313,9 +306,9 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
 
         l_xzlo = xlo(i,j,k,n);
         l_xzhi = xhi(i,j,k,n);
+
         Real uad = u_ad(i,j,k);
         Godunov_trans_xbc(i, j, k, n, q, l_xzlo, l_xzhi, uad, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
-
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
