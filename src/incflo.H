@@ -703,7 +703,7 @@ private:
     void apply_MAC_projection (AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
                                             amrex::Vector<amrex::MultiFab*> const& v_mac,
                                             amrex::Vector<amrex::MultiFab*> const& w_mac),
-                               amrex::Vector<amrex::MultiFab const*> const& density,
+                               amrex::Vector<amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>> const& inv_rho,
                                amrex::Real time);
 
     ///////////////////////////////////////////////////////////////////////////

@@ -9,6 +9,7 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
                                MultiFab const& mac_phi, 
                                MultiFab const& vel, 
                                MultiFab const& vel_forces,
+                               Array<MultiFab,AMREX_SPACEDIM> const& inv_rho,
                                Vector<BCRec> const& h_bcrec,
                                       BCRec  const* d_bcrec,
                                Vector<Geometry> geom, Real l_dt, 
@@ -35,6 +36,8 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
             Array4<Real> const& a_vmac = v_mac.array(mfi);
 
             Array4<Real const> const& mac_phi_arr = mac_phi.const_array(mfi);
+            Array4<Real const> const& inv_rho_x   = inv_rho[0].const_array(mfi);
+            Array4<Real const> const& inv_rho_y   = inv_rho[1].const_array(mfi);
 
             Array4<Real const> const& a_vel = vel.const_array(mfi);
             Array4<Real const> const& a_f = vel_forces.const_array(mfi);
@@ -75,9 +78,10 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
 
             predict_godunov_on_box(lev, bx, ncomp, xbx, ybx, a_umac, a_vmac,
                                    a_vel, u_ad, v_ad, mac_phi_arr,
+                                   inv_rho_x, inv_rho_y, 
                                    Imx, Imy, Ipx, Ipy, a_f, 
                                    domain, dx, l_dt, d_bcrec, 
-                                   use_forces_in_trans, use_mac_phi_in_goduonv, p);
+                                   use_forces_in_trans, use_mac_phi_in_godunov, p);
 
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
         }
@@ -153,6 +157,9 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
                                       Array4<Real const> const& q,
                                       Array4<Real const> const& u_ad,
                                       Array4<Real const> const& v_ad,
+                                      Array4<Real const> const& mac_phi,
+                                      Array4<Real const> const& inv_rho_x,
+                                      Array4<Real const> const& inv_rho_y,
                                       Array4<Real> const& Imx,
                                       Array4<Real> const& Imy,
                                       Array4<Real> const& Ipx,
@@ -163,6 +170,7 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
                                       Real l_dt,
                                       BCRec  const* pbc,
                                       bool l_use_forces_in_trans,
+                                      bool l_use_mac_phi_in_godunov,
                                       Real* p)
 {
     // const Box& domain = Geom(lev).Domain();

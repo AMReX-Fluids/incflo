@@ -36,11 +36,28 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
     auto mac_phi = get_mac_phi();
 
+    // This will hold (1/rho) on faces
+    Vector<Array<MultiFab ,AMREX_SPACEDIM> > rho_face(finest_level+1);
+    for (int lev=0; lev <= finest_level; ++lev)
+    {
+        AMREX_D_TERM(rho_face[lev][0].define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
+                     rho_face[lev][1].define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
+                     rho_face[lev][2].define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev)););
+    }
+
     for (int lev = 0; lev <= finest_level; ++lev) {
 
 #ifdef AMREX_USE_EB
         const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
+        EB_interp_CellCentroid_to_FaceCentroid (*density[lev], GetArrOfPtrs(rho_face[lev]), 0, 0, 1,
+                                                geom[lev], get_density_bcrec());
+#else
+        amrex::average_cellcenter_to_face(GetArrOfPtrs(rho_face[lev]), *density[lev], geom[lev]);
 #endif
+
+        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+            rho_face[lev][idim].invert(1.0, 0);
+        }
 
         mac_phi[lev]->FillBoundary(geom[lev].periodicity());
 
@@ -49,7 +66,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         if (m_use_godunov) {
             godunov::predict_godunov(lev, time, 
                                      AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]), 
-                                     *mac_phi[lev], *vel[lev], *vel_forces[lev],
+                                     *mac_phi[lev], *vel[lev], *vel_forces[lev], rho_face[lev],
                                      get_velocity_bcrec(), get_velocity_bcrec_device_ptr(), 
                                      Geom(), l_dt, m_godunov_ppm, m_godunov_use_forces_in_trans,
                                      m_use_mac_phi_in_godunov);
@@ -64,7 +81,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         }
     }
 
-    apply_MAC_projection(AMREX_D_DECL(u_mac, v_mac, w_mac), density, time);
+    apply_MAC_projection(AMREX_D_DECL(u_mac, v_mac, w_mac), rho_face, time);
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
