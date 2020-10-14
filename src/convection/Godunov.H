@@ -16,12 +16,14 @@ namespace godunov {
                           AMREX_D_DECL(amrex::MultiFab& u_mac,
                                        amrex::MultiFab& v_mac,
                                        amrex::MultiFab& w_mac),
+                          amrex::MultiFab const& mac_phi, 
                           amrex::MultiFab const& vel, 
                           amrex::MultiFab const& vel_forces,
                           amrex::Vector<amrex::BCRec> const& h_bcrec,
                                         amrex::BCRec  const* d_bcrec,
                           amrex::Vector<amrex::Geometry> geom,
-                          amrex::Real dt, bool use_ppm, bool use_forces_in_trans);
+                          amrex::Real dt, bool use_ppm, bool use_forces_in_trans,
+                          bool use_mac_phi_in_godunov);
 
     void predict_plm_x (int lev, amrex::Box const& bx, int ncomp,
                         amrex::Array4<amrex::Real> const& Imx, amrex::Array4<amrex::Real> const& Ipx,
@@ -95,6 +97,7 @@ namespace godunov {
                                  AMREX_D_DECL(amrex::Array4<amrex::Real const> const& u_ad,
                                               amrex::Array4<amrex::Real const> const& v_ad,
                                               amrex::Array4<amrex::Real const> const& w_ad),
+                                 amrex::Array4<amrex::Real const> const& mac_phi,
                                  AMREX_D_DECL(amrex::Array4<amrex::Real> const& Imx,
                                               amrex::Array4<amrex::Real> const& Imy,
                                               amrex::Array4<amrex::Real> const& Imz),
@@ -107,6 +110,7 @@ namespace godunov {
                                  amrex::Real dt,
                                  amrex::BCRec const* d_bcrec,
                                  bool use_forces_in_trans,
+                                 bool use_mac_phi_in_godunov,
                                  amrex::Real* p);
 
     void compute_godunov_advection (int lev, amrex::Box const& bx, int ncomp,

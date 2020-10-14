@@ -149,6 +149,9 @@ public: // for cuda
     void ComputeDrag ();
     amrex::Real ComputeKineticEnergy () const;
 
+    void DiffFromExact (int lev, amrex::Geometry& lev_geom, amrex::Real t, amrex::MultiFab& error,
+                        int icomp_src, int icomp_err);
+
     virtual void compute_strainrate_at_level (int lev,
                                               amrex::MultiFab* sr,
                                               amrex::MultiFab* vel,
@@ -384,6 +387,11 @@ private:
     //    the construction of the "trans" velocities
     bool m_godunov_use_forces_in_trans = false;
 
+    // If using Godunov, if true then don't include the pressure gradient
+    //    in the forcing term passed into the godunov routine; instead 
+    //    use gradient of mac phi which contains the full pressure
+    bool m_use_mac_phi_in_godunov = false;
+
     enum struct DiffusionType {
         Invalid, Explicit, Crank_Nicolson, Implicit
     };
@@ -430,12 +438,18 @@ private:
     int m_plt_rho         = 1;
     int m_plt_tracer      = 1;
     int m_plt_p           = 0;
+    int m_plt_macphi      = 0;
     int m_plt_eta         = 0;
     int m_plt_vort        = 1;
     int m_plt_forcing     = 0;
     int m_plt_strainrate  = 0;
     int m_plt_divu        = 0;
     int m_plt_vfrac       = 1;
+    int m_plt_error_u     = 0;
+    int m_plt_error_v     = 0;
+    int m_plt_error_w     = 0;
+    int m_plt_error_p     = 0;
+    int m_plt_error_mac_p = 0;
 
     struct LevelData {
         LevelData () = default;
@@ -452,6 +466,9 @@ private:
         amrex::MultiFab density_o;
         amrex::MultiFab tracer;
         amrex::MultiFab tracer_o;
+
+        amrex::MultiFab mac_phi; // cell-centered pressure used in MAC projection
+
         amrex::MultiFab gp; // pressure gradient
         // nodal multifabs
         amrex::MultiFab p;
@@ -575,6 +592,7 @@ private:
     amrex::Vector<amrex::MultiFab*> get_density_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_new () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_mac_phi () noexcept;
     amrex::Vector<amrex::MultiFab*> get_vel_forces () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tra_forces () noexcept;
     amrex::Vector<amrex::MultiFab*> get_conv_velocity_old () noexcept;

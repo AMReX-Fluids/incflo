@@ -90,5 +90,13 @@ incflo::apply_MAC_projection (AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
 
     macproj.setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
 
-    macproj.project(m_mac_mg_rtol,m_mac_mg_atol);
+    auto mac_phi = get_mac_phi();
+
+    for (int lev=0; lev <= finest_level; ++lev)
+        mac_phi[lev]->mult(m_dt/2.,0,1,1);
+
+    macproj.project(mac_phi,m_mac_mg_rtol,m_mac_mg_atol);
+
+    for (int lev=0; lev <= finest_level; ++lev)
+        mac_phi[lev]->mult(2./m_dt,0,1,1);
 }

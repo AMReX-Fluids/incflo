@@ -15,6 +15,9 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
       tracer    (ba, dm, ntrac         , ng_state, MFInfo(), fact),
       tracer_o  (ba, dm, ntrac         , ng_state, MFInfo(), fact),
       gp        (ba, dm, AMREX_SPACEDIM, 0       , MFInfo(), fact),
+
+      mac_phi   (ba, dm, 1             , 1       , MFInfo(), fact),
+
       p         (amrex::convert(ba,IntVect::TheNodeVector()),
                      dm, 1             , 0 , MFInfo(), fact),
       conv_velocity_o(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact),

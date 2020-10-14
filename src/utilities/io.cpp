@@ -358,6 +358,26 @@ void incflo::WritePlotFile()
     // Pressure
     if(m_plt_p) ++ncomp;
 
+    // MAC phi
+    if(m_plt_macphi) ncomp += 1;
+
+    // Error in u (computed vs exact)
+    if(m_plt_error_u) ncomp += 1;
+
+    // Error in v (computed vs exact)
+    if(m_plt_error_v) ncomp += 1;
+
+#if (AMREX_SPACEDIM == 3)
+    // Error in w (computed vs exact)
+    if(m_plt_error_w) ncomp += 1;
+#endif
+
+    // Error in nodal pressure (computed vs exact)
+    if(m_plt_error_p) ncomp += 1;
+
+    // Error in MAC pressure (computed vs exact)
+    if(m_plt_error_mac_p) ncomp += 1;
+
     // Apparent viscosity
     if(m_plt_eta) ++ncomp;
 
@@ -432,28 +452,89 @@ void incflo::WritePlotFile()
     }
 #endif
     if (m_plt_rho) {
-        for (int lev = 0; lev <= finest_level; ++lev) {
+        for (int lev = 0; lev <= finest_level; ++lev) 
             MultiFab::Copy(mf[lev], m_leveldata[lev]->density, 0, icomp, 1, 0);
-        }
         pltscaVarsName.push_back("density");
         ++icomp;
     }
     if (m_plt_tracer) {
-        for (int lev = 0; lev <= finest_level; ++lev) {
+        for (int lev = 0; lev <= finest_level; ++lev) 
             MultiFab::Copy(mf[lev], m_leveldata[lev]->tracer, 0, icomp, m_ntrac, 0);
-        }
         for (int i = 0; i < m_ntrac; ++i) {
             pltscaVarsName.push_back("tracer"+std::to_string(i));
         }
         icomp += m_ntrac;
     }
     if (m_plt_p) {
-        for (int lev = 0; lev <= finest_level; ++lev) {
+        for (int lev = 0; lev <= finest_level; ++lev) 
             amrex::average_node_to_cellcenter(mf[lev], icomp, m_leveldata[lev]->p, 0, 1);
-        }
         pltscaVarsName.push_back("p");
         ++icomp;
     }
+    if (m_plt_macphi) {
+        for (int lev = 0; lev <= finest_level; ++lev) 
+            MultiFab::Copy(mf[lev], m_leveldata[lev]->mac_phi, 0, icomp, 1, 0);
+        pltscaVarsName.push_back("mac_phi");
+        ++icomp;
+    }
+
+    if (m_plt_error_u) {
+        int icomp_err_u = 0;
+        for (int lev = 0; lev <= finest_level; ++lev)  
+        {
+            MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 0, icomp, 1, 0);
+            DiffFromExact(lev, Geom(lev), m_cur_time, mf[lev], icomp, icomp_err_u);
+        }
+        pltscaVarsName.push_back("error_u");
+        ++icomp;
+    }
+
+    if (m_plt_error_v) {
+        int icomp_err_v = 1;
+        for (int lev = 0; lev <= finest_level; ++lev)  
+        {
+            MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 1, icomp, 1, 0);
+            DiffFromExact(lev, Geom(lev), m_cur_time, mf[lev], icomp, icomp_err_v);
+        }
+        pltscaVarsName.push_back("error_v");
+        ++icomp;
+    }
+
+#if (AMREX_SPACEDIM == 3)
+    if (m_plt_error_w) {
+        int icomp_err_w = 2;
+        for (int lev = 0; lev <= finest_level; ++lev)  
+        {
+            MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 2, icomp, 1, 0);
+            DiffFromExact(lev, Geom(lev), m_cur_time, mf[lev], icomp, icomp_err_w);
+        }
+        pltscaVarsName.push_back("error_w");
+        ++icomp;
+    }
+#endif
+
+    if (m_plt_error_p) {
+        int icomp_err_p = AMREX_SPACEDIM;
+        for (int lev = 0; lev <= finest_level; ++lev)  
+        {
+            amrex::average_node_to_cellcenter(mf[lev], icomp, m_leveldata[lev]->p, 0, 1);
+            DiffFromExact(lev, Geom(lev), m_cur_time, mf[lev], icomp, icomp_err_p);
+        }
+        pltscaVarsName.push_back("error_p");
+        ++icomp;
+    }
+
+    if (m_plt_error_mac_p) {
+        int icomp_err_mac_p = AMREX_SPACEDIM+1;
+        for (int lev = 0; lev <= finest_level; ++lev)  
+        {
+            MultiFab::Copy(mf[lev], m_leveldata[lev]->mac_phi, 0, icomp, 1, 0);
+            DiffFromExact(lev, Geom(lev), m_cur_time, mf[lev], icomp, icomp_err_mac_p);
+        }
+        pltscaVarsName.push_back("error_mac_p");
+        ++icomp;
+    }
+
     if (m_plt_eta) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab vel_eta(mf[lev], amrex::make_alias, icomp, 1);
@@ -478,6 +559,7 @@ void incflo::WritePlotFile()
     if (m_plt_forcing) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab forcing(mf[lev], amrex::make_alias, icomp, 3);
+            bool include_pressure_gradient = false;
             compute_vel_forces_on_level(lev, forcing, 
                                         m_leveldata[lev]->velocity,
                                         m_leveldata[lev]->density,

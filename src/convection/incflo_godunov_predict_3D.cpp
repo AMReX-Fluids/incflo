@@ -5,12 +5,14 @@
 
 using namespace amrex;
 
-void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_mac,
-                               MultiFab& w_mac, MultiFab const& vel, MultiFab const& vel_forces,
+void godunov::predict_godunov (int lev, Real time,  MultiFab& u_mac, MultiFab& v_mac,
+                               MultiFab& w_mac,     MultiFab const& mac_phi,
+                               MultiFab const& vel, MultiFab const& vel_forces,
                                Vector<BCRec> const& h_bcrec,
                                       BCRec  const* d_bcrec,
                                Vector<Geometry> geom, Real l_dt, 
-                               bool use_ppm, bool use_forces_in_trans)
+                               bool use_ppm, bool use_forces_in_trans,
+                               bool use_mac_phi_in_godunov)
 {
     Box const& domain = geom[lev].Domain();
     const Real* dx    = geom[lev].CellSize();
@@ -32,6 +34,9 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
             Array4<Real> const& a_umac = u_mac.array(mfi);
             Array4<Real> const& a_vmac = v_mac.array(mfi);
             Array4<Real> const& a_wmac = w_mac.array(mfi);
+
+            Array4<Real const> const& mac_phi_arr = mac_phi.const_array(mfi);
+
             Array4<Real const> const& a_vel = vel.const_array(mfi);
             Array4<Real const> const& a_f = vel_forces.const_array(mfi);
 
@@ -77,8 +82,10 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
                                   domain, l_dt, d_bcrec, use_forces_in_trans);
 
             predict_godunov_on_box(lev, bx, ncomp, xbx, ybx, zbx, a_umac, a_vmac, a_wmac,
-                                   a_vel, u_ad, v_ad, w_ad, Imx, Imy, Imz, Ipx, Ipy, Ipz, a_f, 
-                                   domain, dx, l_dt, d_bcrec, use_forces_in_trans, p);
+                                   a_vel, u_ad, v_ad, w_ad, mac_phi_arr,
+                                   Imx, Imy, Imz, Ipx, Ipy, Ipz, a_f, 
+                                   domain, dx, l_dt, d_bcrec, 
+                                   use_forces_in_trans, use_mac_phi_in_godunov, p);
 
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
         }
@@ -179,6 +186,7 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
                                       Array4<Real const> const& u_ad,
                                       Array4<Real const> const& v_ad,
                                       Array4<Real const> const& w_ad,
+                                      Array4<Real const> const& mac_phi,
                                       Array4<Real> const& Imx,
                                       Array4<Real> const& Imy,
                                       Array4<Real> const& Imz,
@@ -191,6 +199,7 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
                                       Real l_dt,
                                       BCRec  const* pbc,
                                       bool l_use_forces_in_trans,
+                                      bool l_use_mac_phi_in_godunov,
                                       Real* p)
 {
     // const Box& domain = Geom(lev).Domain();
@@ -362,6 +371,15 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
             sth += 0.5 * l_dt * f(i  ,j,k,n);
         }
 
+        Real gphi_x;
+
+        if (l_use_mac_phi_in_godunov)
+        {
+            gphi_x = ( (mac_phi(i,j,k) - mac_phi(i-1,j,k)) / dx ) * inv_rho_x(i,j,k);
+            stl -= 0.5 * l_dt * gphi_x;
+            sth -= 0.5 * l_dt * gphi_x;
+        }
+
         Godunov_cc_xbc_lo(i, j, k, n, q, stl, sth, u_ad, bc.lo(0), dlo.x, true);
         Godunov_cc_xbc_hi(i, j, k, n, q, stl, sth, u_ad, bc.hi(0), dhi.x, true);
 
@@ -380,6 +398,9 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
         qx(i,j,k) = ltm ? 0. : st;
+
+        if (l_use_mac_phi_in_godunov)
+            qx(i,j,k) += 0.5 * l_dt * gphi_x;
     });
 
     //
@@ -448,6 +469,15 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
             sth += 0.5 * l_dt * f(i,j  ,k,n);
         }
 
+        Real gphi_y;
+
+        if (l_use_mac_phi_in_godunov)
+        {
+            gphi_y = ( (mac_phi(i,j,k) - mac_phi(i,j-1,k)) / dy ) * inv_rho_y(i,j,k);
+            stl -= 0.5 * l_dt * gphi_y;
+            sth -= 0.5 * l_dt * gphi_y;
+        }
+
         Godunov_cc_ybc_lo(i, j, k, n, q, stl, sth, v_ad, bc.lo(1), dlo.y, true);
         Godunov_cc_ybc_hi(i, j, k, n, q, stl, sth, v_ad, bc.hi(1), dhi.y, true);
 
@@ -466,6 +496,9 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
         qy(i,j,k) = ltm ? 0. : st;
+
+        if (l_use_mac_phi_in_godunov)
+            qy(i,j,k) += 0.5 * l_dt * gphi_y;
     });
 
     //
@@ -538,6 +571,15 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
            sth += 0.5 * l_dt * f(i,j,k  ,n);
         }
 
+        Real gphi_z;
+
+        if (l_use_mac_phi_in_godunov)
+        {
+            gphi_z = ( (mac_phi(i,j,k) - mac_phi(i,j,k-1)) / dz ) * inv_rho_z(i,j,k);
+            stl -= 0.5 * l_dt * gphi_z;
+            sth -= 0.5 * l_dt * gphi_z;
+        }
+
         Godunov_cc_zbc_lo(i, j, k, n, q, stl, sth, w_ad, bc.lo(2), dlo.z, true);
         Godunov_cc_zbc_hi(i, j, k, n, q, stl, sth, w_ad, bc.hi(2), dhi.z, true);
 
@@ -556,5 +598,8 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
         qz(i,j,k) = ltm ? 0. : st;
+
+        if (l_use_mac_phi_in_godunov)
+            qz(i,j,k) += 0.5 * l_dt * gphi_z;
     });
 }

@@ -61,6 +61,7 @@ void incflo::ReadParameters ()
         pp.query("use_ppm"                          , m_godunov_ppm);
         pp.query("godunov_use_forces_in_trans"      , m_godunov_use_forces_in_trans);
         pp.query("godunov_include_diff_in_forcing"  , m_godunov_include_diff_in_forcing);
+        pp.query("use_mac_phi_in_godunov"           , m_use_mac_phi_in_godunov);
 
         if (!m_use_godunov) m_godunov_include_diff_in_forcing = false;
 
@@ -184,6 +185,7 @@ void incflo::ReadIOParameters()
         m_plt_rho        = 1;
         m_plt_tracer     = 1;
         m_plt_p          = 0;
+        m_plt_macphi     = 0;
         m_plt_eta        = 0;
         m_plt_vort       = 0;
         m_plt_strainrate = 0;
@@ -204,6 +206,7 @@ void incflo::ReadIOParameters()
     pp.query("plt_rho",        m_plt_rho   );
     pp.query("plt_tracer",     m_plt_tracer);
     pp.query("plt_p",          m_plt_p     );
+    pp.query("plt_macphi",     m_plt_macphi);
     pp.query("plt_eta",        m_plt_eta   );
     pp.query("plt_vort",       m_plt_vort  );
     pp.query("plt_strainrate", m_plt_strainrate);
@@ -211,6 +214,12 @@ void incflo::ReadIOParameters()
     pp.query("plt_vfrac",      m_plt_vfrac );
 
     pp.query("plt_forcing",    m_plt_forcing );
+
+    pp.query("plt_error_u",    m_plt_error_u );
+    pp.query("plt_error_v",    m_plt_error_v );
+    pp.query("plt_error_w",    m_plt_error_w );
+    pp.query("plt_error_p",    m_plt_error_p );
+    pp.query("plt_error_mac_p",m_plt_error_mac_p );
 }
 
 //
@@ -233,7 +242,10 @@ void incflo::InitialIterations ()
         amrex::Print() << "Doing initial pressure iterations with dt = " << m_dt << std::endl;
     }
 
-    for(int lev = 0; lev <= finest_level; ++lev) m_t_old[lev] = m_t_new[lev];
+    auto mac_phi = get_mac_phi();
+
+    for (int lev = 0; lev <= finest_level; ++lev) m_t_old[lev] = m_t_new[lev];
+    for (int lev = 0; lev <= finest_level; ++lev) mac_phi[lev]->setVal(0.);
 
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
