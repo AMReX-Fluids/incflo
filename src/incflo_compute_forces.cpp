@@ -35,11 +35,12 @@ void incflo::compute_vel_forces (Vector<MultiFab*> const& vel_forces,
                                  Vector<MultiFab const*> const& velocity,
                                  Vector<MultiFab const*> const& density,
                                  Vector<MultiFab const*> const& tracer_old,
-                                 Vector<MultiFab const*> const& tracer_new)
+                                 Vector<MultiFab const*> const& tracer_new,
+                                 bool include_pressure_gradient)
 {
     for (int lev = 0; lev <= finest_level; ++lev)  
        compute_vel_forces_on_level (lev, *vel_forces[lev], *velocity[lev], *density[lev], 
-                                         *tracer_old[lev], *tracer_new[lev]);
+                                         *tracer_old[lev], *tracer_new[lev], include_pressure_gradient);
 }
 
 void incflo::compute_vel_forces_on_level (int lev,
@@ -47,7 +48,8 @@ void incflo::compute_vel_forces_on_level (int lev,
                                           const MultiFab& velocity,
                                           const MultiFab& density,
                                           const MultiFab& tracer_old,
-                                          const MultiFab& tracer_new)
+                                          const MultiFab& tracer_new,
+                                          bool include_pressure_gradient)
 {
     const Real* dx = geom[lev].CellSize();
 
@@ -87,9 +89,16 @@ void incflo::compute_vel_forces_on_level (int lev,
                 {
                     Real rhoinv = 1.0/rho(i,j,k);
 
-                    AMREX_D_TERM(vel_f(i,j,k,0) = -(gradp(i,j,k,0)+l_gp0[0])*rhoinv + l_gravity[0];,
-                                 vel_f(i,j,k,1) = -(gradp(i,j,k,1)+l_gp0[1])*rhoinv + l_gravity[1];,
-                                 vel_f(i,j,k,2) = -(gradp(i,j,k,2)+l_gp0[2])*rhoinv + l_gravity[2];);
+                    if (include_pressure_gradient)
+                    {
+                        AMREX_D_TERM(vel_f(i,j,k,0) = -(gradp(i,j,k,0)+l_gp0[0])*rhoinv + l_gravity[0];,
+                                     vel_f(i,j,k,1) = -(gradp(i,j,k,1)+l_gp0[1])*rhoinv + l_gravity[1];,
+                                     vel_f(i,j,k,2) = -(gradp(i,j,k,2)+l_gp0[2])*rhoinv + l_gravity[2];);
+                    } else {
+                        AMREX_D_TERM(vel_f(i,j,k,0) = -(               l_gp0[0])*rhoinv + l_gravity[0];,
+                                     vel_f(i,j,k,1) = -(               l_gp0[1])*rhoinv + l_gravity[1];,
+                                     vel_f(i,j,k,2) = -(               l_gp0[2])*rhoinv + l_gravity[2];);
+                    }
                 });
             }
     }

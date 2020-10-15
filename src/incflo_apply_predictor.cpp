@@ -123,18 +123,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     }
 
     // *************************************************************************************
-    // Define the forcing terms to use in the Godunov prediction
+    // We now define the forcing terms to use in the Godunov prediction inside the predictor
     // *************************************************************************************
-    if (m_use_godunov)
-    {
-        compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(), 
-                           get_density_old_const(), 
-                           get_tracer_old_const(), get_tracer_old_const());
-
-        // Note this is forcing for (rho s), not for s
-        if (m_advect_tracer)
-           compute_tra_forces(GetVecOfPtrs(tra_forces), get_density_old_const());
-    }
 
     // *************************************************************************************
     // Compute viscosity / diffusive coefficients
@@ -151,10 +141,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
     {
         compute_divtau(get_divtau_old(),get_velocity_old_const(),
                        get_density_old_const(),GetVecOfConstPtrs(vel_eta));
-
-        if (m_godunov_include_diff_in_forcing)
-            for (int lev = 0; lev <= finest_level; ++lev)  
-                MultiFab::Add(vel_forces[lev], m_leveldata[lev]->divtau_o, 0, 0, AMREX_SPACEDIM, 0);
     }
 
     // *************************************************************************************
@@ -164,17 +150,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
     {
         compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
                      GetVecOfConstPtrs(tra_eta));
-
-        if (m_godunov_include_diff_in_forcing)
-            for (int lev = 0; lev <= finest_level; ++lev) 
-                MultiFab::Add(tra_forces[lev], m_leveldata[lev]->laps_o, 0, 0, m_ntrac, 0);
-    }
-
-    if (m_use_godunov and nghost_force() > 0) {
-        fillpatch_force(m_cur_time, GetVecOfPtrs(vel_forces), nghost_force());
-        if (m_advect_tracer) {
-            fillpatch_force(m_cur_time, GetVecOfPtrs(tra_forces), nghost_force());
-        }
     }
 
     // *************************************************************************************
@@ -186,7 +161,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                             get_velocity_old_const(), get_density_old_const(), get_tracer_old_const(),
                             AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                             GetVecOfPtrs(w_mac)), 
-                            GetVecOfConstPtrs(vel_forces), GetVecOfConstPtrs(tra_forces),
+                            GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
                             m_cur_time);
     
     // *************************************************************************************

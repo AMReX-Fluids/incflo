@@ -72,13 +72,15 @@ public: // for cuda
                              amrex::Vector<amrex::MultiFab const*> const& velocity,
                              amrex::Vector<amrex::MultiFab const*> const& density,
                              amrex::Vector<amrex::MultiFab const*> const& tracer_old,
-                             amrex::Vector<amrex::MultiFab const*> const& tracer_new);
+                             amrex::Vector<amrex::MultiFab const*> const& tracer_new,
+                             bool include_pressure_gradient = true);
     void compute_vel_forces_on_level ( int lev,
                                        amrex::MultiFab& vel_forces,
                                        const amrex::MultiFab& velocity,
                                        const amrex::MultiFab& density,
                                        const amrex::MultiFab& tracer_old,
-                                       const amrex::MultiFab& tracer_new);
+                                       const amrex::MultiFab& tracer_new,
+                                       bool include_pressure_gradient = true);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -105,8 +107,8 @@ public: // for cuda
                                   AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
                                                amrex::Vector<amrex::MultiFab*> const& v_mac,
                                                amrex::Vector<amrex::MultiFab*> const& w_mac),
-                                  amrex::Vector<amrex::MultiFab const*> const& vel_forces,
-                                  amrex::Vector<amrex::MultiFab const*> const& tra_forces,
+                                  amrex::Vector<amrex::MultiFab      *> const& vel_forces,
+                                  amrex::Vector<amrex::MultiFab      *> const& tra_forces,
                                   amrex::Real time);
 
     void compute_convective_term (amrex::Box const& bx, int lev, amrex::MFIter const& mfi,
@@ -703,7 +705,7 @@ private:
     void apply_MAC_projection (AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
                                             amrex::Vector<amrex::MultiFab*> const& v_mac,
                                             amrex::Vector<amrex::MultiFab*> const& w_mac),
-                               amrex::Vector<amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>> const& inv_rho,
+                               amrex::Vector<amrex::Array<amrex::MultiFab const*,AMREX_SPACEDIM>> const& inv_rho,
                                amrex::Real time);
 
     ///////////////////////////////////////////////////////////////////////////

@@ -43,7 +43,6 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
             Array4<Real const> const& a_f = vel_forces.const_array(mfi);
 
             scratch.resize(bxg1, ncomp*(4*AMREX_SPACEDIM)+AMREX_SPACEDIM);
-//            Elixir eli = scratch.elixir(); // not needed because of streamSynchronize later
             Real* p = scratch.dataPtr();
 
             Array4<Real> Imx = makeArray4(p,bxg1,ncomp);
@@ -179,8 +178,6 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
     Real dx = dx_arr[0];
     Real dy = dx_arr[1];
 
-   //  BCRec const* pbc = get_velocity_bcrec_device_ptr();
-
     Box xebox = Box(bx).grow(1,1).surroundingNodes(0);
     Box yebox = Box(bx).grow(0,1).surroundingNodes(1);
     Array4<Real> xlo = makeArray4(p, xebox, ncomp);
@@ -238,6 +235,7 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
             Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
             Imy(i, j, k, n) = fu*st + (1.0 - fu)*0.5*(hi + lo); // store yedge
         });
+
     Array4<Real> xedge = Imx;
     Array4<Real> yedge = Imy;
 
