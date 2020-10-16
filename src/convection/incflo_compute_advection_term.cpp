@@ -49,10 +49,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     if (m_use_godunov) {
      
         bool include_pressure_gradient = !(m_use_mac_phi_in_godunov);
-        compute_vel_forces(vel_forces, get_velocity_old_const(),
-                           get_density_old_const(),
-                           get_tracer_old_const(), get_tracer_old_const(),
-                           include_pressure_gradient);
+        compute_vel_forces(vel_forces, vel, density, tracer, tracer, include_pressure_gradient);
 
         if (m_godunov_include_diff_in_forcing)
             for (int lev = 0; lev <= finest_level; ++lev) 
@@ -106,12 +103,12 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     //    and compute the tracer forcing terms for the first time
     if (m_use_godunov)
     {
-        compute_vel_forces(vel_forces, get_velocity_old_const(),
-                           get_density_old_const(),
-                           get_tracer_old_const(), get_tracer_old_const());
+        compute_vel_forces(vel_forces, vel, density, tracer, tracer);
+
         if (m_godunov_include_diff_in_forcing)
             for (int lev = 0; lev <= finest_level; ++lev)
                 MultiFab::Add(*vel_forces[lev], m_leveldata[lev]->divtau_o, 0, 0, AMREX_SPACEDIM, 0);
+
         if (nghost_force() > 0) 
             fillpatch_force(m_cur_time, vel_forces, nghost_force());
 

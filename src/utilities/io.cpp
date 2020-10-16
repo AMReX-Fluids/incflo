@@ -560,6 +560,7 @@ void incflo::WritePlotFile()
     }
     if (m_plt_vort) {
         for (int lev = 0; lev <= finest_level; ++lev) {
+            (m_leveldata[lev]->velocity).FillBoundary(geom[lev].periodicity());
             MultiFab vort(mf[lev], amrex::make_alias, icomp, 1);
             ComputeVorticity(lev, m_cur_time, vort, m_leveldata[lev]->velocity);
         }

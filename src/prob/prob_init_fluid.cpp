@@ -38,6 +38,15 @@ void incflo::prob_init_fluid (int lev)
                               ld.tracer.array(mfi),
                               domain, dx, problo, probhi);
         }
+        else if (2 == m_probtype)
+        {
+            init_taylor_vortex(vbx, gbx,
+                               ld.p.array(mfi),
+                               ld.velocity.array(mfi),
+                               ld.density.array(mfi),
+                               ld.tracer.array(mfi),
+                               domain, dx, problo, probhi);
+        }
         else if (3 == m_probtype)
         {
             init_taylor_green3d(vbx, gbx,
@@ -170,6 +179,31 @@ void incflo::init_taylor_green3d (Box const& vbx, Box const& gbx,
         AMREX_D_TERM(vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y) * std::cos(twopi*z);,
                      vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y) * std::cos(twopi*z);,
                      vel(i,j,k,2) = 0.0;);
+    });
+}
+
+void incflo::init_taylor_vortex (Box const& vbx, Box const& gbx,
+                                 Array4<Real> const& p,
+                                 Array4<Real> const& vel,
+                                 Array4<Real> const& density,
+                                 Array4<Real> const& tracer,
+                                 Box const& domain,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& problo,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& probhi)
+{
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        Real x = (i+0.5)*dx[0];
+        Real y = (j+0.5)*dx[1];
+        constexpr Real pi = 3.1415926535897932;
+        constexpr Real u0 = 1.0;
+        constexpr Real v0 = 1.0;
+        vel(i,j,k,0) =  u0 - std::cos(pi*x) * std::sin(pi*y);
+        vel(i,j,k,1) =  v0 + std::sin(pi*x) * std::cos(pi*y);
+#if (AMREX_SPACEDIM == 3)
+        vel(i,j,k,2) = 0.0;
+#endif
     });
 }
 
