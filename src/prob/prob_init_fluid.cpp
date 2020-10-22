@@ -237,6 +237,7 @@ void incflo::init_channel_slant (Box const& vbx, Box const& gbx,
                                  GpuArray<Real, AMREX_SPACEDIM> const& problo,
                                  GpuArray<Real, AMREX_SPACEDIM> const& probhi)
 {
+    const auto dhi = amrex::ubound(domain);
     Real num_cells_y = static_cast<Real>(domain.length(1));
     Real rotation  = 0;
     Real radius    = 0;
@@ -251,6 +252,14 @@ void incflo::init_channel_slant (Box const& vbx, Box const& gbx,
             AMREX_D_TERM(vel(i,j,k,0) = u*std::cos(rotation);,
                          vel(i,j,k,1) = u*std::sin(rotation);,
                          vel(i,j,k,2) = 0.0;);
+
+            const int nt = tracer.nComp();
+            for (int n = 0; n < nt; ++n) {
+                tracer(i,j,k,n) = 0.0;
+            }
+            if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
         }
     });
 }
