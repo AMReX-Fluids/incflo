@@ -151,8 +151,8 @@ public: // for cuda
     void ComputeDrag ();
     amrex::Real ComputeKineticEnergy () const;
 
-    void DiffFromExact (int lev, amrex::Geometry& lev_geom, amrex::Real t, amrex::MultiFab& error,
-                        int icomp_src, int icomp_err);
+    void DiffFromExact (int lev, amrex::Geometry& lev_geom, amrex::Real time, amrex::Real dt, 
+                        amrex::MultiFab& error, int icomp_src, int icomp_err);
 
     virtual void compute_strainrate_at_level (int lev,
                                               amrex::MultiFab* sr,

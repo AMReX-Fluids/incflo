@@ -79,9 +79,16 @@ void incflo::compute_vel_forces_on_level (int lev,
                     Real rhoinv = 1.0/rho(i,j,k);
                     Real ft = 0.5 * (tra_o(i,j,k,n) + tra_n(i,j,k,n));
 
-                    AMREX_D_TERM(vel_f(i,j,k,0) = -gradp(i,j,k,0)*rhoinv + l_gravity[0] * ft;,
-                                 vel_f(i,j,k,1) = -gradp(i,j,k,1)*rhoinv + l_gravity[1] * ft;,
-                                 vel_f(i,j,k,2) = -gradp(i,j,k,2)*rhoinv + l_gravity[2] * ft;);
+                    if (include_pressure_gradient)
+                    {
+                        AMREX_D_TERM(vel_f(i,j,k,0) = -gradp(i,j,k,0)*rhoinv + l_gravity[0] * ft;,
+                                     vel_f(i,j,k,1) = -gradp(i,j,k,1)*rhoinv + l_gravity[1] * ft;,
+                                     vel_f(i,j,k,2) = -gradp(i,j,k,2)*rhoinv + l_gravity[2] * ft;);
+                    } else {
+                        AMREX_D_TERM(vel_f(i,j,k,0) =                          l_gravity[0] * ft;,
+                                     vel_f(i,j,k,1) =                          l_gravity[1] * ft;,
+                                     vel_f(i,j,k,2) =                          l_gravity[2] * ft;);
+                    }
                 });
 
             } else {

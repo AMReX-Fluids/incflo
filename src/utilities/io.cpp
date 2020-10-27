@@ -471,6 +471,7 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("p");
         ++icomp;
     }
+
     if (m_plt_macphi) {
         for (int lev = 0; lev <= finest_level; ++lev) 
             MultiFab::Copy(mf[lev], m_leveldata[lev]->mac_phi, 0, icomp, 1, 0);
@@ -483,7 +484,7 @@ void incflo::WritePlotFile()
         for (int lev = 0; lev <= finest_level; ++lev)  
         {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 0, icomp, 1, 0);
-            DiffFromExact(lev, Geom(lev), m_cur_time, mf[lev], icomp, icomp_err_u);
+            DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_u);
             amrex::Print() << "Norm0 / Norm2 of u error " << 
                 mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << std::endl;
         }
@@ -496,7 +497,7 @@ void incflo::WritePlotFile()
         for (int lev = 0; lev <= finest_level; ++lev)  
         {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 1, icomp, 1, 0);
-            DiffFromExact(lev, Geom(lev), m_cur_time, mf[lev], icomp, icomp_err_v);
+            DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_v);
             amrex::Print() << "Norm0 / Norm2 of v error " << 
                 mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << std::endl;
         }
@@ -510,7 +511,7 @@ void incflo::WritePlotFile()
         for (int lev = 0; lev <= finest_level; ++lev)  
         {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 2, icomp, 1, 0);
-            DiffFromExact(lev, Geom(lev), m_cur_time, mf[lev], icomp, icomp_err_w);
+            DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_w);
             amrex::Print() << "Norm0 / Norm2 of w error " << 
                 mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << std::endl;
         }
@@ -522,9 +523,16 @@ void incflo::WritePlotFile()
     if (m_plt_error_p) {
         int icomp_err_p = AMREX_SPACEDIM;
         for (int lev = 0; lev <= finest_level; ++lev)  
-        {
             amrex::average_node_to_cellcenter(mf[lev], icomp, m_leveldata[lev]->p, 0, 1);
-            DiffFromExact(lev, Geom(lev), m_cur_time, mf[lev], icomp, icomp_err_p);
+
+        Real offset = mf[0].sum(icomp,true);
+        ParallelDescriptor::ReduceRealSum(offset);
+        offset *= 1./grids[0].numPts();
+
+        for (int lev = 0; lev <= finest_level; ++lev)  
+        {
+            mf[lev].plus(-offset, icomp, 1);
+            DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_p);
             amrex::Print() << "Norm0 / Norm2 of p error " << 
                 mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << std::endl;
         }
@@ -535,9 +543,16 @@ void incflo::WritePlotFile()
     if (m_plt_error_mac_p) {
         int icomp_err_mac_p = AMREX_SPACEDIM+1;
         for (int lev = 0; lev <= finest_level; ++lev)  
-        {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->mac_phi, 0, icomp, 1, 0);
-            DiffFromExact(lev, Geom(lev), m_cur_time, mf[lev], icomp, icomp_err_mac_p);
+
+        Real offset = mf[0].sum(icomp,true);
+        ParallelDescriptor::ReduceRealSum(offset);
+        offset *= 1./grids[0].numPts();
+
+        for (int lev = 0; lev <= finest_level; ++lev)  
+        {
+            mf[lev].plus(-offset, icomp, 1);
+            DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_mac_p);
             amrex::Print() << "Norm0 / Norm2 of mac_p error " << 
                 mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << std::endl;
         }
