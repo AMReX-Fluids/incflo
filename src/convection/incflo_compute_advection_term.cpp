@@ -472,7 +472,8 @@ void incflo::redistribute_eb (int lev, Box const& bx, int ncomp,
             for (int kk = -1; kk <= 1; ++kk) {
             for (int jj = -1; jj <= 1; ++jj) {
             for (int ii = -1; ii <= 1; ++ii) {
-                if (flag(i,j,k).isConnected(ii,jj,kk) and
+                if ((ii != 0 or jj != 0 or kk != 0) and
+                    flag(i,j,k).isConnected(ii,jj,kk) and
                     dbox.contains(IntVect(AMREX_D_DECL(i+ii,j+jj,k+kk))))
                 {
                     Real vf = vfrac(i+ii,j+jj,k+kk);
