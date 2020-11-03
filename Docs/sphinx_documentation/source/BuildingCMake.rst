@@ -132,19 +132,22 @@ for an available AMReX installation.
 | INCFLO\_DIM     | Dimensionality of the build  | 2/3              | 3           |
 |                 |                              |                  |             |
 +-----------------+------------------------------+------------------+-------------+
-| ENABLE\_MPI     | Enable build with MPI        | no/yes           | yes         |
+| INCFLO\_MPI     | Enable build with MPI        | no/yes           | yes         |
 |                 |                              |                  |             |
 +-----------------+------------------------------+------------------+-------------+
-| ENABLE\_OMP     | Enable build with OpenMP     | no/yes           | no          |
+| INCFLO\_OMP     | Enable build with OpenMP     | no/yes           | no          |
 |                 |                              |                  |             |
 +-----------------+------------------------------+------------------+-------------+
-| ENABLE\_CUDA    | Enable build with CUDA       | no/yes           | no          |
+| INCFLO\_CUDA    | Enable build with CUDA       | no/yes           | no          |
 |                 |                              |                  |             |
 +-----------------+------------------------------+------------------+-------------+
-| ENABLE\_HYPRE   | Enable HYPRE support         | no/yes           | no          |
+| INCFLO\_EB      | Build Embedded Boundary      | no/yes           | no          |
+|                 | support                      |                  |             |
++-----------------+------------------------------+------------------+-------------+
+| INCFLO\_HYPRE   | Enable HYPRE support         | no/yes           | no          |
 |                 |                              |                  |             |
 +-----------------+------------------------------+------------------+-------------+
-| ENABLE\_FPE     | Build with Floating-Point    | no/yes           | no          |
+| INCFLO\_FPE     | Build with Floating-Point    | no/yes           | no          |
 |                 | Exceptions checks            |                  |             |
 +-----------------+------------------------------+------------------+-------------+
 
@@ -237,7 +240,7 @@ Finally, navigate to the base of the incflo repository and compile in GPU mode:
     > cd incflo
     > mdkir build
     > cd build
-    > cmake -DENABLE_CUDA=yes -DCUDA_ARCH=Volta -DCMAKE_CXX_COMPILER=g++ -DCMAKE_Fortran_COMPILER=gfortran ..
+    > cmake -DINCFLO_CUDA=yes -DAMReX_CUDA_ARCH=Volta -DCMAKE_CXX_COMPILER=g++ -DCMAKE_Fortran_COMPILER=gfortran ..
     > make -j
 
 For more information about GPU nodes in Cori -- `<https://docs-dev.nersc.gov/cgpu/>`_
@@ -269,7 +272,7 @@ To compile for GPUs:
     > cd incflo
     > mdkir build
     > cd build
-    > cmake -DCMAKE_CXX_COMPILER=g++ -DENABLE_CUDA=yes
+    > cmake -DCMAKE_CXX_COMPILER=g++ -DINCFLO_CUDA=yes
     > make -j
 
 An example of a *submission_script* for using the GPUs on Summit can be found in ``incflo/summit_script.sh``.

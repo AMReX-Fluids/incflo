@@ -23,6 +23,6 @@ add_subdirectory(rheology)
 add_subdirectory(setup)
 add_subdirectory(utilities)
 
-if (ENABLE_EB)
+if (INCFLO_EB)
    add_subdirectory(embedded_boundaries)
 endif ()

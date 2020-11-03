@@ -24,7 +24,7 @@ set(INCFLO_DIM_VALUES 2 3)
 set(INCFLO_DIM 3 CACHE STRING "Dimension of the incflo build. Valid values: <2,3>")
 set_property(CACHE INCFLO_DIM PROPERTY STRINGS ${INCFLO_DIM_VALUES})
 if(NOT INCFLO_DIM IN_LIST INCFLO_DIM_VALUES)
-    message(FATAL_ERROR "\nINCFLO_DIM set to ${INCFLO_DIM}. Must be one of ${INCFLO_DIM_VALUES}. ")
+    message(FATAL_ERROR "\nINCFLO_DIM setto ${INCFLO_DIM}. Must be one of ${INCFLO_DIM_VALUES}. ")
 endif()
 
 
@@ -33,13 +33,14 @@ endif()
 # be enabled in the installation.
 # In STANDALONE mode, find_package will make sure these options are available
 # IN SUPERBUILD mode, These options will supersede AMReX options with the same name
-option( ENABLE_OMP    "Enable OpenMP" NO )
-option( ENABLE_MPI    "Enable MPI"   YES )
-option( ENABLE_HYPRE  "Enable HYPRE"  NO )
-option( ENABLE_CUDA   "Enable CUDA"   NO )
-option( ENABLE_FPE    "Enable Floating Point Exceptions checks" NO )
+option( INCFLO_OMP    "Enable OpenMP" NO )
+option( INCFLO_MPI    "Enable MPI"   YES )
+option( INCFLO_CUDA   "Enable CUDA"   NO )
+option( INCFLO_EB     "Build Embedded Boundary support" NO )
+option( INCFLO_HYPRE  "Enable HYPRE"  NO )
+option( INCFLO_FPE    "Enable Floating Point Exceptions checks" NO )
 
-if (ENABLE_CUDA)
+if (INCFLO_CUDA)
     enable_language(CUDA)
 endif ()
 
@@ -59,6 +60,17 @@ if (AMREX_HOME)  # SUPERBUILD MODE
   # Add AMReX module path
   list(APPEND CMAKE_MODULE_PATH ${AMREX_HOME}/Tools/CMake)
 
+  # Set required settings for AMReX
+  set(USE_XSDK_DEFAULTS       ON)
+  set(XSDK_PRECISION          "DOUBLE")
+  set(AMReX_SPACEDIM          ${INCFLO_DIM})
+  set(AMReX_MPI               ${INCFLO_MPI})
+  set(AMReX_OMP               ${INCFLO_OMP})
+  set(AMReX_CUDA              ${INCFLO_CUDA})
+  set(AMReX_EB                ${INCFLO_EB})
+  set(AMReX_LINEAR_SOLVERS    ON)
+  set(AMReX_BUILD_TUTORIALS   OFF)
+
   # If CUDA is required, enable the language BEFORE adding the AMReX directory
   # Since AMReX_SetupCUDA has an include guard, it will be included only once here.
   # The reason for enabling CUDA before adding the AMReX subdirectory is that
@@ -66,16 +78,9 @@ if (AMREX_HOME)  # SUPERBUILD MODE
   # from a sub-project is included via add_subdirectory.
   # IMPORTANT: if you don't do this, AMReX will perform this step in a sub-scope and therefore
   # it will not setup CUDA here!
-  if(ENABLE_CUDA)
+  if(INCFLO_CUDA)
      include(AMReX_SetupCUDA)
   endif ()
-
-  # Set required settings for AMReX
-  set(USE_XSDK_DEFAULTS ON)
-  set(DIM ${INCFLO_DIM})
-  set(XSDK_PRECISION "DOUBLE" CACHE INTERNAL "Precision:<SINGLE,DOUBLE>" )
-  set(ENABLE_LINEAR_SOLVERS ON)
-  set(ENABLE_TUTORIALS OFF)
 
   # Add AMReX as a sub-project: incflo inherits all AMReX options
   add_subdirectory(${AMREX_HOME} ${AMREX_BINARY_DIR})
@@ -86,18 +91,18 @@ else ()  # STANDALONE MODE
 
    # Find amrex
    set(AMREX_MINIMUM_VERSION 20.04 CACHE INTERNAL "Minimum required AMReX version")
-   set(AMREX_REQUIRED_COMPONENTS ${INCFLO_DIM}D DP LSOLVERS)
+   set(AMREX_REQUIRED_COMPONENTS ${INCFLO_DIM}D DOUBLE LSOLVERS)
 
-   if (ENABLE_EB)
+   if (INCFLO_EB)
       list(APPEND AMREX_REQUIRED_COMPONENTS EB)
    endif ()
-   if (ENABLE_MPI)
+   if (INCFLO_MPI)
       list(APPEND AMREX_REQUIRED_COMPONENTS MPI)
    endif ()
-   if (ENABLE_OMP)
+   if (INCFLO_OMP)
       list(APPEND AMREX_REQUIRED_COMPONENTS OMP)
    endif ()
-   if (ENABLE_CUDA)
+   if (INCFLO_CUDA)
       list(APPEND AMREX_REQUIRED_COMPONENTS CUDA)
    endif ()
 
@@ -111,11 +116,35 @@ endif ()
 add_executable(incflo)
 target_link_libraries(incflo PUBLIC AMReX::amrex)
 
+#
+# If INCFLO_EB=false, we could still link against an external
+# EB-enabled AMReX installation since find_package checks for
+# presence of a certain component and not for the lack thereof.
+# Consequently, the EB-enabled AMReX installation would propagate
+# the AMREX_USE_EB definition. Unfortunately, some incflo calls to
+# EB routines are guarded by checks on AMREX_USE_EB and are enabled if
+# AMReX is EB-enabled. This would generate an error at link time because the
+# incflo EB routines get compiled only if INCFLO_EB=yes.
+# To workaround this, we use the `-U` preprocessor flag (not sure if
+# it's GCC only) to undefine previously defined macros. We do this via
+# target_compile_options ecven if it's not designed to handle preprocessor
+# definitions.
+# The best way forward would be either:
+#
+#     1) support superbuild only
+#     2) guard the EB-related incflo calls to incflo EB-routines via
+#        an incflo-specific macro, say INCFLO_USE_EB, dependent on
+#        the value of the INCFLO_EB option.
+#
+if (NOT INCFLO_EB AND AMReX_EB_FOUND)
+   target_compile_options(incflo PUBLIC -UAMREX_USE_EB)
+endif ()
+
 if ( NOT CMAKE_CXX_FLAGS )
    target_link_libraries(incflo PUBLIC AMReX::Flags_CXX)
 endif ()
 
-if ( ENABLE_FPE )
+if ( INCFLO_FPE )
    target_link_libraries(incflo PUBLIC AMReX::Flags_FPE)
 endif ()
 
@@ -131,7 +160,7 @@ add_subdirectory(src)
 #
 # Setup CUDA
 #
-if (ENABLE_CUDA)
+if (INCFLO_CUDA)
    set_cpp_sources_to_cuda_language( incflo )
    set_target_properties( incflo
       PROPERTIES
