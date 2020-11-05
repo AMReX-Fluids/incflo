@@ -62,6 +62,7 @@ if (AMREX_HOME)  # SUPERBUILD MODE
 
   # Set required settings for AMReX
   set(USE_XSDK_DEFAULTS       ON)
+  set(XSDK_ENABLE_Fortran     ON)
   set(XSDK_PRECISION          "DOUBLE")
   set(AMReX_SPACEDIM          ${INCFLO_DIM})
   set(AMReX_MPI               ${INCFLO_MPI})
@@ -91,7 +92,7 @@ else ()  # STANDALONE MODE
 
    # Find amrex
    set(AMREX_MINIMUM_VERSION 20.11 CACHE INTERNAL "Minimum required AMReX version")
-   set(AMREX_REQUIRED_COMPONENTS ${INCFLO_DIM}D DOUBLE LSOLVERS)
+   set(AMREX_REQUIRED_COMPONENTS ${INCFLO_DIM}D FORTRAN DOUBLE LSOLVERS)
 
    if (INCFLO_EB)
       list(APPEND AMREX_REQUIRED_COMPONENTS EB)
