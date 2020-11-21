@@ -121,7 +121,7 @@ void incflo::fillpatch_gradp (int lev, Real time, MultiFab& gp, int ng)
             (geom[lev], get_force_bcrec(), IncfloForFill{m_probtype});
         FillPatchSingleLevel(gp, IntVect(ng), time,
                              {&(m_leveldata[lev]->gp)}, {time},
-                             0, 0, 3, geom[lev], physbc, 0);
+                             0, 0, AMREX_SPACEDIM, geom[lev], physbc, 0);
     } else {
         const auto& bcrec = get_force_bcrec();
         PhysBCFunct<GpuBndryFuncFab<IncfloForFill> > cphysbc
@@ -137,7 +137,7 @@ void incflo::fillpatch_gradp (int lev, Real time, MultiFab& gp, int ng)
         FillPatchTwoLevels(gp, IntVect(ng), time,
                            {&(m_leveldata[lev-1]->gp)}, {time},
                            {&(m_leveldata[lev]->gp)}, {time},
-                           0, 0, 3, geom[lev-1], geom[lev],
+                           0, 0, AMREX_SPACEDIM, geom[lev-1], geom[lev],
                            cphysbc, 0, fphysbc, 0,
                            refRatio(lev-1), mapper, bcrec, 0);
     }
