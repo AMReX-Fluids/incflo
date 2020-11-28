@@ -5,11 +5,12 @@
 
 using namespace amrex;
 
-void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_mac,
+void godunov::predict_godunov (int lev, Real time, 
+                               MultiFab& u_mac, MultiFab& v_mac,
                                MultiFab const& mac_phi, 
                                MultiFab const& vel, 
                                MultiFab const& vel_forces,
-                               Array<MultiFab,AMREX_SPACEDIM> const& inv_rho,
+                               MultiFab const& inv_rho_x, MultiFab const& inv_rho_y,
                                Vector<BCRec> const& h_bcrec,
                                       BCRec  const* d_bcrec,
                                Vector<Geometry> geom, Real l_dt, 
@@ -35,9 +36,9 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
             Array4<Real> const& a_umac = u_mac.array(mfi);
             Array4<Real> const& a_vmac = v_mac.array(mfi);
 
-            Array4<Real const> const& mac_phi_arr = mac_phi.const_array(mfi);
-            Array4<Real const> const& inv_rho_x   = inv_rho[0].const_array(mfi);
-            Array4<Real const> const& inv_rho_y   = inv_rho[1].const_array(mfi);
+            Array4<Real const> const& mac_phi_arr   = mac_phi.const_array(mfi);
+            Array4<Real const> const& inv_rho_x_arr = inv_rho_x.const_array(mfi);
+            Array4<Real const> const& inv_rho_y_arr = inv_rho_y.const_array(mfi);
 
             Array4<Real const> const& a_vel = vel.const_array(mfi);
             Array4<Real const> const& a_f = vel_forces.const_array(mfi);
@@ -75,9 +76,10 @@ void godunov::predict_godunov (int lev, Real time, MultiFab& u_mac, MultiFab& v_
                                   Imx, Imy, Ipx, Ipy, a_vel, a_f, 
                                   domain, l_dt, d_bcrec, use_forces_in_trans);
 
-            predict_godunov_on_box(lev, bx, ncomp, xbx, ybx, a_umac, a_vmac,
+            predict_godunov_on_box(lev, bx, ncomp, xbx, ybx, 
+                                   a_umac, a_vmac,
                                    a_vel, u_ad, v_ad, mac_phi_arr,
-                                   inv_rho_x, inv_rho_y, 
+                                   inv_rho_x_arr, inv_rho_y_arr, 
                                    Imx, Imy, Ipx, Ipy, a_f, 
                                    domain, dx, l_dt, d_bcrec, 
                                    use_forces_in_trans, use_mac_phi_in_godunov, p);

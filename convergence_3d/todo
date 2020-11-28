@@ -1,0 +1,12 @@
+rm -rf out* plt* chk*
+../test_no_eb/incflo3d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 16  16  16  incflo.use_mac_phi_in_godunov = false incflo.fixed_dt = 0.016 > out.16.false
+../test_no_eb/incflo3d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 32  32  32  incflo.use_mac_phi_in_godunov = false incflo.fixed_dt = 0.008 > out.32.false
+../test_no_eb/incflo3d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 64  64  64  incflo.use_mac_phi_in_godunov = false incflo.fixed_dt = 0.004 > out.64.false
+#../test_no_eb/incflo3d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 128 128 128  incflo.use_mac_phi_in_godunov = false incflo.fixed_dt = 0.002 > out.128.false
+
+../test_no_eb/incflo3d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 16  16 16  incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.016 > out.16.true
+../test_no_eb/incflo3d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 32  32 32  incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.008 > out.32.true
+../test_no_eb/incflo3d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 64  64 64  incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.004 > out.64.true
+#../test_no_eb/incflo3d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 128 128 128 incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.002 > out.128.true
+
+source todo_print

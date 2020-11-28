@@ -59,9 +59,6 @@ incflo::apply_MAC_projection (AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
     LPInfo lp_info;
     lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
 
-    //
-    // Perform MAC projection
-    //
 #if AMREX_USE_EB
     MacProjector macproj(mac_vec, MLMG::Location::FaceCentroid, // Location of mac_vec   
                          inv_rho, MLMG::Location::FaceCentroid, // Location of beta   
@@ -75,6 +72,9 @@ incflo::apply_MAC_projection (AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
    
     auto mac_phi = get_mac_phi();
 
+    //
+    // Perform MAC projection
+    //
     if (m_use_mac_phi_in_godunov)
     {
         for (int lev=0; lev <= finest_level; ++lev)

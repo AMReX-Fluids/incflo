@@ -111,6 +111,17 @@ public: // for cuda
                                   amrex::Vector<amrex::MultiFab      *> const& tra_forces,
                                   amrex::Real time);
 
+    void compute_MAC_projected_velocities (
+                                  amrex::Vector<amrex::MultiFab const*> const& vel,
+                                  AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
+                                               amrex::Vector<amrex::MultiFab*> const& v_mac,
+                                               amrex::Vector<amrex::MultiFab*> const& w_mac),
+                                  AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& inv_rho_x,
+                                               amrex::Vector<amrex::MultiFab*> const& inv_rho_y,
+                                               amrex::Vector<amrex::MultiFab*> const& inv_rho_z),
+                                  amrex::Vector<amrex::MultiFab      *> const& vel_forces,
+                                  amrex::Real time);
+
     void compute_convective_term (amrex::Box const& bx, int lev, amrex::MFIter const& mfi,
                                   amrex::Array4<amrex::Real> const& dvdt, // velocity
                                   amrex::Array4<amrex::Real> const& drdt, // density
@@ -701,12 +712,6 @@ private:
     ///////////////////////////////////////////////////////////////////////////
 
     void init_advection ();
-
-    void apply_MAC_projection (AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
-                                            amrex::Vector<amrex::MultiFab*> const& v_mac,
-                                            amrex::Vector<amrex::MultiFab*> const& w_mac),
-                               amrex::Vector<amrex::Array<amrex::MultiFab const*,AMREX_SPACEDIM>> const& inv_rho,
-                               amrex::Real time);
 
     ///////////////////////////////////////////////////////////////////////////
     //

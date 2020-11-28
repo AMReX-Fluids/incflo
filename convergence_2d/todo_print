@@ -1,0 +1,36 @@
+echo " "
+echo "FALSE:U ERROR"
+echo " "
+grep "Norm2 of u" out.16.false   | tail -1
+grep "Norm2 of u" out.32.false   | tail -1
+grep "Norm2 of u" out.64.false   | tail -1
+grep "Norm2 of u" out.128.false  | tail -1
+echo " "
+echo "FALSE:P ERROR"
+echo " "
+grep "Norm2 of p" out.16.false   | tail -1
+grep "Norm2 of p" out.32.false   | tail -1
+grep "Norm2 of p" out.64.false   | tail -1
+grep "Norm2 of p" out.128.false  | tail -1
+
+echo " "
+echo "TRUE:U ERROR"
+echo " "
+grep "Norm2 of u" out.16.true   | tail -1
+grep "Norm2 of u" out.32.true   | tail -1
+grep "Norm2 of u" out.64.true   | tail -1
+grep "Norm2 of u" out.128.true  | tail -1
+echo " "
+echo "TRUE:P ERROR"
+echo " "
+grep "Norm2 of p" out.16.true   | tail -1
+grep "Norm2 of p" out.32.true   | tail -1
+grep "Norm2 of p" out.64.true   | tail -1
+grep "Norm2 of p" out.128.true  | tail -1
+echo " "
+echo "TRUE:MAC P ERROR"
+echo " "
+grep "Norm2 of mac_p" out.16.true   | tail -1
+grep "Norm2 of mac_p" out.32.true   | tail -1
+grep "Norm2 of mac_p" out.64.true   | tail -1
+grep "Norm2 of mac_p" out.128.true  | tail -1

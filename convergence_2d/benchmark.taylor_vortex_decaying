@@ -7,7 +7,7 @@ steady_state            =   0           # Steady-state solver?
 
 incflo.use_godunov = true               #
 incflo.use_ppm     = true               #
-incflo.use_mac_phi_in_godunov = true    #
+incflo.use_mac_phi_in_godunov = false   #
 
 incflo.initial_iterations = 10
 
