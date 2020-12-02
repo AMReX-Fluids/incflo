@@ -74,13 +74,16 @@ incflo::compute_MAC_projected_velocities (
     lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
 
 #if AMREX_USE_EB
-    MacProjector macproj(mac_vec, MLMG::Location::FaceCentroid, // Location of mac_vec   
-                         inv_rho, MLMG::Location::FaceCentroid, // Location of beta   
-                                  MLMG::Location::CellCenter  , // Location of solution variable phi
-                         Geom(0,finest_level), lp_info);
+    MacProjector macproj(Geom(0,finest_level), 
+                         MLMG::Location::FaceCentroid,  // Location of mac_vec   
+                         MLMG::Location::FaceCentroid,  // Location of beta   
+                         MLMG::Location::CellCenter  ); // Location of solution variable phi
 #else
-    MacProjector macproj(mac_vec,inv_rho,Geom(0,finest_level), lp_info);
+    MacProjector macproj(Geom(0,finest_level));
 #endif
+
+    macproj.initProjector(lp_info, inv_rho);
+    macproj.setUMAC(mac_vec);
 
     macproj.setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
 
