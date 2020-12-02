@@ -164,8 +164,6 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
                                  Array4<Real const> const& ftra)
 {
 #ifdef AMREX_USE_EB
-    AMREX_ALWAYS_ASSERT(!m_use_godunov);
-
     auto const& fact = EBFactory(lev);
     EBCellFlagFab const& flagfab = fact.getMultiEBCellFlagFab()[mfi];
     Array4<EBCellFlag const> const& flag = flagfab.const_array();
