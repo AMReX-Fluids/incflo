@@ -73,19 +73,14 @@ incflo::compute_MAC_projected_velocities (
     LPInfo lp_info;
     lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
 
-#if AMREX_USE_EB
-    MacProjector macproj(Geom(0,finest_level), 
-                         MLMG::Location::FaceCentroid,  // Location of mac_vec   
-                         MLMG::Location::FaceCentroid,  // Location of beta   
-                         MLMG::Location::CellCenter  ); // Location of solution variable phi
-#else
-    MacProjector macproj(Geom(0,finest_level));
-#endif
+    if (macproj->needInitialization()) 
+        macproj->initProjector(lp_info, inv_rho);
+    else
+        macproj->updateBeta(inv_rho);
 
-    macproj.initProjector(lp_info, inv_rho);
-    macproj.setUMAC(mac_vec);
+    macproj->setUMAC(mac_vec);
 
-    macproj.setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
+    macproj->setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
 
     if (m_verbose > 2) amrex::Print() << "MAC Projection:\n";
     //
@@ -96,11 +91,11 @@ incflo::compute_MAC_projected_velocities (
         for (int lev=0; lev <= finest_level; ++lev)
             mac_phi[lev]->mult(m_dt/2.,0,1,1);
 
-        macproj.project(mac_phi,m_mac_mg_rtol,m_mac_mg_atol);
+        macproj->project(mac_phi,m_mac_mg_rtol,m_mac_mg_atol);
 
         for (int lev=0; lev <= finest_level; ++lev)
             mac_phi[lev]->mult(2./m_dt,0,1,1);
     } else {
-        macproj.project(m_mac_mg_rtol,m_mac_mg_atol);
+        macproj->project(m_mac_mg_rtol,m_mac_mg_atol);
     }
 }

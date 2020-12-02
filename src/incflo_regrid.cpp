@@ -44,6 +44,15 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
+
+#if AMREX_USE_EB
+    macproj.reset(new MacProjector(Geom(0,finest_level),
+                                   MLMG::Location::FaceCentroid,  // Location of mac_vec
+                                   MLMG::Location::FaceCentroid,  // Location of beta
+                                   MLMG::Location::CellCenter  ) ); // Location of solution variable phi
+#else
+    macproj.reset(new MacProjector(Geom(0,finest_level)));
+#endif
 }
 
 // Remake an existing level using provided BoxArray and DistributionMapping and
@@ -86,6 +95,15 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
+
+#if AMREX_USE_EB
+    macproj.reset(new MacProjector(Geom(0,finest_level),
+                                   MLMG::Location::FaceCentroid,  // Location of mac_vec
+                                   MLMG::Location::FaceCentroid,  // Location of beta
+                                   MLMG::Location::CellCenter  ) ); // Location of solution variable phi
+#else
+    macproj.reset(new MacProjector(Geom(0,finest_level)));
+#endif
 }
 
 // Delete level data
@@ -97,4 +115,5 @@ void incflo::ClearLevel (int lev)
     m_factory[lev].reset();
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
+    macproj.reset();
 }

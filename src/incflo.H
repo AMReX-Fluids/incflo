@@ -4,6 +4,7 @@
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
 #include <AMReX_iMultiFab.H>
+#include <AMReX_MacProjector.H>
 #include <AMReX_NodalProjector.H>
 #include <AMReX_Math.H>
 
@@ -325,6 +326,8 @@ private:
     //           mac_proj.bottom_atol
     //           mac_proj.bottom_solver
     // More info at "amrex/Src/LinearSolvers/Projections/AMReX_MacProjector.cpp"
+
+    std::unique_ptr<amrex::MacProjector> macproj;
 
     int m_mac_mg_verbose = 0;
     int m_mac_mg_bottom_verbose = 0;
