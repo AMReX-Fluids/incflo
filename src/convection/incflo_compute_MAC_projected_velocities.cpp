@@ -24,6 +24,52 @@ incflo::compute_MAC_projected_velocities (
 
     auto mac_phi = get_mac_phi();
 
+    Vector<Array<MultiFab const*,AMREX_SPACEDIM> > inv_rho(finest_level+1);
+    for (int lev=0; lev <= finest_level; ++lev)
+    {
+        AMREX_D_TERM(inv_rho[lev][0] = inv_rho_x[lev];,
+                     inv_rho[lev][1] = inv_rho_y[lev];,
+                     inv_rho[lev][2] = inv_rho_z[lev];);
+    }
+
+    //
+    // Initialize (or redefine the beta in) the MacProjector
+    //
+    if (macproj->needInitialization()) 
+    {
+        LPInfo lp_info;
+        lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
+        macproj->initProjector(lp_info, inv_rho);
+        macproj->setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
+    } else {
+        macproj->updateBeta(inv_rho);
+    }
+
+    Vector<Array<MultiFab,AMREX_SPACEDIM> > m_fluxes;
+    m_fluxes.resize(finest_level+1);
+    for (int lev=0; lev <= finest_level; ++lev)
+    {
+        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) 
+        {
+             m_fluxes[lev][idim].define(
+                    amrex::convert(grids[lev], IntVect::TheDimensionVector(idim)),
+                    dmap[lev], 1, 0, MFInfo(), Factory(lev));
+        }
+    }
+
+    if (m_use_mac_phi_in_godunov)
+    {
+#ifdef AMREX_USE_EB
+    macproj->getLinOp().getFluxes(amrex::GetVecOfArrOfPtrs(m_fluxes), mac_phi, MLMG::Location::FaceCentroid);
+#else
+    macproj->getLinOp().getFluxes(amrex::GetVecOfArrOfPtrs(m_fluxes), mac_phi, MLMG::Location::FaceCenter);
+#endif
+    } else {
+        for (int lev=0; lev <= finest_level; ++lev)
+            for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) 
+                 m_fluxes[lev][idim].setVal(0.);
+    }
+
     for (int lev = 0; lev <= finest_level; ++lev) {
 
         mac_phi[lev]->FillBoundary(geom[lev].periodicity());
@@ -33,13 +79,17 @@ incflo::compute_MAC_projected_velocities (
 
         if (m_use_godunov) {
 
+#ifdef AMREX_USE_EB
+#else
             godunov::predict_godunov(lev, time, 
                                      AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]), 
                                      *mac_phi[lev], *vel[lev], *vel_forces[lev], 
                                      AMREX_D_DECL(*inv_rho_x[lev], *inv_rho_y[lev], *inv_rho_z[lev]), 
                                      get_velocity_bcrec(), get_velocity_bcrec_device_ptr(), 
                                      Geom(), l_dt, m_godunov_ppm, m_godunov_use_forces_in_trans,
+                                     AMREX_D_DECL(m_fluxes[lev][0], m_fluxes[lev][1], m_fluxes[lev][2]), 
                                      m_use_mac_phi_in_godunov);
+#endif
         } else {
 
 #ifdef AMREX_USE_EB
@@ -56,31 +106,14 @@ incflo::compute_MAC_projected_velocities (
     }
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
-    Vector<Array<MultiFab const*,AMREX_SPACEDIM> > inv_rho(finest_level+1);
     for (int lev=0; lev <= finest_level; ++lev)
     {
         AMREX_D_TERM(mac_vec[lev][0] = u_mac[lev];,
                      mac_vec[lev][1] = v_mac[lev];,
                      mac_vec[lev][2] = w_mac[lev];);
-        AMREX_D_TERM(inv_rho[lev][0] = inv_rho_x[lev];,
-                     inv_rho[lev][1] = inv_rho_y[lev];,
-                     inv_rho[lev][2] = inv_rho_z[lev];);
     }
 
-    //
-    // If we want to set max_coarsening_level we have to send it in to the constructor
-    //
-    LPInfo lp_info;
-    lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
-
-    if (macproj->needInitialization()) 
-        macproj->initProjector(lp_info, inv_rho);
-    else
-        macproj->updateBeta(inv_rho);
-
     macproj->setUMAC(mac_vec);
-
-    macproj->setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
 
     if (m_verbose > 2) amrex::Print() << "MAC Projection:\n";
     //

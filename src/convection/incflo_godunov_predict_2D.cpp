@@ -15,6 +15,7 @@ void godunov::predict_godunov (int lev, Real time,
                                       BCRec  const* d_bcrec,
                                Vector<Geometry> geom, Real l_dt, 
                                bool use_ppm, bool use_forces_in_trans,
+                               MultiFab const& gmacphi_x, MultiFab const& gmacphi_y,
                                bool use_mac_phi_in_godunov)
 {
     Box const& domain = geom[lev].Domain();
@@ -39,6 +40,9 @@ void godunov::predict_godunov (int lev, Real time,
             Array4<Real const> const& mac_phi_arr   = mac_phi.const_array(mfi);
             Array4<Real const> const& inv_rho_x_arr = inv_rho_x.const_array(mfi);
             Array4<Real const> const& inv_rho_y_arr = inv_rho_y.const_array(mfi);
+
+            Array4<Real const> const& gmacphi_x_arr = gmacphi_x.const_array(mfi);
+            Array4<Real const> const& gmacphi_y_arr = gmacphi_y.const_array(mfi);
 
             Array4<Real const> const& a_vel = vel.const_array(mfi);
             Array4<Real const> const& a_f = vel_forces.const_array(mfi);
@@ -82,7 +86,9 @@ void godunov::predict_godunov (int lev, Real time,
                                    inv_rho_x_arr, inv_rho_y_arr, 
                                    Imx, Imy, Ipx, Ipy, a_f, 
                                    domain, dx, l_dt, d_bcrec, 
-                                   use_forces_in_trans, use_mac_phi_in_godunov, p);
+                                   use_forces_in_trans, 
+                                   gmacphi_x_arr, gmacphi_y_arr, 
+                                   use_mac_phi_in_godunov, p);
 
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
         }
@@ -171,6 +177,8 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
                                       Real l_dt,
                                       BCRec  const* pbc,
                                       bool l_use_forces_in_trans,
+                                      Array4<Real const> const& gmacphi_x,
+                                      Array4<Real const> const& gmacphi_y,
                                       bool l_use_mac_phi_in_godunov,
                                       Real* p)
 {
@@ -291,7 +299,8 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
 
         if (l_use_mac_phi_in_godunov)
         {
-            gphi_x = ((mac_phi(i,j,k) - mac_phi(i-1,j,k)) / dx) * inv_rho_x(i,j,k);
+            // Note that the getFluxes call returns (-1/rho G^Mac phi) so we use the negative here
+            gphi_x = -gmacphi_x(i,j,k);
             stl -= 0.5 * l_dt * gphi_x;
             sth -= 0.5 * l_dt * gphi_x;
         }
@@ -362,7 +371,8 @@ void godunov::predict_godunov_on_box (int lev, Box const& bx, int ncomp,
 
         if (l_use_mac_phi_in_godunov)
         {
-            gphi_y = ( (mac_phi(i,j,k) - mac_phi(i,j-1,k)) /  dx ) * inv_rho_y(i,j,k);
+            // Note that the getFluxes call returns (-1/rho G^Mac phi) so we use the negative here
+            gphi_y = -gmacphi_y(i,j,k);
             stl -= 0.5 * l_dt * gphi_y;
             sth -= 0.5 * l_dt * gphi_y;
         }

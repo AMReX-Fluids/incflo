@@ -26,6 +26,9 @@ namespace godunov {
                                         amrex::BCRec  const* d_bcrec,
                           amrex::Vector<amrex::Geometry> geom,
                           amrex::Real dt, bool use_ppm, bool use_forces_in_trans,
+                          AMREX_D_DECL(amrex::MultiFab const& gmacphi_x,
+                                       amrex::MultiFab const& gmacphi_y,
+                                       amrex::MultiFab const& gmacphi_z),
                           bool use_mac_phi_in_godunov);
 
     void predict_plm_x (int lev, amrex::Box const& bx, int ncomp,
@@ -116,6 +119,9 @@ namespace godunov {
                                  amrex::Real dt,
                                  amrex::BCRec const* d_bcrec,
                                  bool use_forces_in_trans,
+                                 AMREX_D_DECL(amrex::Array4<amrex::Real const> const& gmacphi_x,
+                                              amrex::Array4<amrex::Real const> const& gmacphi_y,
+                                              amrex::Array4<amrex::Real const> const& gmacphi_z),
                                  bool use_mac_phi_in_godunov,
                                  amrex::Real* p);
 
