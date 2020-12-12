@@ -27,6 +27,8 @@ incflo.ro_0             =   1.          # Reference density
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.001       # Dynamic viscosity coefficient
 
+incflo.constant_density =   true        #
+
 incflo.ntrac            =   1           # Number of tracers
 incflo.advect_tracer    =   true        # Should we update them?
 incflo.mu_s             =   0.001       # Scalar diffusion coefficient

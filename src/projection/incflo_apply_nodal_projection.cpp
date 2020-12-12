@@ -147,8 +147,17 @@ void incflo::ApplyProjection (Vector<MultiFab const*> density,
 
     LPInfo info;
     info.setMaxCoarseningLevel(m_nodal_mg_max_coarsening_level);
-    nodal_projector.reset(new NodalProjector(vel, GetVecOfConstPtrs(sigma),
-                                             Geom(0,finest_level), info));
+
+    if (m_constant_density)
+    {
+        Real constant_sigma = scaling_factor * m_ro_0;
+        nodal_projector.reset(new NodalProjector(vel, constant_sigma, 
+                                                 Geom(0,finest_level), info));
+    } else
+    {
+        nodal_projector.reset(new NodalProjector(vel, GetVecOfConstPtrs(sigma),
+                                                 Geom(0,finest_level), info));
+    }
     nodal_projector->setDomainBC(bclo, bchi);
     nodal_projector->project(m_nodal_mg_rtol, m_nodal_mg_atol);
 
