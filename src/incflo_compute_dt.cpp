@@ -36,6 +36,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
+        auto const dx    = geom[lev].CellSizeArray();
         auto const dxinv = geom[lev].InvCellSizeArray();
         MultiFab const& vel   = m_leveldata[lev]->velocity;
         MultiFab const& rho   = m_leveldata[lev]->density;
@@ -191,7 +192,22 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     Real comb_cfl = cd_cfl + std::sqrt(cd_cfl*cd_cfl + 4.0 * forc_cfl);
 
     // Update dt
-    Real dt_new = 2.0 * m_cfl / comb_cfl;
+    Real dt_new;
+    if (comb_cfl > 0.)
+    {
+        dt_new = 2.0 * m_cfl / comb_cfl;
+
+    } else {
+
+        // This is totally random but just a way to set a timestep 
+        // when the initial velocity is zero and the forcing term
+        // is not a body force
+        auto const dx    = geom[finest_level].CellSizeArray();
+        dt_new = std::min(dx[0],dx[1]); 
+#if (AMREX_SPACEDIM == 3)
+        dt_new = std::min(dt_new,dx[2]);
+#endif
+    }
 
     // Optionally reduce CFL for initial step
     if(initialization)
@@ -203,7 +219,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     // This may happen, for example, when the initial velocity field
     // is zero for an inviscid flow with no external forcing
     Real eps = std::numeric_limits<Real>::epsilon();
-    if(comb_cfl <= eps)
+    if(! initialization && comb_cfl <= eps)
     {
         dt_new = 0.5 * m_dt;
     }
@@ -219,7 +235,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     {
         dt_new = amrex::min( dt_new, allowed_change_factor * amrex::max(m_prev_dt, m_prev_prev_dt) );
     }
-    
+
     // Don't overshoot specified plot times
     if(m_plot_per_exact > 0.0 && 
             (std::trunc((m_cur_time + dt_new + eps) / m_plot_per_exact) > std::trunc((m_cur_time + eps) / m_plot_per_exact)))
@@ -237,13 +253,13 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     }
 
     // Make sure the timestep is not set to zero after a m_plot_per_exact stop
-    if(dt_new < eps)
+    if (dt_new < eps)
     {
         dt_new = 0.5 * m_dt;
     }
 
     // If using fixed time step, check CFL condition and give warning if not satisfied
-    if(m_fixed_dt > 0.0)
+    if (m_fixed_dt > 0.0)
     {
 	if(dt_new < m_fixed_dt)
 	{

@@ -110,23 +110,25 @@ void incflo::ApplyProjection (Vector<MultiFab const*> density,
         }
     }
 
-    // Create sigma
     Vector<amrex::MultiFab> sigma(finest_level+1);
-    for (int lev = 0; lev <= finest_level; ++lev )
+    if (!m_constant_density)
     {
-        sigma[lev].define(grids[lev], dmap[lev], 1, 0, MFInfo(), *m_factory[lev]);
+        for (int lev = 0; lev <= finest_level; ++lev )
+        {
+            sigma[lev].define(grids[lev], dmap[lev], 1, 0, MFInfo(), *m_factory[lev]);
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-        for (MFIter mfi(sigma[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
-        {
-            Box const& bx = mfi.tilebox();
-            Array4<Real> const& sig = sigma[lev].array(mfi);
-            Array4<Real const> const& rho = density[lev]->const_array(mfi);
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            for (MFIter mfi(sigma[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
-                sig(i,j,k) = scaling_factor / rho(i,j,k);
-            });
+                Box const& bx = mfi.tilebox();
+                Array4<Real> const& sig = sigma[lev].array(mfi);
+                Array4<Real const> const& rho = density[lev]->const_array(mfi);
+                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    sig(i,j,k) = scaling_factor / rho(i,j,k);
+                });
+            }
         }
     }
 
@@ -150,7 +152,7 @@ void incflo::ApplyProjection (Vector<MultiFab const*> density,
 
     if (m_constant_density)
     {
-        Real constant_sigma = scaling_factor * m_ro_0;
+        Real constant_sigma = scaling_factor / m_ro_0;
         nodal_projector.reset(new NodalProjector(vel, constant_sigma, 
                                                  Geom(0,finest_level), info));
     } else
