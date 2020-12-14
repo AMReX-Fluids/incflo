@@ -1,6 +1,7 @@
 #include <incflo.H>
 #include <AMReX_WriteEBSurface.H>
 
+#if (AMREX_SPACEDIM == 3)
 void incflo::WriteMyEBSurface ()
 {
   using namespace amrex;
@@ -17,3 +18,4 @@ void incflo::WriteMyEBSurface ()
 
   WriteEBSurface(ba,dm,Geom(lev),ebfact);
 }
+#endif

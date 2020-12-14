@@ -92,10 +92,12 @@ void incflo::InitData ()
     }
 
 #ifdef AMREX_USE_EB
+#if (AMREX_SPACEDIM == 3)
     ParmParse pp("incflo");
     bool write_eb_surface = false;
     pp.query("write_eb_surface", write_eb_surface);
     if (write_eb_surface) WriteMyEBSurface();
+#endif
 #endif
 
     if (m_verbose > 0 and ParallelDescriptor::IOProcessor()) {
