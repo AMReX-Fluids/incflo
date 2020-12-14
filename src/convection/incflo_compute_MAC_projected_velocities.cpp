@@ -39,10 +39,30 @@ incflo::compute_MAC_projected_velocities (
     {
         LPInfo lp_info;
         lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
-        macproj->initProjector(lp_info, inv_rho);
+#ifndef AMREX_USE_EB
+        if (m_constant_density) {
+            Vector<BoxArray> ba;
+            Vector<DistributionMapping> dm;
+            for (auto const& ir : inv_rho) {
+                ba.push_back(ir[0]->boxArray());
+                dm.push_back(ir[0]->DistributionMap());
+            }
+            macproj->initProjector(ba, dm, lp_info, 1.0/m_ro_0);
+        } else
+#endif
+        {
+            macproj->initProjector(lp_info, inv_rho);
+        }
         macproj->setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
     } else {
-        macproj->updateBeta(inv_rho);
+#ifndef AMREX_USE_EB
+        if (m_constant_density) {
+            macproj->updateBeta(1.0/m_ro_0);  // unnecessary unless m_ro_0 changes.
+        } else
+#endif
+        {
+            macproj->updateBeta(inv_rho);
+        }
     }
 
     Vector<Array<MultiFab,AMREX_SPACEDIM> > m_fluxes;
@@ -60,9 +80,9 @@ incflo::compute_MAC_projected_velocities (
     if (m_use_mac_phi_in_godunov)
     {
 #ifdef AMREX_USE_EB
-    macproj->getLinOp().getFluxes(amrex::GetVecOfArrOfPtrs(m_fluxes), mac_phi, MLMG::Location::FaceCentroid);
+        macproj->getFluxes(amrex::GetVecOfArrOfPtrs(m_fluxes), mac_phi, MLMG::Location::FaceCentroid);
 #else
-    macproj->getLinOp().getFluxes(amrex::GetVecOfArrOfPtrs(m_fluxes), mac_phi, MLMG::Location::FaceCenter);
+        macproj->getFluxes(amrex::GetVecOfArrOfPtrs(m_fluxes), mac_phi, MLMG::Location::FaceCenter);
 #endif
     } else {
         for (int lev=0; lev <= finest_level; ++lev)
