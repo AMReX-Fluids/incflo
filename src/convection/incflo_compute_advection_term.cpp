@@ -267,6 +267,9 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
     else
     {
         Box tmpbox = amrex::surroundingNodes(bx);
+        //Here we need to declare tmpcomp = nmaxcomp*3 (for 2D and 3D) because we need 
+        //three temporal arrays with number of components equal to AMREX_SPACEDIM 
+        //for the redistribute_eb call
         int tmpcomp = nmaxcomp*3;
 #ifdef AMREX_USE_EB
         Box gbx = bx;
@@ -288,6 +291,9 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         if (!regular)
         {
             Array4<Real> scratch = tmpfab.array(0);
+            //Here we need to declare dUdt_tmp = tmpfab.array(nmaxcomp*3) (for 2D and 3D) 
+            //because we need three temporal arrays with number of components equal to AMREX_SPACEDIM 
+            //for the redistribute_eb call
             Array4<Real> dUdt_tmp = tmpfab.array(nmaxcomp*3);
 
             // velocity
