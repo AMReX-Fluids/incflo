@@ -267,7 +267,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
     else
     {
         Box tmpbox = amrex::surroundingNodes(bx);
-        int tmpcomp = nmaxcomp*AMREX_SPACEDIM;
+        int tmpcomp = nmaxcomp*3;
 #ifdef AMREX_USE_EB
         Box gbx = bx;
         if (!regular) {
@@ -288,7 +288,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         if (!regular)
         {
             Array4<Real> scratch = tmpfab.array(0);
-            Array4<Real> dUdt_tmp = tmpfab.array(nmaxcomp*AMREX_SPACEDIM);
+            Array4<Real> dUdt_tmp = tmpfab.array(nmaxcomp*3);
 
             // velocity
             mol::compute_convective_fluxes_eb(lev, gbx, AMREX_SPACEDIM,
