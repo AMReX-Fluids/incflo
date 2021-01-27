@@ -39,7 +39,7 @@ namespace mol {
                                               amrex::BCRec  const* d_bcrec,
                                 amrex::Vector<amrex::Geometry> geom);
 
-    void compute_convective_fluxes (int lev, amrex::Box const& bx, int ncomp,
+    void compute_convective_fluxes (amrex::Box const& bx, int ncomp,
                                     AMREX_D_DECL(amrex::Array4<amrex::Real> const& fx,
                                                  amrex::Array4<amrex::Real> const& fy,
                                                  amrex::Array4<amrex::Real> const& fz),
@@ -49,18 +49,17 @@ namespace mol {
                                                  amrex::Array4<amrex::Real const> const& wmac),
                                     amrex::BCRec const* h_bcrec,
                                     amrex::BCRec const* d_bcrec,
-                                    amrex::Vector<amrex::Geometry> geom);
+                                    amrex::Geometry& geom);
 
-    void compute_convective_rate (int lev, amrex::Box const& bx, int ncomp,
+    void compute_convective_rate ( amrex::Box const& bx, int ncomp,
                                   amrex::Array4<amrex::Real> const& dUdt,
                                   AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fx,
                                                amrex::Array4<amrex::Real const> const& fy,
                                                amrex::Array4<amrex::Real const> const& fz),
-                                  amrex::Vector<amrex::Geometry> geom);
+                                  amrex::Geometry& geom);
 
 #ifdef AMREX_USE_EB
     void predict_vels_on_faces_eb (int lev,
-                                   amrex::Box const& ccbx,
                                    AMREX_D_DECL(amrex::Box const& ubx,
                                                 amrex::Box const& vbx,
                                                 amrex::Box const& wbx),
@@ -77,7 +76,7 @@ namespace mol {
                                                  amrex::BCRec  const* d_bcrec,
                                    amrex::Vector<amrex::Geometry> geom);
 
-    void compute_convective_fluxes_eb (int lev, amrex::Box const& bx, int ncomp,
+    void compute_convective_fluxes_eb (amrex::Box const& bx, int ncomp,
                                        AMREX_D_DECL(amrex::Array4<amrex::Real> const& fx,
                                                     amrex::Array4<amrex::Real> const& fy,
                                                     amrex::Array4<amrex::Real> const& fz),
@@ -92,9 +91,9 @@ namespace mol {
                                                     amrex::Array4<amrex::Real const> const& fcy,
                                                     amrex::Array4<amrex::Real const> const& fcz),
                                        amrex::Array4<amrex::Real const> const& ccc,
-                                       amrex::Vector<amrex::Geometry> geom);
+                                       amrex::Geometry& geom);
 
-    void compute_convective_rate_eb (int lev, amrex::Box const& bx, int ncomp,
+    void compute_convective_rate_eb (amrex::Box const& bx, int ncomp,
                                      amrex::Array4<amrex::Real> const& dUdt,
                                      AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fx,
                                                   amrex::Array4<amrex::Real const> const& fy,
@@ -104,7 +103,7 @@ namespace mol {
                                      AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
                                                   amrex::Array4<amrex::Real const> const& apy,
                                                   amrex::Array4<amrex::Real const> const& apz),
-                                     amrex::Vector<amrex::Geometry> geom);
+                                     amrex::Geometry& geom);
 #endif
 } // namespace mol
 

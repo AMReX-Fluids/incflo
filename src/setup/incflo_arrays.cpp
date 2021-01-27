@@ -6,7 +6,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
                               amrex::DistributionMapping const& dm,
                               amrex::FabFactory<FArrayBox> const& fact,
                               int ntrac, int ng_state,
-                              bool use_godunov, bool implicit_diffusion,
+                              std::string advection_type, bool implicit_diffusion,
                               bool use_tensor_correction, bool advect_tracer)
     : velocity  (ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),
       velocity_o(ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),
@@ -24,7 +24,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
       conv_density_o (ba, dm, 1             , 0, MFInfo(), fact),
       conv_tracer_o  (ba, dm, ntrac         , 0, MFInfo(), fact)
 {
-    if (use_godunov) {
+    if (advection_type != "MOL") {
         divtau_o.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
         if (advect_tracer) {
             laps_o.define(ba, dm, ntrac, 0, MFInfo(), fact);

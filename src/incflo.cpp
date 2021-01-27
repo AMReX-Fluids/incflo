@@ -38,7 +38,6 @@ void incflo::InitData ()
 {
     BL_PROFILE("incflo::InitData()");
 
-    int restart_flag = 0;
     if (m_restart_file.empty())
     {
         // This tells the AmrMesh class not to iterate when creating the initial
@@ -80,7 +79,6 @@ void incflo::InitData ()
     }
     else
     {
-        restart_flag = 1;
         // Read starting configuration from chk file.
         ReadCheckpointFile();
 
@@ -198,7 +196,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 
     m_leveldata[lev].reset(new LevelData(grids[lev], dmap[lev], *m_factory[lev],
                                          m_ntrac, nghost_state(),
-                                         m_use_godunov,
+                                         m_advection_type,
                                          m_diff_type==DiffusionType::Implicit,
                                            use_tensor_correction,
                                          m_advect_tracer));
@@ -237,8 +235,8 @@ incflo::writeNow()
         // the number of intervals that have elapsed for both the current
         // time and the time at the beginning of this timestep.
 
-        int num_per_old = (m_cur_time-m_dt) / m_plot_per_approx;
-        int num_per_new = (m_cur_time     ) / m_plot_per_approx;
+        int num_per_old = static_cast<int>(std::round((m_cur_time-m_dt) / m_plot_per_approx));
+        int num_per_new = static_cast<int>(std::round((m_cur_time     ) / m_plot_per_approx));
 
         // Before using these, however, we must test for the case where we're
         // within machine epsilon of the next interval. In that case, increment

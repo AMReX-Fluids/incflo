@@ -36,7 +36,6 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
-        auto const dx    = geom[lev].CellSizeArray();
         auto const dxinv = geom[lev].InvCellSizeArray();
         MultiFab const& vel   = m_leveldata[lev]->velocity;
         MultiFab const& rho   = m_leveldata[lev]->density;

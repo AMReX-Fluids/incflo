@@ -53,7 +53,10 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
         constexpr Real c0 = -1.5;
         constexpr Real c1 =  2.0;
         constexpr Real c2 = -0.5;
-        Real ux, vx, wx, uy, vy, wy, uz, vz, wz;
+        Real ux, vx, uy, vy;
+#if (AMREX_SPACEDIM == 3)
+        Real wx, wy, uz, vz, wz;
+#endif
         if (!flag.isConnected( 1,0,0))
         {
             // Covered cell to the right, go fish left
@@ -63,9 +66,11 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
             vx = - (c0 * vel(i  ,j,k,1)
                   + c1 * vel(i-1,j,k,1)
                   + c2 * vel(i-2,j,k,1)) * idx;
+#if (AMREX_SPACEDIM == 3)
             wx = - (c0 * vel(i  ,j,k,2)
                   + c1 * vel(i-1,j,k,2)
                   + c2 * vel(i-2,j,k,2)) * idx;
+#endif
         }
         else if (!flag.isConnected(-1,0,0))
         {
@@ -76,16 +81,20 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
             vx = (c0 * vel(i  ,j,k,1)
                 + c1 * vel(i+1,j,k,1)
                 + c2 * vel(i+2,j,k,1)) * idx;
+#if (AMREX_SPACEDIM == 3)
             wx = (c0 * vel(i  ,j,k,2)
                 + c1 * vel(i+1,j,k,2)
                 + c2 * vel(i+2,j,k,2)) * idx;
+#endif
         }
         else
         {
             // No covered cells right or left, use standard stencil
             ux = 0.5 * (vel(i+1,j,k,0) - vel(i-1,j,k,0)) * idx;
             vx = 0.5 * (vel(i+1,j,k,1) - vel(i-1,j,k,1)) * idx;
+#if (AMREX_SPACEDIM == 3)
             wx = 0.5 * (vel(i+1,j,k,2) - vel(i-1,j,k,2)) * idx;
+#endif
         }
 
         // Do the same in y-direction
@@ -97,9 +106,11 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
             vy = - (c0 * vel(i,j  ,k,1)
                   + c1 * vel(i,j-1,k,1)
                   + c2 * vel(i,j-2,k,1)) * idy;
+#if (AMREX_SPACEDIM == 3)
             wy = - (c0 * vel(i,j  ,k,2)
                   + c1 * vel(i,j-1,k,2)
                   + c2 * vel(i,j-2,k,2)) * idy;
+#endif
         }
         else if (!flag.isConnected(0,-1,0))
         {
@@ -109,15 +120,19 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
             vy = (c0 * vel(i,j  ,k,1)
                 + c1 * vel(i,j+1,k,1)
                 + c2 * vel(i,j+2,k,1)) * idy;
+#if (AMREX_SPACEDIM == 3)
             wy = (c0 * vel(i,j  ,k,2)
                 + c1 * vel(i,j+1,k,2)
                 + c2 * vel(i,j+2,k,2)) * idy;
+#endif
         }
         else
         {
             uy = 0.5 * (vel(i,j+1,k,0) - vel(i,j-1,k,0)) * idy;
             vy = 0.5 * (vel(i,j+1,k,1) - vel(i,j-1,k,1)) * idy;
+#if (AMREX_SPACEDIM == 3)
             wy = 0.5 * (vel(i,j+1,k,2) - vel(i,j-1,k,2)) * idy;
+#endif
         }
 #if (AMREX_SPACEDIM == 3)
         // Do the same in z-direction

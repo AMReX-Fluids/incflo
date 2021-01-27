@@ -19,19 +19,21 @@ namespace {
     }
 }
 
-void godunov::predict_plm_x (int lev, Box const& bx_in, int ncomp,
-                            Array4<Real> const& Imx, Array4<Real> const& Ipx,
-                            Array4<Real const> const& q,
-                            Array4<Real const> const& vcc,
-                            Vector<Geometry> geom,
-                            Real dt,
-                            Vector<BCRec> const& h_bcrec,
-                            BCRec const* pbc)
+void godunov::predict_plm_x (Box const& bx_in,
+                             Array4<Real> const& Imx, Array4<Real> const& Ipx,
+                             Array4<Real const> const& q,
+                             Array4<Real const> const& vcc,
+                             Geometry& geom,
+                             Real dt,
+                             Vector<BCRec> const& h_bcrec,
+                             BCRec const* pbc)
 {
-    const Real dx = geom[lev].CellSize(0);
+    const Real dx = geom.CellSize(0);
     const Real dtdx = dt/dx;
 
-    const Box& domain_box = geom[lev].Domain();
+    int ncomp = AMREX_SPACEDIM;
+
+    const Box& domain_box = geom.Domain();
     const int domain_ilo = domain_box.smallEnd(0);
     const int domain_ihi = domain_box.bigEnd(0);
 
@@ -39,6 +41,7 @@ void godunov::predict_plm_x (int lev, Box const& bx_in, int ncomp,
     auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
     bool has_extdir_or_ho_lo = extdir_lohi.first;
     bool has_extdir_or_ho_hi = extdir_lohi.second;
+
 #if (AMREX_SPACEDIM == 3)
     Box xebox = Box(bx_in).grow(1,1).grow(2,1).surroundingNodes(0);
 #else
@@ -86,11 +89,11 @@ void godunov::predict_plm_x (int lev, Box const& bx_in, int ncomp,
     }
 }
 
-void godunov::predict_plm_y (int lev, Box const& bx_in, int ncomp,
+void godunov::predict_plm_y (Box const& bx_in,
                             Array4<Real> const& Imy, Array4<Real> const& Ipy,
                             Array4<Real const> const& q,
                             Array4<Real const> const& vcc,
-                            Vector<Geometry> geom,
+                            Geometry& geom,
                             Real dt,
                             Vector<BCRec> const& h_bcrec,
                             BCRec const* pbc)
@@ -101,10 +104,12 @@ void godunov::predict_plm_y (int lev, Box const& bx_in, int ncomp,
     Box yebox = Box(bx_in).grow(0,1).surroundingNodes(1);
 #endif
 
-    const Real dy = geom[lev].CellSize(1);
+    int ncomp = AMREX_SPACEDIM;
+
+    const Real dy = geom.CellSize(1);
     const Real dtdy = dt/dy;
 
-    const Box& domain_box = geom[lev].Domain();
+    const Box& domain_box = geom.Domain();
     const int domain_jlo = domain_box.smallEnd(1);
     const int domain_jhi = domain_box.bigEnd(1);
 
@@ -155,21 +160,23 @@ void godunov::predict_plm_y (int lev, Box const& bx_in, int ncomp,
 }
 
 #if (AMREX_SPACEDIM == 3)
-void godunov::predict_plm_z (int lev, Box const& bx_in, int ncomp,
-                            Array4<Real> const& Imz, Array4<Real> const& Ipz,
-                            Array4<Real const> const& q,
-                            Array4<Real const> const& vcc,
-                            Vector<Geometry> geom,
-                            Real dt,
-                            Vector<BCRec> const& h_bcrec,
-                            BCRec const* pbc)
-{
+void godunov::predict_plm_z (Box const& bx_in,
+                             Array4<Real> const& Imz, Array4<Real> const& Ipz,
+                             Array4<Real const> const& q,
+                             Array4<Real const> const& vcc,
+                             Geometry& geom,
+                             Real dt,
+                             Vector<BCRec> const& h_bcrec,
+                             BCRec const* pbc)
+ {
     Box zebox = Box(bx_in).grow(0,1).grow(1,1).surroundingNodes(2);
 
-    const Real dz = geom[lev].CellSize(2);
+    int ncomp = AMREX_SPACEDIM;
+
+    const Real dz = geom.CellSize(2);
     const Real dtdz = dt/dz;
 
-    const Box& domain_box = geom[lev].Domain();
+    const Box& domain_box = geom.Domain();
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
 

@@ -28,12 +28,12 @@ void incflo::MakeEBGeometry()
 	amrex::Print() << "\n Building cylinder geometry." << std::endl;
         make_eb_cylinder();
     }
-#if (AMREX_SPACEDIM == 3)
     else if(geom_type == "box")
     {
         amrex::Print() << "\n Building box geometry." << std::endl;
         make_eb_box();
     }
+#if (AMREX_SPACEDIM == 3)
     else if(geom_type == "twocylinders")
     {
 	amrex::Print() << "\n Building twocylinders geometry." << std::endl;

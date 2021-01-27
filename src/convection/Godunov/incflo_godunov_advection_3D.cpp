@@ -1,23 +1,25 @@
 #include <incflo_godunov_plm.H>
 #include <incflo_godunov_ppm.H>
-
+#include <incflo_godunov_corner_couple.H>
+#include <incflo_godunov_trans_bc.H>
 #include <Godunov.H>
 
 using namespace amrex;
 
 void
-godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
+godunov::compute_godunov_advection (Box const& bx, int ncomp,
                                     Array4<Real> const& dqdt,
                                     Array4<Real const> const& q,
                                     Array4<Real const> const& umac,
                                     Array4<Real const> const& vmac,
                                     Array4<Real const> const& wmac,
                                     Array4<Real const> const& fq,
-                                    Vector<amrex::Geometry> geom,
+                                    Array4<Real const> const& divu,
                                     Real l_dt,
                                     BCRec const* pbc, int const* iconserv,
                                     Real* p, bool use_ppm,
                                     bool l_use_forces_in_trans,
+                                    Geometry& geom,
                                     bool is_velocity )
 {
     Box const& xbx = amrex::surroundingNodes(bx,0);
@@ -28,17 +30,17 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     Box yebox = Box(ybx).grow(0,1).grow(2,1);
     Box zebox = Box(zbx).grow(0,1).grow(1,1);
 
-    const Real dx = geom[lev].CellSize(0);
-    const Real dy = geom[lev].CellSize(1);
-    const Real dz = geom[lev].CellSize(2);
+    const Real dx = geom.CellSize(0);
+    const Real dy = geom.CellSize(1);
+    const Real dz = geom.CellSize(2);
     Real dtdx = l_dt/dx;
     Real dtdy = l_dt/dy;
     Real dtdz = l_dt/dz;
 
-    Box const& domain = geom[lev].Domain();
+    Box const& domain = geom.Domain();
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
-    const auto dxinv = geom[lev].InvCellSizeArray();
+    const auto dxinv = geom.InvCellSizeArray();
 
     Array4<Real> Imx = makeArray4(p, bxg1, ncomp);
     p +=         Imx.size();
@@ -64,8 +66,6 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     p +=         zlo.size();
     Array4<Real> zhi = makeArray4(p, zebox, ncomp);
     p +=         zhi.size();
-    Array4<Real> divu = makeArray4(p, bxg1, 1);
-    p +=         divu.size();
     Array4<Real> xyzlo = makeArray4(p, bxg1, ncomp);
     p +=         xyzlo.size();
     Array4<Real> xyzhi = makeArray4(p, bxg1, ncomp);
@@ -109,9 +109,6 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         });
     }
 
-    amrex::ParallelFor(Box(divu), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-        divu(i,j,k) = 0.0;
-    });
 
     amrex::ParallelFor(
         xebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -132,7 +129,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
 
             auto bc = pbc[n];
 
-            Godunov_trans_xbc(i, j, k, n, q, lo, hi, uad, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
+            Godunov_trans_xbc(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
             xlo(i,j,k,n) = lo;
             xhi(i,j,k,n) = hi;
@@ -160,7 +157,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
 
             auto bc = pbc[n];
 
-            Godunov_trans_ybc(i, j, k, n, q, lo, hi, vad, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
+            Godunov_trans_ybc(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
             ylo(i,j,k,n) = lo;
             yhi(i,j,k,n) = hi;
@@ -187,7 +184,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
 
             auto bc = pbc[n];
 
-            Godunov_trans_zbc(i, j, k, n, q, lo, hi, wad, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
+            Godunov_trans_zbc(i, j, k, n, q, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
 
             zlo(i,j,k,n) = lo;
             zhi(i,j,k,n) = hi;
@@ -221,7 +218,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
                                  q, divu, vmac, yedge);
 
         Real wad = wmac(i,j,k);
-        Godunov_trans_zbc(i, j, k, n, q, l_zylo, l_zyhi, wad, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
+        Godunov_trans_zbc(i, j, k, n, q, l_zylo, l_zyhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
 
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
         Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
@@ -238,7 +235,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
                                  q, divu, wmac, zedge);
 
         Real vad = vmac(i,j,k);
-        Godunov_trans_ybc(i, j, k, n, q, l_yzlo, l_yzhi, vad, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
+        Godunov_trans_ybc(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -287,8 +284,8 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         }
 
         auto bc = pbc[n];
-        Godunov_cc_xbc_lo(i, j, k, n, q, stl, sth, umac, bc.lo(0), dlo.x, is_velocity);
-        Godunov_cc_xbc_hi(i, j, k, n, q, stl, sth, umac, bc.hi(0), dhi.x, is_velocity);
+        Godunov_cc_xbc_lo(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, is_velocity);
+        Godunov_cc_xbc_hi(i, j, k, n, q, stl, sth, bc.hi(0), dhi.x, is_velocity);
 
         Real temp = (umac(i,j,k) >= 0.) ? stl : sth;
         temp = (amrex::Math::abs(umac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
@@ -313,7 +310,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
                                  q, divu, wmac, zedge);
 
         Real uad = umac(i,j,k);
-        Godunov_trans_xbc(i, j, k, n, q, l_xzlo, l_xzhi, uad, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
+        Godunov_trans_xbc(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
@@ -330,7 +327,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
                                  q, divu, umac, xedge);
 
         Real wad = wmac(i,j,k);
-        Godunov_trans_zbc(i, j, k, n, q, l_zxlo, l_zxhi, wad, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
+        Godunov_trans_zbc(i, j, k, n, q, l_zxlo, l_zxhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
 
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
         Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
@@ -380,8 +377,8 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         }
 
         auto bc = pbc[n];
-        Godunov_cc_ybc_lo(i, j, k, n, q, stl, sth, vmac, bc.lo(1), dlo.y, is_velocity);
-        Godunov_cc_ybc_hi(i, j, k, n, q, stl, sth, vmac, bc.hi(1), dhi.y, is_velocity);
+        Godunov_cc_ybc_lo(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, is_velocity);
+        Godunov_cc_ybc_hi(i, j, k, n, q, stl, sth, bc.hi(1), dhi.y, is_velocity);
 
         Real temp = (vmac(i,j,k) >= 0.) ? stl : sth;
         temp = (amrex::Math::abs(vmac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
@@ -406,7 +403,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
                                  q, divu, vmac, yedge);
 
         Real uad = umac(i,j,k);
-        Godunov_trans_xbc(i, j, k, n, q, l_xylo, l_xyhi, uad, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
+        Godunov_trans_xbc(i, j, k, n, q, l_xylo, l_xyhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
@@ -423,7 +420,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
                                  q, divu, umac, xedge);
 
         Real vad = vmac(i,j,k);
-        Godunov_trans_ybc(i, j, k, n, q, l_yxlo, l_yxhi, vad, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
+        Godunov_trans_ybc(i, j, k, n, q, l_yxlo, l_yxhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -472,8 +469,8 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         }
 
         auto bc = pbc[n];
-        Godunov_cc_zbc_lo(i, j, k, n, q, stl, sth, wmac, bc.lo(2),  dlo.z, is_velocity);
-        Godunov_cc_zbc_hi(i, j, k, n, q, stl, sth, wmac, bc.hi(2),  dhi.z, is_velocity);
+        Godunov_cc_zbc_lo(i, j, k, n, q, stl, sth, bc.lo(2),  dlo.z, is_velocity);
+        Godunov_cc_zbc_hi(i, j, k, n, q, stl, sth, bc.hi(2),  dhi.z, is_velocity);
 
         Real temp = (wmac(i,j,k) >= 0.) ? stl : sth;
         temp = (amrex::Math::abs(wmac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;

@@ -1,22 +1,23 @@
 #include <incflo_godunov_plm.H>
 #include <incflo_godunov_ppm.H>
-
+#include <incflo_godunov_trans_bc.H>
 #include <Godunov.H>
 
 using namespace amrex;
 
 void
-godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
+godunov::compute_godunov_advection (Box const& bx, int ncomp,
                                     Array4<Real> const& dqdt,
                                     Array4<Real const> const& q,
                                     Array4<Real const> const& umac,
                                     Array4<Real const> const& vmac,
                                     Array4<Real const> const& fq,
-                                    Vector<amrex::Geometry> geom,
+                                    Array4<Real const> const& divu,
                                     Real l_dt,
                                     BCRec const* pbc, int const* iconserv,
                                     Real* p, bool use_ppm, 
                                     bool l_use_forces_in_trans,
+                                    Geometry& geom,
                                     bool is_velocity )
 {
     Box const& xbx = amrex::surroundingNodes(bx,0);
@@ -25,15 +26,15 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     Box xebox = Box(xbx).grow(1,1);
     Box yebox = Box(ybx).grow(0,1);
 
-    const Real dx = geom[lev].CellSize(0);
-    const Real dy = geom[lev].CellSize(1);
+    const Real dx = geom.CellSize(0);
+    const Real dy = geom.CellSize(1);
     Real dtdx = l_dt/dx;
     Real dtdy = l_dt/dy;
 
-    Box const& domain = geom[lev].Domain();
+    Box const& domain = geom.Domain();
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
-    const auto dxinv = geom[lev].InvCellSizeArray();
+    const auto dxinv = geom.InvCellSizeArray();
 
     Array4<Real> Imx = makeArray4(p, bxg1, ncomp);
     p +=         Imx.size();
@@ -51,8 +52,6 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
     p +=         ylo.size();
     Array4<Real> yhi = makeArray4(p, yebox, ncomp);
     p +=         yhi.size();
-    Array4<Real> divu = makeArray4(p, bxg1, 1);
-    p +=         divu.size();
     Array4<Real> xyzlo = makeArray4(p, bxg1, ncomp);
     p +=         xyzlo.size();
     Array4<Real> xyzhi = makeArray4(p, bxg1, ncomp);
@@ -87,10 +86,6 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         });
     }
 
-    amrex::ParallelFor(Box(divu), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-        divu(i,j,k) = 0.0;
-    });
-
     amrex::ParallelFor(
         xebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
@@ -110,7 +105,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
 
             auto bc = pbc[n];  
 
-            Godunov_trans_xbc(i, j, k, n, q, lo, hi, uad, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
+            Godunov_trans_xbc(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
             xlo(i,j,k,n) = lo; 
             xhi(i,j,k,n) = hi;
@@ -138,7 +133,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
 
             auto bc = pbc[n];
 
-            Godunov_trans_ybc(i, j, k, n, q, lo, hi, vad, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
+            Godunov_trans_ybc(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
             ylo(i,j,k,n) = lo;
             yhi(i,j,k,n) = hi;
@@ -147,9 +142,6 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
             Real fuy = (amrex::Math::abs(vad) < small_vel)? 0. : 1.;
             Imy(i,j,k,n) = fuy*st + (1. - fuy)*0.5*(hi + lo);
         });
-
-    Array4<Real> xedge = Imx;
-    Array4<Real> yedge = Imy;
 
     // We can reuse the space in Ipx, Ipy and Ipz.
 
@@ -168,7 +160,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         l_yzlo = ylo(i,j,k,n);
         l_yzhi = yhi(i,j,k,n);
         Real vad = vmac(i,j,k);
-        Godunov_trans_ybc(i, j, k, n, q, l_yzlo, l_yzhi, vad, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
+        Godunov_trans_ybc(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -207,8 +199,8 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         }
 
         auto bc = pbc[n]; 
-        Godunov_cc_xbc_lo(i, j, k, n, q, stl, sth, umac, bc.lo(0), dlo.x, is_velocity);
-        Godunov_cc_xbc_hi(i, j, k, n, q, stl, sth, umac, bc.hi(0), dhi.x, is_velocity);
+        Godunov_cc_xbc_lo(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, is_velocity);
+        Godunov_cc_xbc_hi(i, j, k, n, q, stl, sth, bc.hi(0), dhi.x, is_velocity);
 
         Real temp = (umac(i,j,k) >= 0.) ? stl : sth; 
         temp = (amrex::Math::abs(umac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
@@ -231,7 +223,7 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         l_xzhi = xhi(i,j,k,n);
 
         Real uad = umac(i,j,k);
-        Godunov_trans_xbc(i, j, k, n, q, l_xzlo, l_xzhi, uad, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
+        Godunov_trans_xbc(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
@@ -271,8 +263,8 @@ godunov::compute_godunov_advection (int lev, Box const& bx, int ncomp,
         }
 
         auto bc = pbc[n];
-        Godunov_cc_ybc_lo(i, j, k, n, q, stl, sth, vmac, bc.lo(1), dlo.y, is_velocity);
-        Godunov_cc_ybc_hi(i, j, k, n, q, stl, sth, vmac, bc.hi(1), dhi.y, is_velocity);
+        Godunov_cc_ybc_lo(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, is_velocity);
+        Godunov_cc_ybc_hi(i, j, k, n, q, stl, sth, bc.hi(1), dhi.y, is_velocity);
 
         Real temp = (vmac(i,j,k) >= 0.) ? stl : sth; 
         temp = (amrex::Math::abs(vmac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp; 

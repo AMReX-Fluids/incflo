@@ -75,7 +75,7 @@ mol::predict_vels_on_faces (int lev,
                              Array4<Real const> const& fcy = fcent[1]->const_array(mfi);,
                              Array4<Real const> const& fcz = fcent[2]->const_array(mfi););
                 Array4<Real const> const& ccc = ccent.const_array(mfi);
-                predict_vels_on_faces_eb(lev,bx,AMREX_D_DECL(ubx,vbx,wbx),
+                predict_vels_on_faces_eb(lev,AMREX_D_DECL(ubx,vbx,wbx),
                                          AMREX_D_DECL(u,v,w),vcc,flagarr,AMREX_D_DECL(fcx,fcy,fcz),ccc,
                                          h_bcrec,d_bcrec,geom);
             }

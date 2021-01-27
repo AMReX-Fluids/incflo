@@ -8,7 +8,7 @@ using namespace amrex;
 
 // tag cells for refinement
 // overrides the pure virtual function in AmrCore
-void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
+void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
 {
     BL_PROFILE("incflo::ErrorEst()");
 
@@ -44,14 +44,6 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int ngrow)
     }
 
     const auto   tagval = TagBox::SET;
-//    const auto clearval = TagBox::CLEAR;
-
-#ifdef AMREX_USE_EB
-    auto const& factory = EBFactory(lev);
-    auto const& flags = factory.getMultiEBCellFlagFab();
-#endif
-
-//    const auto prob_lo = geom[lev].ProbLoArray();
 
     bool tag_rho = lev < rhoerr_v.size();
     bool tag_gradrho = lev < gradrhoerr_v.size();

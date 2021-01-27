@@ -6,7 +6,7 @@
 
 using namespace amrex;
 
-void incflo::ComputeDivU(Real time_in)
+void incflo::ComputeDivU(Real /*time_in*/)
 {
 #if 0
 
@@ -45,7 +45,7 @@ void incflo::compute_strainrate_at_level (int lev,
                                           MultiFab* strainrate,
                                           MultiFab* vel,
                                           Geometry& lev_geom,
-                                          Real time, int nghost)
+                                          Real /*time*/, int nghost)
 {
 
 #ifdef AMREX_USE_EB
@@ -140,7 +140,7 @@ Real incflo::ComputeKineticEnergy () const
 }
 
 #if (AMREX_SPACEDIM == 2)
-void incflo::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const& vel)
+void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab const& vel)
 {
     BL_PROFILE("incflo::ComputeVorticity");
     const Real idx = Geom(lev).InvCellSize(0);
@@ -242,7 +242,7 @@ void incflo::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const& 
 }
     
 #elif (AMREX_SPACEDIM == 3)
-void incflo::ComputeVorticity (int lev, Real t, MultiFab& vort, MultiFab const& vel)
+void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab const& vel)
 {
     BL_PROFILE("incflo::ComputeVorticity");
     const Real idx = Geom(lev).InvCellSize(0);

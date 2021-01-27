@@ -585,7 +585,6 @@ void incflo::WritePlotFile()
     if (m_plt_forcing) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab forcing(mf[lev], amrex::make_alias, icomp, 3);
-            bool include_pressure_gradient = false;
             compute_vel_forces_on_level(lev, forcing, 
                                         m_leveldata[lev]->velocity,
                                         m_leveldata[lev]->density,

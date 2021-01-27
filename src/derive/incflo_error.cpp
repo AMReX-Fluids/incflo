@@ -6,7 +6,7 @@
 
 using namespace amrex;
 
-void incflo::DiffFromExact (int lev, Geometry& lev_geom, Real time, Real dt,
+void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
                             MultiFab& error, int soln_comp, int err_comp) 
 {
     auto const& dx = lev_geom.CellSizeArray();
@@ -81,9 +81,6 @@ void incflo::DiffFromExact (int lev, Geometry& lev_geom, Real time, Real dt,
 
                 Real x = (i+0.5)*dx[0];
                 Real y = (j+0.5)*dx[1];
-#if (AMREX_SPACEDIM == 3)
-                Real z = (k+0.5)*dx[2];
-#endif
                 Real exact;
                 if (err_comp == AMREX_SPACEDIM || err_comp == AMREX_SPACEDIM+1) {  // pressure 
 

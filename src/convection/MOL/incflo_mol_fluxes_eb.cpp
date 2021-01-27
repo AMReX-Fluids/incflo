@@ -25,7 +25,7 @@ namespace {
 
 #ifdef AMREX_USE_EB
 void 
-mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
+mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
                                    AMREX_D_DECL(Array4<Real> const& fx,
                                                 Array4<Real> const& fy,
                                                 Array4<Real> const& fz),
@@ -40,11 +40,11 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                                                 Array4<Real const> const& fcy,
                                                 Array4<Real const> const& fcz),
                                    Array4<Real const> const& ccc,
-                                   Vector<Geometry> geom)
+                                   Geometry& geom)
 {
     constexpr Real small_vel = 1.e-10;
 
-    const Box& domain_box = geom[lev].Domain();
+    const Box& domain_box = geom.Domain();
     AMREX_D_TERM(
         const int domain_ilo = domain_box.smallEnd(0);
         const int domain_ihi = domain_box.bigEnd(0);,
@@ -225,15 +225,12 @@ mol::compute_convective_fluxes_eb (int lev, Box const& bx, int ncomp,
                              bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == BCType::ext_dir) or
                                                      (d_bcrec[n].hi(2) == BCType::hoextrap););
 
-                   Real yf = fcx(i,j,k,0); // local (y,z) of centroid of z-face we are extrapolating to
 
                 if (j <= domain_jlo && (d_bcrec[n].lo(1) == BCType::ext_dir)) {
                     qs = q(i,domain_jlo-1,k,n);
                 } else if (j >= domain_jhi+1 && (d_bcrec[n].hi(1) == BCType::ext_dir)) {
                     qs = q(i,domain_jhi+1,k,n);
                 } else {
-
-                   Real yf = fcx(i,j,k,0); // local (y,z) of centroid of z-face we are extrapolating to
 
                    Real xf = fcy(i,j,k,0); // local (x,z) of centroid of z-face we are extrapolating to
 #if (AMREX_SPACEDIM == 3)

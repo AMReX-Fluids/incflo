@@ -104,7 +104,7 @@ void incflo::ApplyCorrector()
     }
 
     // **********************************************************************************************
-    // We only reach the corrector if !m_use_godunov which means we don't use the forces
+    // We only reach the corrector if advection_type == MOL which means we don't use the forces
     //    in constructing the advection term
     // **********************************************************************************************
     Vector<MultiFab> vel_forces, tra_forces;

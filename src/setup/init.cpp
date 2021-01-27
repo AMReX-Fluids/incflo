@@ -56,14 +56,17 @@ void incflo::ReadParameters ()
         pp.query("advect_tracer"            , m_advect_tracer);
         pp.query("test_tracer_conservation" , m_test_tracer_conservation);
 
-        // Godunov-related flags
-        pp.query("use_godunov"                      , m_use_godunov);
+        // Are we using MOL or Godunov?
+        pp.query("advection_type"                   , m_advection_type);
         pp.query("use_ppm"                          , m_godunov_ppm);
         pp.query("godunov_use_forces_in_trans"      , m_godunov_use_forces_in_trans);
         pp.query("godunov_include_diff_in_forcing"  , m_godunov_include_diff_in_forcing);
         pp.query("use_mac_phi_in_godunov"           , m_use_mac_phi_in_godunov);
 
-        if (!m_use_godunov) m_godunov_include_diff_in_forcing = false;
+        if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;
+
+        if (m_advection_type != "MOL" and m_advection_type != "Godunov")
+            amrex::Abort("advection type must be MOL or Godunov");
 
         // The default for diffusion_type is 2, i.e. the default m_diff_type is DiffusionType::Implicit
         int diffusion_type = 2;
@@ -90,10 +93,10 @@ void incflo::ReadParameters ()
             amrex::Abort("We cannot have use_tensor_correction be true and diffusion type not Implicit");
         }
 
-        if (!m_use_godunov && m_cfl > 0.5) {
+        if (m_advection_type == "MOL" && m_cfl > 0.5) {
             amrex::Abort("We currently require cfl <= 0.5 when using the MOL advection scheme");
         }
-        if (m_use_godunov && m_cfl > 1.0) {
+        if (m_advection_type != "MOL" && m_cfl > 1.0) {
             amrex::Abort("We currently require cfl <= 1.0 when using the Godunov advection scheme");
         }
 

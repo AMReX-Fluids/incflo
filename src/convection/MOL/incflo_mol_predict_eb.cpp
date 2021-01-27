@@ -24,7 +24,7 @@ namespace {
 
 #ifdef AMREX_USE_EB
 void 
-mol::predict_vels_on_faces_eb (int lev, Box const& ccbx,
+mol::predict_vels_on_faces_eb (int lev, 
                                AMREX_D_DECL(Box const& ubx, 
                                             Box const& vbx, 
                                             Box const& wbx),

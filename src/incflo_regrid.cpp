@@ -27,7 +27,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 #endif
     std::unique_ptr<LevelData> new_leveldata
         (new LevelData(ba, dm, *new_fact, m_ntrac, nghost_state(),
-                       m_use_godunov,
+                       m_advection_type,
                        m_diff_type==DiffusionType::Implicit,
                        use_tensor_correction,
                        m_advect_tracer));
@@ -78,7 +78,7 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 #endif
     std::unique_ptr<LevelData> new_leveldata
         (new LevelData(ba, dm, *new_fact, m_ntrac, nghost_state(),
-                       m_use_godunov,
+                       m_advection_type,
                        m_diff_type==DiffusionType::Implicit,
                        use_tensor_correction,
                        m_advect_tracer));

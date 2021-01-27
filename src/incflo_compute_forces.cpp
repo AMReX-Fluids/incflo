@@ -45,14 +45,12 @@ void incflo::compute_vel_forces (Vector<MultiFab*> const& vel_forces,
 
 void incflo::compute_vel_forces_on_level (int lev,
                                                 MultiFab& vel_forces,
-                                          const MultiFab& velocity,
+                                          const MultiFab& /*velocity*/,
                                           const MultiFab& density,
                                           const MultiFab& tracer_old,
                                           const MultiFab& tracer_new,
                                           bool include_pressure_gradient)
 {
-    const Real* dx = geom[lev].CellSize();
-
     GpuArray<Real,3> l_gravity{m_gravity[0],m_gravity[1],m_gravity[2]};
     GpuArray<Real,3> l_gp0{m_gp0[0], m_gp0[1], m_gp0[2]};
 
@@ -63,7 +61,6 @@ void incflo::compute_vel_forces_on_level (int lev,
     {
             Box const& bx = mfi.tilebox();
             Array4<Real>       const& vel_f =  vel_forces.array(mfi);
-            Array4<Real const> const&   vel =    velocity.const_array(mfi);
             Array4<Real const> const&   rho =     density.const_array(mfi);
             Array4<Real const> const& gradp = m_leveldata[lev]->gp.const_array(mfi);
 

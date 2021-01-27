@@ -22,8 +22,6 @@ void incflo::make_eb_box()
     }
     else
     {
-        std::cout << "IN MAKE_EB_BOX NOT PERIODIC " << std::endl;
-        exit(0);
         /************************************************************************
          *                                                                      *
          * Define Box geometry:                                                 *
@@ -33,17 +31,17 @@ void incflo::make_eb_box()
          *                                                                      *
          ************************************************************************/
 
-        Vector<Real> boxLo(3), boxHi(3);
+        Vector<Real> boxLo(AMREX_SPACEDIM), boxHi(AMREX_SPACEDIM);
         Real offset = 1.0e-15;
 
-        for(int i = 0; i < 3; i++)
+        for(int i = 0; i < AMREX_SPACEDIM; i++)
         {
             boxLo[i] = geom[0].ProbLo(i);
             boxHi[i] = geom[0].ProbHi(i);
         }
 
-        pp.queryarr("Lo", boxLo, 0, 3);
-        pp.queryarr("Hi", boxHi, 0, 3);
+        pp.queryarr("Lo", boxLo, 0, AMREX_SPACEDIM);
+        pp.queryarr("Hi", boxHi, 0, AMREX_SPACEDIM);
 
         pp.query("offset", offset);
 
@@ -69,6 +67,27 @@ void incflo::make_eb_box()
             yhi = 2.0 * geom[0].ProbHi(1) - geom[0].ProbLo(1);
         }
 
+#if (AMREX_SPACEDIM == 2)
+        Array<Real, 2> point_lox{xlo, 0.0};
+        Array<Real, 2> normal_lox{-1.0, 0.0};
+        Array<Real, 2> point_hix{xhi, 0.0};
+        Array<Real, 2> normal_hix{1.0, 0.0};
+
+        Array<Real, 2> point_loy{0.0, ylo};
+        Array<Real, 2> normal_loy{0.0, -1.0};
+        Array<Real, 2> point_hiy{0.0, yhi};
+        Array<Real, 2> normal_hiy{0.0, 1.0};
+
+        EB2::PlaneIF plane_lox(point_lox, normal_lox);
+        EB2::PlaneIF plane_hix(point_hix, normal_hix);
+
+        EB2::PlaneIF plane_loy(point_loy, normal_loy);
+        EB2::PlaneIF plane_hiy(point_hiy, normal_hiy);
+
+        // Generate GeometryShop
+        auto gshop = EB2::makeShop(EB2::makeUnion(plane_lox, plane_hix,
+                                                  plane_loy, plane_hiy));
+#else
         Real zlo = boxLo[2] + offset;
         Real zhi = boxHi[2] - offset;
 
@@ -108,6 +127,7 @@ void incflo::make_eb_box()
         auto gshop = EB2::makeShop(EB2::makeUnion(plane_lox, plane_hix,
                                                   plane_loy, plane_hiy,
                                                   plane_loz, plane_hiz));
+#endif
 
         // Build index space
         int max_level_here = 0;

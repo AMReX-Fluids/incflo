@@ -7,6 +7,8 @@ include $(AMREX_HOME)/Tools/GNUMake/Make.defs
 Bdirs := src
 Bdirs += src/boundary_conditions
 Bdirs += src/convection
+Bdirs += src/convection/Godunov
+Bdirs += src/convection/MOL
 Bdirs += src/derive
 Bdirs += src/diffusion
 Bdirs += src/prob

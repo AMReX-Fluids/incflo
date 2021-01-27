@@ -153,8 +153,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
     }
 
     // *************************************************************************************
-    // if ( m_use_godunov) Compute the explicit advective terms R_u^(n+1/2), R_s^(n+1/2) and R_t^(n+1/2)
-    // if (!m_use_godunov) Compute the explicit advective terms R_u^n      , R_s^n       and R_t^n
+    // if (advection_type == "Godunov")
+    //      Compute the explicit advective terms R_u^(n+1/2), R_s^(n+1/2) and R_t^(n+1/2)
+    // if (advection_type == "MOL"                ) 
+    //      Compute the explicit advective terms R_u^n      , R_s^n       and R_t^n
     // Note that "get_conv_tracer_old" returns div(rho u tracer) 
     // *************************************************************************************
     compute_convective_term(get_conv_velocity_old(), get_conv_density_old(), get_conv_tracer_old(),
@@ -304,7 +306,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     } // if (m_advect_tracer)
 
     // *************************************************************************************
-    // Define (or if use_godunov, re-define) the forcing terms, without the viscous terms 
+    // Define (or if advection_type != "MOL", re-define) the forcing terms, without the viscous terms 
     //    and using the half-time density
     // *************************************************************************************
     compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(), 
@@ -400,7 +402,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Over-write velocity in cells with vfrac < 1e-4
     // 
     // **********************************************************************************************
-    incflo_correct_small_cells(get_velocity_new(),
-                               AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
-                               GetVecOfConstPtrs(w_mac)));
+    if (m_advection_type == "MOL")
+        incflo_correct_small_cells(get_velocity_new(),
+                                   AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
+                                   GetVecOfConstPtrs(w_mac)));
 }

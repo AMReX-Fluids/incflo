@@ -56,30 +56,3 @@ void incflo::PrintMaxGp(int lev)
 		   << Norm(p , lev, 0, 0) << "  " << std::endl;
 #endif
 }
-
-void incflo::CheckForNans(int lev)
-{
-#if 0
-    // xxxxx
-    bool ro_has_nans = density[lev]->contains_nan(0);
-    bool ug_has_nans = vel[lev]->contains_nan(0);
-    bool vg_has_nans = vel[lev]->contains_nan(1);
-    bool wg_has_nans = vel[lev]->contains_nan(2);
-    bool pg_has_nans = p[lev]->contains_nan(0);
-
-    if (ro_has_nans)
-	amrex::Print() << "WARNING: ro contains NaNs!!!";
-
-    if (ug_has_nans)
-	amrex::Print() << "WARNING: u contains NaNs!!!";
-
-    if(vg_has_nans)
-	amrex::Print() << "WARNING: v contains NaNs!!!";
-
-    if(wg_has_nans)
-	amrex::Print() << "WARNING: w contains NaNs!!!";
-
-    if(pg_has_nans)
-	amrex::Print() << "WARNING: p contains NaNs!!!";
-#endif
-}

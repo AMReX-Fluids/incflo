@@ -10,7 +10,7 @@ void add_par () {
    if(not pp.contains("extend_domain_face")) {
       pp.add("extend_domain_face",true);
    }
-};
+} 
 
 int main(int argc, char* argv[])
 {
