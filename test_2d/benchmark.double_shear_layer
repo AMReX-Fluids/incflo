@@ -16,6 +16,8 @@ geometry.prob_hi        =   1.  1.      #Hi corner coordinates
 
 geometry.is_periodic    =   1   1       # Periodicity x y z (0/1)
 
+incflo.advection_type   = "MOL"
+
 incflo.probtype         =   21
 
 amr.plt_ccse_regtest    =   1

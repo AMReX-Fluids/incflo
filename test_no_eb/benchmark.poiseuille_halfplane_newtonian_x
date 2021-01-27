@@ -27,7 +27,7 @@ incflo.ro_0             =   1.          # Reference density
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   1.          # Dynamic viscosity coefficient
 
-incflo.use_godunov      = true
+incflo.advection_type   = "Godunov" 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #

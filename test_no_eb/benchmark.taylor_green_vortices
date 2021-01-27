@@ -43,4 +43,6 @@ geometry.is_periodic    =   1   1   1   # Periodicity x y z (0/1)
 #.......................................#
 incflo.probtype         =   1
 
+incflo.advection_type   = "MOL"
+
 amr.plt_ccse_regtest    =   1

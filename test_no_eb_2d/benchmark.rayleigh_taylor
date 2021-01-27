@@ -34,7 +34,8 @@ incflo.gradrhoerr       = 0.1
 amr.plt_ccse_regtest    =  1
 amr.plt_vort            =  1
 
-incflo.use_godunov      = true
+incflo.advection_type   = "Godunov"
+
 incflo.constant_density = false
 incflo.advect_tracer    = true
 

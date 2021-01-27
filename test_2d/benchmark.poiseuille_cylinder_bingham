@@ -24,6 +24,8 @@ amr.restart             =   ""          # Checkpoint to restart from
 incflo.gravity          =   0.  0.      # Gravitational force
 incflo.ro_0             =   1.          # Reference density 
 
+incflo.advection_type   = "MOL"
+
 incflo.fluid_model      =   "bingham"   # Rheological model
 incflo.mu               =   1.          # Dynamic viscosity coefficient
 incflo.tau_0            =   1.          # Yield stress

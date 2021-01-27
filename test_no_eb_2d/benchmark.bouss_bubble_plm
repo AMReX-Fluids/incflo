@@ -1,8 +1,9 @@
 max_step                = 140 
 stop_time               = 100.0           # Max (simulated) time to evolve
 
+incflo.advection_type   = "Godunov"
+
 incflo.use_ppm                         = false
-incflo.use_godunov                     = true
 incflo.godunov_include_diff_in_forcing = true
 
 incflo.fixed_dt = 0.2

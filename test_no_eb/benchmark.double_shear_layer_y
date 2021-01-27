@@ -26,7 +26,7 @@ incflo.probtype         =  22
 amr.plt_ccse_regtest    =  1
 amr.plt_vort            = 1  
 
-incflo.use_godunov      =  true
+incflo.advection_type   = "Godunov" 
 incflo.diffusion_type   =  1             # 0 = Explicit, 1 = Crank-Nicolson, 2 = Implicit
 
 incflo.verbose          =   2           # incflo_level

@@ -28,7 +28,7 @@ incflo.mu               =   1.          # Dynamic viscosity coefficient
 
 incflo.advect_tracer    = 1
 
-incflo.use_godunov      = true
+incflo.advection_type   = "Godunov"
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #

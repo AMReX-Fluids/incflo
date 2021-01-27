@@ -105,7 +105,6 @@ incflo::compute_MAC_projected_velocities (
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
 
-        amrex::Print() << "ADVECTION TYPE " << m_advection_type << std::endl;
         if (m_advection_type == "Godunov") {
 #ifdef AMREX_USE_EB
             if (ebfact->isAllRegular())
