@@ -55,9 +55,9 @@ void incflo::InitData ()
         if (m_do_initial_proj) {
             InitialProjection();
         }
-        if (m_initial_iterations > 0) {
-            InitialIterations();
-        }
+
+        InitialIterations();
+
         // Set m_nstep to 0 before entering time loop
         m_nstep = 0;
 

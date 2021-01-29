@@ -240,7 +240,7 @@ void incflo::InitialIterations ()
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
     ComputeDt(initialisation, explicit_diffusion);
 
-    if (m_verbose)
+    if (m_verbose && m_initial_iterations > 0)
     {
         amrex::Print() << "Doing initial pressure iterations with dt = " << m_dt << std::endl;
     }
@@ -252,7 +252,7 @@ void incflo::InitialIterations ()
 
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
-        fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
+            fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
         fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
         if (m_advect_tracer) {
             fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
