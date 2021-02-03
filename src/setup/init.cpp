@@ -67,13 +67,18 @@ void incflo::ReadParameters ()
         // {NoRedist, FluxRedist, MergeRedistUpdate, MergeRedistFull,, StateRedistUpdate, StateRedistFull}
 #ifdef AMREX_USE_EB
         pp.query("redistribution_type"              , m_redistribution_type);
-        if (m_redistribution_type != "NoRedist" &&
-            m_redistribution_type != "FluxRedist" &&
-            m_redistribution_type != "MergeRedistUpdate" &&
-            m_redistribution_type != "MergeRedistFull" &&
-            m_redistribution_type != "StateRedistUpdate" &&
-            m_redistribution_type != "StateRedistFull")
-            amrex::Abort("redistribution type must be FluxRedist, MergeRedist, StateRedistUpdate or StateRedistFull");
+        // 
+        // FOR NOW ONLY USE FLUXREDIST -- THE OTHERS ARE WORKS IN PROGRESS
+        // 
+        // if (m_redistribution_type != "NoRedist" &&
+        //     m_redistribution_type != "FluxRedist" &&
+        //     m_redistribution_type != "MergeRedistUpdate" &&
+        //     m_redistribution_type != "MergeRedistFull" &&
+        //     m_redistribution_type != "StateRedistUpdate" &&
+        //     m_redistribution_type != "StateRedistFull")
+        //     amrex::Abort("redistribution type must be FluxRedist, MergeRedist, StateRedistUpdate or StateRedistFull");
+        if (m_redistribution_type != "FlusRedist" )
+            amrex::Abort("redistribution type must be FluxRedist");
 #endif
 
         if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;
