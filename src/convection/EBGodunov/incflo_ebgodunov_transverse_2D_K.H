@@ -27,9 +27,6 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
     Real v_tmp_j, v_tmp_jp1;
     Real y_hat_j, y_hat_jp1;
 
-    int ii, jj;
-
-
     // Tangential extrapolation in the x-direction at j-1/2
     if (apy(ic,j,k) == 1.0)
     {
@@ -67,6 +64,7 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
     trans_y = 0.5 * (v_tmp_jp1 + v_tmp_j) * (y_hat_jp1 - y_hat_j);
 }
 
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void create_transverse_terms_for_yface(int i, int jc, int k, 
                                        Array4<Real const> const& u_ad,
                                        Array4<Real const> const& xhat,
@@ -77,8 +75,6 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
 {
     Real u_tmp_i, u_tmp_ip1;
     Real x_hat_i, x_hat_ip1;
-
-    int ii, jj;
 
     // Tangential extrapolation in the y-direction at i-1/2
     if (apx(i,jc,k) == 1.0)

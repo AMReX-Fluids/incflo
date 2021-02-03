@@ -320,9 +320,6 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
         constexpr int n = 0;
         auto bc = pbc[n];
 
-        Real v_tmp_j, v_tmp_jp1;
-        Real y_hat_j, y_hat_jp1;
-
         // stl is on the left  side of the lo-x side of cell (i,j)
         // sth is on the right side of the lo-x side of cell (i,j)
         Real stl = xlo(i,j,k,n);
@@ -453,9 +450,6 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
         {
         constexpr int n = 1;
         auto bc = pbc[n];
-
-        Real u_tmp_i, u_tmp_ip1;
-        Real x_hat_i, x_hat_ip1;
 
         // stl is on the low  side of the lo-y side of cell (i,j)
         // sth is on the high side of the lo-y side of cell (i,j)
