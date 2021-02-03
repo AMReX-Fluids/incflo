@@ -77,7 +77,7 @@ void incflo::ReadParameters ()
         //     m_redistribution_type != "StateRedistUpdate" &&
         //     m_redistribution_type != "StateRedistFull")
         //     amrex::Abort("redistribution type must be FluxRedist, MergeRedist, StateRedistUpdate or StateRedistFull");
-        if (m_redistribution_type != "FlusRedist" )
+        if (m_redistribution_type != "FluxRedist" )
             amrex::Abort("redistribution type must be FluxRedist");
 #endif
 
