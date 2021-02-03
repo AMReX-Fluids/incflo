@@ -43,8 +43,8 @@ redistribution::make_itracker (
     // int preferred_direction = 0; // x-direction is preferred
     int preferred_direction = 1; // y-direction is preferred
 
-    if (debug_verbose > 0)
-        amrex::Print() << " IN MAKE_ITRACKER DOING BOX " << bx << std::endl;
+//  if (debug_verbose > 0)
+//      amrex::Print() << " IN MAKE_ITRACKER DOING BOX " << bx << std::endl;
 
     amrex::ParallelFor(bx, 
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -128,11 +128,11 @@ redistribution::make_itracker (
 
            Real sum_vol = vfrac(i,j,k) + vfrac(i+ioff,j+joff,k);
 
-           if (debug_verbose > 0)
-               amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) << 
-                                 " trying to merge with " << IntVect(i+ioff,j+joff) <<
-                                 " with volfrac " << vfrac(i+ioff,j+joff,k) << 
-                                 " to get new sum_vol " <<  sum_vol << std::endl;
+//         if (debug_verbose > 0)
+//             amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) << 
+//                               " trying to merge with " << IntVect(i+ioff,j+joff) <<
+//                               " with volfrac " << vfrac(i+ioff,j+joff,k) << 
+//                               " to get new sum_vol " <<  sum_vol << std::endl;
 
            // If the merged cell isn't large enough, we try to merge in the other direction
            if (sum_vol < 0.5)
@@ -174,11 +174,11 @@ redistribution::make_itracker (
                    int joff = jmap[itracker(i,j,k,2)];
     
                    sum_vol += vfrac(i+ioff,j+joff,k);
-                   if (debug_verbose > 0)
-                       amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) << 
-                                         " trying to ALSO merge with " << IntVect(i+ioff,j+joff) <<
-                                         " with volfrac " << vfrac(i+ioff,j+joff,k) << 
-                                          " to get new sum_vol " <<  sum_vol << std::endl;
+//                 if (debug_verbose > 0)
+//                     amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) << 
+//                                       " trying to ALSO merge with " << IntVect(i+ioff,j+joff) <<
+//                                       " with volfrac " << vfrac(i+ioff,j+joff,k) << 
+//                                        " to get new sum_vol " <<  sum_vol << std::endl;
                }
            }
         
@@ -202,16 +202,16 @@ redistribution::make_itracker (
                itracker(i,j,k,0) += 1;
 
                sum_vol += vfrac(i+ioff,j+joff,k);
-               if (debug_verbose > 0)
-                   amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) << 
-                                     " trying to ALSO merge with " << IntVect(i+ioff,j+joff) <<
-                                     " with volfrac " << vfrac(i+ioff,j+joff,k) << 
-                                     " to get new sum_vol " <<  sum_vol << std::endl;
+//             if (debug_verbose > 0)
+//                 amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) << 
+//                                   " trying to ALSO merge with " << IntVect(i+ioff,j+joff) <<
+//                                   " with volfrac " << vfrac(i+ioff,j+joff,k) << 
+//                                   " to get new sum_vol " <<  sum_vol << std::endl;
            }
            if (sum_vol < 0.5)
            {
-             amrex::Print() << "Couldnt merge with enough cells to raise volume at " <<
-                               IntVect(i,j) << " so stuck with sum_vol " << sum_vol << std::endl;
+//           amrex::Print() << "Couldnt merge with enough cells to raise volume at " <<
+//                             IntVect(i,j) << " so stuck with sum_vol " << sum_vol << std::endl;
              amrex::Abort("Don't know what to do now");
            }
        }
@@ -247,14 +247,14 @@ redistribution::make_itracker (
                    // My neigbor didn't know about me so add me to my nbor's list of neighbors
                    itracker(i+ioff,j+joff,k,0) += 1;
                    itracker(i+ioff,j+joff,k,n_of_nbor+1) = inv_map[itracker(i,j,k,ipair)];
-                   if (debug_verbose > 1)
-                       amrex::Print() << "Cell   " << IntVect(i,j) << " had nbor " << IntVect(i+ioff,j+joff) 
-                                      << " in its nbor list by taking inverse of " << itracker(i,j,k,ipair) 
-                                      << " which gave " << inv_map[itracker(i,j,k,ipair)] << std::endl;
-                   if (debug_verbose > 1)
-                       amrex::Print() << "Adding " << IntVect(i+ioff+imap[itracker(i+ioff,j+joff,k,n_of_nbor+1)],
-                                                              j+joff+jmap[itracker(i+ioff,j+joff,k,n_of_nbor+1)])
-                                      << " to the nbor list of " << IntVect(i+ioff,j+joff) << std::endl;
+//                 if (debug_verbose > 1)
+//                     amrex::Print() << "Cell   " << IntVect(i,j) << " had nbor " << IntVect(i+ioff,j+joff) 
+//                                    << " in its nbor list by taking inverse of " << itracker(i,j,k,ipair) 
+//                                    << " which gave " << inv_map[itracker(i,j,k,ipair)] << std::endl;
+//                 if (debug_verbose > 1)
+//                     amrex::Print() << "Adding " << IntVect(i+ioff+imap[itracker(i+ioff,j+joff,k,n_of_nbor+1)],
+//                                                            j+joff+jmap[itracker(i+ioff,j+joff,k,n_of_nbor+1)])
+//                                    << " to the nbor list of " << IntVect(i+ioff,j+joff) << std::endl;
                }
           }
        }
@@ -295,15 +295,15 @@ redistribution::make_itracker (
                         if ( (i_nn == i_n2 && j_nn == j_n2) or (i_nn == i && j_nn == j) )
                             found = true;
                     }
-                    if (debug_verbose > 1)
-                    {
-                        if (!found)
-                            amrex::Print() << "DOING CELL " << IntVect(i,j) << " who has nbor " << IntVect(i_n,j_n) << 
-                                              " who has nbor " << IntVect(i_nn,j_nn) << " which was NOT found " << std::endl;
-                        else
-                            amrex::Print() << "DOING CELL " << IntVect(i,j) << " who has nbor " << IntVect(i_n,j_n) << 
-                                              " who has nbor " << IntVect(i_nn,j_nn) << " which was found " << std::endl;
-                    }
+//                  if (debug_verbose > 1)
+//                  {
+//                      if (!found)
+//                          amrex::Print() << "DOING CELL " << IntVect(i,j) << " who has nbor " << IntVect(i_n,j_n) << 
+//                                            " who has nbor " << IntVect(i_nn,j_nn) << " which was NOT found " << std::endl;
+//                      else
+//                          amrex::Print() << "DOING CELL " << IntVect(i,j) << " who has nbor " << IntVect(i_n,j_n) << 
+//                                            " who has nbor " << IntVect(i_nn,j_nn) << " which was found " << std::endl;
+//                  }
 
                     if (!found)
                     {
@@ -319,12 +319,12 @@ redistribution::make_itracker (
                         else 
                            itracker(i,j,k,n_nbor) = 4;
 
-                        if (debug_verbose > 1)
-                            amrex::Print() << "Adding " << IntVect(i_nn,j_nn) << " to the nbor list of " << IntVect(i,j) << 
-                                              " in component " << n_nbor << std::endl;
-                        if (debug_verbose > 1)
-                            amrex::Print() << "Sanity check -- these should be the same: " << IntVect(i_nn,j_nn) << " " << 
-                                IntVect(i+imap[itracker(i,j,k,n_nbor)],j+jmap[itracker(i,j,k,n_nbor)]) << std::endl;
+//                      if (debug_verbose > 1)
+//                          amrex::Print() << "Adding " << IntVect(i_nn,j_nn) << " to the nbor list of " << IntVect(i,j) << 
+//                                            " in component " << n_nbor << std::endl;
+//                      if (debug_verbose > 1)
+//                          amrex::Print() << "Sanity check -- these should be the same: " << IntVect(i_nn,j_nn) << " " << 
+//                              IntVect(i+imap[itracker(i,j,k,n_nbor)],j+jmap[itracker(i,j,k,n_nbor)]) << std::endl;
                     }
                     ipair_n++; 
                }
