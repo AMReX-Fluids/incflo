@@ -406,6 +406,7 @@ void incflo::ApplyCorrector()
     bool incremental = false;
     ApplyProjection(GetVecOfConstPtrs(density_nph),new_time, m_dt, incremental);
 
+#ifdef AMREX_USE_EB
     // **********************************************************************************************
     // 
     // Over-write velocity in cells with vfrac < 1e-4
@@ -414,4 +415,5 @@ void incflo::ApplyCorrector()
     incflo_correct_small_cells(get_velocity_new(),
                                AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
                                GetVecOfConstPtrs(w_mac)));
+#endif
 }

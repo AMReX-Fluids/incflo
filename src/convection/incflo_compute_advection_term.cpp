@@ -1,6 +1,6 @@
 #include <Godunov.H>
 #ifdef AMREX_USE_EB
-// #include <EBGodunov.H>
+#include <EBGodunov.H>
 #include <Redistribution.H>
 #endif
 #include <MOL.H>
@@ -302,7 +302,6 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
 
         if (!regular)
         {
-#if 0
             ebgodunov::compute_godunov_advection(gbx, AMREX_SPACEDIM,
                                                  dUdt_tmp, vel,
                                                  AMREX_D_DECL(umac, vmac, wmac), 
@@ -317,7 +316,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
             redistribution::redistribute_eb(bx, AMREX_SPACEDIM, dvdt, dUdt_tmp, vel, scratch,
                                             AMREX_D_DECL(umac, vmac, wmac), flag,
                                             AMREX_D_DECL(apx, apy, apz), vfrac,
-                                            AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_advection_type);
+                                            AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
 
             if (!m_constant_density) {
                 ebgodunov::compute_godunov_advection(gbx, 1,
@@ -334,7 +333,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
                 redistribution::redistribute_eb(bx, 1, drdt, dUdt_tmp, rho, scratch,
                                                 AMREX_D_DECL(umac, vmac, wmac), flag,
                                                 AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_advection_type);
+                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
             }
             if (m_advect_tracer) {
                 ebgodunov::compute_godunov_advection(gbx, m_ntrac,
@@ -351,10 +350,9 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
                 redistribution::redistribute_eb(bx, m_ntrac, dtdt, dUdt_tmp, rhotrac, scratch,
                                                 AMREX_D_DECL(umac, vmac, wmac), flag,
                                                 AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_advection_type);
+                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
             }
             Gpu::streamSynchronize();
-#endif
         }
         else
 #endif
@@ -430,7 +428,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
             redistribution::redistribute_eb(bx, AMREX_SPACEDIM, dvdt, dUdt_tmp, vel, scratch,
                                             AMREX_D_DECL(umac, vmac, wmac), flag,
                                             AMREX_D_DECL(apx, apy, apz), vfrac,
-                                            AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_advection_type);
+                                            AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
 
             // density
             if (!m_constant_density) {
@@ -445,7 +443,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
                 redistribution::redistribute_eb(bx, 1, drdt, dUdt_tmp, rho, scratch,
                                                 AMREX_D_DECL(umac, vmac, wmac), flag,
                                                 AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_advection_type);
+                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
             }
 
             if (m_advect_tracer) {
@@ -460,7 +458,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
                 redistribution::redistribute_eb(bx, m_ntrac, dtdt, dUdt_tmp, rhotrac, scratch,
                                                 AMREX_D_DECL(umac, vmac, wmac), flag,
                                                 AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_advection_type);
+                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
             }
         }
         else

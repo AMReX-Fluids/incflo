@@ -383,6 +383,7 @@ private:
 
 #ifdef AMREX_USE_EB
     std::string m_advection_type = "MOL";
+    std::string m_redistribution_type = "FluxRedist";
 #else
     std::string m_advection_type = "Godunov";
 #endif

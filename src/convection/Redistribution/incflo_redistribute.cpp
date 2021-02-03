@@ -20,59 +20,64 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
                                                    amrex::Array4<amrex::Real const> const& fcy,
                                                    amrex::Array4<amrex::Real const> const& fcz),
                                       amrex::Array4<amrex::Real const> const& ccc,
-                                      Geometry& lev_geom, Real dt, std::string advection_type)
+                                      Geometry& lev_geom, Real dt, std::string redistribution_type)
 {
     int redist_type;
-    // redist_type = 0;   // no redistribution
-    // redist_type = 1;   // flux_redistribute
-    // redist_type = 2;   // state_redistribute
-    // redist_type = 3;   // merge_redistribute update
-    // redist_type = 4;   // merge_redistribute full
-
-    if (advection_type == "MOL")
-        redist_type = 1;   // flux_redistribute
-    else if (advection_type == "Godunov")
-        redist_type = 1;   // merge_redistribute update
+    // redistribution_type = "NoRedist";          // no redistribution
+    // redistribution_type = "FluxRedist";        // flux_redistribute
+    // redistribution_type = "MergeRedistUpdate"; // merge_redistribute update
+    // redistribution_type = "MergeRedistFull";   // merge_redistribute update
+    // redistribution_type = "StateRedistUpdate"; // state_redistribute update
+    // redistribution_type = "StateRedistFull";   // merge_redistribute full
 
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we  
     //    use the first component of this for the number of neighbors
-    // IArrayBox itracker(grow(bx,1),4);
+    IArrayBox itracker(grow(bx,1),4);
 #else
     // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we  
     //    use the first component of this for the number of neighbors
-    // IArrayBox itracker(grow(bx,1),8);
+    IArrayBox itracker(grow(bx,1),8);
 #endif
-    // itracker.setVal(0);
+    itracker.setVal(0);
 
-    if (redist_type == 1)
+    amrex::Print() << "REDISTRIBUTION TYPE " << redistribution_type << std::endl;
+
+    if (redistribution_type == "FluxRedist")
     {
         flux_redistribute_eb (bx, ncomp, dUdt_out, dUdt_in, scratch, flag, vfrac, lev_geom);
 
-#if 0
-    } else if (redist_type == 2) {
-        state_redistribute_eb(bx, ncomp, dUdt_out, dUdt_in, flag,
-                              AMREX_D_DECL(apx, apy, apz), vfrac,
-                              AMREX_D_DECL(fcx, fcy, fcz), ccc, lev_geom);
-
-    } else if (redist_type == 3) {
+    } else if (redistribution_type == "MergeRedistUpdate") {
         Array4<int> itr = itracker.array();
         make_itracker(bx,
                       AMREX_D_DECL(apx, apy, apz), vfrac,
                       itr, lev_geom);
 
         merge_redistribute_update(bx, ncomp, dUdt_out, dUdt_in,
-                              AMREX_D_DECL(apx, apy, apz), vfrac,
-                              itr, lev_geom);
+                                  AMREX_D_DECL(apx, apy, apz), vfrac,
+                                  itr, lev_geom);
 
-    } else if (redist_type == 4) {
-        merge_redistribute_full(bx, ncomp, dUdt_out, dUdt_in, U_in, 
-                              AMREX_D_DECL(umac, vmac, wmac), flag,
-                              AMREX_D_DECL(apx, apy, apz), vfrac,
-                              AMREX_D_DECL(fcx, fcy, fcz), ccc, lev_geom, dt);
+    } else if (redistribution_type == "MergeRedistFull") {
+        Array4<int> itr = itracker.array();
+        make_itracker(bx,
+                      AMREX_D_DECL(apx, apy, apz), vfrac,
+                      itr, lev_geom);
 
-#endif
-    } else if (redist_type == 0) {
+        merge_redistribute_full(bx, ncomp, dUdt_out, dUdt_in, U_in,
+                                AMREX_D_DECL(apx, apy, apz), vfrac,
+                                itr, lev_geom, dt);
+
+    } else if (redistribution_type == "StateRedistUpdate") {
+        state_redistribute_update(bx, ncomp, dUdt_out, dUdt_in, flag,
+                                  AMREX_D_DECL(apx, apy, apz), vfrac,
+                                  AMREX_D_DECL(fcx, fcy, fcz), ccc, lev_geom);
+
+    } else if (redistribution_type == "StateRedistFull") {
+        state_redistribute_full(bx, ncomp, dUdt_out, dUdt_in, U_in, flag,
+                                AMREX_D_DECL(apx, apy, apz), vfrac,
+                                AMREX_D_DECL(fcx, fcy, fcz), ccc, lev_geom, dt);
+
+    } else if (redistribution_type == "NoRedist") {
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {

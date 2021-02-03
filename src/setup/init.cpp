@@ -63,6 +63,19 @@ void incflo::ReadParameters ()
         pp.query("godunov_include_diff_in_forcing"  , m_godunov_include_diff_in_forcing);
         pp.query("use_mac_phi_in_godunov"           , m_use_mac_phi_in_godunov);
 
+        // What type of redistribution algorithm; default is FluxRedistribution, options are
+        // {NoRedist, FluxRedist, MergeRedistUpdate, MergeRedistFull,, StateRedistUpdate, StateRedistFull}
+#ifdef AMREX_USE_EB
+        pp.query("redistribution_type"              , m_redistribution_type);
+        if (m_redistribution_type != "NoRedist" &&
+            m_redistribution_type != "FluxRedist" &&
+            m_redistribution_type != "MergeRedistUpdate" &&
+            m_redistribution_type != "MergeRedistFull" &&
+            m_redistribution_type != "StateRedistUpdate" &&
+            m_redistribution_type != "StateRedistFull")
+            amrex::Abort("redistribution type must be FluxRedist, MergeRedist, StateRedistUpdate or StateRedistFull");
+#endif
+
         if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;
 
         if (m_advection_type != "MOL" and m_advection_type != "Godunov")

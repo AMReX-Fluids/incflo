@@ -29,7 +29,7 @@ namespace redistribution {
                                        amrex::Array4<amrex::Real const> const& fcy,
                                        amrex::Array4<amrex::Real const> const& fcz),
                           amrex::Array4<amrex::Real const> const& ccent,
-                          amrex::Geometry& geom, amrex::Real dt, std::string advection_type);
+                          amrex::Geometry& geom, amrex::Real dt, std::string redistribution_type);
 
     void flux_redistribute_eb ( amrex::Box const& bx, int ncomp,
                                 amrex::Array4<amrex::Real>       const& dUdt_out,
@@ -38,8 +38,8 @@ namespace redistribution {
                                 amrex::Array4<amrex::EBCellFlag const> const& flag,
                                 amrex::Array4<amrex::Real const> const& vfrac,
                                 amrex::Geometry& geom);
-#if 0
-    void state_redistribute_eb ( amrex::Box const& bx, int ncomp,
+
+    void state_redistribute_update ( amrex::Box const& bx, int ncomp,
                                  amrex::Array4<amrex::Real>       const& dUdt_out,
                                  amrex::Array4<amrex::Real const> const& dUdt_in,
                                  amrex::Array4<amrex::EBCellFlag const> const& flag,
@@ -52,6 +52,21 @@ namespace redistribution {
                                               amrex::Array4<amrex::Real const> const& fcz),
                                  amrex::Array4<amrex::Real const> const& ccent,
                                  amrex::Geometry& geom);
+
+    void state_redistribute_full ( amrex::Box const& bx, int ncomp,
+                                   amrex::Array4<amrex::Real>       const& dUdt_out,
+                                   amrex::Array4<amrex::Real const> const& dUdt_in,
+                                   amrex::Array4<amrex::Real const> const& U_in,
+                                   amrex::Array4<amrex::EBCellFlag const> const& flag,
+                                   AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
+                                                amrex::Array4<amrex::Real const> const& apy,
+                                                amrex::Array4<amrex::Real const> const& apz),
+                                   amrex::Array4<amrex::Real const> const& vfrac,
+                                   AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
+                                                amrex::Array4<amrex::Real const> const& fcy,
+                                                amrex::Array4<amrex::Real const> const& fcz),
+                                   amrex::Array4<amrex::Real const> const& ccent,
+                                   amrex::Geometry& geom, amrex::Real dt);
 
     void make_itracker             ( amrex::Box const& bx,
                                      AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
@@ -75,21 +90,12 @@ namespace redistribution {
                                      amrex::Array4<amrex::Real>       const& dUdt_out,
                                      amrex::Array4<amrex::Real const> const& dUdt_in,
                                      amrex::Array4<amrex::Real const> const& U_in,
-                                     AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
-                                                  amrex::Array4<amrex::Real const> const& vmac,
-                                                  amrex::Array4<amrex::Real const> const& wmac),
-                                     amrex::Array4<amrex::EBCellFlag const> const& flag,
                                      AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
                                                   amrex::Array4<amrex::Real const> const& apy,
                                                   amrex::Array4<amrex::Real const> const& apz),
                                      amrex::Array4<amrex::Real const> const& vfrac,
-                                     AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
-                                                  amrex::Array4<amrex::Real const> const& fcy,
-                                                  amrex::Array4<amrex::Real const> const& fcz),
-                                     amrex::Array4<amrex::Real const> const& ccent,
+                                     amrex::Array4<int> const& itracker,
                                      amrex::Geometry& geom, amrex::Real dt);
-#endif
-
 } // namespace redistribution
 
 #endif
