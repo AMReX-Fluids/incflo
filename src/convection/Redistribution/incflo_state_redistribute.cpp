@@ -33,7 +33,7 @@ redistribution::state_redistribute_update (
                  const auto& is_periodic_y = lev_geom.isPeriodic(1);,
                  const auto& is_periodic_z = lev_geom.isPeriodic(2););
 
-    amrex::Print() << " IN STATE_REDISTRIBUTE_UPDATE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
+//  amrex::Print() << " IN STATE_REDISTRIBUTE_UPDATE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
 
     Box const& bxg1 = amrex::grow(bx,1);
     Box const& bxg2 = amrex::grow(bx,2);
@@ -60,19 +60,34 @@ redistribution::state_redistribute_update (
     // Solution at the centroid of my nbhd
     FArrayBox soln_hat_fab  (bxg2,ncomp);
 
-    nbor_fab.setVal(0);
-    nrs_fab.setVal(0.0);
-    nbhd_vol_fab.setVal(0.);
-    soln_hat_fab.setVal(0.);
-    cent_hat_fab.setVal(0.);
-    slopes_hat_fab.setVal(0.);
-
     Array4<int>  nbor     = nbor_fab.array();
-    Array4<Real> nbhd_vol  = nbhd_vol_fab.array();
+    Array4<Real> nbhd_vol = nbhd_vol_fab.array();
     Array4<Real> nrs      = nrs_fab.array();
     Array4<Real> soln_hat = soln_hat_fab.array();
     Array4<Real> cent_hat = cent_hat_fab.array();
     Array4<Real> slopes_hat = slopes_hat_fab.array();
+
+    amrex::ParallelFor(bxg1,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+#if (AMREX_SPACEDIM == 2)
+	for (int n = 0; n < 9; n++)
+#else
+	for (int n = 0; n < 27; n++)
+#endif
+            nbor(i,j,k,n) = 0;
+    });
+    amrex::ParallelFor(bxg2,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        nrs(i,j,k) = 0.;
+        nbhd_vol(i,j,k) = 0.;
+	for (int n = 0; n < AMREX_SPACEDIM; n++)
+	{
+            cent_hat(i,j,k,n) = 0.;
+            slopes_hat(i,j,k,n) = 0.;
+	}
+    });
 
     // It is essential that only one of these be true;
     bool vertical_only   = false;
@@ -376,7 +391,6 @@ redistribution::state_redistribute_update (
             if (!flag(i,j,k).isCovered())
             {
                 dUdt(i,j,k,n) /= nrs(i,j,k);
-        if (i == 15 and j == 95) amrex::Print() << "DUDT IN / OUT " << dUdt_in(i,j,k,n) << " " << dUdt(i,j,k,n) << std::endl;
             }
         });
     }
@@ -402,7 +416,7 @@ redistribution::state_redistribute_update (
         }
         if (std::abs(sum1-sum2) > 1.e-8 * sum1 && std::abs(sum1-sum2) > 1.e-8)
         {
-           amrex::Print() << " SUMS DO NOT MATCH IN STATE REDIST: " << sum1 << " " << sum2 << std::endl;
+//         amrex::Print() << " SUMS DO NOT MATCH IN STATE REDIST: " << sum1 << " " << sum2 << std::endl;
            amrex::Abort();
         }
       }
@@ -439,7 +453,7 @@ redistribution::state_redistribute_full (
                  const auto& is_periodic_y = lev_geom.isPeriodic(1);,
                  const auto& is_periodic_z = lev_geom.isPeriodic(2););
 
-    amrex::Print() << " IN STATE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
+//  amrex::Print() << " IN STATE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
 
     Box const& bxg1 = amrex::grow(bx,1);
     Box const& bxg2 = amrex::grow(bx,2);
@@ -466,19 +480,34 @@ redistribution::state_redistribute_full (
     // Solution at the centroid of my nbhd
     FArrayBox soln_hat_fab  (bxg2,ncomp);
 
-    nbor_fab.setVal(0);
-    nrs_fab.setVal(0.0);
-    nbhd_vol_fab.setVal(0.);
-    soln_hat_fab.setVal(0.);
-    cent_hat_fab.setVal(0.);
-    slopes_hat_fab.setVal(0.);
-
     Array4<int>  nbor     = nbor_fab.array();
     Array4<Real> nbhd_vol  = nbhd_vol_fab.array();
     Array4<Real> nrs      = nrs_fab.array();
     Array4<Real> soln_hat = soln_hat_fab.array();
     Array4<Real> cent_hat = cent_hat_fab.array();
     Array4<Real> slopes_hat = slopes_hat_fab.array();
+
+    amrex::ParallelFor(bxg1,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+#if (AMREX_SPACEDIM == 2)
+	for (int n = 0; n < 9; n++)
+#else
+	for (int n = 0; n < 27; n++)
+#endif
+            nbor(i,j,k,n) = 0;
+    });
+    amrex::ParallelFor(bxg2,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        nrs(i,j,k) = 0.;
+        nbhd_vol(i,j,k) = 0.;
+	for (int n = 0; n < AMREX_SPACEDIM; n++)
+	{
+            cent_hat(i,j,k,n) = 0.;
+            slopes_hat(i,j,k,n) = 0.;
+	}
+    });
 
     // It is essential that only one of these be true;
     bool vertical_only   = false;
@@ -792,7 +821,6 @@ redistribution::state_redistribute_full (
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         dUdt(i,j,k,n) -= U_in(i,j,k,n) / l_dt;
-        if (i == 15 and j == 95) amrex::Print() << "DUDT IN / OUT " << dUdt_in(i,j,k,n) << " " << dUdt(i,j,k,n) << std::endl;
     });
 
     //
@@ -816,7 +844,7 @@ redistribution::state_redistribute_full (
         }
         if (std::abs(sum1-sum2) > 1.e-8 * sum1 && std::abs(sum1-sum2) > 1.e-8)
         {
-           amrex::Print() << " SUMS DO NOT MATCH IN STATE REDIST: " << sum1 << " " << sum2 << std::endl;
+//         amrex::Print() << " SUMS DO NOT MATCH IN STATE REDIST: " << sum1 << " " << sum2 << std::endl;
            amrex::Abort();
         }
       }

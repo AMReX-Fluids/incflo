@@ -49,6 +49,12 @@ redistribution::make_itracker (
     amrex::ParallelFor(bx, 
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+        itracker(i,j,k,0) = 0;
+    });
+
+    amrex::ParallelFor(bx, 
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
        if (vfrac(i,j,k) > 0.0 && vfrac(i,j,k) < 0.5)
        {
            Real apnorm, apnorm_inv;

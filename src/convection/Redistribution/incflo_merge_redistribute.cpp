@@ -53,17 +53,14 @@ redistribution::merge_redistribute_update (
     Array<int,27>    kmap{0, 0, 0, 0, 0, 0, 0, 0, 0,-1,-1,-1,-1,-1,-1,-1,-1,-1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 #endif
 
-    if (debug_print)
-        amrex::Print() << " IN MERGE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
+//  if (debug_print)
+//      amrex::Print() << " IN MERGE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
 
     const Real small_norm = 1.e-8;
 
     AMREX_D_TERM(const auto& is_periodic_x = lev_geom.isPeriodic(0);,
                  const auto& is_periodic_y = lev_geom.isPeriodic(1);,
                  const auto& is_periodic_z = lev_geom.isPeriodic(2););
-
-    if (debug_print)
-        amrex::Print() << " IN MERGE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
 
     amrex::ParallelFor(bx, 
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -108,8 +105,8 @@ redistribution::merge_redistribute_update (
 
                    if (sum_vol < 0.5)
                    {
-                      amrex::Print() << "SUM_VOL STILL TOO SMALL at " << 
-                          IntVect(AMREX_D_DECL(i,j,k)) << " " << sum_vol << std::endl; 
+//                    amrex::Print() << "SUM_VOL STILL TOO SMALL at " << 
+//                        IntVect(AMREX_D_DECL(i,j,k)) << " " << sum_vol << std::endl; 
                       amrex::Abort();
                    }
 
@@ -148,8 +145,8 @@ redistribution::merge_redistribute_update (
          
          if (std::abs(sum1-sum2) > 1.e-8 * sum1 && std::abs(sum1-sum2) > 1.e-8)
          {
-            amrex::Print() << " TESTING COMPONENT " << n << std::endl; 
-            amrex::Print() << " SUMS DO NOT MATCH " << sum1 << " " << sum2 << std::endl;
+//          amrex::Print() << " TESTING COMPONENT " << n << std::endl; 
+//          amrex::Print() << " SUMS DO NOT MATCH " << sum1 << " " << sum2 << std::endl;
             amrex::Abort(0);
          }
         }
@@ -205,17 +202,14 @@ redistribution::merge_redistribute_full (
     Array<int,27>    kmap{0, 0, 0, 0, 0, 0, 0, 0, 0,-1,-1,-1,-1,-1,-1,-1,-1,-1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 #endif
 
-    if (debug_print)
-        amrex::Print() << " IN MERGE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
+//  if (debug_print)
+//      amrex::Print() << " IN MERGE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
 
     const Real small_norm = 1.e-8;
 
     AMREX_D_TERM(const auto& is_periodic_x = lev_geom.isPeriodic(0);,
                  const auto& is_periodic_y = lev_geom.isPeriodic(1);,
                  const auto& is_periodic_z = lev_geom.isPeriodic(2););
-
-    if (debug_print)
-        amrex::Print() << " IN MERGE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
 
     amrex::ParallelFor(bx, 
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -263,8 +257,8 @@ redistribution::merge_redistribute_full (
 
                    if (sum_vol < 0.5)
                    {
-                      amrex::Print() << "SUM_VOL STILL TOO SMALL at " << 
-                          IntVect(AMREX_D_DECL(i,j,k)) << " " << sum_vol << std::endl; 
+//                    amrex::Print() << "SUM_VOL STILL TOO SMALL at " << 
+//                        IntVect(AMREX_D_DECL(i,j,k)) << " " << sum_vol << std::endl; 
                       amrex::Abort();
                    }
 
@@ -303,8 +297,8 @@ redistribution::merge_redistribute_full (
          
          if (std::abs(sum1-sum2) > 1.e-8 * sum1 && std::abs(sum1-sum2) > 1.e-8)
          {
-            amrex::Print() << " TESTING COMPONENT " << n << std::endl; 
-            amrex::Print() << " SUMS DO NOT MATCH " << sum1 << " " << sum2 << std::endl;
+//          amrex::Print() << " TESTING COMPONENT " << n << std::endl; 
+//          amrex::Print() << " SUMS DO NOT MATCH " << sum1 << " " << sum2 << std::endl;
             amrex::Abort(0);
          }
         }

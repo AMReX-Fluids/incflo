@@ -39,7 +39,6 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
     //    use the first component of this for the number of neighbors
     IArrayBox itracker(grow(bx,1),8);
 #endif
-    itracker.setVal(0);
 
     amrex::Print() << "REDISTRIBUTION TYPE " << redistribution_type << std::endl;
 
