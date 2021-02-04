@@ -87,6 +87,10 @@ redistribution::state_redistribute_update (
             cent_hat(i,j,k,n) = 0.;
             slopes_hat(i,j,k,n) = 0.;
 	}
+	for (int n = 0; n < ncomp; n++)
+	{
+            soln_hat(i,j,k,n) = 0.;
+	}
     });
 
     // It is essential that only one of these be true;
@@ -506,6 +510,10 @@ redistribution::state_redistribute_full (
 	{
             cent_hat(i,j,k,n) = 0.;
             slopes_hat(i,j,k,n) = 0.;
+	}
+	for (int n = 0; n < ncomp; n++)
+	{
+            soln_hat(i,j,k,n) = 0.;
 	}
     });
 
