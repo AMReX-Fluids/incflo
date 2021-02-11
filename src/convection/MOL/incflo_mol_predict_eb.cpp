@@ -7,17 +7,15 @@
 using namespace amrex;
 
 namespace {
-    std::pair<bool,bool> has_extdir_or_ho (BCRec const* bcrec, int ncomp, int dir)
+    std::pair<bool,bool> has_extdir_or_ho (BCRec const* bcrec, int n, int dir)
     {
         std::pair<bool,bool> r{false,false};
-        for (int n = 0; n < ncomp; ++n) {
-            r.first = r.first 
-                 or (bcrec[n].lo(dir) == BCType::ext_dir)
-                 or (bcrec[n].lo(dir) == BCType::hoextrap);
-            r.second = r.second 
-                 or (bcrec[n].hi(dir) == BCType::ext_dir)
-                 or (bcrec[n].hi(dir) == BCType::hoextrap);
-        }
+        r.first = r.first 
+             or (bcrec[n].lo(dir) == BCType::ext_dir)
+             or (bcrec[n].lo(dir) == BCType::hoextrap);
+        r.second = r.second 
+             or (bcrec[n].hi(dir) == BCType::ext_dir)
+             or (bcrec[n].hi(dir) == BCType::hoextrap);
         return r;
     }
 }
@@ -44,28 +42,53 @@ mol::predict_vels_on_faces_eb (int lev,
     constexpr Real small_vel = 1.e-10;
 
     const Box& domain_box = geom[lev].Domain();
-    const int domain_ilo = domain_box.smallEnd(0);
-    const int domain_ihi = domain_box.bigEnd(0);
-    const int domain_jlo = domain_box.smallEnd(1);
-    const int domain_jhi = domain_box.bigEnd(1);
-#if (AMREX_SPACEDIM == 3)
-    const int domain_klo = domain_box.smallEnd(2);
-    const int domain_khi = domain_box.bigEnd(2);
-#endif
+    AMREX_D_TERM(
+        const int domain_ilo = domain_box.smallEnd(0);
+        const int domain_ihi = domain_box.bigEnd(0);,
+        const int domain_jlo = domain_box.smallEnd(1);
+        const int domain_jhi = domain_box.bigEnd(1);,
+        const int domain_klo = domain_box.smallEnd(2);
+        const int domain_khi = domain_box.bigEnd(2););
 
     int ncomp = AMREX_SPACEDIM; // This is only used because h_bcrec and d_bcrec hold the
                                 // bc's for all three velocity components
 
-    // At an ext_dir boundary, the boundary value is on the face, not cell center.
-    auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
-    bool has_extdir_or_ho_lo = extdir_lohi.first;
-    bool has_extdir_or_ho_hi = extdir_lohi.second;
+    // ****************************************************************************
+    // Decide whether the stencil at each cell might need to see values that
+    //     live on face centroids rather than cell centroids, i.e.
+    //     are at a domain boundary with ext_dir or hoextrap boundary conditions
+    // ****************************************************************************
+
+    int n_for_xbc = 0;
+
+    auto extdir_lohi_x_for_u = has_extdir_or_ho(h_bcrec.data(), n_for_xbc, static_cast<int>(Direction::x));
+    bool has_extdir_or_ho_lo_x_for_u = extdir_lohi_x_for_u.first;
+    bool has_extdir_or_ho_hi_x_for_u = extdir_lohi_x_for_u.second;
+
+    auto extdir_lohi_y_for_u = has_extdir_or_ho(h_bcrec.data(), n_for_xbc, static_cast<int>(Direction::y));
+    bool has_extdir_or_ho_lo_y_for_u = extdir_lohi_y_for_u.first;
+    bool has_extdir_or_ho_hi_y_for_u = extdir_lohi_y_for_u.second;
+
+#if (AMREX_SPACEDIM == 3)
+    auto extdir_lohi_z_for_u = has_extdir_or_ho(h_bcrec.data(), n_for_xbc, static_cast<int>(Direction::z));
+    bool has_extdir_or_ho_lo_z_for_u = extdir_lohi_z_for_u.first;
+    bool has_extdir_or_ho_hi_z_for_u = extdir_lohi_z_for_u.second;
+#endif
 
     // ****************************************************************************
     // Predict to x-faces
     // ****************************************************************************
-    if ((has_extdir_or_ho_lo and domain_ilo >= ubx.smallEnd(0)-1) or
-        (has_extdir_or_ho_hi and domain_ihi <= ubx.bigEnd(0)))
+    if ((has_extdir_or_ho_lo_x_for_u and domain_ilo >= ubx.smallEnd(0)-1) or
+        (has_extdir_or_ho_hi_x_for_u and domain_ihi <= ubx.bigEnd(0)    ) or
+        (has_extdir_or_ho_lo_y_for_u and domain_jlo >= vbx.smallEnd(1)-1) or
+        (has_extdir_or_ho_hi_y_for_u and domain_jhi <= vbx.bigEnd(1)    )
+#if (AMREX_SPACEDIM == 2)
+        )
+#elif (AMREX_SPACEDIM == 3)
+        or
+        (has_extdir_or_ho_lo_z_for_u and domain_jlo >= wbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi_z_for_u and domain_jhi <= wbx.bigEnd(2)    ) )
+#endif
     {
         amrex::ParallelFor(Box(ubx),
         [u,vcc,flag,ccc,d_bcrec,
@@ -241,12 +264,34 @@ mol::predict_vels_on_faces_eb (int lev,
     // ****************************************************************************
     // Predict to y-faces
     // ****************************************************************************
-    extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
-    has_extdir_or_ho_lo = extdir_lohi.first;
-    has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo and domain_jlo >= vbx.smallEnd(1)-1) or
-        (has_extdir_or_ho_hi and domain_jhi <= vbx.bigEnd(1)))
+    int n_for_ybc = 1;
+
+    auto extdir_lohi_x_for_v = has_extdir_or_ho(h_bcrec.data(), n_for_ybc, static_cast<int>(Direction::x));
+    bool has_extdir_or_ho_lo_x_for_v = extdir_lohi_x_for_v.first;
+    bool has_extdir_or_ho_hi_x_for_v = extdir_lohi_x_for_v.second;
+
+    auto extdir_lohi_y_for_v = has_extdir_or_ho(h_bcrec.data(), n_for_ybc, static_cast<int>(Direction::y));
+    bool has_extdir_or_ho_lo_y_for_v = extdir_lohi_y_for_v.first;
+    bool has_extdir_or_ho_hi_y_for_v = extdir_lohi_y_for_v.second;
+
+#if (AMREX_SPACEDIM == 3)
+    auto extdir_lohi_z_for_v = has_extdir_or_ho(h_bcrec.data(), n_for_ybc, static_cast<int>(Direction::z));
+    bool has_extdir_or_ho_lo_z_for_v = extdir_lohi_z_for_v.first;
+    bool has_extdir_or_ho_hi_z_for_v = extdir_lohi_z_for_v.second;
+#endif
+
+    if ((has_extdir_or_ho_lo_x_for_v and domain_ilo >= ubx.smallEnd(0)-1) or
+        (has_extdir_or_ho_hi_x_for_v and domain_ihi <= ubx.bigEnd(0)    ) or
+        (has_extdir_or_ho_lo_y_for_v and domain_jlo >= vbx.smallEnd(1)-1) or
+        (has_extdir_or_ho_hi_y_for_v and domain_jhi <= vbx.bigEnd(1)    )
+#if (AMREX_SPACEDIM == 2)
+        )
+#elif (AMREX_SPACEDIM == 3)
+        or
+        (has_extdir_or_ho_lo_z_for_v and domain_jlo >= wbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi_z_for_v and domain_jhi <= wbx.bigEnd(2)    ) )
+#endif
     {
         amrex::ParallelFor(Box(vbx),
         [v,vcc,flag,ccc,d_bcrec,
@@ -428,12 +473,34 @@ mol::predict_vels_on_faces_eb (int lev,
     // ****************************************************************************
     // Predict to z-faces
     // ****************************************************************************
-    extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
-    has_extdir_or_ho_lo = extdir_lohi.first;
-    has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo and domain_klo >= wbx.smallEnd(2)-1) or
-        (has_extdir_or_ho_hi and domain_khi <= wbx.bigEnd(2)))
+    int n_for_zbc = 2;
+
+    auto extdir_lohi_x_for_w = has_extdir_or_ho(h_bcrec.data(), n_for_zbc, static_cast<int>(Direction::x));
+    bool has_extdir_or_ho_lo_x_for_w = extdir_lohi_x_for_w.first;
+    bool has_extdir_or_ho_hi_x_for_w = extdir_lohi_x_for_w.second;
+
+    auto extdir_lohi_y_for_w = has_extdir_or_ho(h_bcrec.data(), n_for_zbc, static_cast<int>(Direction::y));
+    bool has_extdir_or_ho_lo_y_for_w = extdir_lohi_y_for_w.first;
+    bool has_extdir_or_ho_hi_y_for_w = extdir_lohi_y_for_w.second;
+
+#if (AMREX_SPACEDIM == 3)
+    auto extdir_lohi_z_for_w = has_extdir_or_ho(h_bcrec.data(), n_for_zbc, static_cast<int>(Direction::z));
+    bool has_extdir_or_ho_lo_z_for_w = extdir_lohi_z_for_w.first;
+    bool has_extdir_or_ho_hi_z_for_w = extdir_lohi_z_for_w.second;
+#endif
+
+    if ((has_extdir_or_ho_lo_x_for_w and domain_ilo >= ubx.smallEnd(0)-1) or
+        (has_extdir_or_ho_hi_x_for_w and domain_ihi <= ubx.bigEnd(0)    ) or
+        (has_extdir_or_ho_lo_y_for_w and domain_jlo >= vbx.smallEnd(1)-1) or
+        (has_extdir_or_ho_hi_y_for_w and domain_jhi <= vbx.bigEnd(1)    )
+#if (AMREX_SPACEDIM == 2)
+        )
+#elif (AMREX_SPACEDIM == 3)
+        or
+        (has_extdir_or_ho_lo_z_for_w and domain_jlo >= wbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi_z_for_w and domain_jhi <= wbx.bigEnd(2)    ) )
+#endif
     {
         amrex::ParallelFor(Box(wbx),
         [w,vcc,flag,ccc,d_bcrec,
