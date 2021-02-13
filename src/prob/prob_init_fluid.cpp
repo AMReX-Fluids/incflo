@@ -425,22 +425,24 @@ void incflo::init_channel_slant (Box const& vbx, Box const& gbx,
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {   
             if (density(i,j,k)>0) {
-                
-                if (direction == 0) {
-                    vel(i,j,k,0) = magvel*std::cos(rotation);
-                    vel(i,j,k,1) = magvel*std::sin(rotation);
-                } else if (direction == 1) {
-                    vel(i,j,k,1) = magvel*std::cos(rotation);
-                    vel(i,j,k,0) = magvel*std::sin(rotation);
-                }
     
                 const int nt = tracer.nComp();
                 for (int n = 0; n < nt; ++n) 
                     tracer(i,j,k,n) = 0.0;
                 
-                if (nt > 0 and j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
-                if (nt > 1 and j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
-                if (nt > 2 and j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
+                if (direction == 0) {
+                    vel(i,j,k,0) = magvel*std::cos(rotation);
+                    vel(i,j,k,1) = magvel*std::sin(rotation);
+                    if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
+                    if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
+                    if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
+                } else if (direction == 1) {
+                    vel(i,j,k,1) = magvel*std::cos(rotation);
+                    vel(i,j,k,0) = magvel*std::sin(rotation);
+                    if (nt > 0 and j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
+                    if (nt > 1 and j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
+                    if (nt > 2 and j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
+                }
             }
         });
 #else
