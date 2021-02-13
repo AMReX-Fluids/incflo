@@ -1,5 +1,5 @@
 #include <incflo.H>
-#include <AMReX_Random.H>
+#include <Redistribution.H>
 
 using namespace amrex;
 
@@ -144,6 +144,64 @@ void incflo::prob_init_fluid (int lev)
             amrex::Abort("prob_init_fluid: unknown m_probtype");
         };
     }
+
+#ifdef AMREX_USE_EB
+    // Next we must redistribute the initial solution if we are going to use 
+    // MergeRedistFull or StateRedistFull  redistribution schemes
+    if ( m_redistribution_type == "StateRedistFull" ||
+         m_redistribution_type == "MergeRedistFull")
+    {
+        for (MFIter mfi(ld.density); mfi.isValid(); ++mfi)
+        {
+            const Box& bx = mfi.validbox();
+            auto const& fact = EBFactory(lev);
+
+            EBCellFlagFab const& flagfab = fact.getMultiEBCellFlagFab()[mfi];
+            Array4<EBCellFlag const> const& flag = flagfab.const_array();
+
+            Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, AMREX_D_DECL(apx, apy, apz);
+            AMREX_D_TERM(fcx = fact.getFaceCent()[0]->const_array(mfi);,
+                         fcy = fact.getFaceCent()[1]->const_array(mfi);,
+                         fcz = fact.getFaceCent()[2]->const_array(mfi););
+            ccc   = fact.getCentroid().const_array(mfi);
+            AMREX_D_TERM(apx = fact.getAreaFrac()[0]->const_array(mfi);,
+                         apy = fact.getAreaFrac()[1]->const_array(mfi);,
+                         apz = fact.getAreaFrac()[2]->const_array(mfi););
+            vfrac = fact.getVolFrac().const_array(mfi);
+
+            int ncomp = AMREX_SPACEDIM;
+            redistribution::redistribute_initial_data(
+                                      bx,ncomp,ld.velocity.array(mfi),flag,
+                                      AMREX_D_DECL(apx, apy, apz),
+                                      vfrac, 
+                                      AMREX_D_DECL(fcx, fcy, fcz), 
+                                      ccc,geom[lev],m_redistribution_type);
+            if (!m_constant_density) 
+            {
+                ncomp = 1;
+                redistribution::redistribute_initial_data(
+                                          bx,ncomp,ld.density.array(mfi),flag,
+                                          AMREX_D_DECL(apx, apy, apz),
+                                          vfrac, 
+                                          AMREX_D_DECL(fcx, fcy, fcz), 
+                                          ccc,geom[lev],m_redistribution_type);
+            }
+            if (m_advect_tracer) 
+            {
+                ncomp = m_ntrac;
+                redistribution::redistribute_initial_data(
+                                          bx,ncomp,ld.tracer.array(mfi),flag,
+                                          AMREX_D_DECL(apx, apy, apz),
+                                          vfrac, 
+                                          AMREX_D_DECL(fcx, fcy, fcz), 
+                                          ccc,geom[lev],m_redistribution_type);
+            }
+        }
+        ld.velocity.FillBoundary();
+        ld.density.FillBoundary();
+        ld.tracer.FillBoundary();
+    }
+#endif
 }
 
 void incflo::init_taylor_green (Box const& vbx, Box const& gbx,
@@ -348,29 +406,99 @@ void incflo::init_channel_slant (Box const& vbx, Box const& gbx,
 {
     const auto dhi = amrex::ubound(domain);
     Real num_cells_y = static_cast<Real>(domain.length(1));
-    Real rotation  = 0;
     Real radius    = 0;
+    Real rotation;
+    int direction  = -1;
+
     // Get cylinder information from inputs file.                               *
     ParmParse pp("cylinder");
-    pp.query("rotation",   rotation);
+    pp.get("rotation",   rotation);
+    pp.get("direction",  direction);
     rotation = (rotation/180.) * M_PI;
-    Real u = m_ic_u;
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {   
-        if (rotation > 0 and density(i,j,k)>0){
-            AMREX_D_TERM(vel(i,j,k,0) = u*std::cos(rotation);,
-                         vel(i,j,k,1) = u*std::sin(rotation);,
-                         vel(i,j,k,2) = 0.0;);
 
-            const int nt = tracer.nComp();
-            for (int n = 0; n < nt; ++n) {
-                tracer(i,j,k,n) = 0.0;
+    // For this probtype, we always use ic_u to designate
+    // the initial velocity parallel to the cylinder axis --
+    // it is broken into components once we know the rotation angle
+    Real magvel = m_ic_u;
+
+#if (AMREX_SPACEDIM == 2)
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {   
+            if (density(i,j,k)>0) {
+                
+                if (direction == 0) {
+                    vel(i,j,k,0) = magvel*std::cos(rotation);
+                    vel(i,j,k,1) = magvel*std::sin(rotation);
+                } else if (direction == 1) {
+                    vel(i,j,k,1) = magvel*std::cos(rotation);
+                    vel(i,j,k,0) = magvel*std::sin(rotation);
+                }
+    
+                const int nt = tracer.nComp();
+                for (int n = 0; n < nt; ++n) 
+                    tracer(i,j,k,n) = 0.0;
+                
+                if (nt > 0 and j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
+                if (nt > 1 and j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
+                if (nt > 2 and j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
             }
-            if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
-            if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
-            if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
-        }
-    });
+        });
+#else
+    if (direction == 0)
+    {
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {   
+            if (density(i,j,k)>0) {
+                vel(i,j,k,0) = magvel*std::cos(rotation);
+                vel(i,j,k,1) = magvel*std::sin(rotation);
+                vel(i,j,k,2) = 0.0;
+    
+                const int nt = tracer.nComp();
+                for (int n = 0; n < nt; ++n) 
+                    tracer(i,j,k,n) = 0.0;
+                
+                if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
+                if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
+                if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
+            }
+        });
+    } else if (direction == 1)
+    {
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {   
+            if (density(i,j,k)>0) {
+                vel(i,j,k,1) = magvel*std::cos(rotation);
+                vel(i,j,k,2) = magvel*std::sin(rotation);
+                vel(i,j,k,0) = 0.0;
+    
+                const int nt = tracer.nComp();
+                for (int n = 0; n < nt; ++n) 
+                    tracer(i,j,k,n) = 0.0;
+                
+                if (nt > 0 and j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
+                if (nt > 1 and j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
+                if (nt > 2 and j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
+            }
+        });
+    } else if (direction == 2)
+    {
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {   
+            if (density(i,j,k)>0){
+                vel(i,j,k,2) = magvel*std::cos(rotation);
+                vel(i,j,k,0) = magvel*std::sin(rotation);
+                vel(i,j,k,1) = 0.0;
+    
+                const int nt = tracer.nComp();
+                for (int n = 0; n < nt; ++n) 
+                    tracer(i,j,k,n) = 0.0;
+                if (nt > 0 and k <= dhi.z/8)   tracer(i,j,k,0) = 1.0;
+                if (nt > 1 and k <= dhi.z/2)   tracer(i,j,k,1) = 2.0;
+                if (nt > 2 and k <= dhi.z*3/4) tracer(i,j,k,2) = 3.0;
+            }
+        });
+    }
+#endif
 }
 
 void incflo::init_rayleigh_taylor (Box const& vbx, Box const& gbx,

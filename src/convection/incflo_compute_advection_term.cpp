@@ -249,7 +249,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
     Array4<Real> rhotrac;
     if (m_advect_tracer) {
         rhotracfab.resize(rhotrac_box, m_ntrac);
-        eli_rt = rhotracfab.elixir();
+        eli_rt  = rhotracfab.elixir();
         rhotrac = rhotracfab.array();
         amrex::ParallelFor(rhotrac_box, m_ntrac,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -287,7 +287,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
             if (m_advection_type == "MOL") 
                 gbx.grow(2);
             else if (m_advection_type == "Godunov") 
-                gbx.grow(1);
+                gbx.grow(2);
             else 
                 amrex::Abort("Dont know this advection_type");
         }

@@ -39,7 +39,7 @@ mol::predict_vels_on_faces_eb (int lev,
                                       BCRec  const* d_bcrec,
                                Vector<Geometry> geom)
 {
-    constexpr Real small_vel = 1.e-10;
+    constexpr Real small_vel = 1.e-8;
 
     const Box& domain_box = geom[lev].Domain();
     AMREX_D_TERM(

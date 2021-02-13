@@ -209,6 +209,7 @@ public: // for cuda
     void prob_init_fluid (int lev);
     void prob_set_inflow_velocity (int grid_id, amrex::Orientation ori, amrex::Box const& bx,
                                    amrex::Array4<amrex::Real> const& v, int lev, amrex::Real time);
+    void redistribute_initial_data(amrex::MultiFab& data, std::string redistribution_type);
 
 #include "incflo_prob_I.H"
 
