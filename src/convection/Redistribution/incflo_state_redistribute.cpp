@@ -215,15 +215,6 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
                 nrs(r,s,t) += 1.;
             }
         }
-
-#if 0
-        for (int index = 0; index < 9; index++)
-        {
-            if (index != 4 and i > 120)
-                if (nbor(i,j,k,index) == 1) amrex::Print() << IntVect(i,j) << " HAS NBOR IN DIR " << index << " and vfrac " <<
-                     vfrac(i,j,k) << std::endl;
-        }
-#endif
       }
     });
 
@@ -262,7 +253,8 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
             }
             if (unwted_vol < 0.5 && bx_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
             {
-                amrex::Print() << "NBHD VOL STILL TOO LOW " << IntVect(AMREX_D_DECL(i,j,k)) << " " << nbhd_vol(i,j,k) << std::endl;
+//              amrex::Print() << "NBHD VOL STILL TOO LOW " << IntVect(AMREX_D_DECL(i,j,k)) << " " << nbhd_vol(i,j,k) << std::endl;
+                amrex::Abort(); 
             }
         }
     });
