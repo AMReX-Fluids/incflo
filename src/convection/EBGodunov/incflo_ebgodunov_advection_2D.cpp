@@ -14,7 +14,7 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
                                       Array4<Real const> const& u_mac,
                                       Array4<Real const> const& v_mac,
                                       Array4<Real const> const& fq,
-                                      Array4<Real const> const& divu,
+                                      Array4<Real const> const& /*divu*/,
                                       Real l_dt,
                                       Vector<BCRec> const& h_bcrec,
                                              BCRec const*  pbc,
@@ -35,8 +35,10 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
     Box const& xbx = amrex::surroundingNodes(bx,0);
     Box const& ybx = amrex::surroundingNodes(bx,1);
     Box const& bxg1 = amrex::grow(bx,1);
-    Box xebox = Box(xbx).grow(1,1);
-    Box yebox = Box(ybx).grow(0,1);
+
+    // Start with above and grow 1 tangentially
+    Box xebx = Box(xbx).grow(1,1);
+    Box yebx = Box(ybx).grow(0,1);
 
     const Real dx = geom.CellSize(0);
     const Real dy = geom.CellSize(1);
@@ -56,33 +58,47 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
     p +=         Imy.size();
     Array4<Real> Ipy = makeArray4(p, bxg1, ncomp);
     p +=         Ipy.size();
-    Array4<Real> xlo = makeArray4(p, xebox, ncomp);
+
+    Array4<Real> xlo = makeArray4(p, xebx, ncomp);
     p +=         xlo.size();
-    Array4<Real> xhi = makeArray4(p, xebox, ncomp);
+    Array4<Real> xhi = makeArray4(p, xebx, ncomp);
     p +=         xhi.size();
-    Array4<Real> ylo = makeArray4(p, yebox, ncomp);
+    Array4<Real> ylo = makeArray4(p, yebx, ncomp);
     p +=         ylo.size();
-    Array4<Real> yhi = makeArray4(p, yebox, ncomp);
+    Array4<Real> yhi = makeArray4(p, yebx, ncomp);
     p +=         yhi.size();
+
     Array4<Real> xyzlo = makeArray4(p, bxg1, ncomp);
     p +=         xyzlo.size();
     Array4<Real> xyzhi = makeArray4(p, bxg1, ncomp);
     p +=         xyzhi.size();
 
+    // Initialize this way out of an abundance of paranoia
+    amrex::ParallelFor(
+        Box(Imx), ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+           Imx(i,j,k,n) = i*1.e10 + j*1.e20 + k*1.30 + n*1.e4;
+        });
+    amrex::ParallelFor(
+        Box(Imy), ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+           Imy(i,j,k,n) = i*1.e10 + j*1.e20 + k*1.30 + n*1.e4;
+        });
+
     for (int n = 0; n < ncomp; n++) 
        if (!iconserv[n]) amrex::Abort("Trying to update in non-conservative in ebgodunov");
 
-    ebgodunov::plm_fpu_x (bx, ncomp, Imx, Ipx, q, u_mac,
+    ebgodunov::plm_fpu_x (xebx, ncomp, Imx, Ipx, q, u_mac,
                           flag_arr, vfrac_arr,
                           AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
                           geom, l_dt, h_bcrec, pbc, is_velocity);
-    ebgodunov::plm_fpu_y (bx, ncomp, Imy, Ipy, q, v_mac, 
+    ebgodunov::plm_fpu_y (yebx, ncomp, Imy, Ipy, q, v_mac, 
                           flag_arr, vfrac_arr,
                           AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
                           geom, l_dt, h_bcrec, pbc, is_velocity);
 
     amrex::ParallelFor(
-        xebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        xebx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             if (apx(i,j,k) > 0.)
             {
@@ -106,7 +122,7 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             }
 
         },
-        yebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        yebx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             if (apy(i,j,k) > 0.)
             {
@@ -136,8 +152,7 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
     //
     // Upwinding on y-faces to use as transverse terms for x-faces
     //
-    Box const& xbxtmp = amrex::grow(bx,0,1);
-    Array4<Real> yzlo = makeArray4(xyzlo.dataPtr(), amrex::surroundingNodes(xbxtmp,1), ncomp);
+    Array4<Real> yzlo = makeArray4(xyzlo.dataPtr(), yebx, ncomp);
     amrex::ParallelFor(
     Box(yzlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -209,8 +224,7 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
     //
     // Upwinding on x-faces to use as transverse terms for y-faces
     //
-    Box const& ybxtmp = amrex::grow(bx,1,1);
-    Array4<Real> xzlo = makeArray4(xyzlo.dataPtr(), amrex::surroundingNodes(ybxtmp,0), ncomp);
+    Array4<Real> xzlo = makeArray4(xyzlo.dataPtr(), xebx, ncomp);
     amrex::ParallelFor(
     Box(xzlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -290,17 +304,6 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
                                         apx(i+1,j,k)*u_mac(i+1,j,k)*qx(i+1,j,k,n) )
                 +            dxinv[1]*( apy(i  ,j,k)*v_mac(i,j  ,k)*qy(i,j  ,k,n) -
                                         apy(i,j+1,k)*v_mac(i,j+1,k)*qy(i,j+1,k,n))) / vfrac_arr(i,j,k);
-#if 0
-            if (i == 15 && j == 95 && n == 0) 
-            {
-               amrex::Print() << " UPDATE " << IntVect(i,j) << " " << q(i,j,k,n) << " " << dqdt(i,j,k,n) << std::endl;
-               amrex::Print() << "   LO X: " << apx(i,j,k) << " " << u_mac(i,j,k) << " " << qx(i,j,k,n) << std::endl;
-               amrex::Print() << "   HI X: " << apx(i+1,j,k) << " " << u_mac(i+1,j,k) << " " << qx(i+1,j,k,n) << std::endl;
-               amrex::Print() << "   LO Y: " << apy(i,j,k) << " " << v_mac(i,j,k) << " " << qy(i,j,k,n) << std::endl;
-               amrex::Print() << "   HI Y: " << apy(i,j+1,k) << " " << v_mac(i,j+1,k) << " " << qy(i,j+1,k,n) << std::endl;
-               amrex::Print() << " " << std::endl;
-            }
-#endif
         } else {
             dqdt(i,j,k,n) = 0.0;
         }

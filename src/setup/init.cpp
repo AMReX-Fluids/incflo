@@ -77,8 +77,8 @@ void incflo::ReadParameters ()
         //     m_redistribution_type != "StateRedistUpdate" &&
         //     m_redistribution_type != "StateRedistFull")
         //     amrex::Abort("redistribution type must be FluxRedist, MergeRedist, StateRedistUpdate or StateRedistFull");
-        if (m_redistribution_type != "FluxRedist" )
-            amrex::Abort("redistribution type must be FluxRedist");
+        if (m_redistribution_type != "FluxRedist" and m_redistribution_type != "NoRedist")
+            amrex::Abort("redistribution type must be NoRedist or FluxRedist");
 #endif
 
         if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;

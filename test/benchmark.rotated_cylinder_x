@@ -3,20 +3,26 @@
 #.......................................#
 #stop_time               =   0.025      # Max (simulated) time to evolve
 max_step                =   -1          # Max number of time steps
-max_step                =   20          # Max number of time steps
-steady_state            =   0           # Steady-state solver? 
+max_step                =   10          # Max number of time steps
+
+amrex.fpe_trap_invalid = 1
+
+#fabarray.mfiter_tile_size = 1024 1024 1024
+#fabarray.mfiter_tile_size =  8 8 8
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
 incflo.fixed_dt         =   -1.0        # Use this constant dt if > 0
 
-incflo.advection_type   = "Godunov"
-incflo.cfl              =   0.9         # CFL factor
-
 incflo.advection_type   = "MOL"
 incflo.cfl              =   0.45        # CFL factor
 
+incflo.advection_type   = "Godunov"
+incflo.cfl              =   0.9         # CFL factor
+
+incflo.redistribution_type   = "StateRedistFull"
+incflo.redistribution_type   = "FluxRedist"
 incflo.redistribution_type   = "NoRedist"
 
 incflo.do_initial_proj    = 0
@@ -25,7 +31,6 @@ incflo.initial_iterations = 0
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-#amr.plot_per_exact      =   0.01       #
 amr.plot_int             =   10         # Steps between plot files
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
@@ -45,14 +50,10 @@ incflo.mu_s             =   0.001       # Scalar diffusion coefficient
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   96 96 96    # Grid cells at coarsest AMRlevel
 amr.n_cell              =   32 32 32    # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.grid_eff            =   0.7 
 amr.n_error_buf         =   8
-amr.max_grid_size_x     =   1024
-amr.max_grid_size_y     =   1024
-amr.max_grid_size_z     =   1024
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                     #
@@ -74,7 +75,7 @@ zhi.velocity            =   0.  0.  0.
 
 # Inflow on low side
 xlo.type                =   "mi"
-xlo.velocity            =   1.  0.  0.
+xlo.velocity            =   0.8660254038 0.5  0.
 xlo.tracer              =   1.
 xhi.type                =   "po"
 xhi.pressure            =   0.0
@@ -103,15 +104,11 @@ eb2.small_volfrac = 1.e-4
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.probtype         =   6           #
-
-# Note that with this prob_type, ic_u is used to mean the velocity
-# along the direction of the cylinder, irregardless of the direction
-# of the cylinder
-incflo.ic_u             =   1.0         #
-incflo.ic_v             =   0.0         #
-incflo.ic_w             =   0.0         #
-incflo.ic_p             =   0.0         #
+incflo.probtype         =  6            #
+incflo.ic_u             =  0.8660254038 #
+incflo.ic_v             =  0.5          #
+incflo.ic_w             =  0.0          #
+incflo.ic_p             =  0.0          #
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              VERBOSITY                #

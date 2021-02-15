@@ -50,9 +50,6 @@ mol::predict_vels_on_faces_eb (int lev,
         const int domain_klo = domain_box.smallEnd(2);
         const int domain_khi = domain_box.bigEnd(2););
 
-    int ncomp = AMREX_SPACEDIM; // This is only used because h_bcrec and d_bcrec hold the
-                                // bc's for all three velocity components
-
     // ****************************************************************************
     // Decide whether the stencil at each cell might need to see values that
     //     live on face centroids rather than cell centroids, i.e.

@@ -137,7 +137,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                          w_mac[lev]->FillBoundary(geom[lev].periodicity()););
         }
 
-        MultiFab divu(vel[lev]->boxArray(),vel[lev]->DistributionMap(),1,2);
+        MultiFab divu(vel[lev]->boxArray(),vel[lev]->DistributionMap(),1,4);
         divu.setVal(0.);
         Array<MultiFab const*, AMREX_SPACEDIM> u;
         u[0] = u_mac[lev];
@@ -160,8 +160,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-        // Turn off tiling -- HACK HACK HACK
-        for (MFIter mfi(*density[lev],false); mfi.isValid(); ++mfi)
+        for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
 
             Box const& bx = mfi.tilebox();
@@ -289,7 +288,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
             else if (m_advection_type == "Godunov") 
                 gbx.grow(2);
             else 
-                amrex::Abort("Dont know this advection_type");
+                amrex::Abort("Dont know this advection type");
         }
         // This one holds the convective term on a grown region so we can redistribute
         FArrayBox dUdt_tmpfab(gbx,nmaxcomp);
@@ -403,6 +402,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
             tmpcomp += nmaxcomp;
         }
 #endif
+
         FArrayBox tmpfab(tmpbox, tmpcomp);
         Elixir eli = tmpfab.elixir();
 

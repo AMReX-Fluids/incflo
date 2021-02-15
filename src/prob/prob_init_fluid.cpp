@@ -412,95 +412,33 @@ void incflo::init_channel_slant (Box const& vbx, Box const& gbx,
 
     // Get cylinder information from inputs file.                               *
     ParmParse pp("cylinder");
-    pp.get("rotation",   rotation);
     pp.get("direction",  direction);
-    rotation = (rotation/180.) * M_PI;
 
-    // For this probtype, we always use ic_u to designate
-    // the initial velocity parallel to the cylinder axis --
-    // it is broken into components once we know the rotation angle
-    Real magvel = m_ic_u;
-
-#if (AMREX_SPACEDIM == 2)
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {   
-            if (density(i,j,k)>0) {
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {   
+        if (density(i,j,k)>0) {
     
-                const int nt = tracer.nComp();
-                for (int n = 0; n < nt; ++n) 
-                    tracer(i,j,k,n) = 0.0;
+            const int nt = tracer.nComp();
+            for (int n = 0; n < nt; ++n) 
+                tracer(i,j,k,n) = 0.0;
                 
-                if (direction == 0) {
-                    vel(i,j,k,0) = magvel*std::cos(rotation);
-                    vel(i,j,k,1) = magvel*std::sin(rotation);
-                    if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
-                    if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
-                    if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
-                } else if (direction == 1) {
-                    vel(i,j,k,1) = magvel*std::cos(rotation);
-                    vel(i,j,k,0) = magvel*std::sin(rotation);
-                    if (nt > 0 and j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
-                    if (nt > 1 and j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
-                    if (nt > 2 and j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
-                }
-            }
-        });
-#else
-    if (direction == 0)
-    {
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {   
-            if (density(i,j,k)>0) {
-                vel(i,j,k,0) = magvel*std::cos(rotation);
-                vel(i,j,k,1) = magvel*std::sin(rotation);
-                vel(i,j,k,2) = 0.0;
-    
-                const int nt = tracer.nComp();
-                for (int n = 0; n < nt; ++n) 
-                    tracer(i,j,k,n) = 0.0;
-                
+            if (direction == 0) {
                 if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
                 if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
                 if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
-            }
-        });
-    } else if (direction == 1)
-    {
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {   
-            if (density(i,j,k)>0) {
-                vel(i,j,k,1) = magvel*std::cos(rotation);
-                vel(i,j,k,2) = magvel*std::sin(rotation);
-                vel(i,j,k,0) = 0.0;
-    
-                const int nt = tracer.nComp();
-                for (int n = 0; n < nt; ++n) 
-                    tracer(i,j,k,n) = 0.0;
-                
+            } else if (direction == 1) {
                 if (nt > 0 and j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
                 if (nt > 1 and j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
                 if (nt > 2 and j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
-            }
-        });
-    } else if (direction == 2)
-    {
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {   
-            if (density(i,j,k)>0){
-                vel(i,j,k,2) = magvel*std::cos(rotation);
-                vel(i,j,k,0) = magvel*std::sin(rotation);
-                vel(i,j,k,1) = 0.0;
-    
-                const int nt = tracer.nComp();
-                for (int n = 0; n < nt; ++n) 
-                    tracer(i,j,k,n) = 0.0;
+#if (AMREX_SPACEDIM == 3)
+            } else {
                 if (nt > 0 and k <= dhi.z/8)   tracer(i,j,k,0) = 1.0;
                 if (nt > 1 and k <= dhi.z/2)   tracer(i,j,k,1) = 2.0;
                 if (nt > 2 and k <= dhi.z*3/4) tracer(i,j,k,2) = 3.0;
-            }
-        });
-    }
 #endif
+            }
+        }
+    });
 }
 
 void incflo::init_rayleigh_taylor (Box const& vbx, Box const& gbx,

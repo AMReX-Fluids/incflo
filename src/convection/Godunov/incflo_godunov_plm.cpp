@@ -19,7 +19,7 @@ namespace {
     }
 }
 
-void godunov::predict_plm_x (Box const& bx_in,
+void godunov::predict_plm_x (Box const& xebox,
                              Array4<Real> const& Imx, Array4<Real> const& Ipx,
                              Array4<Real const> const& q,
                              Array4<Real const> const& vcc,
@@ -41,12 +41,6 @@ void godunov::predict_plm_x (Box const& bx_in,
     auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
     bool has_extdir_or_ho_lo = extdir_lohi.first;
     bool has_extdir_or_ho_hi = extdir_lohi.second;
-
-#if (AMREX_SPACEDIM == 3)
-    Box xebox = Box(bx_in).grow(1,1).grow(2,1).surroundingNodes(0);
-#else
-    Box xebox = Box(bx_in).grow(1,1).surroundingNodes(0);
-#endif
 
     if ((has_extdir_or_ho_lo and domain_ilo >= xebox.smallEnd(0)-1) or
         (has_extdir_or_ho_hi and domain_ihi <= xebox.bigEnd(0)))
@@ -89,7 +83,7 @@ void godunov::predict_plm_x (Box const& bx_in,
     }
 }
 
-void godunov::predict_plm_y (Box const& bx_in,
+void godunov::predict_plm_y (Box const& yebox,
                             Array4<Real> const& Imy, Array4<Real> const& Ipy,
                             Array4<Real const> const& q,
                             Array4<Real const> const& vcc,
@@ -98,12 +92,6 @@ void godunov::predict_plm_y (Box const& bx_in,
                             Vector<BCRec> const& h_bcrec,
                             BCRec const* pbc)
 {
-#if (AMREX_SPACEDIM == 3)
-    Box yebox = Box(bx_in).grow(0,1).grow(2,1).surroundingNodes(1);
-#else
-    Box yebox = Box(bx_in).grow(0,1).surroundingNodes(1);
-#endif
-
     int ncomp = AMREX_SPACEDIM;
 
     const Real dy = geom.CellSize(1);
@@ -160,7 +148,7 @@ void godunov::predict_plm_y (Box const& bx_in,
 }
 
 #if (AMREX_SPACEDIM == 3)
-void godunov::predict_plm_z (Box const& bx_in,
+void godunov::predict_plm_z (Box const& zebox,
                              Array4<Real> const& Imz, Array4<Real> const& Ipz,
                              Array4<Real const> const& q,
                              Array4<Real const> const& vcc,
@@ -169,8 +157,6 @@ void godunov::predict_plm_z (Box const& bx_in,
                              Vector<BCRec> const& h_bcrec,
                              BCRec const* pbc)
  {
-    Box zebox = Box(bx_in).grow(0,1).grow(1,1).surroundingNodes(2);
-
     int ncomp = AMREX_SPACEDIM;
 
     const Real dz = geom.CellSize(2);

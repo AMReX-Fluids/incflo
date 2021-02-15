@@ -5,7 +5,16 @@ using namespace amrex;
 void incflo::prob_set_inflow_velocity (int /*grid_id*/, Orientation ori, Box const& bx,
                                        Array4<Real> const& vel, int lev, Real /*time*/)
 {
-    if (31 == m_probtype)
+    if (6 == m_probtype)
+    {
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            AMREX_D_TERM(vel(i,j,k,0) = m_ic_u;,
+                         vel(i,j,k,1) = m_ic_v;,
+                         vel(i,j,k,2) = m_ic_w;);
+        });
+    }
+    else if (31 == m_probtype)
     {
         Real dyinv = 1.0 / Geom(lev).Domain().length(1);
         Real u = m_ic_u;

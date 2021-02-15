@@ -21,7 +21,7 @@ namespace {
 }
 
 // This version is called after the MAC projection
-void ebgodunov::plm_fpu_x (Box const& bx_in, int ncomp,
+void ebgodunov::plm_fpu_x (Box const& xebox, int ncomp,
                            Array4<Real> const& Imx, Array4<Real> const& Ipx,
                            Array4<Real const> const& q,
                            Array4<Real const> const& umac,
@@ -60,12 +60,6 @@ void ebgodunov::plm_fpu_x (Box const& bx_in, int ncomp,
     auto extdir_lohi_z = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
     bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
     bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
-#endif
-
-#if (AMREX_SPACEDIM == 3)
-    Box xebox = Box(bx_in).grow(1,1).grow(2,1).surroundingNodes(0);
-#else
-    Box xebox = Box(bx_in).grow(1,1).surroundingNodes(0);
 #endif
 
     if ( (has_extdir_or_ho_lo_x and domain_ilo >= xebox.smallEnd(0)-1) or
@@ -291,14 +285,14 @@ void ebgodunov::plm_fpu_x (Box const& bx_in, int ncomp,
                                              vfrac(i  ,j,k) == 1. and vfrac(i+1,j,k) == 1.) 
                 {
                     int order = 4;
-                    qmns = q(i-1,j,k,n) + 0.5 * ( 1.0 - umac(i-1,j,k) * dtdx) *
+                    qmns = q(i-1,j,k,n) + 0.5 * ( 1.0 - umac(i,j,k) * dtdx) *
                         amrex_calc_xslope(i-1,j,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i-1,j,k) == 1. and vfrac(i-2,j,k) == 1. and vfrac(i  ,j,k) == 1.) 
                 {
                     int order = 2;
-                    qmns = q(i-1,j,k,n) + 0.5 * ( 1.0 - umac(i-1,j,k) * dtdx) *
+                    qmns = q(i-1,j,k,n) + 0.5 * ( 1.0 - umac(i,j,k) * dtdx) *
                         amrex_calc_xslope(i-1,j,k,n,order,q);
 
                 // We need to use LS slopes
@@ -335,7 +329,7 @@ void ebgodunov::plm_fpu_x (Box const& bx_in, int ncomp,
 }
 
 // This version is called after the MAC projection
-void ebgodunov::plm_fpu_y (Box const& bx_in, int ncomp,
+void ebgodunov::plm_fpu_y (Box const& yebox, int ncomp,
                            Array4<Real> const& Imy, Array4<Real> const& Ipy,
                            Array4<Real const> const& q,
                            Array4<Real const> const& vmac,
@@ -374,12 +368,6 @@ void ebgodunov::plm_fpu_y (Box const& bx_in, int ncomp,
     auto extdir_lohi_z = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
     bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
     bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
-#endif
-
-#if (AMREX_SPACEDIM == 3)
-    Box yebox = Box(bx_in).grow(0,1).grow(2,1).surroundingNodes(1);
-#else
-    Box yebox = Box(bx_in).grow(0,1).surroundingNodes(1);
 #endif
 
     if ( (has_extdir_or_ho_lo_x and domain_ilo >= yebox.smallEnd(0)-1) or
@@ -652,7 +640,7 @@ void ebgodunov::plm_fpu_y (Box const& bx_in, int ncomp,
 
 #if (AMREX_SPACEDIM == 3)
 // This version is called after the MAC projection
-void ebgodunov::plm_fpu_z (Box const& bx_in, int ncomp,
+void ebgodunov::plm_fpu_z (Box const& zebox, int ncomp,
                            Array4<Real> const& Imz, Array4<Real> const& Ipz,
                            Array4<Real const> const& q,
                            Array4<Real const> const& wmac,
@@ -689,8 +677,6 @@ void ebgodunov::plm_fpu_z (Box const& bx_in, int ncomp,
     bool has_extdir_or_ho_hi_y = extdir_lohi_y.second;
     bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
     bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
-
-    Box zebox = Box(bx_in).grow(0,1).grow(1,1).surroundingNodes(2);
 
     if ( (has_extdir_or_ho_lo_x and domain_ilo >= zebox.smallEnd(0)-1) or
          (has_extdir_or_ho_hi_x and domain_ihi <= zebox.bigEnd(0)    ) or
@@ -847,7 +833,7 @@ void ebgodunov::plm_fpu_z (Box const& bx_in, int ncomp,
             Real qmns(0.);
 
             // This means apz(i,j,k) > 0 and we have un-covered cells on both sides
-            if (flag(i,j,k).isConnected(0,-1,0))
+            if (flag(i,j,k).isConnected(0,0,-1))
             {
                 // *************************************************
                 // Making qpls
@@ -902,7 +888,7 @@ void ebgodunov::plm_fpu_z (Box const& bx_in, int ncomp,
                         amrex_calc_zslope(i,j,k-1,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j-1,k) == 1. and vfrac(i,j-2,k) == 1. and vfrac(i,j  ,k) == 1.) 
+                } else if (vfrac(i,j,k-1) == 1. and vfrac(i,j,k-2) == 1. and vfrac(i,j,k  ) == 1.) 
                 {
                     int order = 2;
                     qmns = q(i,j,k-1,n) + 0.5 * ( 1.0 - wmac(i,j,k) * dtdz) *
@@ -918,7 +904,7 @@ void ebgodunov::plm_fpu_z (Box const& bx_in, int ncomp,
                                 Real delta_x = xf  - ccc(i,j,k-1,0);,
                                 Real delta_y = yf  - ccc(i,j,k-1,1););
     
-                   const auto& slopes_eb_lo = amrex_lim_slopes_eb(i,j,k,n,q,ccc,
+                   const auto& slopes_eb_lo = amrex_lim_slopes_eb(i,j,k-1,n,q,ccc,
                                                                   AMREX_D_DECL(fcx,fcy,fcz), flag);
 
                    qmns = q(i,j,k-1,n) + delta_x * slopes_eb_lo[0]

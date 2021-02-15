@@ -71,11 +71,11 @@ void godunov::predict_godunov (Real /*time*/,
                                       geom, l_dt, d_bcrec);
             else
             {
-                godunov::predict_plm_x (bx, Imx, Ipx, a_vel, a_vel,
+                godunov::predict_plm_x (Box(u_ad), Imx, Ipx, a_vel, a_vel,
                                         geom, l_dt, h_bcrec, d_bcrec);
-                godunov::predict_plm_y (bx, Imy, Ipy, a_vel, a_vel,
+                godunov::predict_plm_y (Box(v_ad), Imy, Ipy, a_vel, a_vel,
                                         geom, l_dt, h_bcrec, d_bcrec);
-                godunov::predict_plm_z (bx, Imz, Ipz, a_vel, a_vel,
+                godunov::predict_plm_z (Box(w_ad), Imz, Ipz, a_vel, a_vel,
                                         geom, l_dt, h_bcrec, d_bcrec);
             }
 

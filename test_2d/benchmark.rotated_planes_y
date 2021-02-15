@@ -3,14 +3,21 @@
 #.......................................#
 stop_time               =   0.025       # Max (simulated) time to evolve
 max_step                =   -1          # Max number of time steps
-max_step                =   1           # Max number of time steps
-steady_state            =   0           # Steady-state solver? 
+max_step                =   10          # Max number of time steps
+
+amrex.fpe_trap_invalid = 1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
 incflo.fixed_dt         =   -1.0        # Use this constant dt if > 0
 incflo.cfl              =   0.45        # CFL factor
+
+incflo.advection_type = "MOL"
+incflo.advection_type = "Godunov"
+
+incflo.redistribution_type = "NoRedist"
+incflo.redistribution_type = "FluxRedist"
 
 incflo.do_initial_proj    = 0
 incflo.initial_iterations = 0
@@ -27,8 +34,6 @@ amr.restart             =   ""          # Checkpoint to restart from
 incflo.gravity          =   0.  0.      # Gravitational force (3D)
 incflo.ro_0             =   1.          # Reference density 
 
-incflo.advection_type   = "MOL"
-
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.001       # Dynamic viscosity coefficient
 
@@ -44,9 +49,6 @@ amr.n_cell              =   32 32       # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.grid_eff            =   0.7 
 amr.n_error_buf         =   8
-amr.max_grid_size_x     =   1024
-amr.max_grid_size_y     =   1024
-amr.max_grid_size_z     =   1024
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
@@ -61,8 +63,12 @@ xlo.velocity            =   0.  0.  0.
 xhi.type                =   "nsw"
 xhi.velocity            =   0.  0.  0.
 
+# Note that with this prob_type, ic_u below is used to mean the velocity
+# along the direction of the cylinder, but here we must specify
+# the velocity components correctly
+
 ylo.type                =   "mi"
-ylo.velocity            =   1.  0.  0.
+ylo.velocity            =   -0.5 0.8660254038 0.
 ylo.tracer              =   1.
 yhi.type                =   "po"
 yhi.pressure            =   0.0
@@ -83,9 +89,13 @@ cylinder.center    =  0.0  0.0  0.0
 #           INITIAL CONDITIONS          #
 #.......................................#
 incflo.probtype         =   6
-incflo.ic_u             =   0.0         #
-incflo.ic_v             =   1.0         #
-incflo.ic_p             =   0.0         #
+
+# Note that with this prob_type, ic_u is used to mean the velocity
+# along the direction of the cylinder, irregardless of the direction
+# of the cylinder
+incflo.ic_u             = -0.5          #
+incflo.ic_v             =  0.8660254038 #
+incflo.ic_p             =  0.0          #
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              VERBOSITY                #
