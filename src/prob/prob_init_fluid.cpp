@@ -1,5 +1,7 @@
 #include <incflo.H>
+#ifdef AMREX_USE_EB
 #include <Redistribution.H>
+#endif
 
 using namespace amrex;
 
