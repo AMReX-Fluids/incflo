@@ -7,11 +7,15 @@ void incflo::prob_set_inflow_velocity (int /*grid_id*/, Orientation ori, Box con
 {
     if (6 == m_probtype)
     {
+        AMREX_D_TERM(Real u = m_ic_u;,
+                     Real v = m_ic_v;,
+                     Real w = m_ic_w;);
+
         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            AMREX_D_TERM(vel(i,j,k,0) = m_ic_u;,
-                         vel(i,j,k,1) = m_ic_v;,
-                         vel(i,j,k,2) = m_ic_w;);
+            AMREX_D_TERM(vel(i,j,k,0) = u;,
+                         vel(i,j,k,1) = v;,
+                         vel(i,j,k,2) = w;);
         });
     }
     else if (31 == m_probtype)
