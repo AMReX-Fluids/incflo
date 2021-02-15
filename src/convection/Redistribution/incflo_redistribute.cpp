@@ -157,7 +157,11 @@ void redistribution::redistribute_initial_data (Box const& bx, int ncomp,
 
     FArrayBox U_out(grow(bx,2),ncomp);
     Array4<Real> uout_array = U_out.array(); 
-    U_out.setVal(0.);
+    amrex::ParallelFor(Box(uout_array),ncomp,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+    {
+        uout_array(i,j,k,n) = 0.;
+    });
 
     if (redistribution_type == "MergeRedistFull") {
         Array4<int> itr = itracker.array();
