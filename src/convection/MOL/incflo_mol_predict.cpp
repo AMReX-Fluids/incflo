@@ -101,7 +101,7 @@ mol::predict_vels_on_faces (int lev,
                                    BCRec  const* d_bcrec,
                             Vector<Geometry> geom)
 {
-    constexpr Real small_vel = 1.e-10;
+    constexpr Real small_vel = 1.e-8;
 
     int ncomp = AMREX_SPACEDIM; // This is only used because h_bcrec and d_bcrec hold the 
                                 // bc's for all three velocity components

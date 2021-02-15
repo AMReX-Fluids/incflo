@@ -42,7 +42,7 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
                                    Array4<Real const> const& ccc,
                                    Geometry& geom)
 {
-    constexpr Real small_vel = 1.e-10;
+    constexpr Real small_vel = 1.e-8;
 
     const Box& domain_box = geom.Domain();
     AMREX_D_TERM(

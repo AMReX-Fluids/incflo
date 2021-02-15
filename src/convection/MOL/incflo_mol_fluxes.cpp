@@ -32,7 +32,7 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
                                 BCRec const* h_bcrec, BCRec const* d_bcrec,
                                 Geometry& geom)
 {
-    constexpr Real small_vel = 1.e-10;
+    constexpr Real small_vel = 1.e-8;
 
     const Box& domain_box = geom.Domain();
     const int domain_ilo = domain_box.smallEnd(0);
