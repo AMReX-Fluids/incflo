@@ -63,6 +63,7 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
     trans_y = 0.5 * (v_tmp_jp1 + v_tmp_j) * (y_hat_jp1 - y_hat_j) / dy;
 }
 
+AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void create_transverse_terms_for_yface(int i, int jc, int k, 
                                        Array4<Real const> const& u_ad,
                                        Array4<Real const> const& xhat,
