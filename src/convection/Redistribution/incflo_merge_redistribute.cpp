@@ -55,8 +55,6 @@ redistribution::merge_redistribute ( Box const& bx, int ncomp,
 //  if (debug_print)
 //      amrex::Print() << " IN MERGE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
 
-    const Real small_norm = 1.e-8;
-
     AMREX_D_TERM(const auto& is_periodic_x = lev_geom.isPeriodic(0);,
                  const auto& is_periodic_y = lev_geom.isPeriodic(1);,
                  const auto& is_periodic_z = lev_geom.isPeriodic(2););
@@ -104,8 +102,8 @@ redistribution::merge_redistribute ( Box const& bx, int ncomp,
 
                    if (sum_vol < 0.5)
                    {
-                      amrex::Print() << "SUM_VOL STILL TOO SMALL at " << 
-                          IntVect(AMREX_D_DECL(i,j,k)) << " " << sum_vol << std::endl; 
+//                    amrex::Print() << "SUM_VOL STILL TOO SMALL at " << 
+//                        IntVect(AMREX_D_DECL(i,j,k)) << " " << sum_vol << std::endl; 
                       amrex::Abort();
                    }
 
