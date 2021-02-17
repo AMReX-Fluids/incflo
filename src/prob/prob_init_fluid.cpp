@@ -1,7 +1,4 @@
 #include <incflo.H>
-#ifdef AMREX_USE_EB
-#include <Redistribution.H>
-#endif
 
 using namespace amrex;
 
@@ -146,64 +143,6 @@ void incflo::prob_init_fluid (int lev)
             amrex::Abort("prob_init_fluid: unknown m_probtype");
         };
     }
-
-#ifdef AMREX_USE_EB
-    // Next we must redistribute the initial solution if we are going to use 
-    // MergeRedistFull or StateRedistFull  redistribution schemes
-    if ( m_redistribution_type == "StateRedistFull" ||
-         m_redistribution_type == "MergeRedistFull")
-    {
-        for (MFIter mfi(ld.density); mfi.isValid(); ++mfi)
-        {
-            const Box& bx = mfi.validbox();
-            auto const& fact = EBFactory(lev);
-
-            EBCellFlagFab const& flagfab = fact.getMultiEBCellFlagFab()[mfi];
-            Array4<EBCellFlag const> const& flag = flagfab.const_array();
-
-            Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, AMREX_D_DECL(apx, apy, apz);
-            AMREX_D_TERM(fcx = fact.getFaceCent()[0]->const_array(mfi);,
-                         fcy = fact.getFaceCent()[1]->const_array(mfi);,
-                         fcz = fact.getFaceCent()[2]->const_array(mfi););
-            ccc   = fact.getCentroid().const_array(mfi);
-            AMREX_D_TERM(apx = fact.getAreaFrac()[0]->const_array(mfi);,
-                         apy = fact.getAreaFrac()[1]->const_array(mfi);,
-                         apz = fact.getAreaFrac()[2]->const_array(mfi););
-            vfrac = fact.getVolFrac().const_array(mfi);
-
-            int ncomp = AMREX_SPACEDIM;
-            redistribution::redistribute_initial_data(
-                                      bx,ncomp,ld.velocity.array(mfi),flag,
-                                      AMREX_D_DECL(apx, apy, apz),
-                                      vfrac, 
-                                      AMREX_D_DECL(fcx, fcy, fcz), 
-                                      ccc,geom[lev],m_redistribution_type);
-            if (!m_constant_density) 
-            {
-                ncomp = 1;
-                redistribution::redistribute_initial_data(
-                                          bx,ncomp,ld.density.array(mfi),flag,
-                                          AMREX_D_DECL(apx, apy, apz),
-                                          vfrac, 
-                                          AMREX_D_DECL(fcx, fcy, fcz), 
-                                          ccc,geom[lev],m_redistribution_type);
-            }
-            if (m_advect_tracer) 
-            {
-                ncomp = m_ntrac;
-                redistribution::redistribute_initial_data(
-                                          bx,ncomp,ld.tracer.array(mfi),flag,
-                                          AMREX_D_DECL(apx, apy, apz),
-                                          vfrac, 
-                                          AMREX_D_DECL(fcx, fcy, fcz), 
-                                          ccc,geom[lev],m_redistribution_type);
-            }
-        }
-        ld.velocity.FillBoundary();
-        ld.density.FillBoundary();
-        ld.tracer.FillBoundary();
-    }
-#endif
 }
 
 void incflo::init_taylor_green (Box const& vbx, Box const& gbx,

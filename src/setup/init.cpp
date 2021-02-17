@@ -1,6 +1,8 @@
-// #include <AMReX_ParmParse.H>
 #include <AMReX_BC_TYPES.H>
 #include <incflo.H>
+#ifdef AMREX_USE_EB
+#include <Redistribution.H>
+#endif
 
 using namespace amrex;
 
@@ -67,18 +69,13 @@ void incflo::ReadParameters ()
         // {NoRedist, FluxRedist, MergeRedistUpdate, MergeRedistFull,, StateRedistUpdate, StateRedistFull}
 #ifdef AMREX_USE_EB
         pp.query("redistribution_type"              , m_redistribution_type);
-        // 
-        // FOR NOW ONLY USE FLUXREDIST -- THE OTHERS ARE WORKS IN PROGRESS
-        // 
-        // if (m_redistribution_type != "NoRedist" &&
-        //     m_redistribution_type != "FluxRedist" &&
-        //     m_redistribution_type != "MergeRedistUpdate" &&
-        //     m_redistribution_type != "MergeRedistFull" &&
-        //     m_redistribution_type != "StateRedistUpdate" &&
-        //     m_redistribution_type != "StateRedistFull")
-        //     amrex::Abort("redistribution type must be FluxRedist, MergeRedist, StateRedistUpdate or StateRedistFull");
-        if (m_redistribution_type != "FluxRedist" and m_redistribution_type != "NoRedist")
-            amrex::Abort("redistribution type must be NoRedist or FluxRedist");
+        if (m_redistribution_type != "NoRedist" &&
+            m_redistribution_type != "FluxRedist" &&
+            m_redistribution_type != "MergeRedistUpdate" &&
+            m_redistribution_type != "MergeRedistFull" &&
+            m_redistribution_type != "StateRedistUpdate" &&
+            m_redistribution_type != "StateRedistFull")
+            amrex::Abort("redistribution type must be FluxRedist, MergeRedist, StateRedistUpdate or StateRedistFull");
 #endif
 
         if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;
@@ -318,4 +315,96 @@ void incflo::InitialProjection()
         amrex::Print() << "After initial projection:" << std::endl;
         PrintMaxValues(time);
     }
+}
+
+void 
+incflo::InitialRedistribution ()
+{
+    // Next we must redistribute the initial solution if we are going to use 
+    // MergeRedistFull or StateRedistFull  redistribution schemes
+    if ( m_redistribution_type == "StateRedistFull" ||
+         m_redistribution_type == "MergeRedistFull")
+    {
+      for (int lev = 0; lev <= finest_level; lev++)
+      {
+        auto& ld = *m_leveldata[lev];
+
+        // We must fill internal ghost values before calling redistribution
+        // We also need any physical boundary conditions imposed if we are
+        //    calling state redistribution (because that calls the slope routine)
+
+        EB_set_covered(ld.velocity, 0.0);
+        ld.velocity.FillBoundary();
+        fillpatch_velocity(lev, m_t_new[lev], ld.velocity, 1);
+
+        if (!m_constant_density) 
+        {
+            EB_set_covered(ld.density, 0.0);
+            ld.density.FillBoundary();
+            fillpatch_density(lev, m_t_new[lev], ld.density, 1);
+        }
+        if (m_advect_tracer) 
+        {
+            EB_set_covered(ld.tracer, 0.0);
+            ld.tracer.FillBoundary();
+            fillpatch_tracer(lev, m_t_new[lev], ld.tracer, 1);
+        }
+
+        for (MFIter mfi(ld.density,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            const Box& bx = mfi.validbox();
+            auto const& fact = EBFactory(lev);
+
+            EBCellFlagFab const& flagfab = fact.getMultiEBCellFlagFab()[mfi];
+            Array4<EBCellFlag const> const& flag = flagfab.const_array();
+
+            if ( (flagfab.getType(amrex::grow(bx,1)) != FabType::covered) &&
+                 (flagfab.getType(amrex::grow(bx,1)) != FabType::regular) )
+            {
+                Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, AMREX_D_DECL(apx, apy, apz);
+                AMREX_D_TERM(fcx = fact.getFaceCent()[0]->const_array(mfi);,
+                             fcy = fact.getFaceCent()[1]->const_array(mfi);,
+                             fcz = fact.getFaceCent()[2]->const_array(mfi););
+                ccc   = fact.getCentroid().const_array(mfi);
+                AMREX_D_TERM(apx = fact.getAreaFrac()[0]->const_array(mfi);,
+                             apy = fact.getAreaFrac()[1]->const_array(mfi);,
+                             apz = fact.getAreaFrac()[2]->const_array(mfi););
+                vfrac = fact.getVolFrac().const_array(mfi);
+
+                int ncomp = AMREX_SPACEDIM;
+                redistribution::redistribute_initial_data(
+                                          bx,ncomp,ld.velocity.array(mfi),flag,
+                                          AMREX_D_DECL(apx, apy, apz),
+                                          vfrac, 
+                                          AMREX_D_DECL(fcx, fcy, fcz), 
+                                          ccc,geom[lev],m_redistribution_type);
+                if (!m_constant_density) 
+                {
+                    ncomp = 1;
+                    redistribution::redistribute_initial_data(
+                                              bx,ncomp,ld.density.array(mfi),flag,
+                                              AMREX_D_DECL(apx, apy, apz),
+                                              vfrac, 
+                                              AMREX_D_DECL(fcx, fcy, fcz), 
+                                              ccc,geom[lev],m_redistribution_type);
+                }
+                if (m_advect_tracer) 
+                {
+                    ncomp = m_ntrac;
+                    redistribution::redistribute_initial_data(
+                                              bx,ncomp,ld.tracer.array(mfi),flag,
+                                              AMREX_D_DECL(apx, apy, apz),
+                                              vfrac, 
+                                              AMREX_D_DECL(fcx, fcy, fcz), 
+                                              ccc,geom[lev],m_redistribution_type);
+                }
+            }
+        }
+
+        // We also fill internal ghost values after calling redistribution
+        ld.velocity.FillBoundary();
+        ld.density.FillBoundary();
+        ld.tracer.FillBoundary();
+    }
+  }
 }

@@ -1,5 +1,4 @@
 CEXE_sources += incflo_create_itracker_$(DIM)d.cpp
-CEXE_sources += incflo_flux_redistribute.cpp
 CEXE_sources += incflo_merge_redistribute.cpp
 CEXE_sources += incflo_state_redistribute.cpp
 CEXE_sources += incflo_redistribute.cpp

@@ -752,6 +752,7 @@ private:
     void ReadParameters ();
     void ReadIOParameters ();
     void ResizeArrays (); // Resize arrays to fit (up to) max_level + 1 AMR levels
+    void InitialRedistribution ();
     void InitialProjection ();
     void InitialIterations ();
 

@@ -9,9 +9,6 @@ void
 redistribution::merge_redistribute ( Box const& bx, int ncomp,
                                      Array4<Real> const& dUdt_out,
                                      Array4<Real> const& dUdt_in,
-                                     AMREX_D_DECL(Array4<Real const> const& apx,
-                                                  Array4<Real const> const& apy,
-                                                  Array4<Real const> const& apz),
                                      Array4<Real const> const& vfrac,
                                      Array4<int> const& itracker,
                                      Geometry& lev_geom)
@@ -55,6 +52,8 @@ redistribution::merge_redistribute ( Box const& bx, int ncomp,
 //  if (debug_print)
 //      amrex::Print() << " IN MERGE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
 
+    const Real small_norm = 1.e-8;
+
     AMREX_D_TERM(const auto& is_periodic_x = lev_geom.isPeriodic(0);,
                  const auto& is_periodic_y = lev_geom.isPeriodic(1);,
                  const auto& is_periodic_z = lev_geom.isPeriodic(2););
@@ -78,11 +77,8 @@ redistribution::merge_redistribute ( Box const& bx, int ncomp,
     {
        if (vfrac(i,j,k) > 0.0)
        {
-           if (itracker(i,j,k,0) == 0)
+           if (itracker(i,j,k,0) > 0)
            {
-               for (int n = 0; n < ncomp; n++)
-                   dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
-           } else {
                for (int n = 0; n < ncomp; n++)
                {
                    Real sum_vol = vfrac(i,j,k);
@@ -116,8 +112,10 @@ redistribution::merge_redistribute ( Box const& bx, int ncomp,
     });
 
     //
-    // This tests whether the redistribution procedure was conservative
+    // This tests whether the redistribution procedure was conservative -- it is only relevant if 
+    //      the box covers the entire domain
     //
+#if 0
     { // STRT:SUM OF FINAL DUDT
         for (int n = 0; n < ncomp; n++) 
         {
@@ -148,5 +146,6 @@ redistribution::merge_redistribute ( Box const& bx, int ncomp,
          }
         }
     } //  END:SUM OF FINAL DUDT
+#endif
 }
 #endif
