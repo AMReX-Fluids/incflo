@@ -77,9 +77,12 @@ void redistribution::make_itracker (
            nz -= 2.*small_norm;
            ny -= small_norm;
 
-           bool xdir_ok = is_periodic_x || (i != domain.smallEnd(0) && i != domain.bigEnd(0)) ;
-           bool ydir_ok = is_periodic_y || (j != domain.smallEnd(1) && j != domain.bigEnd(1)) ;
-           bool zdir_ok = is_periodic_z || (k != domain.smallEnd(2) && k != domain.bigEnd(2)) ;
+           bool xdir_mns_ok = (is_periodic_x || (i != domain.smallEnd(0)));
+           bool xdir_pls_ok = (is_periodic_x || (i != domain.bigEnd(0)  ));
+           bool ydir_mns_ok = (is_periodic_y || (j != domain.smallEnd(1)));
+           bool ydir_pls_ok = (is_periodic_y || (j != domain.bigEnd(1)  ));
+           bool zdir_mns_ok = (is_periodic_z || (k != domain.smallEnd(2)));
+           bool zdir_pls_ok = (is_periodic_z || (k != domain.bigEnd(2)  ));
 
            // x-component of normal is greatest
            if ( (std::abs(nx) > std::abs(ny)) &&
@@ -107,51 +110,32 @@ void redistribution::make_itracker (
                    itracker(i,j,k,1) = 13;
            }
     
-           // Override above logic if at a domain boundary (and non-periodic)
-           if (!xdir_ok)
+           // Override above logic if trying to reach outside a domain boundary (and non-periodic)
+           if ( (!xdir_mns_ok && (itracker(i,j,k,1) == 4)) ||
+                (!xdir_pls_ok && (itracker(i,j,k,1) == 5)) )
            {
                if ( (std::abs(ny) > std::abs(nz)) )
-               {
-                   if (ny > 0) 
-                       itracker(i,j,k,1) = 7;
-                   else 
-                       itracker(i,j,k,1) = 2;
-               } else {
-                   if (nz > 0) 
-                       itracker(i,j,k,1) = 22;
-                   else 
-                       itracker(i,j,k,1) = 13;
-               }
+                   itracker(i,j,k,1) = (ny > 0) ? 7 : 2;
+               else
+                   itracker(i,j,k,1) = (nz > 0) ? 22 : 13;
            }
-           if (!ydir_ok)
+
+           if ( (!ydir_mns_ok && (itracker(i,j,k,1) == 2)) ||
+                (!ydir_pls_ok && (itracker(i,j,k,1) == 7)) )
            {
                if ( (std::abs(nx) > std::abs(nz)) )
-               {
-                   if (nx > 0) 
-                       itracker(i,j,k,1) = 5;
-                   else 
-                       itracker(i,j,k,1) = 4;
-               } else {
-                   if (nz > 0) 
-                       itracker(i,j,k,1) = 22;
-                   else 
-                       itracker(i,j,k,1) = 13;
-               }
+                   itracker(i,j,k,1) = (nx > 0) ? 5 : 4;
+               else
+                   itracker(i,j,k,1) = (nx > 0) ? 22 : 13;
            }
-           if (!zdir_ok)
+
+           if ( (!zdir_mns_ok && (itracker(i,j,k,1) == 13)) ||
+                (!zdir_pls_ok && (itracker(i,j,k,1) == 22)) )
            {
                if ( (std::abs(nx) > std::abs(ny)) )
-               {
-                   if (nx > 0) 
-                       itracker(i,j,k,1) = 5;
-                   else 
-                       itracker(i,j,k,1) = 4;
-               } else {
-                   if (ny > 0) 
-                       itracker(i,j,k,1) = 7;
-                   else 
-                       itracker(i,j,k,1) = 2;
-               }
+                   itracker(i,j,k,1) = (nx > 0) ? 5 : 4;
+               else
+                   itracker(i,j,k,1) = (nx > 0) ? 7 : 2;
            }
 
            // (i,j,k) merges with at least one cell now
@@ -389,6 +373,7 @@ void redistribution::make_itracker (
                     // Is this nbor of my nbor already my nbor (or me)??
                     for (int ipair_2 = 1; ipair_2 <= itracker(i,j,k,0); ipair_2++)
                     {
+                    // amrex::Print() << " IPAIR_2 IS " << ipair_2 << std::endl;
                         // (i_n2,j_n2,k_n2) is in the nbhd of (i,j,k)
                         int i_n2 = i + imap[itracker(i,j,k,ipair_2)];
                         int j_n2 = j + jmap[itracker(i,j,k,ipair_2)];

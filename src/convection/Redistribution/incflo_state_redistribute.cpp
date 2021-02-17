@@ -129,7 +129,7 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
             Real unwted_vol = 0.; // This is used as a diagnostic to make sure we don't miss any small cells
 
             // Start with the vfrac of (i,j,k)
-            nbhd_vol(i,j,k) = vfrac(i,j,k);
+            nbhd_vol(i,j,k) = vfrac(i,j,k) / nrs(i,j,k);
             unwted_vol      = vfrac(i,j,k);
 
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
@@ -142,7 +142,8 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
                 unwted_vol      += vfrac(r,s,t);
             }
 
-//          if (unwted_vol < 0.5 && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
+            if (unwted_vol < 0.5 && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
+                amrex::Abort("NBHD VOL STILL TOO LOW");
 //              amrex::Print() << "NBHD VOL STILL TOO LOW " << IntVect(AMREX_D_DECL(i,j,k)) << " " << nbhd_vol(i,j,k) << std::endl;
         }
     });
@@ -190,7 +191,11 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
     amrex::ParallelFor(bxg1, ncomp,  
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        soln_hat(i,j,k,n) = 1.e40; // NOTE -- we shouldn't end up using this 
+        soln_hat(i,j,k,n) = 1.e40; // This is just here for diagnostic purposes
+
+        // This is needed to retain Dirichlet values on domain faces for use in the slope routine
+        if (vfrac(i,j,k) > 0.0 && !domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) 
+            soln_hat(i,j,k,n) = U_in(i,j,k,n);
 
         if (vfrac(i,j,k) > 0.5)
         {
@@ -227,7 +232,7 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
                 const auto& slopes_eb = amrex_lim_slopes_eb(i,j,k,n,soln_hat,cent_hat,
                                                             AMREX_D_DECL(fcx,fcy,fcz), flag);
 
-                U_out(i,j,k,n) += soln_hat(i,j,k,n);  
+                U_out(i,j,k,n) +=soln_hat(i,j,k,n);   
                 AMREX_D_TERM(U_out(i,j,k,n) += slopes_eb[0] * (ccent(i,j,k,0)-cent_hat(i,j,k,0));,
                              U_out(i,j,k,n) += slopes_eb[1] * (ccent(i,j,k,1)-cent_hat(i,j,k,1));,
                              U_out(i,j,k,n) += slopes_eb[2] * (ccent(i,j,k,2)-cent_hat(i,j,k,2)););
@@ -255,6 +260,7 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
                     if (bx.contains(IntVect(AMREX_D_DECL(r,s,t))))
                     {
                         U_out(r,s,t,n) += soln_hat(i,j,k,n);  
+
                         AMREX_D_TERM(U_out(r,s,t,n) += slopes_eb[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0));,
                                      U_out(r,s,t,n) += slopes_eb[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1));,
                                      U_out(r,s,t,n) += slopes_eb[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2)););
@@ -269,9 +275,13 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         if (!flag(i,j,k).isCovered())
+        {
             U_out(i,j,k,n) /= nrs(i,j,k);
+        }
         else 
+        {
             U_out(i,j,k,n) = 1.e40;
+        }
     });
 
 #if 0
