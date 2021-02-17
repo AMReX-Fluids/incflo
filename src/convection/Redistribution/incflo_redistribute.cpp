@@ -37,7 +37,7 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
 
     Array4<int> itr = itracker.array();
 
-    amrex::ParallelFor(Box(dUdt_out),ncomp, 
+    amrex::ParallelFor(bx,ncomp, 
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             dUdt_out(i,j,k,n) = 0.;
