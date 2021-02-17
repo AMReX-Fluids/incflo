@@ -752,7 +752,9 @@ private:
     void ReadParameters ();
     void ReadIOParameters ();
     void ResizeArrays (); // Resize arrays to fit (up to) max_level + 1 AMR levels
+#ifdef AMREX_USE_EB
     void InitialRedistribution ();
+#endif
     void InitialProjection ();
     void InitialIterations ();
 

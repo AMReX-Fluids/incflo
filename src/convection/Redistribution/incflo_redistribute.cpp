@@ -20,12 +20,10 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
                                       Array4<Real const> const& ccc,
                                       Geometry& lev_geom, Real dt, std::string redistribution_type)
 {
-    // redistribution_type = "NoRedist";          // no redistribution
-    // redistribution_type = "FluxRedist";        // flux_redistribute
-    // redistribution_type = "MergeRedistUpdate"; // merge_redistribute update
-    // redistribution_type = "MergeRedistFull";   // merge_redistribute update
-    // redistribution_type = "StateRedistUpdate"; // state_redistribute update
-    // redistribution_type = "StateRedistFull";   // merge_redistribute full
+    // redistribution_type = "NoRedist";      // no redistribution
+    // redistribution_type = "FluxRedist"     // flux_redistribute
+    // redistribution_type = "MergeRedist";   // merge redistribute
+    // redistribution_type = "StateRedist";   // state redistribute
 
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we  
@@ -56,58 +54,46 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
         int icomp = 0;
         apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp, flag, vfrac, lev_geom);
 
-    } else if (redistribution_type == "MergeRedistUpdate" || redistribution_type == "MergeRedistFull") {
+    } else if (redistribution_type == "MergeRedist") {
+
+        amrex::ParallelFor(Box(dUdt_in), ncomp,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                dUdt_in(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
+            }
+        );
 
         make_itracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "Merge");
 
-        if (redistribution_type == "MergeRedistFull") 
-        {
-            amrex::ParallelFor(Box(dUdt_in), ncomp,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                {
-                    dUdt_in(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
-                }
-            );
-        }
-
         merge_redistribute(bx, ncomp, dUdt_out, dUdt_in, vfrac, itr, lev_geom);
 
-        if (redistribution_type == "MergeRedistFull") 
-        {
-           amrex::ParallelFor(bx, ncomp,
-           [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-               {
-                   dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
-               }
-           );
-        }
+        amrex::ParallelFor(bx, ncomp,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+            }
+        );
 
+    } else if (redistribution_type == "StateRedist") {
 
-    } else if (redistribution_type == "StateRedistUpdate" || redistribution_type == "StateRedistFull") {
-        if (redistribution_type == "StateRedistFull") 
-        {
-            amrex::ParallelFor(Box(dUdt_in), ncomp,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                {
-                    dUdt_in(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
-                }
-            );
-        }
+        amrex::ParallelFor(Box(dUdt_in), ncomp,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                dUdt_in(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
+            }
+        );
 
         make_itracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
 
         state_redistribute(bx, ncomp, dUdt_out, dUdt_in, flag, vfrac,
                            AMREX_D_DECL(fcx, fcy, fcz), ccc, itr, lev_geom);
 
-        if (redistribution_type == "StateRedistFull") 
-        {
-            amrex::ParallelFor(bx, ncomp,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                {
-                    dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
-                }
-            );
-        }
+        amrex::ParallelFor(bx, ncomp,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+            }
+        );
 
     } else if (redistribution_type == "NoRedist") {
         amrex::ParallelFor(bx, ncomp,
@@ -135,8 +121,8 @@ void redistribution::redistribute_initial_data (Box const& bx, int ncomp,
                                                 amrex::Array4<amrex::Real const> const& ccc,
                                                 Geometry& lev_geom, std::string redistribution_type)
 {
-    // redistribution_type = "MergeRedistFull";   // merge_redistribute update
-    // redistribution_type = "StateRedistFull";   // merge_redistribute full
+    // redistribution_type = "MergeRedist";   // merge redistribute 
+    // redistribution_type = "StateRedist";   // state redistribute
 
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we  
@@ -158,13 +144,13 @@ void redistribution::redistribute_initial_data (Box const& bx, int ncomp,
 
     Array4<int> itr = itracker.array();
 
-    if (redistribution_type == "MergeRedistFull") {
+    if (redistribution_type == "MergeRedist") {
 
         make_itracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "Merge");
 
         merge_redistribute(bx, ncomp, uout_array, U_inout, vfrac, itr, lev_geom);
 
-    } else if (redistribution_type == "StateRedistFull") {
+    } else if (redistribution_type == "StateRedist") {
 
         make_itracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
 
