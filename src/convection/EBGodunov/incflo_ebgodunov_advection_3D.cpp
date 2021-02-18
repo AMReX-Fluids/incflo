@@ -182,7 +182,6 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             Imz(i,j,k,n) = fuz*st + (1. - fuz)*0.5*(hi + lo);
         });
 
-    // We can reuse the space in Ipx, Ipy and Ipz.
     Array4<Real> xedge = Imx;
     Array4<Real> yedge = Imy;
     Array4<Real> zedge = Imz;
