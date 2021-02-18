@@ -141,8 +141,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
             {
                 // For full cells this is the transverse term
                 stl += - (0.25*l_dt/dy)*(v_ad(ic,j+1,k)+v_ad(ic,j,k))*
-                                        (yhat(ic,j+1,k)-yhat(ic,j,k));
-                stl += 0.5 * l_dt * f(ic,j,k,n);
+                                        (yhat(ic,j+1,k)-yhat(ic,j,k))
+                       + 0.5 * l_dt * f(ic,j,k,n);
     
             } else {
     
@@ -151,8 +151,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
                 {
                     create_transverse_terms_for_xface(ic,j,k,v_ad,yhat,apy,fcy,trans_y,dy);
 
-                    stl += -0.5 * l_dt * trans_y;
-                    stl +=  0.5 * l_dt * f(ic,j,k,n);
+                    stl += -0.5 * l_dt * trans_y 
+                           +0.5 * l_dt * f(ic,j,k,n);
                 }
             }
         }
@@ -165,8 +165,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
 
                 // For full cells this is the transverse term
                 sth += - (0.25*l_dt/dy)*(v_ad(ic,j+1,k)+v_ad(ic,j,k))*
-                                        (yhat(ic,j+1,k)-yhat(ic,j,k));
-                sth +=  0.5 * l_dt * f(ic,j,k,n);
+                                        (yhat(ic,j+1,k)-yhat(ic,j,k)) 
+                       + 0.5 * l_dt * f(ic,j,k,n);
 
             } else {
 
@@ -175,8 +175,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
                 {
                     create_transverse_terms_for_xface(ic,j,k,v_ad,yhat,apy,fcy,trans_y,dy);
 
-                    sth += -0.5 * l_dt * trans_y;
-                    sth +=  0.5 * l_dt * f(ic,j,k,n);
+                    sth += -0.5 * l_dt * trans_y 
+                           +0.5 * l_dt * f(ic,j,k,n);
                 }
             }
         }
@@ -272,8 +272,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
             {
                 // For full cells this is the transverse term
                 stl += - (0.25*l_dt/dx)*(u_ad(i+1,jc,k)+u_ad(i,jc,k))*
-                                        (xhat(i+1,jc,k)-xhat(i,jc,k));
-                stl += 0.5 * l_dt * f(i,jc,k,n);
+                                        (xhat(i+1,jc,k)-xhat(i,jc,k)) 
+                       + 0.5 * l_dt * f(i,jc,k,n);
 
             } else {
 
@@ -282,8 +282,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
                 {
                     create_transverse_terms_for_yface(i,jc,k,u_ad,xhat,apx,fcx,trans_x,dx);
 
-                    stl += -0.5 * l_dt * trans_x;
-                    stl +=  0.5 * l_dt * f(i,jc,k,n);
+                    stl += -0.5 * l_dt * trans_x 
+                           +0.5 * l_dt * f(i,jc,k,n);
                 }
             }
         }
@@ -295,8 +295,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
             {
                 // For full cells this is the transverse term
                 sth += - (0.25*l_dt/dx)*(u_ad(i+1,jc,k)+u_ad(i,jc,k))*
-                                        (xhat(i+1,jc,k)-xhat(i,jc,k));
-                sth += 0.5 * l_dt * f(i,jc,k,n);
+                                        (xhat(i+1,jc,k)-xhat(i,jc,k)) 
+                       + 0.5 * l_dt * f(i,jc,k,n);
 
             } else {
 
@@ -305,8 +305,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
                 {
                     create_transverse_terms_for_yface(i,jc,k,u_ad,xhat,apx,fcx,trans_x,dx);
 
-                    sth += -0.5 * l_dt * trans_x;
-                    sth +=  0.5 * l_dt * f(i,jc,k,n);
+                    sth += -0.5 * l_dt * trans_x
+                           +0.5 * l_dt * f(i,jc,k,n);
                 }
             }
         }

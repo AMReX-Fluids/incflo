@@ -206,7 +206,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
             stl += - (0.25*l_dt/dy)*(v_ad(ic,j+1,k  )+v_ad(ic,j,k))*
                                     (yzlo(ic,j+1,k  )-yzlo(ic,j,k))
                    - (0.25*l_dt/dz)*(w_ad(ic,j  ,k+1)+w_ad(ic,j,k))*
-                                    (zylo(ic,j  ,k+1)-zylo(ic,j,k));
+                                    (zylo(ic,j  ,k+1)-zylo(ic,j,k))
+                   + 0.5 * l_dt * f(ic,j,k,n);
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
@@ -217,8 +218,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
                                               apy, apz, fcy, fcz, trans_y, trans_z,
                                               dy, dz); 
 
-            stl += -0.5 * l_dt * (trans_y + trans_z);
-            stl +=  0.5 * l_dt * f(ic,j,k,n);
+            stl += -0.5 * l_dt * (trans_y + trans_z) 
+                   +0.5 * l_dt * f(ic,j,k,n);
         } 
         }
 
@@ -232,7 +233,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
              sth += - (0.25*l_dt/dy)*(v_ad(ic,j+1,k  )+v_ad(ic,j,k))*
                                      (yzlo(ic,j+1,k  )-yzlo(ic,j,k))
                     - (0.25*l_dt/dz)*(w_ad(ic,j  ,k+1)+w_ad(ic,j,k))*
-                                     (zylo(ic,j  ,k+1)-zylo(ic,j,k));
+                                     (zylo(ic,j  ,k+1)-zylo(ic,j,k))
+                    + 0.5 * l_dt * f(ic,j,k,n);
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
@@ -243,8 +245,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
                                               apy, apz, fcy, fcz, trans_y, trans_z,
                                               dy, dz); 
 
-            sth += -0.5 * l_dt * (trans_y + trans_z);
-            sth +=  0.5 * l_dt * f(ic,j,k,n);
+            sth += -0.5 * l_dt * (trans_y + trans_z) 
+                   +0.5 * l_dt * f(ic,j,k,n);
         }
         }
 
@@ -362,7 +364,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
             stl += - (0.25*l_dt/dx)*(u_ad(i+1,jc,k  )+u_ad(i,jc,k))*
                                     (xzlo(i+1,jc,k  )-xzlo(i,jc,k))
                    - (0.25*l_dt/dz)*(w_ad(i  ,jc,k+1)+w_ad(i,jc,k))*
-                                    (zxlo(i  ,jc,k+1)-zxlo(i,jc,k));
+                                    (zxlo(i  ,jc,k+1)-zxlo(i,jc,k))
+                   + 0.5 * l_dt * f(i,jc,k,n);
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
@@ -373,8 +376,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
                                               apx, apz, fcx, fcz, trans_x, trans_z,
                                               dx, dz); 
 
-            stl += -0.5 * l_dt * (trans_x + trans_z);
-            stl +=  0.5 * l_dt * f(i,jc,k,n);
+            stl += -0.5 * l_dt * (trans_x + trans_z) 
+                   +0.5 * l_dt * f(i,jc,k,n);
         }
         }
 
@@ -388,7 +391,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
             sth += - (0.25*l_dt/dx)*(u_ad(i+1,jc,k  )+u_ad(i,jc,k))*
                                     (xzlo(i+1,jc,k  )-xzlo(i,jc,k))
                    - (0.25*l_dt/dz)*(w_ad(i  ,jc,k+1)+w_ad(i,jc,k))*
-                                    (zxlo(i  ,jc,k+1)-zxlo(i,jc,k));
+                                    (zxlo(i  ,jc,k+1)-zxlo(i,jc,k))
+                   +0.5 * l_dt * f(i,jc,k,n);
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
@@ -399,8 +403,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
                                               apx, apz, fcx, fcz, trans_x, trans_z,
                                               dx, dz); 
 
-            sth += -0.5 * l_dt * (trans_x + trans_z);
-            sth +=  0.5 * l_dt * f(i,jc,k,n);
+            sth += -0.5 * l_dt * (trans_x + trans_z)
+                   +0.5 * l_dt * f(i,jc,k,n);
         }
         }
 
@@ -522,7 +526,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
             stl += - (0.25*l_dt/dx)*(u_ad(i+1,j  ,kc)+u_ad(i,j,kc))*
                                     (xylo(i+1,j  ,kc)-xylo(i,j,kc))
                    - (0.25*l_dt/dy)*(v_ad(i  ,j+1,kc)+v_ad(i,j,kc))*
-                                    (yxlo(i  ,j+1,kc)-yxlo(i,j,kc));
+                                    (yxlo(i  ,j+1,kc)-yxlo(i,j,kc))
+                   + 0.5 * l_dt * f(i,j,kc,n);
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
@@ -533,8 +538,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
                                               apx, apy, fcx, fcy, trans_x, trans_y,
                                               dx, dy); 
 
-            stl += -0.5 * l_dt * (trans_x + trans_y);
-            stl +=  0.5 * l_dt * f(i,j,kc,n);
+            stl += -0.5 * l_dt * (trans_x + trans_y) 
+                   +0.5 * l_dt * f(i,j,kc,n);
         }
         }
 
@@ -548,7 +553,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
             sth += - (0.25*l_dt/dx)*(u_ad(i+1,j  ,kc)+u_ad(i,j,kc))*
                                     (xylo(i+1,j  ,kc)-xylo(i,j,kc))
                    - (0.25*l_dt/dy)*(v_ad(i  ,j+1,kc)+v_ad(i,j,kc))*
-                                    (yxlo(i  ,j+1,kc)-yxlo(i,j,kc));
+                                    (yxlo(i  ,j+1,kc)-yxlo(i,j,kc)) 
+                   + 0.5 * l_dt * f(i,j,kc,n);
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
@@ -559,8 +565,8 @@ void ebgodunov::predict_godunov_on_box (Box const& bx, int ncomp,
                                               apx, apy, fcx, fcy, trans_x, trans_y,
                                               dx, dy); 
 
-            sth += -0.5 * l_dt * (trans_x + trans_y);
-            sth +=  0.5 * l_dt * f(i,j,kc,n);
+            sth += -0.5 * l_dt * (trans_x + trans_y)
+                   +0.5 * l_dt * f(i,j,kc,n);
         }
         }
 
