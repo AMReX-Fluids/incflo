@@ -28,11 +28,11 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we  
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(grow(bx,1),4);
+    IArrayBox itracker(grow(bx,4),4);
 #else
     // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we  
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(grow(bx,1),8);
+    IArrayBox itracker(grow(bx,4),8);
 #endif
 
     Array4<int> itr = itracker.array();
@@ -76,6 +76,25 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
 
     } else if (redistribution_type == "StateRedist") {
 
+        Box domain_per_grown = lev_geom.Domain();
+        AMREX_D_TERM(if (lev_geom.isPeriodic(0)) domain_per_grown.grow(0,1);,
+                     if (lev_geom.isPeriodic(1)) domain_per_grown.grow(1,1);,
+                     if (lev_geom.isPeriodic(2)) domain_per_grown.grow(2,1););
+
+        Box const& bxg1 = grow(bx,1);
+
+        // At any external Dirichlet domain boundaries we need to set dUdt_in to 0 
+        //    in the cells just outside the domain because those values will be used
+        //    in the slope computation in state redistribution.  We assume here that 
+        //    the ext_dir values of U_in itself have already been set.
+        if (!domain_per_grown.contains(bxg1))
+            amrex::ParallelFor(bxg1,ncomp, 
+            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    if (!domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
+                        dUdt_in(i,j,k,n) = 0.;
+                });
+
         amrex::ParallelFor(Box(dUdt_in), ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
@@ -109,7 +128,8 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
 }
 
 void redistribution::redistribute_initial_data (Box const& bx, int ncomp,
-                                                Array4<Real      > const& U_inout,
+                                                Array4<Real      > const& U_out,
+                                                Array4<Real      > const& U_in,
                                                 Array4<EBCellFlag const> const& flag,
                                                 AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
                                                              amrex::Array4<amrex::Real const> const& apy,
@@ -127,19 +147,16 @@ void redistribution::redistribute_initial_data (Box const& bx, int ncomp,
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we  
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(grow(bx,1),4);
+    IArrayBox itracker(grow(bx,4),4);
 #else
     // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we  
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(grow(bx,1),8);
+    IArrayBox itracker(grow(bx,4),8);
 #endif
-
-    FArrayBox U_out(bx,ncomp);
-    Array4<Real> uout_array = U_out.array(); 
-    amrex::ParallelFor(Box(uout_array),ncomp,
+    amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        uout_array(i,j,k,n) = 0.;
+        U_out(i,j,k,n) = 0.;
     });
 
     Array4<int> itr = itracker.array();
@@ -148,24 +165,17 @@ void redistribution::redistribute_initial_data (Box const& bx, int ncomp,
 
         make_itracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "Merge");
 
-        merge_redistribute(bx, ncomp, uout_array, U_inout, vfrac, itr, lev_geom);
+        merge_redistribute(bx, ncomp, U_out, U_in, vfrac, itr, lev_geom);
 
     } else if (redistribution_type == "StateRedist") {
 
         make_itracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
 
-        state_redistribute(bx, ncomp, uout_array, U_inout, flag, vfrac,
+        state_redistribute(bx, ncomp, U_out, U_in, flag, vfrac,
                            AMREX_D_DECL(fcx, fcy, fcz), ccc, itr, lev_geom);
 
     } else {
        amrex::Error("Shouldnt be here with this redist type");
     }
-
-    // Return the new (redistributed) data in the same U_in that came in
-    amrex::ParallelFor(bx,ncomp,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        U_inout(i,j,k,n) = uout_array(i,j,k,n);
-    });
 }
 #endif

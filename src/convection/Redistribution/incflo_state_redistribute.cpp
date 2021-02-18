@@ -61,6 +61,8 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
 
     Box const& bxg1 = amrex::grow(bx,1);
     Box const& bxg2 = amrex::grow(bx,2);
+    Box const& bxg3 = amrex::grow(bx,3);
+    Box const& bxg4 = amrex::grow(bx,4);
 
     Box domain_per_grown = domain;
     if (is_periodic_x) domain_per_grown.grow(0,1);
@@ -70,10 +72,10 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
 #endif
 
     // How many nbhds is this cell in
-    FArrayBox nrs_fab       (bxg2,1);
+    FArrayBox nrs_fab       (bxg3,1);
 
     // Total volume of all cells in my nbhd
-    FArrayBox nbhd_vol_fab  (bxg1,1);
+    FArrayBox nbhd_vol_fab  (bxg2,1);
 
     // Centroid of my nbhd
     FArrayBox cent_hat_fab  (bxg2,AMREX_SPACEDIM);
@@ -86,7 +88,7 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
     Array4<Real> soln_hat = soln_hat_fab.array();
     Array4<Real> cent_hat = cent_hat_fab.array();
 
-    amrex::ParallelFor(bxg1,
+    amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         nbhd_vol(i,j,k) = 0.;
@@ -95,17 +97,21 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        // Everyone is in their own neighborhood at least
-        nrs(i,j,k) = 1.;
-
 	for (int n = 0; n < AMREX_SPACEDIM; n++)
             cent_hat(i,j,k,n) = 0.;
 	for (int n = 0; n < ncomp; n++)
             soln_hat(i,j,k,n) = 0.;
     });
 
+    amrex::ParallelFor(bxg3,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        // Everyone is in their own neighborhood at least
+        nrs(i,j,k) = 1.;
+    });
+
     // nrs captures how many neighborhoods (r,s) is in
-    amrex::ParallelFor(bxg1,
+    amrex::ParallelFor(bxg4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
@@ -114,14 +120,15 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
             int r = i+imap[itracker(i,j,k,i_nbor)];
             int s = j+jmap[itracker(i,j,k,i_nbor)];
             int t = k+kmap[itracker(i,j,k,i_nbor)];
-            if (domain_per_grown.contains(IntVect(AMREX_D_DECL(r,s,t))))
+            if ( domain_per_grown.contains(IntVect(AMREX_D_DECL(r,s,t))) &&
+                 bxg3.contains(IntVect(AMREX_D_DECL(r,s,t))) )
             {
                 nrs(r,s,t) += 1.;
             }
         }
     });
 
-    amrex::ParallelFor(bxg1,
+    amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         if (!flag(i,j,k).isCovered())
@@ -143,13 +150,16 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
             }
 
             if (unwted_vol < 0.5 && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
+            {
+                // amrex::Print() << "NBHD VOL STILL TOO LOW " << IntVect(AMREX_D_DECL(i,j,k)) << 
+                //                   " " << nbhd_vol(i,j,k) << std::endl;
                 amrex::Abort("NBHD VOL STILL TOO LOW");
-//              amrex::Print() << "NBHD VOL STILL TOO LOW " << IntVect(AMREX_D_DECL(i,j,k)) << " " << nbhd_vol(i,j,k) << std::endl;
+            }
         }
     });
 
     // Define xhat,yhat,zhat (from Berger and Guliani) 
-    amrex::ParallelFor(bxg1,
+    amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         if (vfrac(i,j,k) > 0.5)
@@ -188,7 +198,7 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
     });
 
     // Define Qhat (from Berger and Guliani)
-    amrex::ParallelFor(bxg1, ncomp,  
+    amrex::ParallelFor(bxg2, ncomp,  
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         soln_hat(i,j,k,n) = 1.e40; // This is just here for diagnostic purposes

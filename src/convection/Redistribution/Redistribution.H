@@ -29,7 +29,8 @@ namespace redistribution {
                           amrex::Geometry& geom, amrex::Real dt, std::string redistribution_type);
 
     void redistribute_initial_data (amrex::Box const& bx, int ncomp,
-                          amrex::Array4<amrex::Real                  > const& U_in,
+                          amrex::Array4<amrex::Real> const& U_out,
+                          amrex::Array4<amrex::Real> const& U_in,
                           amrex::Array4<amrex::EBCellFlag const> const& flag,
                           AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
                                        amrex::Array4<amrex::Real const> const& apy,
