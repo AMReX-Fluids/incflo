@@ -74,6 +74,8 @@ void incflo::ReadParameters ()
             m_redistribution_type != "MergeRedist" &&
             m_redistribution_type != "StateRedist")
             amrex::Abort("redistribution type must be FluxRedist, MergeRedist, or StateRedist");
+
+	if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
 #endif
 
         if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;
@@ -328,25 +330,29 @@ incflo::InitialRedistribution ()
       {
         auto& ld = *m_leveldata[lev];
 
+        // We use the "old" data as the input here
         // We must fill internal ghost values before calling redistribution
         // We also need any physical boundary conditions imposed if we are
         //    calling state redistribution (because that calls the slope routine)
-
-        EB_set_covered(ld.velocity, 0.0);
-        ld.velocity.FillBoundary();
-        fillpatch_velocity(lev, m_t_new[lev], ld.velocity, 1);
+        
+        MultiFab::Copy(ld.velocity_o, ld.velocity, 0, 0, AMREX_SPACEDIM, ld.velocity.nGrow());
+        EB_set_covered(ld.velocity_o, 0.0);
+        ld.velocity_o.FillBoundary();
+        fillpatch_velocity(lev, m_t_new[lev], ld.velocity_o, 1);
 
         if (!m_constant_density) 
         {
-            EB_set_covered(ld.density, 0.0);
-            ld.density.FillBoundary();
-            fillpatch_density(lev, m_t_new[lev], ld.density, 1);
+            MultiFab::Copy(ld.density_o, ld.density, 0, 0, 1, ld.density.nGrow());
+            EB_set_covered(ld.density_o, 0.0);
+            ld.density_o.FillBoundary();
+            fillpatch_density(lev, m_t_new[lev], ld.density_o, 1);
         }
         if (m_advect_tracer) 
         {
-            EB_set_covered(ld.tracer, 0.0);
-            ld.tracer.FillBoundary();
-            fillpatch_tracer(lev, m_t_new[lev], ld.tracer, 1);
+            MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, 1, ld.tracer.nGrow());
+            EB_set_covered(ld.tracer_o, 0.0);
+            ld.tracer_o.FillBoundary();
+            fillpatch_tracer(lev, m_t_new[lev], ld.tracer_o, 1);
         }
 
         for (MFIter mfi(ld.density,TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -371,36 +377,33 @@ incflo::InitialRedistribution ()
                 vfrac = fact.getVolFrac().const_array(mfi);
 
                 int ncomp = AMREX_SPACEDIM;
-                redistribution::redistribute_initial_data(
-                                          bx,ncomp,ld.velocity.array(mfi),flag,
-                                          AMREX_D_DECL(apx, apy, apz),
-                                          vfrac, 
+                redistribution::redistribute_initial_data( bx,ncomp,
+                                          ld.velocity.array(mfi), ld.velocity_o.array(mfi),
+                                          flag, AMREX_D_DECL(apx, apy, apz), vfrac, 
                                           AMREX_D_DECL(fcx, fcy, fcz), 
                                           ccc,geom[lev],m_redistribution_type);
                 if (!m_constant_density) 
                 {
                     ncomp = 1;
-                    redistribution::redistribute_initial_data(
-                                              bx,ncomp,ld.density.array(mfi),flag,
-                                              AMREX_D_DECL(apx, apy, apz),
-                                              vfrac, 
+                    redistribution::redistribute_initial_data( bx,ncomp,
+                                              ld.density.array(mfi), ld.density_o.array(mfi),
+                                              flag, AMREX_D_DECL(apx, apy, apz), vfrac, 
                                               AMREX_D_DECL(fcx, fcy, fcz), 
                                               ccc,geom[lev],m_redistribution_type);
                 }
                 if (m_advect_tracer) 
                 {
                     ncomp = m_ntrac;
-                    redistribution::redistribute_initial_data(
-                                              bx,ncomp,ld.tracer.array(mfi),flag,
-                                              AMREX_D_DECL(apx, apy, apz),
-                                              vfrac, 
+                    redistribution::redistribute_initial_data( bx,ncomp,
+                                              ld.tracer.array(mfi), ld.tracer_o.array(mfi),
+                                              flag, AMREX_D_DECL(apx, apy, apz), vfrac, 
                                               AMREX_D_DECL(fcx, fcy, fcz), 
                                               ccc,geom[lev],m_redistribution_type);
                 }
             }
         }
 
-        // We also fill internal ghost values after calling redistribution
+        // We fill internal ghost values after calling redistribution
         ld.velocity.FillBoundary();
         ld.density.FillBoundary();
         ld.tracer.FillBoundary();
