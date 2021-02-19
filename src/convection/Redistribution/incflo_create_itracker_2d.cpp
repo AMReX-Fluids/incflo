@@ -219,9 +219,11 @@ redistribution::make_itracker (
            }
            if (sum_vol < 0.5)
            {
+#if 0
              amrex::Print() << "Couldnt merge with enough cells to raise volume at " <<
                                IntVect(i,j) << " so stuck with sum_vol " << sum_vol << std::endl;
-             amrex::Abort("Don't know what to do now");
+#endif
+             amrex::Abort("Couldnt merge with enough cells to raise volume greater than 0.5");
            }
        }
     });
