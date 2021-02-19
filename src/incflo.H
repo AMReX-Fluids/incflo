@@ -584,8 +584,10 @@ private:
     {
        if (m_advection_type == "MOL") 
            return 0;
+#ifdef AMREX_USE_EB
        else if (m_redistribution_type == "StateRedist")
            return 4;
+#endif
        else 
            return 3;
     } 
