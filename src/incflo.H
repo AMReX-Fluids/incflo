@@ -389,8 +389,13 @@ private:
     std::string m_advection_type = "Godunov";
 #endif
 
-    // If using Godunov, default to PPM (not PLM)
+#ifdef AMREX_USE_EB
+    // If using Godunov with EB, default to PLM
+    bool m_godunov_ppm         = false;
+#else
+    // If using Godunov with no EB, default to PPM
     bool m_godunov_ppm         = true;
+#endif
 
     // If using Godunov, default to including viscous/diffusive
     //    terms in the forcing terms
@@ -556,33 +561,72 @@ private:
     // Number of ghost cells for field arrays.
     int nghost_state () const {
 #ifdef AMREX_USE_EB
-        if (!EBFactory(0).isAllRegular()) return (m_advection_type != "MOL") ? 5 : 4;
+        if (!EBFactory(0).isAllRegular()) 
+        {
+            if (m_advection_type == "Godunov" && m_redistribution_type == "StateRedist") 
+                return 6;
+            else if (m_advection_type == "Godunov" && m_redistribution_type != "StateRedist") 
+                return 5;
+            else if (m_advection_type == "MOL" && m_redistribution_type == "StateRedist") 
+                return 5;
+            else 
+                return 4;
+        }
 #endif
-        return (m_advection_type != "MOL") ? 3 : 2;
+        {
+            return (m_advection_type != "MOL") ? 3 : 2;
+        }
     }
 
-    // For Godunov, we need 1 ghost cell 
+    // For Godunov, we need 1 ghost cell in addition to the Box we are filling
     // For MOL    , we need 0 ghost cells
-    int nghost_force () const { return (m_advection_type != "MOL") ? 3 : 0; }
+    int nghost_force () const 
+    {
+       if (m_advection_type == "MOL") 
+           return 0;
+       else if (m_redistribution_type == "StateRedist")
+           return 4;
+       else 
+           return 3;
+    } 
 
     int nghost_mac () const {
 #ifdef AMREX_USE_EB
-        if (!EBFactory(0).isAllRegular()) return (m_advection_type != "MOL") ? 4 : 3;
+        if (!EBFactory(0).isAllRegular()) return (m_advection_type == "Godunov") ? 4 : 3;
 #endif
-        return (m_advection_type != "MOL") ? 1 : 0;
+        return (m_advection_type == "Godunov") ? 1 : 0;
     }
 
 #ifdef AMREX_USE_EB
-    int nghost_eb_basic () const {
-        return (m_advection_type != "MOL") ? 5 : 4;
+    int nghost_eb_basic () const 
+    {
+        if (m_advection_type == "Godunov" && m_redistribution_type == "StateRedist") 
+            return 6;
+        else if (m_advection_type == "Godunov" && m_redistribution_type != "StateRedist") 
+            return 5;
+        else if (m_advection_type == "MOL" && m_redistribution_type == "StateRedist") 
+            return 5;
+        else 
+            return 4;
     }
 
-    int nghost_eb_volume () const {
-        return (m_advection_type != "MOL") ? 5 : 4;
+    int nghost_eb_volume () const 
+    {
+        if (m_advection_type == "Godunov" && m_redistribution_type == "StateRedist") 
+            return 6;
+        else if (m_advection_type == "Godunov" && m_redistribution_type != "StateRedist") 
+            return 5;
+        else if (m_advection_type == "MOL" && m_redistribution_type == "StateRedist") 
+            return 5;
+        else 
+            return 4;
     }
 
     int nghost_eb_full () const {
-        return 4;
+        if (m_advection_type == "Godunov" && m_redistribution_type == "StateRedist") 
+            return 5;
+        else 
+            return 4;
     }
 #endif
 
@@ -752,9 +796,7 @@ private:
     void ReadParameters ();
     void ReadIOParameters ();
     void ResizeArrays (); // Resize arrays to fit (up to) max_level + 1 AMR levels
-#ifdef AMREX_USE_EB
     void InitialRedistribution ();
-#endif
     void InitialProjection ();
     void InitialIterations ();
 
