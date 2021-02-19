@@ -185,7 +185,7 @@ redistribution::make_itracker (
                                          " trying to ALSO merge with " << IntVect(i+ioff,j+joff) <<
                                          " with volfrac " << vfrac(i+ioff,j+joff,k) << 
                                           " to get new sum_vol " <<  sum_vol << std::endl;
-#endfi
+#endif
                }
            }
         
