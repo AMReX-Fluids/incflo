@@ -240,13 +240,9 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         vfrac = fact.getVolFrac().const_array(mfi);
     }
 #endif
-
-    Box rhotrac_box = amrex::grow(bx,2);
-    if (m_advection_type != "MOL")  rhotrac_box.grow(1);
-#ifdef AMREX_USE_EB
-    if (!regular) rhotrac_box.grow(2);
-#endif
-
+  
+    // Make a FAB holding (rho * tracer) that is the same size as the original tracer FAB
+    Box rhotrac_box = Box(tra);
     FArrayBox rhotracfab;
     Elixir eli_rt;
     Array4<Real> rhotrac;
@@ -267,15 +263,20 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
     if (m_advection_type == "Godunov")
     {
         int n_tmp_fac;
-        int n_tmp_grow;
 #if (AMREX_SPACEDIM == 3)
         n_tmp_fac = 14;
 #else
         n_tmp_fac = 10;
 #endif
 
+        // n_tmp_grow is used to create tmpfab which is passed in to compute_godunov_advection
+        // (both regular and EB) as pointer "p" and is used to hold Imx/Ipx etc ...
+        int n_tmp_grow;
 #ifdef AMREX_USE_EB
-        n_tmp_grow = 4;
+        if (m_redistribution_type == "StateRedist")
+            n_tmp_grow = 5;
+        else
+            n_tmp_grow = 4;
 #else
         n_tmp_grow = 1;
 #endif
@@ -287,12 +288,16 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
         Box gbx = bx;
         if (!regular)  
         {
-            if (m_advection_type == "MOL") 
+            // We need 3 if we are doing state redistribution
+            if (m_redistribution_type == "StateRedist" ||
+                m_redistribution_type == "MergeRedist")
+                gbx.grow(3);
+            else if (m_redistribution_type == "FluxRedist") 
                 gbx.grow(2);
-            else if (m_advection_type == "Godunov") 
-                gbx.grow(2);
+            else if (m_redistribution_type == "NoRedist") 
+                gbx.grow(1);
             else 
-                amrex::Abort("Dont know this advection type");
+                amrex::Abort("Dont know this redistribution type");
         }
         // This one holds the convective term on a grown region so we can redistribute
         FArrayBox dUdt_tmpfab(gbx,nmaxcomp);
@@ -366,6 +371,7 @@ incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
                                                tmpfab.dataPtr(),m_godunov_ppm, 
                                                m_godunov_use_forces_in_trans, 
                                                geom[lev], true);
+
             if (!m_constant_density) {
                 godunov::compute_godunov_advection(bx, 1,
                                                    drdt, rho,
