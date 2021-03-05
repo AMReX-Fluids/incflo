@@ -212,6 +212,7 @@ public: // for cuda
     void redistribute_initial_data(amrex::MultiFab& data, std::string redistribution_type);
 
 #include "incflo_prob_I.H"
+#include "incflo_prob_usr_I.H"
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -264,6 +265,7 @@ private:
     amrex::Real m_ic_v = 0.0;
     amrex::Real m_ic_w = 0.0;
     amrex::Real m_ic_p = 0.0;
+    amrex::Real m_ic_t = 0.0;
 
     amrex::Vector<amrex::Real> m_t_old;
     amrex::Vector<amrex::Real> m_t_new;

@@ -121,6 +121,7 @@ void incflo::ReadParameters ()
         pp.query("ic_v", m_ic_v);
         pp.query("ic_w", m_ic_w);
         pp.query("ic_p", m_ic_p);
+        pp.query("ic_t", m_ic_t);
 
         // Viscosity (if constant)
         pp.query("mu", m_mu);

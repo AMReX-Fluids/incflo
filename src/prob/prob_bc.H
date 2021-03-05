@@ -13,7 +13,7 @@ struct IncfloVelFill
     AMREX_GPU_HOST
     constexpr IncfloVelFill (int a_probtype,
                              amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>,
-                                             AMREX_SPACEDIM*2> const& a_bcv)
+                             AMREX_SPACEDIM*2> const& a_bcv)
         : probtype(a_probtype), bcv(a_bcv) {}
 
     AMREX_GPU_DEVICE

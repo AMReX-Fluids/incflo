@@ -212,8 +212,20 @@ incflo::get_diffuse_scalar_bc (Orientation::Side side) const noexcept
             switch (bc)
             {
             case BC::pressure_inflow:
+            {
+                r[dir] = LinOpBCType::Neumann;
+                break;
+            }
             case BC::pressure_outflow:
+            {
+                r[dir] = LinOpBCType::Neumann;
+                break;
+            }
             case BC::slip_wall:
+            {
+                r[dir] = LinOpBCType::Neumann;
+                break;
+            }
             case BC::no_slip_wall:
             {
                 r[dir] = LinOpBCType::Neumann;
@@ -225,7 +237,7 @@ incflo::get_diffuse_scalar_bc (Orientation::Side side) const noexcept
                 break;
             }
             default:
-                amrex::Abort("get_diffuse_tensor_bc: undefined BC type");
+                amrex::Abort("get_diffuse_scalar_bc: undefined BC type");
             };
         }
     }

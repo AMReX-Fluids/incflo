@@ -100,9 +100,27 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
 
             Real xlo = tag_region_lo[0];
             Real ylo = tag_region_lo[1];
-            Real zlo = tag_region_lo[2];
             Real xhi = tag_region_hi[0];
             Real yhi = tag_region_hi[1];
+
+#if (AMREX_SPACEDIM == 2)
+
+            amrex::ParallelFor(bx,
+            [xlo, xhi, ylo, yhi, l_dx, l_dy, tagval, tag]
+            AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                 Real x = (i+0.5)*l_dx;
+                 Real y = (j+0.5)*l_dy;
+
+                 // Tag if we are inside the specified box
+                 if (x >= xlo && x <= xhi && y >= ylo && y <= yhi)
+                 {
+                    tag(i,j,k) = tagval;
+                 }
+            });
+
+#else
+            Real zlo = tag_region_lo[2];
             Real zhi = tag_region_hi[2];
 
             amrex::ParallelFor(bx,
@@ -119,7 +137,8 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
                     tag(i,j,k) = tagval;
                  }
             });
-        } 
+#endif
+        }
     }
 
 #ifdef AMREX_USE_EB

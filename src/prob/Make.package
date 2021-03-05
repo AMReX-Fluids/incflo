@@ -1,3 +1,8 @@
-CEXE_sources += prob_bc.cpp prob_init_fluid.cpp
-CEXE_headers += prob_bc.H incflo_prob_I.H
+CEXE_sources += prob_bc.cpp
+CEXE_sources += prob_init_fluid.cpp
+CEXE_sources += prob_init_fluid_usr.cpp
+
+CEXE_headers += prob_bc.H
+CEXE_headers += incflo_prob_I.H
+CEXE_headers += incflo_prob_usr_I.H
 

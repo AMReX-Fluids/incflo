@@ -51,7 +51,6 @@ void incflo::init_bcs ()
             }
 
             pp.query("density", m_bc_density[ori]);
-
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }
         else if (bc_type == "no_slip_wall" or bc_type == "nsw")
@@ -72,6 +71,10 @@ void incflo::init_bcs ()
                     m_bc_velocity[ori][i] = v[i];
                 }
             }
+
+            // We potentially read in values at no-slip walls in the event that the 
+            // tracer has Dirichlet bcs
+            pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }
         else if (bc_type == "slip_wall" or bc_type == "sw")
         {
@@ -83,6 +86,10 @@ void incflo::init_bcs ()
             //      note that we only actually use the zero value for the normal direction;
             //      the tangential components are set to be first order extrap 
             // m_bc_velocity[ori] = {0.0, 0.0, 0.0};
+
+            // We potentially read in values at slip walls in the event that the 
+            // tracer has Dirichlet bcs
+            pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }
         else
         {
@@ -264,8 +271,15 @@ void incflo::init_bcs ()
             Orientation::Side side = ori.faceDir();
             auto const bct = m_bc_type[ori];
             if (bct == BC::pressure_inflow  or
-                bct == BC::pressure_outflow or
-                bct == BC::no_slip_wall)
+                bct == BC::pressure_outflow)
+            {
+                if (side == Orientation::low) {
+                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::foextrap);
+                } else {
+                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::foextrap);
+                }
+            }
+            else if (bct == BC::no_slip_wall)
             {
                 if (side == Orientation::low) {
                     for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::foextrap);
