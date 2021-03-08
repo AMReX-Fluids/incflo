@@ -138,6 +138,7 @@ void incflo::prob_init_fluid (int lev)
                                   ld.tracer.array(mfi),
                                   domain, dx, problo, probhi);
         }
+#if 0
         else if (500 == m_probtype)
         {
             init_heated_ground(vbx, gbx,
@@ -147,6 +148,7 @@ void incflo::prob_init_fluid (int lev)
                                ld.tracer.array(mfi),
                                domain, dx, problo, probhi);
         }
+#endif
         else
         {
             amrex::Abort("prob_init_fluid: unknown m_probtype");

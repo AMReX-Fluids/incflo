@@ -144,7 +144,7 @@ void incflo::ReadParameters ()
 
         amrex::Print() << "Scalar diffusion coefficients " << std::endl;
         for (int i = 0; i < m_ntrac; i++) {
-            amrex::Print() << "Tracer" << i << ":" << m_mu_s[i] << std::endl;
+            amrex::Print() << "Tracer diffusion coeff: " << i << ":" << m_mu_s[i] << std::endl;
         }
     } // end prefix incflo
 
