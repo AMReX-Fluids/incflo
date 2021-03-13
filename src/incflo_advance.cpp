@@ -71,8 +71,9 @@ void incflo::Advance()
     }
 
 #if 0
+    // This sums over all levels
     if (m_test_tracer_conservation) {
-        amrex::Print() << "Sum tracer volume wgt = " << m_cur_time+dt << "   " << volWgtSum(0,*tracer[0],0) << std::endl;
+        amrex::Print() << "Sum tracer volume wgt2 = " << m_cur_time+m_dt << "   " << vol_wgt_sum(get_tracer_new(),0) << std::endl;
     }
 #endif
 
