@@ -118,7 +118,6 @@ convection::compute_convective_update (Box const& bx, int flux_comp, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
 #if (AMREX_SPACEDIM == 3)
-        if (i == 0 and j == 0 and k == 0) amrex::Print() << "CONSERVE " << iconserv[n] << std::endl;
         if (iconserv[n])
         {
             dqdt(i,j,k,n) = dxinv[0] * ( fx(i,j,k,flux_comp+n) - fx(i+1,j,k,flux_comp+n) )
