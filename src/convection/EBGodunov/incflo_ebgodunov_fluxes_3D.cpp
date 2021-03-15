@@ -6,30 +6,32 @@
 using namespace amrex;
 
 void
-ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
-                                      Array4<Real> const& dqdt,
-                                      Array4<Real const> const& q,
-                                      Array4<Real const> const& u_mac,
-                                      Array4<Real const> const& v_mac,
-                                      Array4<Real const> const& w_mac,
-                                      Array4<Real const> const& fq,
-                                      Array4<Real const> const& divu,
-                                      Real l_dt,
-                                      Vector<BCRec> const& h_bcrec,
-                                             BCRec const*  pbc,
-                                      int const* iconserv,
+ebgodunov::compute_godunov_fluxes (Box const& bx, int flux_comp, int ncomp,
+                                   Array4<Real      > const& fx,
+                                   Array4<Real      > const& fy,
+                                   Array4<Real      > const& fz,
+                                   Array4<Real const> const& q,
+                                   Array4<Real const> const& umac,
+                                   Array4<Real const> const& vmac,
+                                   Array4<Real const> const& wmac,
+                                   Array4<Real const> const& fq,
+                                   Array4<Real const> const& divu,
+                                   Real l_dt,
+                                   Vector<BCRec> const& h_bcrec,
+                                          BCRec const*  pbc,
+                                   int const* iconserv,
                                       Real* p,
-                                      Array4<EBCellFlag const> const& flag_arr,
-                                      AMREX_D_DECL(Array4<Real const> const& apx,
-                                                   Array4<Real const> const& apy,
-                                                   Array4<Real const> const& apz),
-                                      Array4<Real const> const& vfrac_arr,
-                                      AMREX_D_DECL(Array4<Real const> const& fcx,
-                                                   Array4<Real const> const& fcy,
-                                                   Array4<Real const> const& fcz),
-                                      Array4<Real const> const& ccent_arr,
-                                      Geometry& geom,
-                                      bool is_velocity )
+                                   Array4<EBCellFlag const> const& flag_arr,
+                                   AMREX_D_DECL(Array4<Real const> const& apx,
+                                                Array4<Real const> const& apy,
+                                                Array4<Real const> const& apz),
+                                   Array4<Real const> const& vfrac_arr,
+                                   AMREX_D_DECL(Array4<Real const> const& fcx,
+                                                Array4<Real const> const& fcy,
+                                                Array4<Real const> const& fcz),
+                                   Array4<Real const> const& ccent_arr,
+                                   Geometry& geom,
+                                   bool is_velocity )
 {
     for (int n = 0; n < ncomp; n++)
        if (!iconserv[n]) amrex::Abort("Trying to update in non-conservative in ebgodunov");
@@ -113,15 +115,15 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
            Imz(i,j,k,n) = i*1.e10 + j*1.e20 + k*1.30 + n*1.e4;     
         });
 
-    ebgodunov::plm_fpu_x (xebx, ncomp, Imx, Ipx, q, u_mac,
+    ebgodunov::plm_fpu_x (xebx, ncomp, Imx, Ipx, q, umac,
                           flag_arr, vfrac_arr,
                           AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
                           geom, l_dt, h_bcrec, pbc, is_velocity);
-    ebgodunov::plm_fpu_y (yebx, ncomp, Imy, Ipy, q, v_mac,
+    ebgodunov::plm_fpu_y (yebx, ncomp, Imy, Ipy, q, vmac,
                           flag_arr, vfrac_arr,
                           AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
                           geom, l_dt, h_bcrec, pbc, is_velocity);
-    ebgodunov::plm_fpu_z (zebx, ncomp, Imz, Ipz, q, w_mac,
+    ebgodunov::plm_fpu_z (zebx, ncomp, Imz, Ipz, q, wmac,
                           flag_arr, vfrac_arr,
                           AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
                           geom, l_dt, h_bcrec, pbc, is_velocity);
@@ -132,7 +134,7 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             Real lo = Ipx(i-1,j,k,n);
             Real hi = Imx(i  ,j,k,n);
 
-            Real uad = u_mac(i,j,k);
+            Real uad = umac(i,j,k);
 
             auto bc = pbc[n];
 
@@ -150,7 +152,7 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             Real lo = Ipy(i,j-1,k,n);
             Real hi = Imy(i,j  ,k,n);
 
-            Real vad = v_mac(i,j,k);
+            Real vad = vmac(i,j,k);
 
             auto bc = pbc[n];
 
@@ -168,7 +170,7 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             Real lo = Ipz(i,j,k-1,n);
             Real hi = Imz(i,j,k  ,n);
 
-            Real wad = w_mac(i,j,k);
+            Real wad = wmac(i,j,k);
 
             auto bc = pbc[n];
 
@@ -202,9 +204,9 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
         EBGodunov_corner_couple_zy(l_zylo, l_zyhi,
                                    i, j, k, n, l_dt, dy, true, 
                                    zlo(i,j,k,n), zhi(i,j,k,n),
-                                   q, divu, apx, apy, apz, vfrac_arr, v_mac, yedge);
+                                   q, divu, apx, apy, apz, vfrac_arr, vmac, yedge);
 
-        Real wad = w_mac(i,j,k);
+        Real wad = wmac(i,j,k);
         Godunov_trans_zbc(i, j, k, n, q, l_zylo, l_zyhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
 
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
@@ -219,9 +221,9 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
         EBGodunov_corner_couple_yz(l_yzlo, l_yzhi,
                                    i, j, k, n, l_dt, dz, true, 
                                    ylo(i,j,k,n), yhi(i,j,k,n),
-                                   q, divu, apx, apy, apz, vfrac_arr, w_mac, zedge);
+                                   q, divu, apx, apy, apz, vfrac_arr, wmac, zedge);
 
-        Real vad = v_mac(i,j,k);
+        Real vad = vmac(i,j,k);
         Godunov_trans_ybc(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
@@ -242,12 +244,12 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apy(i-1,j+1,k) > 0. && apy(i-1,j  ,k) > 0. && apz(i-1,j,k+1) > 0. && apz(i-1,j,k) > 0.)
             {
-                Real quxl = (apx(i,j,k)*u_mac(i,j,k) - apx(i-1,j,k)*u_mac(i-1,j,k)) * q(i-1,j,k,n);
+                Real quxl = (apx(i,j,k)*umac(i,j,k) - apx(i-1,j,k)*umac(i-1,j,k)) * q(i-1,j,k,n);
                 stl += ( - (0.5*dtdx) * quxl
-                         - (0.5*dtdy)*(apy(i-1,j+1,k  )*yzlo(i-1,j+1,k  ,n)*v_mac(i-1,j+1,k  )
-                                     - apy(i-1,j  ,k  )*yzlo(i-1,j  ,k  ,n)*v_mac(i-1,j  ,k  ))
-                         - (0.5*dtdz)*(apz(i-1,j  ,k+1)*zylo(i-1,j  ,k+1,n)*w_mac(i-1,j  ,k+1)
-                                     - apz(i-1,j  ,k  )*zylo(i-1,j  ,k  ,n)*w_mac(i-1,j  ,k  )) ) / vfrac_arr(i-1,j,k);
+                         - (0.5*dtdy)*(apy(i-1,j+1,k  )*yzlo(i-1,j+1,k  ,n)*vmac(i-1,j+1,k  )
+                                     - apy(i-1,j  ,k  )*yzlo(i-1,j  ,k  ,n)*vmac(i-1,j  ,k  ))
+                         - (0.5*dtdz)*(apz(i-1,j  ,k+1)*zylo(i-1,j  ,k+1,n)*wmac(i-1,j  ,k+1)
+                                     - apz(i-1,j  ,k  )*zylo(i-1,j  ,k  ,n)*wmac(i-1,j  ,k  )) ) / vfrac_arr(i-1,j,k);
                 if (fq && vfrac_arr(i-1,j,k) > 0.)
                     stl += 0.5*l_dt*fq(i-1,j,k,n);
             }
@@ -255,12 +257,12 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apy(i,j+1,k) > 0. && apy(i,j  ,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0.)
             {
-                Real quxh = (apx(i+1,j,k)*u_mac(i+1,j,k) - apx(i,j,k)*u_mac(i,j,k)) * q(i,j,k,n);
+                Real quxh = (apx(i+1,j,k)*umac(i+1,j,k) - apx(i,j,k)*umac(i,j,k)) * q(i,j,k,n);
                 sth += ( - (0.5*dtdx) * quxh
-                         - (0.5*dtdy)*(apy(i,j+1,k  )*yzlo(i,j+1,k  ,n)*v_mac(i,j+1,k  )
-                                     - apy(i,j  ,k  )*yzlo(i,j  ,k  ,n)*v_mac(i,j  ,k  ))
-                         - (0.5*dtdz)*(apz(i,j  ,k+1)*zylo(i,j  ,k+1,n)*w_mac(i,j  ,k+1)
-                                     - apz(i,j  ,k  )*zylo(i,j  ,k  ,n)*w_mac(i,j  ,k  )) ) / vfrac_arr(i,j,k);
+                         - (0.5*dtdy)*(apy(i,j+1,k  )*yzlo(i,j+1,k  ,n)*vmac(i,j+1,k  )
+                                     - apy(i,j  ,k  )*yzlo(i,j  ,k  ,n)*vmac(i,j  ,k  ))
+                         - (0.5*dtdz)*(apz(i,j  ,k+1)*zylo(i,j  ,k+1,n)*wmac(i,j  ,k+1)
+                                     - apz(i,j  ,k  )*zylo(i,j  ,k  ,n)*wmac(i,j  ,k  )) ) / vfrac_arr(i,j,k);
                 if (fq && vfrac_arr(i,j,k) > 0.)
                     sth += 0.5*l_dt*fq(i  ,j,k,n);
             }
@@ -269,13 +271,14 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             Godunov_cc_xbc_lo(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, is_velocity);
             Godunov_cc_xbc_hi(i, j, k, n, q, stl, sth, bc.hi(0), dhi.x, is_velocity);
 
-            Real temp = (u_mac(i,j,k) >= 0.) ? stl : sth;
-            temp = (amrex::Math::abs(u_mac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
+            Real temp = (umac(i,j,k) >= 0.) ? stl : sth;
+            temp = (amrex::Math::abs(umac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
             qx(i,j,k,n) = temp;
 
         } else {
              qx(i,j,k,n) = 0.;
         }
+        fx(i,j,k,n) = umac(i,j,k) * qx(i,j,k,n);
     });
 
     //
@@ -294,9 +297,9 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
         EBGodunov_corner_couple_xz(l_xzlo, l_xzhi,
                                    i, j, k, n, l_dt, dz, true, 
                                    xlo(i,j,k,n),  xhi(i,j,k,n),
-                                   q, divu, apx, apy, apz, vfrac_arr, w_mac, zedge);
+                                   q, divu, apx, apy, apz, vfrac_arr, wmac, zedge);
 
-        Real uad = u_mac(i,j,k);
+        Real uad = umac(i,j,k);
         Godunov_trans_xbc(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
@@ -311,9 +314,9 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
         EBGodunov_corner_couple_zx(l_zxlo, l_zxhi,
                                    i, j, k, n, l_dt, dx, true, 
                                    zlo(i,j,k,n), zhi(i,j,k,n),
-                                   q, divu, apx, apy, apz, vfrac_arr, u_mac, xedge);
+                                   q, divu, apx, apy, apz, vfrac_arr, umac, xedge);
 
-        Real wad = w_mac(i,j,k);
+        Real wad = wmac(i,j,k);
         Godunov_trans_zbc(i, j, k, n, q, l_zxlo, l_zxhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
 
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
@@ -334,12 +337,12 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j-1,k) > 0. && apx(i,j-1,k) > 0. && apz(i,j-1,k+1) > 0. && apz(i,j-1,k) > 0.)
             {
-                Real quyl = (apy(i,j,k)*v_mac(i,j,k) - apy(i,j-1,k)*v_mac(i,j-1,k)) * q(i,j-1,k,n);
+                Real quyl = (apy(i,j,k)*vmac(i,j,k) - apy(i,j-1,k)*vmac(i,j-1,k)) * q(i,j-1,k,n);
                 stl += ( - (0.5*dtdy) * quyl
-                         - (0.5*dtdx)*(apx(i+1,j-1,k  )*xzlo(i+1,j-1,k  ,n)*u_mac(i+1,j-1,k  )
-                                     - apx(i  ,j-1,k  )*xzlo(i  ,j-1,k  ,n)*u_mac(i  ,j-1,k  ))
-                         - (0.5*dtdz)*(apz(i  ,j-1,k+1)*zxlo(i  ,j-1,k+1,n)*w_mac(i  ,j-1,k+1)
-                                     - apz(i  ,j-1,k  )*zxlo(i  ,j-1,k  ,n)*w_mac(i  ,j-1,k  )) ) / vfrac_arr(i,j-1,k);
+                         - (0.5*dtdx)*(apx(i+1,j-1,k  )*xzlo(i+1,j-1,k  ,n)*umac(i+1,j-1,k  )
+                                     - apx(i  ,j-1,k  )*xzlo(i  ,j-1,k  ,n)*umac(i  ,j-1,k  ))
+                         - (0.5*dtdz)*(apz(i  ,j-1,k+1)*zxlo(i  ,j-1,k+1,n)*wmac(i  ,j-1,k+1)
+                                     - apz(i  ,j-1,k  )*zxlo(i  ,j-1,k  ,n)*wmac(i  ,j-1,k  )) ) / vfrac_arr(i,j-1,k);
                 if (fq && vfrac_arr(i,j-1,k) > 0.)
                     stl += 0.5*l_dt*fq(i,j-1,k,n);
             }
@@ -347,12 +350,12 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0.)
             {
-                Real quyh = (apy(i,j+1,k)*v_mac(i,j+1,k) - apy(i,j,k)*v_mac(i,j,k)) * q(i,j,k,n);
+                Real quyh = (apy(i,j+1,k)*vmac(i,j+1,k) - apy(i,j,k)*vmac(i,j,k)) * q(i,j,k,n);
                 sth += ( - (0.5*dtdy) * quyh
-                         - (0.5*dtdx)*(apx(i+1,j,k  )*xzlo(i+1,j,k  ,n)*u_mac(i+1,j,k  )
-                                     - apx(i  ,j,k  )*xzlo(i  ,j,k  ,n)*u_mac(i  ,j,k  ))
-                         - (0.5*dtdz)*(apz(i  ,j,k+1)*zxlo(i  ,j,k+1,n)*w_mac(i  ,j,k+1)
-                                     - apz(i  ,j,k  )*zxlo(i  ,j,k  ,n)*w_mac(i  ,j,k  )) ) / vfrac_arr(i,j,k);
+                         - (0.5*dtdx)*(apx(i+1,j,k  )*xzlo(i+1,j,k  ,n)*umac(i+1,j,k  )
+                                     - apx(i  ,j,k  )*xzlo(i  ,j,k  ,n)*umac(i  ,j,k  ))
+                         - (0.5*dtdz)*(apz(i  ,j,k+1)*zxlo(i  ,j,k+1,n)*wmac(i  ,j,k+1)
+                                     - apz(i  ,j,k  )*zxlo(i  ,j,k  ,n)*wmac(i  ,j,k  )) ) / vfrac_arr(i,j,k);
                 if (fq && vfrac_arr(i,j  ,k) > 0.)
                     sth += 0.5*l_dt*fq(i,j  ,k,n);
             }
@@ -361,12 +364,13 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             Godunov_cc_ybc_lo(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, is_velocity);
             Godunov_cc_ybc_hi(i, j, k, n, q, stl, sth, bc.hi(1), dhi.y, is_velocity);
 
-            Real temp = (v_mac(i,j,k) >= 0.) ? stl : sth;
-            temp = (amrex::Math::abs(v_mac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
+            Real temp = (vmac(i,j,k) >= 0.) ? stl : sth;
+            temp = (amrex::Math::abs(vmac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
             qy(i,j,k,n) = temp;
         } else {
             qy(i,j,k,n) = 0.;
         }
+        fy(i,j,k,n) = vmac(i,j,k) * qy(i,j,k,n);
     });
 
     //
@@ -384,9 +388,9 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
         EBGodunov_corner_couple_xy(l_xylo, l_xyhi,
                                    i, j, k, n, l_dt, dy, true, 
                                    xlo(i,j,k,n), xhi(i,j,k,n),
-                                   q, divu, apx, apy, apz, vfrac_arr, v_mac, yedge);
+                                   q, divu, apx, apy, apz, vfrac_arr, vmac, yedge);
 
-        Real uad = u_mac(i,j,k);
+        Real uad = umac(i,j,k);
         Godunov_trans_xbc(i, j, k, n, q, l_xylo, l_xyhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
@@ -401,9 +405,9 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
         EBGodunov_corner_couple_yx(l_yxlo, l_yxhi,
                                    i, j, k, n, l_dt, dx, true, 
                                    ylo(i,j,k,n), yhi(i,j,k,n),
-                                   q, divu, apx, apy, apz, vfrac_arr, u_mac, xedge);
+                                   q, divu, apx, apy, apz, vfrac_arr, umac, xedge);
 
-        Real vad = v_mac(i,j,k);
+        Real vad = vmac(i,j,k);
         Godunov_trans_ybc(i, j, k, n, q, l_yxlo, l_yxhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
@@ -423,12 +427,12 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k-1) > 0. && apx(i,j,k-1) > 0. && apy(i,j+1,k-1) > 0. && apy(i,j,k-1) > 0.)
             {
-                Real quzl = (apz(i,j,k)*w_mac(i,j,k) - apz(i,j,k-1)*w_mac(i,j,k-1)) * q(i,j,k-1,n);
+                Real quzl = (apz(i,j,k)*wmac(i,j,k) - apz(i,j,k-1)*wmac(i,j,k-1)) * q(i,j,k-1,n);
                 stl += ( - (0.5*dtdz) * quzl
-                         - (0.5*dtdx)*(apx(i+1,j  ,k-1)*xylo(i+1,j  ,k-1,n)*u_mac(i+1,j  ,k-1)
-                                      -apx(i  ,j  ,k-1)*xylo(i  ,j  ,k-1,n)*u_mac(i  ,j  ,k-1))
-                         - (0.5*dtdy)*(apy(i  ,j+1,k-1)*yxlo(i  ,j+1,k-1,n)*v_mac(i  ,j+1,k-1)
-                                      -apy(i  ,j  ,k-1)*yxlo(i  ,j  ,k-1,n)*v_mac(i  ,j  ,k-1)) ) / vfrac_arr(i,j,k-1);
+                         - (0.5*dtdx)*(apx(i+1,j  ,k-1)*xylo(i+1,j  ,k-1,n)*umac(i+1,j  ,k-1)
+                                      -apx(i  ,j  ,k-1)*xylo(i  ,j  ,k-1,n)*umac(i  ,j  ,k-1))
+                         - (0.5*dtdy)*(apy(i  ,j+1,k-1)*yxlo(i  ,j+1,k-1,n)*vmac(i  ,j+1,k-1)
+                                      -apy(i  ,j  ,k-1)*yxlo(i  ,j  ,k-1,n)*vmac(i  ,j  ,k-1)) ) / vfrac_arr(i,j,k-1);
                 if (fq && vfrac_arr(i,j,k-1) > 0.)
                     stl += 0.5*l_dt*fq(i,j,k-1,n);
             }
@@ -436,12 +440,12 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apy(i,j+1,k) > 0. && apy(i,j,k) > 0.)
             {
-                Real quzh = (apz(i,j,k+1)*w_mac(i,j,k+1) - apz(i,j,k)*w_mac(i,j,k)) * q(i,j,k,n);
+                Real quzh = (apz(i,j,k+1)*wmac(i,j,k+1) - apz(i,j,k)*wmac(i,j,k)) * q(i,j,k,n);
                 sth += ( - (0.5*dtdz) * quzh
-                         - (0.5*dtdx)*(apx(i+1,j  ,k)*xylo(i+1,j  ,k,n)*u_mac(i+1,j  ,k)
-                                      -apx(i  ,j  ,k)*xylo(i  ,j  ,k,n)*u_mac(i  ,j  ,k))
-                         - (0.5*dtdy)*(apy(i  ,j+1,k)*yxlo(i  ,j+1,k,n)*v_mac(i  ,j+1,k)
-                                      -apy(i  ,j  ,k)*yxlo(i  ,j  ,k,n)*v_mac(i  ,j  ,k)) ) / vfrac_arr(i,j,k);
+                         - (0.5*dtdx)*(apx(i+1,j  ,k)*xylo(i+1,j  ,k,n)*umac(i+1,j  ,k)
+                                      -apx(i  ,j  ,k)*xylo(i  ,j  ,k,n)*umac(i  ,j  ,k))
+                         - (0.5*dtdy)*(apy(i  ,j+1,k)*yxlo(i  ,j+1,k,n)*vmac(i  ,j+1,k)
+                                      -apy(i  ,j  ,k)*yxlo(i  ,j  ,k,n)*vmac(i  ,j  ,k)) ) / vfrac_arr(i,j,k);
 
                 if (fq && vfrac_arr(i,j,k) > 0.)
                     sth += 0.5*l_dt*fq(i,j,k,n);
@@ -451,28 +455,13 @@ ebgodunov::compute_godunov_advection (Box const& bx, int ncomp,
             Godunov_cc_zbc_lo(i, j, k, n, q, stl, sth, bc.lo(2),  dlo.z, is_velocity);
             Godunov_cc_zbc_hi(i, j, k, n, q, stl, sth, bc.hi(2),  dhi.z, is_velocity);
 
-            Real temp = (w_mac(i,j,k) >= 0.) ? stl : sth;
-            temp = (amrex::Math::abs(w_mac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
+            Real temp = (wmac(i,j,k) >= 0.) ? stl : sth;
+            temp = (amrex::Math::abs(wmac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
             qz(i,j,k,n) = temp;
 
         } else {
             qz(i,j,k,n) = 0.;
         }
-    });
-
-    amrex::ParallelFor(bx, ncomp,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        if (vfrac_arr(i,j,k) > 0.)
-        {
-            dqdt(i,j,k,n) = dxinv[0]*( apx(i  ,j,k)*u_mac(i  ,j,k)*qx(i  ,j,k,n) -
-                                       apx(i+1,j,k)*u_mac(i+1,j,k)*qx(i+1,j,k,n) )
-                +           dxinv[1]*( apy(i,j  ,k)*v_mac(i,j  ,k)*qy(i,j  ,k,n) -
-                                           apy(i,j+1,k)*v_mac(i,j+1,k)*qy(i,j+1,k,n) )
-                +           dxinv[2]*( apz(i,j,k  )*w_mac(i,j,k  )*qz(i,j,k  ,n) -
-                                       apz(i,j,k+1)*w_mac(i,j,k+1)*qz(i,j,k+1,n) );
-        } else {
-            dqdt(i,j,k,n) = 0.0;
-        }
+        fz(i,j,k,n) = wmac(i,j,k) * qz(i,j,k,n);
     });
 }

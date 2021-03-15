@@ -21,7 +21,7 @@ namespace {
 }
 
 void
-mol::compute_convective_fluxes (Box const& bx, int ncomp,
+mol::compute_convective_fluxes (Box const& bx, int flux_comp, int ncomp,
                                 AMREX_D_DECL(Array4<Real> const& fx,
                                              Array4<Real> const& fy,
                                              Array4<Real> const& fz),
@@ -30,7 +30,7 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
                                              Array4<Real const> const& vmac,
                                              Array4<Real const> const& wmac),
                                 BCRec const* h_bcrec, BCRec const* d_bcrec,
-                                Geometry& geom)
+                                int const* iconserv, Geometry& geom)
 {
     constexpr Real small_vel = 1.e-8;
 
@@ -57,7 +57,7 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
     if ((has_extdir_or_ho_lo and domain_ilo >= xbx.smallEnd(0)-1) or
         (has_extdir_or_ho_hi and domain_ihi <= xbx.bigEnd(0)))
     {
-        amrex::ParallelFor(xbx, ncomp, [d_bcrec,q,domain_ilo,domain_ihi,umac,small_vel,fx]
+        amrex::ParallelFor(xbx, ncomp, [d_bcrec,q,domain_ilo,domain_ihi,umac,small_vel,flux_comp,iconserv,fx]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == BCType::ext_dir) or
@@ -83,12 +83,15 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
                     qs = 0.5*(qmns+qpls);
                 }
             }
-            fx(i,j,k,n) = qs * umac(i,j,k);
+            if (iconserv[n])
+                fx(i,j,k,flux_comp+n) = qs * umac(i,j,k);
+            else
+                fx(i,j,k,flux_comp+n) = qs;
         });
     }
     else
     {
-        amrex::ParallelFor(xbx, ncomp, [q,umac,small_vel,fx]
+        amrex::ParallelFor(xbx, ncomp, [q,umac,small_vel,flux_comp,iconserv,fx]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             int order = 2;
@@ -102,7 +105,10 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
             } else {
                 qs = 0.5*(qmns+qpls);
             }
-            fx(i,j,k,n) = qs * umac(i,j,k);
+            if (iconserv[n])
+                fx(i,j,k,flux_comp+n) = qs * umac(i,j,k);
+            else
+                fx(i,j,k,flux_comp+n) = qs;
         });
     }
 
@@ -115,7 +121,7 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
     if ((has_extdir_or_ho_lo and domain_jlo >= ybx.smallEnd(1)-1) or
         (has_extdir_or_ho_hi and domain_jhi <= ybx.bigEnd(1)))
     {
-        amrex::ParallelFor(ybx, ncomp, [d_bcrec,q,domain_jlo,domain_jhi,vmac,small_vel,fy]
+        amrex::ParallelFor(ybx, ncomp, [d_bcrec,q,domain_jlo,domain_jhi,vmac,small_vel,flux_comp,iconserv,fy]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == BCType::ext_dir) or
@@ -141,12 +147,15 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
                     qs = 0.5*(qmns+qpls);
                 }
             }
-            fy(i,j,k,n) = qs * vmac(i,j,k);
+            if (iconserv[n])
+                fy(i,j,k,flux_comp+n) = qs * vmac(i,j,k);
+            else
+                fy(i,j,k,flux_comp+n) = qs;
         });
     }
     else
     {
-        amrex::ParallelFor(ybx, ncomp, [q,vmac,small_vel,fy]
+        amrex::ParallelFor(ybx, ncomp, [q,vmac,small_vel,flux_comp,iconserv,fy]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             int order = 2;
@@ -160,7 +169,10 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
             } else {
                 qs = 0.5*(qmns+qpls);
             }
-            fy(i,j,k,n) = qs * vmac(i,j,k);
+            if (iconserv[n])
+                fy(i,j,k,flux_comp+n) = qs * vmac(i,j,k);
+            else
+                fy(i,j,k,flux_comp+n) = qs;
         });
     }
 
@@ -174,7 +186,7 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
     if ((has_extdir_or_ho_lo and domain_klo >= zbx.smallEnd(2)-1) or
         (has_extdir_or_ho_hi and domain_khi <= zbx.bigEnd(2)))
     {
-        amrex::ParallelFor(zbx, ncomp, [d_bcrec,q,domain_klo,domain_khi,wmac,small_vel,fz]
+        amrex::ParallelFor(zbx, ncomp, [d_bcrec,q,domain_klo,domain_khi,wmac,small_vel,flux_comp,iconserv,fz]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             bool extdir_or_ho_klo =   (d_bcrec[n].lo(2) == BCType::ext_dir) or
@@ -200,12 +212,15 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
                     qs = 0.5*(qmns+qpls);
                 }
             }
-            fz(i,j,k,n) = qs * wmac(i,j,k);
+            if (iconserv[n])
+                fz(i,j,k,flux_comp+n) = qs * wmac(i,j,k);
+            else
+                fz(i,j,k,flux_comp+n) = qs;
         });
     }
     else
     {
-        amrex::ParallelFor(zbx, ncomp, [q,wmac,small_vel,fz]
+        amrex::ParallelFor(zbx, ncomp, [q,wmac,small_vel,flux_comp,iconserv,fz]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             int order = 2;
@@ -219,7 +234,10 @@ mol::compute_convective_fluxes (Box const& bx, int ncomp,
             } else {
                 qs = 0.5*(qmns+qpls);
             }
-            fz(i,j,k,n) = qs * wmac(i,j,k);
+            if (iconserv[n])
+                fz(i,j,k,flux_comp+n) = qs * wmac(i,j,k);
+            else
+                fz(i,j,k,flux_comp+n) = qs;
         });
     }
 #endif

@@ -1,24 +1,26 @@
 #include <incflo_godunov_plm.H>
 #include <incflo_godunov_ppm.H>
 #include <incflo_godunov_trans_bc.H>
+
 #include <Godunov.H>
 
 using namespace amrex;
 
 void
-godunov::compute_godunov_advection (Box const& bx, int ncomp,
-                                    Array4<Real> const& dqdt,
-                                    Array4<Real const> const& q,
-                                    Array4<Real const> const& umac,
-                                    Array4<Real const> const& vmac,
-                                    Array4<Real const> const& fq,
-                                    Array4<Real const> const& divu,
-                                    Real l_dt,
-                                    BCRec const* pbc, int const* iconserv,
-                                    Real* p, bool use_ppm, 
-                                    bool l_use_forces_in_trans,
-                                    Geometry& geom,
-                                    bool is_velocity )
+godunov::compute_godunov_fluxes (Box const& bx, int flux_comp, int ncomp,
+                                 Array4<Real      > const& fx,
+                                 Array4<Real      > const& fy,
+                                 Array4<Real const> const& q,
+                                 Array4<Real const> const& umac,
+                                 Array4<Real const> const& vmac,
+                                 Array4<Real const> const& fq,
+                                 Array4<Real const> const& divu,
+                                 Real l_dt,
+                                 BCRec const* pbc, int const* iconserv,
+                                 Real* p, bool use_ppm, 
+                                 bool l_use_forces_in_trans,
+                                 Geometry& geom,
+                                 bool is_velocity )
 {
     Box const& xbx = amrex::surroundingNodes(bx,0);
     Box const& ybx = amrex::surroundingNodes(bx,1);
@@ -205,6 +207,11 @@ godunov::compute_godunov_advection (Box const& bx, int ncomp,
         Real temp = (umac(i,j,k) >= 0.) ? stl : sth; 
         temp = (amrex::Math::abs(umac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
         qx(i,j,k,n) = temp;
+
+        if (iconserv[n])
+            fx(i,j,k,flux_comp+n) = umac(i,j,k) * qx(i,j,k,n);
+        else
+            fx(i,j,k,flux_comp+n) = qx(i,j,k,n);
     }); 
 
     //
@@ -269,22 +276,10 @@ godunov::compute_godunov_advection (Box const& bx, int ncomp,
         Real temp = (vmac(i,j,k) >= 0.) ? stl : sth; 
         temp = (amrex::Math::abs(vmac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp; 
         qy(i,j,k,n) = temp;
-    });
 
-    amrex::ParallelFor(bx, ncomp,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
         if (iconserv[n])
-        {
-            dqdt(i,j,k,n) = dxinv[0]*( umac(i  ,j,k)*qx(i  ,j,k,n) -
-                                       umac(i+1,j,k)*qx(i+1,j,k,n) )
-                +           dxinv[1]*( vmac(i,j  ,k)*qy(i,j  ,k,n) -
-                                       vmac(i,j+1,k)*qy(i,j+1,k,n));
-        } else {
-            dqdt(i,j,k,n) = 0.5*dxinv[0]*(umac(i,j,k  ) + umac(i+1,j  ,k  ))
-                *                        (qx  (i,j,k,n) - qx  (i+1,j  ,k  ,n))
-                +           0.5*dxinv[1]*(vmac(i,j,k  ) + vmac(i  ,j+1,k  ))
-                *                        (qy  (i,j,k,n) - qy  (i  ,j+1,k  ,n));
-       }
+            fy(i,j,k,flux_comp+n) = vmac(i,j,k) * qy(i,j,k,n);
+        else
+            fy(i,j,k,flux_comp+n) = qy(i,j,k,n);
     });
 }

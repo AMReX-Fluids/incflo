@@ -25,7 +25,7 @@ namespace {
 
 #ifdef AMREX_USE_EB
 void 
-mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
+mol::compute_convective_fluxes_eb (Box const& bx, int flux_comp, int ncomp,
                                    AMREX_D_DECL(Array4<Real> const& fx,
                                                 Array4<Real> const& fy,
                                                 Array4<Real> const& fz),
@@ -35,6 +35,7 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
                                                 Array4<Real const> const& wmac),
                                    BCRec const* h_bcrec,
                                    BCRec const* d_bcrec,
+                                     int const* iconserv,
                                    Array4<EBCellFlag const> const& flag,
                                    AMREX_D_DECL(Array4<Real const> const& fcx,
                                                 Array4<Real const> const& fcy,
@@ -94,7 +95,7 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
         // Predict to x-faces
         // ****************************************************************************
         amrex::ParallelFor(xbx, ncomp,
-        [d_bcrec,q,ccc,flag,umac,small_vel,fx,
+        [flux_comp,iconserv,d_bcrec,q,ccc,flag,umac,small_vel,fx,
         AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
         AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
         AMREX_D_DECL(fcx,fcy,fcz)]
@@ -192,10 +193,13 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
                    }
                }
 
-               fx(i,j,k,n) = umac(i,j,k) * qs;
+               if (iconserv[n])
+                   fx(i,j,k,flux_comp+n) = qs * umac(i,j,k);
+               else
+                   fx(i,j,k,flux_comp+n) = qs;
    
            } else {
-               fx(i,j,k,n) = 0.0;
+               fx(i,j,k,flux_comp+n) = 0.0;
            }
         });
 
@@ -203,7 +207,7 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
         // Predict to y-faces
         // ****************************************************************************
         amrex::ParallelFor(ybx, ncomp,
-        [d_bcrec,q,ccc,flag,vmac,small_vel,fy,
+        [flux_comp,iconserv,d_bcrec,q,ccc,flag,vmac,small_vel,fy,
          AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
          AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
          AMREX_D_DECL(fcx,fcy,fcz)]
@@ -301,10 +305,13 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
                     }
                 }
 
-                fy(i,j,k,n) = vmac(i,j,k) * qs;
+                if (iconserv[n])
+                    fy(i,j,k,flux_comp+n) = vmac(i,j,k) * qs;
+                else
+                    fy(i,j,k,flux_comp+n) = qs;
 
            } else {
-                fy(i,j,k,n) = 0.0;
+                fy(i,j,k,flux_comp+n) = 0.0;
            }
         });
 
@@ -313,7 +320,7 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
         // ****************************************************************************
 #if (AMREX_SPACEDIM == 3)
         amrex::ParallelFor(zbx, ncomp,
-        [d_bcrec,q,ccc,flag,wmac,small_vel,fz,
+        [flux_comp,iconserv,d_bcrec,q,ccc,flag,wmac,small_vel,fz,
          domain_ilo,domain_jlo,domain_klo,
          domain_ihi,domain_jhi,domain_khi,
          fcx,fcy,fcz]
@@ -399,10 +406,13 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
                     }
                 }
 
-                fz(i,j,k,n) = wmac(i,j,k) * qs;
+                if (iconserv[n])
+                    fz(i,j,k,flux_comp+n) = wmac(i,j,k) * qs;
+                else
+                    fz(i,j,k,flux_comp+n) = qs;
 
            } else {
-                fz(i,j,k,n) = 0.0;
+                fz(i,j,k,flux_comp+n) = 0.0;
            }
         });
 #endif
@@ -414,7 +424,7 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
         // Predict to x-faces
         // ****************************************************************************
         amrex::ParallelFor(xbx, ncomp,
-        [q,ccc,flag,umac,small_vel,fx,AMREX_D_DECL(fcx,fcy,fcz)]
+        [q,ccc,flag,umac,small_vel,fx,AMREX_D_DECL(fcx,fcy,fcz),flux_comp,iconserv]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
            Real qs;
@@ -478,10 +488,13 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
                     qs = 0.5*(qmns+qpls);
                 }
 
-                fx(i,j,k,n) = umac(i,j,k) * qs;
+                if (iconserv[n])
+                    fx(i,j,k,flux_comp+n) = qs * umac(i,j,k);
+                else
+                    fx(i,j,k,flux_comp+n) = qs;
 
            } else {
-               fx(i,j,k,n) = 0.0;
+               fx(i,j,k,flux_comp+n) = 0.0;
            }
         });
 
@@ -489,7 +502,7 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
         // Predict to y-faces
         // ****************************************************************************
         amrex::ParallelFor(ybx, ncomp,
-        [q,ccc,flag,vmac,small_vel,fy,AMREX_D_DECL(fcx,fcy,fcz)]
+        [q,ccc,flag,vmac,small_vel,fy,AMREX_D_DECL(fcx,fcy,fcz),flux_comp,iconserv]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qs;
@@ -553,10 +566,13 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
                    qs = 0.5*(qmns+qpls);
                }
 
-               fy(i,j,k,n) = vmac(i,j,k) * qs;
+               if (iconserv[n])
+                   fy(i,j,k,flux_comp+n) = qs * vmac(i,j,k);
+               else
+                   fy(i,j,k,flux_comp+n) = qs;
 
            } else {
-               fy(i,j,k,n) = 0.0;
+               fy(i,j,k,flux_comp+n) = 0.0;
            }
         });
 
@@ -565,7 +581,7 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
         // Predict to z-faces
         // ****************************************************************************
         amrex::ParallelFor(zbx, ncomp,
-        [q,ccc,flag,wmac,small_vel,fz,AMREX_D_DECL(fcx,fcy,fcz)]
+        [q,ccc,flag,wmac,small_vel,fz,AMREX_D_DECL(fcx,fcy,fcz),flux_comp,iconserv]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             if (flag(i,j,k).isConnected(0,0,-1)) {
@@ -619,10 +635,13 @@ mol::compute_convective_fluxes_eb (Box const& bx, int ncomp,
                     qs = 0.5*(qmns+qpls);
                 }
 
-                fz(i,j,k,n) = wmac(i,j,k) * qs;
+                if (iconserv[n])
+                    fz(i,j,k,flux_comp+n) = qs * wmac(i,j,k);
+                else
+                    fz(i,j,k,flux_comp+n) = qs;
 
            } else {
-                fz(i,j,k,n) = 0.0;
+                fz(i,j,k,flux_comp+n) = 0.0;
            }
         });
 #endif

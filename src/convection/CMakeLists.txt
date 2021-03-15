@@ -3,6 +3,9 @@ target_include_directories(incflo PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_sources(incflo
    PRIVATE
    incflo_compute_advection_term.cpp
+   incflo_compute_fluxes.cpp
+   incflo_redistribute_convective_term.cpp
+   incflo_compute_update.cpp
    incflo_correct_small_cells.cpp
    incflo_MAC_projection.cpp
    incflo_mol_predict_eb.cpp
@@ -10,7 +13,7 @@ target_sources(incflo
    incflo_mol_fluxes_eb.cpp
    incflo_mol_fluxes.cpp
    incflo_godunov_predict_${INCFLO_DIM}D.cpp
-   incflo_godunov_advection_${INCFLO_DIM}D.cpp
+   incflo_godunov_fluxes_${INCFLO_DIM}D.cpp
    incflo_godunov_plm.cpp
    incflo_godunov_ppm.cpp
    incflo_godunov_plm.H

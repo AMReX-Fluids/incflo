@@ -1,34 +1,29 @@
-#include <Godunov.H>
+#include <Convection.H>
+#include <incflo.H>
+
 #ifdef AMREX_USE_EB
-#include <EBGodunov.H>
 #include <Redistribution.H>
 #endif
-#include <MOL.H>
-#include <incflo.H>
 
 using namespace amrex;
 
 void incflo::init_advection ()
 {
 #ifdef AMREX_USE_EB
-    if (m_advection_type == "Godunov")
-    {
-       // We default to conservative if doing Godunov
-       m_iconserv_velocity.resize(AMREX_SPACEDIM, 1);
-       m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 1);
-    } else {
-       // We default to non-conservative if doing MOL
-       m_iconserv_velocity.resize(AMREX_SPACEDIM, 0);
-       m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 0);
-    }
+    // We default to conservative if using EB
+    m_iconserv_velocity.resize(AMREX_SPACEDIM, 1);
+    m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 1);
 #else
-   m_iconserv_velocity.resize(AMREX_SPACEDIM, 0);
-   m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 0);
+    // We default to non-conservative if not using EB
+    m_iconserv_velocity.resize(AMREX_SPACEDIM, 0);
+    m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 0);
 #endif
 
+    // Density is always updated conservatively
     m_iconserv_density.resize(1, 1);
     m_iconserv_density_d.resize(1, 1);
 
+    // We update (rho * tracer), not tracer itself, hence we update conservatively
     m_iconserv_tracer.resize(m_ntrac, 1);
     m_iconserv_tracer_d.resize(m_ntrac, 1);
 }
@@ -53,6 +48,25 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     amrex::Print() << "REDISTRIBUTION TYPE " << m_redistribution_type << std::endl;
 #endif
 
+    // This will hold fluxes on faces
+    Vector<MultiFab> flux_x(finest_level+1);
+    Vector<MultiFab> flux_y(finest_level+1);
+#if (AMREX_SPACEDIM == 3)
+    Vector<MultiFab> flux_z(finest_level+1);
+#endif
+
+    // Make one flux MF at each level to hold all the fluxes (velocity, density, tracers)
+    int n_flux_comp = AMREX_SPACEDIM;
+    if (!m_constant_density) n_flux_comp += 1;
+    if ( m_advect_tracer)    n_flux_comp += m_ntrac;
+
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        AMREX_D_TERM(
+           flux_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
+           flux_y[lev].define(v_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
+           flux_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev)););
+    }
+
     // We first compute the velocity forcing terms to be used in predicting
     //    to faces before the MAC projection
     if (m_advection_type != "MOL") {
@@ -76,14 +90,25 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > inv_rho(finest_level+1);
+    Vector<Array<MultiFab*,AMREX_SPACEDIM> > fluxes(finest_level+1);
+
     for (int lev=0; lev <= finest_level; ++lev)
     {
         AMREX_D_TERM(inv_rho[lev][0] = &inv_rho_x[lev];,
                      inv_rho[lev][1] = &inv_rho_y[lev];,
                      inv_rho[lev][2] = &inv_rho_z[lev];);
+
+        AMREX_D_TERM(fluxes[lev][0] = &flux_x[lev];,
+                     fluxes[lev][1] = &flux_y[lev];,
+                     fluxes[lev][2] = &flux_z[lev];);
     }
 
     for (int lev = 0; lev <= finest_level; ++lev) {
+
+        AMREX_D_TERM(
+           flux_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
+           flux_y[lev].define(v_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
+           flux_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev)););
 
         AMREX_D_TERM(
            inv_rho_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
@@ -144,12 +169,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         MultiFab divu(vel[lev]->boxArray(),vel[lev]->DistributionMap(),1,4);
         divu.setVal(0.);
         Array<MultiFab const*, AMREX_SPACEDIM> u;
-        u[0] = u_mac[lev];
-        u[1] = v_mac[lev];
-#if (AMREX_SPACEDIM == 3)
-        u[2] = w_mac[lev];
-#endif
-
+        AMREX_D_TERM(u[0] = u_mac[lev];,
+                     u[1] = v_mac[lev];,
+                     u[2] = w_mac[lev];);
+                     
 #ifdef AMREX_USE_EB
         auto const& fact = EBFactory(lev);
         if (fact.isAllRegular())
@@ -161,344 +184,166 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
         divu.FillBoundary(geom[lev].periodicity());
 
+#ifdef AMREX_USE_EB
+        const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
+#endif
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
-
             Box const& bx = mfi.tilebox();
-            compute_convective_term(bx, lev, mfi,
+
+            // Make a FAB holding (rho * tracer) that is the same size as the original tracer FAB
+            FArrayBox rhotracfab;
+            if (m_advect_tracer && (m_ntrac>0)) {
+                Box rhotrac_box = Box((*tracer[lev])[mfi].box());
+                Elixir eli_rt;
+                Array4<Real> rhotrac;
+                Array4<Real const> tra =  tracer[lev]->const_array(mfi);
+                Array4<Real const> rho = density[lev]->const_array(mfi);
+                rhotracfab.resize(rhotrac_box, m_ntrac);
+                eli_rt  = rhotracfab.elixir();
+                rhotrac = rhotracfab.array();
+                amrex::ParallelFor(rhotrac_box, m_ntrac,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    rhotrac(i,j,k,n) = rho(i,j,k) * tra(i,j,k,n);
+                });
+            }
+
+            convection::compute_fluxes(bx, lev, mfi,
+                           vel[lev]->const_array(mfi),
+                           density[lev]->array(mfi),
+                           (m_advect_tracer && (m_ntrac>0)) ? rhotracfab.const_array() : Array4<Real const>{},
+                           divu.const_array(mfi),
+                           AMREX_D_DECL(u_mac[lev]->const_array(mfi),
+                                        v_mac[lev]->const_array(mfi),
+                                        w_mac[lev]->const_array(mfi)),
+                           AMREX_D_DECL(flux_x[lev].array(mfi),
+                                        flux_y[lev].array(mfi),
+                                        flux_z[lev].array(mfi)),
+                           (!vel_forces.empty()) ? vel_forces[lev]->const_array(mfi)
+                                                 : Array4<Real const>{},
+                           (!tra_forces.empty()) ? tra_forces[lev]->const_array(mfi)
+                                                 : Array4<Real const>{},
+                           get_velocity_bcrec(), 
+                           get_velocity_bcrec_device_ptr(),
+                           get_velocity_iconserv_device_ptr(),
+                           get_density_bcrec(), 
+                           get_density_bcrec_device_ptr(),
+                           get_density_iconserv_device_ptr(),
+                           get_tracer_bcrec(), 
+                           get_tracer_bcrec_device_ptr(),
+                           get_tracer_iconserv_device_ptr(),
+                           m_advection_type, m_constant_density, 
+                           m_advect_tracer, m_ntrac,
+                           m_godunov_ppm, m_godunov_use_forces_in_trans,
+#ifdef AMREX_USE_EB
+                           ebfact,
+#endif
+                           geom[lev], m_dt);
+        }
+    }
+
+    // In order to enforce conservation across coarse-fine boundaries we must be sure to average down the fluxes
+    //    before we use them
+    for (int lev = finest_level; lev > 0; --lev)
+    {
+        IntVect rr  = geom[lev].Domain().size() / geom[lev-1].Domain().size();
+#ifdef AMREX_USE_EB
+        EB_average_down_faces(GetArrOfConstPtrs(fluxes[lev]), fluxes[lev-1], rr, geom[lev-1]);
+#else
+        average_down_faces(GetArrOfConstPtrs(fluxes[lev]), fluxes[lev-1], rr, geom[lev-1]);
+#endif
+    }
+
+    for (int lev = 0; lev <= finest_level; ++lev)
+    {
+#ifdef AMREX_USE_EB
+        MultiFab dvdt_tmp(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,3,MFInfo(),Factory(lev)); 
+        MultiFab drdt_tmp(vel[lev]->boxArray(),dmap[lev],1             ,3,MFInfo(),Factory(lev)); 
+        MultiFab dtdt_tmp(vel[lev]->boxArray(),dmap[lev],m_ntrac       ,3,MFInfo(),Factory(lev)); 
+
+        const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
+#endif
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            Box const& bx = mfi.tilebox();
+            convection::compute_convective_term(bx, lev, mfi,
+#ifdef AMREX_USE_EB
+                                    dvdt_tmp.array(mfi),
+                                    drdt_tmp.array(mfi),
+                                    (m_ntrac>0) ? dtdt_tmp.array(mfi) : Array4<Real>{},
+#else
                                     conv_u[lev]->array(mfi),
                                     conv_r[lev]->array(mfi),
                                     (m_ntrac>0) ? conv_t[lev]->array(mfi) : Array4<Real>{},
-                                    vel[lev]->const_array(mfi),
-                                    density[lev]->array(mfi),
-                                    (m_ntrac>0) ? tracer[lev]->const_array(mfi) : Array4<Real const>{},
-                                    divu.const_array(mfi),
+#endif
                                     AMREX_D_DECL(u_mac[lev]->const_array(mfi),
                                                  v_mac[lev]->const_array(mfi),
                                                  w_mac[lev]->const_array(mfi)),
-                                    (!vel_forces.empty()) ? vel_forces[lev]->const_array(mfi)
-                                                          : Array4<Real const>{},
-                                    (!tra_forces.empty()) ? tra_forces[lev]->const_array(mfi)
-                                                          : Array4<Real const>{});
+                                    AMREX_D_DECL(flux_x[lev].const_array(mfi),
+                                                 flux_y[lev].const_array(mfi),
+                                                 flux_z[lev].const_array(mfi)),
+                                     get_velocity_iconserv_device_ptr(),
+                                     get_density_iconserv_device_ptr(),
+                                     get_tracer_iconserv_device_ptr(),
+                                     m_advection_type, m_constant_density, 
+                                     m_advect_tracer, m_ntrac,
+#ifdef AMREX_USE_EB
+                                     ebfact,
+#endif
+                                     geom[lev], m_dt);
         }
+
+#ifdef AMREX_USE_EB
+
+        // We only filled these on the valid cells so we fill same-level interior ghost cells here. 
+        // (We don't need values outside the domain or at a coarser level so we can call just FillBoundary)
+        dvdt_tmp.FillBoundary(geom[lev].periodicity());
+        drdt_tmp.FillBoundary(geom[lev].periodicity());
+        dtdt_tmp.FillBoundary(geom[lev].periodicity());
+
+        for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            // Make a FAB holding (rho * tracer) that is the same size as the original tracer FAB
+            FArrayBox rhotracfab;
+            if (m_advect_tracer && (m_ntrac > 0)) {
+                Box rhotrac_box = Box((*tracer[lev])[mfi].box());
+                Elixir eli_rt;
+                Array4<Real> rhotrac;
+                Array4<Real const> tra =  tracer[lev]->const_array(mfi);
+                Array4<Real const> rho = density[lev]->const_array(mfi);
+                rhotracfab.resize(rhotrac_box, m_ntrac);
+                eli_rt  = rhotracfab.elixir();
+                rhotrac = rhotracfab.array();
+                amrex::ParallelFor(rhotrac_box, m_ntrac,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    rhotrac(i,j,k,n) = rho(i,j,k) * tra(i,j,k,n);
+                });
+            }
+
+            Box const& bx = mfi.tilebox();
+            convection::redistribute_convective_term (bx, lev, mfi,
+                                          vel[lev]->const_array(mfi),
+                                          density[lev]->const_array(mfi),
+                                          (m_advect_tracer && (m_ntrac>0)) ? rhotracfab.const_array() : Array4<Real const>{},
+                                          dvdt_tmp.array(mfi),
+                                          drdt_tmp.array(mfi),
+                                          (m_ntrac>0) ? dtdt_tmp.array(mfi) : Array4<Real>{},
+                                          conv_u[lev]->array(mfi),
+                                          conv_r[lev]->array(mfi),
+                                          (m_ntrac>0) ? conv_t[lev]->array(mfi) : Array4<Real>{},
+                                          m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
+                                          ebfact, geom[lev], m_dt);
+       }
+#endif
     }
 }
-
-void
-incflo::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
-                                 Array4<Real> const& dvdt, // velocity
-                                 Array4<Real> const& drdt, // density
-                                 Array4<Real> const& dtdt, // tracer
-                                 Array4<Real const> const& vel,
-                                 Array4<Real const> const& rho,
-                                 Array4<Real const> const& tra,
-                                 Array4<Real const> const& divu,
-                                 AMREX_D_DECL(Array4<Real const> const& umac,
-                                              Array4<Real const> const& vmac,
-                                              Array4<Real const> const& wmac),
-                                 Array4<Real const> const& fvel,
-                                 Array4<Real const> const& ftra)
-{
-    Real l_dt = m_dt;
-
-#ifdef AMREX_USE_EB
-    auto const& fact = EBFactory(lev);
-    EBCellFlagFab const& flagfab = fact.getMultiEBCellFlagFab()[mfi];
-    Array4<EBCellFlag const> const& flag = flagfab.const_array();
-    if (flagfab.getType(bx) == FabType::covered)
-    {
-        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {
-            AMREX_D_TERM(dvdt(i,j,k,0) = 0.0;,
-                         dvdt(i,j,k,1) = 0.0;,
-                         dvdt(i,j,k,2) = 0.0;);
-            drdt(i,j,k) = 0.0;
-        });
-        if (m_advect_tracer) {
-            amrex::ParallelFor(bx, m_ntrac, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                dtdt(i,j,k,n) = 0.0;
-            });
-        }
-        return;
-    }
-
-    bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
-
-    Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, AMREX_D_DECL(apx, apy, apz);
-    if (!regular) {
-        AMREX_D_TERM(fcx = fact.getFaceCent()[0]->const_array(mfi);,
-                     fcy = fact.getFaceCent()[1]->const_array(mfi);,
-                     fcz = fact.getFaceCent()[2]->const_array(mfi););
-        ccc   = fact.getCentroid().const_array(mfi);
-        AMREX_D_TERM(apx = fact.getAreaFrac()[0]->const_array(mfi);,
-                     apy = fact.getAreaFrac()[1]->const_array(mfi);,
-                     apz = fact.getAreaFrac()[2]->const_array(mfi););
-        vfrac = fact.getVolFrac().const_array(mfi);
-    }
-#endif
-  
-    // Make a FAB holding (rho * tracer) that is the same size as the original tracer FAB
-    Box rhotrac_box = Box(tra);
-    FArrayBox rhotracfab;
-    Elixir eli_rt;
-    Array4<Real> rhotrac;
-    if (m_advect_tracer) {
-        rhotracfab.resize(rhotrac_box, m_ntrac);
-        eli_rt  = rhotracfab.elixir();
-        rhotrac = rhotracfab.array();
-        amrex::ParallelFor(rhotrac_box, m_ntrac,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            rhotrac(i,j,k,n) = rho(i,j,k) * tra(i,j,k,n);
-        });
-    }
-
-    int nmaxcomp = AMREX_SPACEDIM;
-    if (m_advect_tracer) nmaxcomp = std::max(nmaxcomp,m_ntrac);
-
-    if (m_advection_type == "Godunov")
-    {
-        int n_tmp_fac;
-#if (AMREX_SPACEDIM == 3)
-        n_tmp_fac = 14;
-#else
-        n_tmp_fac = 10;
-#endif
-
-        // n_tmp_grow is used to create tmpfab which is passed in to compute_godunov_advection
-        // (both regular and EB) as pointer "p" and is used to hold Imx/Ipx etc ...
-        int n_tmp_grow;
-#ifdef AMREX_USE_EB
-        if (m_redistribution_type == "StateRedist")
-            n_tmp_grow = 5;
-        else
-            n_tmp_grow = 4;
-#else
-        n_tmp_grow = 1;
-#endif
-
-        FArrayBox tmpfab(amrex::grow(bx,n_tmp_grow), nmaxcomp*n_tmp_fac+1);
-        Elixir eli = tmpfab.elixir();
-
-#ifdef AMREX_USE_EB
-        Box gbx = bx;
-        if (!regular)  
-        {
-            // We need 3 if we are doing state redistribution
-            if (m_redistribution_type == "StateRedist" ||
-                m_redistribution_type == "MergeRedist")
-                gbx.grow(3);
-            else if (m_redistribution_type == "FluxRedist") 
-                gbx.grow(2);
-            else if (m_redistribution_type == "NoRedist") 
-                gbx.grow(1);
-            else 
-                amrex::Abort("Dont know this redistribution type");
-        }
-        // This one holds the convective term on a grown region so we can redistribute
-        FArrayBox dUdt_tmpfab(gbx,nmaxcomp);
-        Array4<Real> dUdt_tmp = dUdt_tmpfab.array();
-        Elixir eli_du = dUdt_tmpfab.elixir();
-
-        FArrayBox scratch_fab(gbx,3*nmaxcomp);
-        Array4<Real> scratch = scratch_fab.array();
-        Elixir eli_scratch = scratch_fab.elixir();
-
-        if (!regular)
-        {
-            ebgodunov::compute_godunov_advection(gbx, AMREX_SPACEDIM,
-                                                 dUdt_tmp, vel,
-                                                 AMREX_D_DECL(umac, vmac, wmac), 
-                                                 fvel, divu, l_dt, 
-                                                 get_velocity_bcrec(),
-                                                 get_velocity_bcrec_device_ptr(),
-                                                 get_velocity_iconserv_device_ptr(),
-                                                 tmpfab.dataPtr(), flag, 
-                                                 AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                 AMREX_D_DECL(fcx, fcy, fcz), ccc, 
-                                                 geom[lev], true); // is_velocity
-            redistribution::redistribute_eb(bx, AMREX_SPACEDIM, dvdt, dUdt_tmp, vel, scratch, flag,
-                                            AMREX_D_DECL(apx, apy, apz), vfrac,
-                                            AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
-
-            if (!m_constant_density) {
-                ebgodunov::compute_godunov_advection(gbx, 1,
-                                                     dUdt_tmp, rho,
-                                                     AMREX_D_DECL(umac, vmac, wmac), 
-                                                     {}, divu, l_dt, 
-                                                     get_density_bcrec(),
-                                                     get_density_bcrec_device_ptr(),
-                                                     get_density_iconserv_device_ptr(),
-                                                     tmpfab.dataPtr(), flag,
-                                                     AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                     AMREX_D_DECL(fcx, fcy, fcz), ccc, 
-                                                     geom[lev]);
-                redistribution::redistribute_eb(bx, 1, drdt, dUdt_tmp, rho, scratch, flag,
-                                                AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
-            }
-            if (m_advect_tracer) {
-                ebgodunov::compute_godunov_advection(gbx, m_ntrac,
-                                                     dUdt_tmp, rhotrac,
-                                                     AMREX_D_DECL(umac, vmac, wmac), 
-                                                     ftra, divu, l_dt, 
-                                                     get_tracer_bcrec(),
-                                                     get_tracer_bcrec_device_ptr(),
-                                                     get_tracer_iconserv_device_ptr(),
-                                                     tmpfab.dataPtr(), flag,
-                                                     AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                     AMREX_D_DECL(fcx, fcy, fcz), ccc, 
-                                                     geom[lev]);
-                redistribution::redistribute_eb(bx, m_ntrac, dtdt, dUdt_tmp, rhotrac, scratch, flag,
-                                                AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
-            }
-            Gpu::streamSynchronize();
-        }
-        else
-#endif
-        {
-            godunov::compute_godunov_advection(bx, AMREX_SPACEDIM,
-                                               dvdt, vel,
-                                               AMREX_D_DECL(umac, vmac, wmac), 
-                                               fvel, divu, l_dt, 
-                                               get_velocity_bcrec_device_ptr(),
-                                               get_velocity_iconserv_device_ptr(),
-                                               tmpfab.dataPtr(),m_godunov_ppm, 
-                                               m_godunov_use_forces_in_trans, 
-                                               geom[lev], true);
-
-            if (!m_constant_density) {
-                godunov::compute_godunov_advection(bx, 1,
-                                                   drdt, rho,
-                                                   AMREX_D_DECL(umac, vmac, wmac),
-                                                   {}, divu, l_dt, 
-                                                   get_density_bcrec_device_ptr(),
-                                                   get_density_iconserv_device_ptr(),
-                                                   tmpfab.dataPtr(),m_godunov_ppm,
-                                                   m_godunov_use_forces_in_trans,
-                                                   geom[lev]);
-            }
-            if (m_advect_tracer) {
-                godunov::compute_godunov_advection(bx, m_ntrac,
-                                                   dtdt, rhotrac,
-                                                   AMREX_D_DECL(umac, vmac, wmac),
-                                                   ftra, divu, l_dt, 
-                                                   get_tracer_bcrec_device_ptr(),
-                                                   get_tracer_iconserv_device_ptr(),
-                                                   tmpfab.dataPtr(),m_godunov_ppm,
-                                                   m_godunov_use_forces_in_trans,
-                                                   geom[lev]);
-            }
-            Gpu::streamSynchronize();
-        }
-    }
-    else if (m_advection_type == "MOL")
-    {
-        Box tmpbox = amrex::surroundingNodes(bx);
-        int tmpcomp = nmaxcomp*3;
-#ifdef AMREX_USE_EB
-        Box gbx = bx;
-        if (!regular) {
-            gbx.grow(2);
-            tmpbox.grow(3);
-            tmpcomp += nmaxcomp;
-        }
-#endif
-
-        FArrayBox tmpfab(tmpbox, tmpcomp);
-        Elixir eli = tmpfab.elixir();
-
-        AMREX_D_TERM(Array4<Real> fx = tmpfab.array(0);,
-                     Array4<Real> fy = tmpfab.array(nmaxcomp);,
-                     Array4<Real> fz = tmpfab.array(nmaxcomp*2););
-
-#ifdef AMREX_USE_EB 
-        if (!regular)
-        {
-            Array4<Real> scratch = tmpfab.array(0);
-            Array4<Real> dUdt_tmp = tmpfab.array(nmaxcomp*3);
-
-            // velocity
-            mol::compute_convective_fluxes_eb(gbx, AMREX_SPACEDIM,
-                                              AMREX_D_DECL(fx, fy, fz), vel, 
-                                              AMREX_D_DECL(umac, vmac, wmac),
-                                              get_velocity_bcrec().data(),
-                                              get_velocity_bcrec_device_ptr(),
-                                              flag, AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev]);
-            mol::compute_convective_rate_eb(gbx, AMREX_SPACEDIM, dUdt_tmp, AMREX_D_DECL(fx, fy, fz),
-                                            flag, vfrac, AMREX_D_DECL(apx, apy, apz), geom[lev]);
-            redistribution::redistribute_eb(bx, AMREX_SPACEDIM, dvdt, dUdt_tmp, vel, scratch, flag,
-                                            AMREX_D_DECL(apx, apy, apz), vfrac,
-                                            AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
-
-            // density
-            if (!m_constant_density) {
-                mol::compute_convective_fluxes_eb(gbx, 1,
-                                                  AMREX_D_DECL(fx, fy, fz), rho, 
-                                                  AMREX_D_DECL(umac, vmac, wmac),
-                                                  get_density_bcrec().data(),
-                                                  get_density_bcrec_device_ptr(),
-                                                  flag, AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev]);
-                mol::compute_convective_rate_eb( gbx, 1, dUdt_tmp, AMREX_D_DECL(fx, fy, fz),
-                                                flag, vfrac, AMREX_D_DECL(apx, apy, apz), geom[lev]);
-                redistribution::redistribute_eb(bx, 1, drdt, dUdt_tmp, rho, scratch, flag,
-                                                AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
-            }
-
-            if (m_advect_tracer) {
-                mol::compute_convective_fluxes_eb(gbx, m_ntrac,
-                                                  AMREX_D_DECL(fx, fy, fz), rhotrac, 
-                                                  AMREX_D_DECL(umac, vmac, wmac),
-                                                  get_tracer_bcrec().data(),
-                                                  get_tracer_bcrec_device_ptr(),
-                                                  flag, AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev]);
-                mol::compute_convective_rate_eb(gbx, m_ntrac, dUdt_tmp, AMREX_D_DECL(fx, fy, fz),
-                                                flag, vfrac, AMREX_D_DECL(apx, apy, apz), geom[lev]);
-                redistribution::redistribute_eb(bx, m_ntrac, dtdt, dUdt_tmp, rhotrac, scratch, flag,
-                                                AMREX_D_DECL(apx, apy, apz), vfrac,
-                                                AMREX_D_DECL(fcx, fcy, fcz), ccc, geom[lev], l_dt, m_redistribution_type);
-            }
-        }
-        else
-#endif
-        {
-            // const auto dxinv = geom[lev].InvCellSizeArray();
-
-            // velocity
-            mol::compute_convective_fluxes(bx, AMREX_SPACEDIM, AMREX_D_DECL(fx, fy, fz), vel,
-                                           AMREX_D_DECL(umac, vmac, wmac),
-                                           get_velocity_bcrec().data(),
-                                           get_velocity_bcrec_device_ptr(),geom[lev]);
-
-            // amrex_compute_divergence(bx,dvdt,AMREX_D_DECL(fx,fy,fz),dxinv);
-            mol::compute_convective_rate(bx, AMREX_SPACEDIM, dvdt, AMREX_D_DECL(fx, fy, fz), geom[lev]);
-
-            // density
-            if (!m_constant_density) {
-                mol::compute_convective_fluxes(bx, 1, AMREX_D_DECL(fx, fy, fz), rho,
-                                               AMREX_D_DECL(umac, vmac, wmac),
-                                               get_density_bcrec().data(),
-                                               get_density_bcrec_device_ptr(),geom[lev]);
-                mol::compute_convective_rate(bx, 1, drdt, AMREX_D_DECL(fx, fy, fz), geom[lev]);
-            }
-
-            // tracer
-            if (m_advect_tracer) {
-                mol::compute_convective_fluxes(bx, m_ntrac, AMREX_D_DECL(fx, fy, fz), rhotrac,
-                                               AMREX_D_DECL(umac, vmac, wmac),
-                                               get_tracer_bcrec().data(),
-                                               get_tracer_bcrec_device_ptr(), geom[lev]);
-                mol::compute_convective_rate(bx, m_ntrac, dtdt, AMREX_D_DECL(fx, fy, fz), geom[lev]);
-            }
-        }
-    } else { 
-        amrex::Abort("Dont know this advection type!");
-    }
-}
-

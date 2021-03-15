@@ -1,8 +1,8 @@
 CEXE_headers += EBGodunov.H
 
+CEXE_sources += incflo_ebgodunov_fluxes_$(DIM)D.cpp
 CEXE_sources += incflo_ebgodunov_predict.cpp
 CEXE_sources += incflo_ebgodunov_predict_$(DIM)D.cpp
-CEXE_sources += incflo_ebgodunov_advection_$(DIM)D.cpp
 CEXE_sources += incflo_ebgodunov_make_trans_vels.cpp
 CEXE_sources += incflo_ebgodunov_plm.cpp
 CEXE_sources += incflo_ebgodunov_plm_fpu.cpp

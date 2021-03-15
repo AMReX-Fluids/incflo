@@ -1,7 +1,7 @@
 CEXE_headers += Godunov.H
 
 CEXE_sources += incflo_godunov_predict_$(DIM)D.cpp
-CEXE_sources += incflo_godunov_advection_$(DIM)D.cpp
+CEXE_sources += incflo_godunov_fluxes_$(DIM)D.cpp
 CEXE_sources += incflo_godunov_plm.cpp
 CEXE_sources += incflo_godunov_ppm.cpp
 
