@@ -52,7 +52,7 @@ incflo::vol_wgt_sum (Vector<MultiFab*> const& mf_in, int icomp)
        const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
        auto const& vfrac = ebfact->getVolFrac();
    
-       Real sm = amrex::ReduceSum(mf[lev], *vfrac, 0, [vol]
+       Real sm = amrex::ReduceSum(mf[lev], vfrac, 0, [vol]
        AMREX_GPU_HOST_DEVICE (Box const& bx, Array4<Real const> const& mf_arr, Array4<Real const> const& vf_arr) -> Real
        {
            Real sum = 0.0;
