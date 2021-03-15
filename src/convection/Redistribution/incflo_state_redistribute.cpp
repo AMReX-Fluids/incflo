@@ -88,6 +88,11 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
     Array4<Real> soln_hat = soln_hat_fab.array();
     Array4<Real> cent_hat = cent_hat_fab.array();
 
+    Elixir eli_nbhd_vol = nbhd_vol_fab.elixir();
+    Elixir eli_nrs      = nrs_fab.elixir();
+    Elixir eli_cent_hat = cent_hat_fab.elixir();
+    Elixir eli_soln_hat = soln_hat_fab.elixir();
+
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {

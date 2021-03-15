@@ -36,6 +36,7 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
 #endif
 
     Array4<int> itr = itracker.array();
+    Elixir eli_itr  = itracker.elixir();
 
     amrex::ParallelFor(bx,ncomp, 
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -160,6 +161,7 @@ void redistribution::redistribute_initial_data (Box const& bx, int ncomp,
     });
 
     Array4<int> itr = itracker.array();
+    Elixir eli_itr  = itracker.elixir();
 
     if (redistribution_type == "MergeRedist") {
 
