@@ -278,7 +278,7 @@ ebgodunov::compute_godunov_fluxes (Box const& bx, int flux_comp, int ncomp,
         } else {
              qx(i,j,k,n) = 0.;
         }
-        fx(i,j,k,n) = umac(i,j,k) * qx(i,j,k,n);
+        fx(i,j,k,flux_comp+n) = umac(i,j,k) * qx(i,j,k,n);
     });
 
     //
@@ -370,7 +370,7 @@ ebgodunov::compute_godunov_fluxes (Box const& bx, int flux_comp, int ncomp,
         } else {
             qy(i,j,k,n) = 0.;
         }
-        fy(i,j,k,n) = vmac(i,j,k) * qy(i,j,k,n);
+        fy(i,j,k,flux_comp+n) = vmac(i,j,k) * qy(i,j,k,n);
     });
 
     //
@@ -462,6 +462,6 @@ ebgodunov::compute_godunov_fluxes (Box const& bx, int flux_comp, int ncomp,
         } else {
             qz(i,j,k,n) = 0.;
         }
-        fz(i,j,k,n) = wmac(i,j,k) * qz(i,j,k,n);
+        fz(i,j,k,flux_comp+n) = wmac(i,j,k) * qz(i,j,k,n);
     });
 }
