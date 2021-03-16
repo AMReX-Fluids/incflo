@@ -96,16 +96,16 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
                         dUdt_in(i,j,k,n) = 0.;
                 });
 
-        amrex::ParallelFor(Box(dUdt_in), ncomp,
+        amrex::ParallelFor(Box(scratch), ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-                dUdt_in(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
+                scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
             }
         );
 
         make_itracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
 
-        state_redistribute(bx, ncomp, dUdt_out, dUdt_in, flag, vfrac,
+        state_redistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
                            AMREX_D_DECL(fcx, fcy, fcz), ccc, itr, lev_geom);
 
         amrex::ParallelFor(bx, ncomp,
@@ -116,6 +116,7 @@ void redistribution::redistribute_eb (Box const& bx, int ncomp,
         );
 
     } else if (redistribution_type == "NoRedist") {
+
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {

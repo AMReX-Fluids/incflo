@@ -44,7 +44,12 @@ convection::redistribute_convective_term (Box const& bx, int lev, MFIter const& 
         vfrac = ebfact->getVolFrac().const_array(mfi);
 
         Box gbx = bx;
-        gbx.grow(2);
+	  
+	if (l_redistribution_type == "StateRedist") 
+            gbx.grow(3);
+	else if (l_redistribution_type == "FluxRedist") 
+            gbx.grow(2);
+
         int nmaxcomp = AMREX_SPACEDIM;
         if (l_advect_tracer) nmaxcomp == std::max(nmaxcomp,l_ntrac);
 

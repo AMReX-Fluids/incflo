@@ -274,11 +274,11 @@ redistribution::state_redistribute ( Box const& bx, int ncomp,
 
                     if (bx.contains(IntVect(AMREX_D_DECL(r,s,t))))
                     {
-                        U_out(r,s,t,n) += soln_hat(i,j,k,n);  
-
-                        AMREX_D_TERM(U_out(r,s,t,n) += slopes_eb[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0));,
-                                     U_out(r,s,t,n) += slopes_eb[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1));,
-                                     U_out(r,s,t,n) += slopes_eb[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2)););
+                        Real update = soln_hat(i,j,k,n);  
+                        AMREX_D_TERM(update += slopes_eb[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0));,
+                                     update += slopes_eb[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1));,
+                                     update += slopes_eb[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2)););
+			amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),update);
 
                     } // if bx contains
                 } // i_nbor
