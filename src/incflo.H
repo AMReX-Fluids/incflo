@@ -581,14 +581,7 @@ private:
 #ifdef AMREX_USE_EB
         if (!EBFactory(0).isAllRegular()) 
         {
-            if (m_advection_type == "Godunov" && m_redistribution_type == "StateRedist") 
-                return 6;
-            else if (m_advection_type == "Godunov" && m_redistribution_type != "StateRedist") 
-                return 5;
-            else if (m_advection_type == "MOL" && m_redistribution_type == "StateRedist") 
-                return 5;
-            else 
-                return 4;
+            return 4;
         }
 #endif
         {
@@ -602,12 +595,8 @@ private:
     {
        if (m_advection_type == "MOL") 
            return 0;
-#ifdef AMREX_USE_EB
-       else if (m_redistribution_type == "StateRedist")
-           return 4;
-#endif
        else 
-           return 3;
+           return 1;
     } 
 
     int nghost_mac () const {
@@ -619,35 +608,13 @@ private:
 
 #ifdef AMREX_USE_EB
     int nghost_eb_basic () const 
-    {
-        if (m_advection_type == "Godunov" && m_redistribution_type == "StateRedist") 
-            return 6;
-        else if (m_advection_type == "Godunov" && m_redistribution_type != "StateRedist") 
-            return 5;
-        else if (m_advection_type == "MOL" && m_redistribution_type == "StateRedist") 
-            return 5;
-        else 
-            return 4;
-    }
+    { return 4; }
 
     int nghost_eb_volume () const 
-    {
-        if (m_advection_type == "Godunov" && m_redistribution_type == "StateRedist") 
-            return 6;
-        else if (m_advection_type == "Godunov" && m_redistribution_type != "StateRedist") 
-            return 5;
-        else if (m_advection_type == "MOL" && m_redistribution_type == "StateRedist") 
-            return 5;
-        else 
-            return 4;
-    }
+    { return 4; }
 
-    int nghost_eb_full () const {
-        if (m_advection_type == "Godunov" && m_redistribution_type == "StateRedist") 
-            return 5;
-        else 
-            return 4;
-    }
+    int nghost_eb_full () const 
+    { return 4; }
 #endif
 
     bool need_divtau () const {
