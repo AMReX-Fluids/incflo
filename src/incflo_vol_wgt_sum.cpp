@@ -35,8 +35,9 @@ incflo::vol_wgt_sum (Vector<MultiFab*> const& mf_in, int icomp)
                    auto const& fabarr = mf[lev].array(mfi);
                    int          ncomp = mf[lev].nComp(); 
                    baf.intersections(grids[lev][mfi.index()],isects);
-                   for (int is = 0; is < isects.size(); is++) {
-                      amrex::ParallelFor(isects[is].second, ncomp, [fabarr]
+                   for (const auto& is : isects)
+                   {
+                      amrex::ParallelFor(is.second, ncomp, [fabarr]
                       AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                       {
                          fabarr(i,j,k,n) = 0.0;
