@@ -14,7 +14,7 @@
 
 namespace convection {
 
-    void compute_convective_term (amrex::Box const& bx, int lev, amrex::MFIter const& mfi,
+    void compute_convective_term (amrex::Box const& bx, amrex::MFIter const& mfi,
                                   amrex::Array4<amrex::Real> const& dvdt, // velocity
                                   amrex::Array4<amrex::Real> const& drdt, // density
                                   amrex::Array4<amrex::Real> const& dtdt, // tracer
@@ -27,15 +27,14 @@ namespace convection {
                                   int  const* d_vel_iconserv,
                                   int  const* d_den_iconserv,
                                   int  const* d_tra_iconserv,
-                                  std::string l_advection_type, bool l_constant_density, 
+                                  bool l_constant_density, 
                                   bool l_advect_tracer, int l_ntrac,
 #ifdef AMREX_USE_EB
                                   amrex::EBFArrayBoxFactory const* ebfact,
 #endif
-                                  amrex::Geometry& geom,
-                                  amrex::Real l_dt);
+                                  amrex::Geometry& geom);
 
-    void compute_fluxes (amrex::Box const& bx, int lev, amrex::MFIter const& mfi,
+    void compute_fluxes (amrex::Box const& bx, amrex::MFIter const& mfi,
                          amrex::Array4<amrex::Real const> const& vel,
                          amrex::Array4<amrex::Real const> const& rho,
                          amrex::Array4<amrex::Real const> const& tra,
@@ -90,7 +89,7 @@ namespace convection {
                                                      amrex::Array4<amrex::Real const> const& apz),
                                         amrex::Geometry& geom, int const* iconserv);
 
-    void redistribute_convective_term (amrex::Box const& bx, int lev, amrex::MFIter const& mfi,
+    void redistribute_convective_term (amrex::Box const& bx, amrex::MFIter const& mfi,
                                        amrex::Array4<amrex::Real const> const& vel,       // velocity
                                        amrex::Array4<amrex::Real const> const& rho,       // density
                                        amrex::Array4<amrex::Real const> const& rhotrac,   // tracer

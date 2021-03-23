@@ -9,7 +9,7 @@
 using namespace amrex;
 
 void
-convection::compute_fluxes (Box const& bx, int lev, MFIter const& mfi,
+convection::compute_fluxes (Box const& bx, MFIter const& mfi,
                             Array4<Real const> const& vel,
                             Array4<Real const> const& rho,
                             Array4<Real const> const& rhotra,

@@ -3,7 +3,7 @@
 using namespace amrex;
 
 void
-convection::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
+convection::compute_convective_term (Box const& bx, MFIter const& mfi,
                                      Array4<Real> const& dvdt, // velocity
                                      Array4<Real> const& drdt, // density
                                      Array4<Real> const& dtdt, // tracer
@@ -16,12 +16,12 @@ convection::compute_convective_term (Box const& bx, int lev, MFIter const& mfi,
                                      int const* l_conserv_velocity_d,
                                      int const* l_conserv_density_d,
                                      int const* l_conserv_tracer_d,
-                                     std::string l_advection_type, bool l_constant_density, 
+                                     bool l_constant_density, 
                                      bool l_advect_tracer, int l_ntrac,
 #ifdef AMREX_USE_EB
                                      EBFArrayBoxFactory const* ebfact,
 #endif
-                                     Geometry& geom, Real l_dt)
+                                     Geometry& geom)
 {
 #ifdef AMREX_USE_EB
     EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
@@ -164,6 +164,11 @@ convection::compute_convective_update_eb (Box const& bx, int flux_comp, int ncom
 {
     const auto dxinv = geom.InvCellSizeArray();
     const Box dbox   = geom.growPeriodicDomain(2);
+
+    // We always use conservative discretization with EB
+    for (int n = 0; n < ncomp; n++)
+       AMREX_ALWAYS_ASSERT(iconserv[n]);
+
     amrex::ParallelFor(bx, ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {

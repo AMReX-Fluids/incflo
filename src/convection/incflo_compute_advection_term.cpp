@@ -213,7 +213,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 });
             }
 
-            convection::compute_fluxes(bx, lev, mfi,
+            convection::compute_fluxes(bx, mfi,
                            vel[lev]->const_array(mfi),
                            density[lev]->array(mfi),
                            (m_advect_tracer && (m_ntrac>0)) ? rhotracfab.const_array() : Array4<Real const>{},
@@ -275,7 +275,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Box const& bx = mfi.tilebox();
-            convection::compute_convective_term(bx, lev, mfi,
+            convection::compute_convective_term(bx, mfi,
 #ifdef AMREX_USE_EB
                                     dvdt_tmp.array(mfi),
                                     drdt_tmp.array(mfi),
@@ -294,12 +294,12 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                      get_velocity_iconserv_device_ptr(),
                                      get_density_iconserv_device_ptr(),
                                      get_tracer_iconserv_device_ptr(),
-                                     m_advection_type, m_constant_density, 
+                                     m_constant_density, 
                                      m_advect_tracer, m_ntrac,
 #ifdef AMREX_USE_EB
                                      ebfact,
 #endif
-                                     geom[lev], m_dt);
+                                     geom[lev]);
         }
 
 #ifdef AMREX_USE_EB
@@ -331,7 +331,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             }
 
             Box const& bx = mfi.tilebox();
-            convection::redistribute_convective_term (bx, lev, mfi,
+            convection::redistribute_convective_term (bx, mfi,
                                           vel[lev]->const_array(mfi),
                                           density[lev]->const_array(mfi),
                                           (m_advect_tracer && (m_ntrac>0)) ? rhotracfab.const_array() : Array4<Real const>{},

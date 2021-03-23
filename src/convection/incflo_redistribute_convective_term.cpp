@@ -8,7 +8,7 @@
 using namespace amrex;
 
 void
-convection::redistribute_convective_term (Box const& bx, int lev, MFIter const& mfi,
+convection::redistribute_convective_term (Box const& bx, MFIter const& mfi,
                                           Array4<Real const > const& vel, // velocity
                                           Array4<Real const > const& rho, // density
                                           Array4<Real const > const& rhotrac, // tracer
@@ -51,7 +51,8 @@ convection::redistribute_convective_term (Box const& bx, int lev, MFIter const& 
             gbx.grow(2);
 
         int nmaxcomp = AMREX_SPACEDIM;
-        if (l_advect_tracer) nmaxcomp == std::max(nmaxcomp,l_ntrac);
+        if (l_advect_tracer) 
+            nmaxcomp = std::max(nmaxcomp,l_ntrac);
 
         FArrayBox scratch_fab(gbx,nmaxcomp);
         Array4<Real> scratch = scratch_fab.array();
