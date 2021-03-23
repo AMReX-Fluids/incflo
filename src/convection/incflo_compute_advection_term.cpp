@@ -266,6 +266,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         MultiFab drdt_tmp(vel[lev]->boxArray(),dmap[lev],1             ,3,MFInfo(),Factory(lev)); 
         MultiFab dtdt_tmp(vel[lev]->boxArray(),dmap[lev],m_ntrac       ,3,MFInfo(),Factory(lev)); 
 
+        // Must initialize to zero because not all values may be set, e.g. outside the domain.
+        dvdt_tmp.setVal(0.);
+        drdt_tmp.setVal(0.);
+        dtdt_tmp.setVal(0.);
+
         const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
 #endif
 
