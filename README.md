@@ -1,10 +1,12 @@
 # Directory overview
 
-| File       | Description                                         |
-| -----------| --------------------------------------------------- |
-| test       | Directory for building EB executable                |
-| test_no_eb | Directory for building non-EB executable            |
-| src        | C++/Fortran source files                            |
+| Directory     | Description                                         |
+| --------------| --------------------------------------------------- |
+| test_2d       | Directory for building 2D EB executable             |
+| test_3d       | Directory for building 3D EB executable             |
+| test_no_eb_2d | Directory for building 2D non-EB executable         |
+| test_no_eb    | Directory for building 3D non-EB executable         |
+| src           | Source files                                        |
 
 
 # Using incflo
