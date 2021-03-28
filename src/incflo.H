@@ -618,7 +618,7 @@ private:
 #endif
 
     bool need_divtau () const {
-        return ( !(!m_godunov_include_diff_in_forcing and DiffusionType::Implicit == m_diff_type) );
+        return ( m_godunov_include_diff_in_forcing || DiffusionType::Implicit != m_diff_type );
     }
 
     bool useTensorSolve () const {
