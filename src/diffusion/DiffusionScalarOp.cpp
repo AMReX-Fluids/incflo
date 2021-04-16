@@ -41,8 +41,8 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                     m_incflo->DistributionMap(0,finest_level),
                                                     info_solve, ebfact));
             m_eb_vel_solve_op->setMaxOrder(m_mg_maxorder);
-            m_eb_vel_solve_op->setDomainBC(m_incflo->get_diffuse_velocity_bc(Orientation::low ,0),
-                                           m_incflo->get_diffuse_velocity_bc(Orientation::high,0));
+
+            // We don't call setDomainBC here because we will need to call it separately for each component
         }
 
         if (m_incflo->need_divtau()) 
@@ -64,8 +64,8 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                     m_incflo->DistributionMap(0,finest_level),
                                                     info_apply, ebfact));
             m_eb_vel_apply_op->setMaxOrder(m_mg_maxorder);
-            m_eb_vel_apply_op->setDomainBC(m_incflo->get_diffuse_velocity_bc(Orientation::low ,0),
-                                           m_incflo->get_diffuse_velocity_bc(Orientation::high,0));
+
+            // We don't call setDomainBC here because we will need to call it separately for each component
         }
     }
     else
@@ -86,8 +86,8 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                          m_incflo->DistributionMap(0,m_incflo->finestLevel()),
                                                          info_solve));
             m_reg_vel_solve_op->setMaxOrder(m_mg_maxorder);
-            m_reg_vel_solve_op->setDomainBC(m_incflo->get_diffuse_velocity_bc(Orientation::low ,0),
-                                            m_incflo->get_diffuse_velocity_bc(Orientation::high,0));
+
+            // We don't call setDomainBC here because we will need to call it separately for each component
         }
         if (m_incflo->need_divtau()) {
             m_reg_scal_apply_op.reset(new MLABecLaplacian(m_incflo->Geom(0,m_incflo->finestLevel()),
@@ -107,8 +107,8 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                          m_incflo->DistributionMap(0,m_incflo->finestLevel()),
                                                          info_apply));
             m_reg_vel_apply_op->setMaxOrder(m_mg_maxorder);
-            m_reg_vel_apply_op->setDomainBC(m_incflo->get_diffuse_velocity_bc(Orientation::low ,0),
-                                            m_incflo->get_diffuse_velocity_bc(Orientation::high,0));
+
+            // We don't call setDomainBC here because we will need to call it separately for each component
         }
     }
 }
@@ -296,6 +296,11 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
 #ifdef AMREX_USE_EB
         if (m_eb_vel_solve_op)
         {
+            // Because the different components may have different boundary conditions, we need to
+            // reset these for each solve
+            m_eb_vel_solve_op->setDomainBC(m_incflo->get_diffuse_velocity_bc(Orientation::low ,comp),
+                                           m_incflo->get_diffuse_velocity_bc(Orientation::high,comp));
+
             m_eb_vel_solve_op->setScalars(1.0, dt);
             for (int lev = 0; lev <= finest_level; ++lev) {
                 m_eb_vel_solve_op->setACoeffs(lev, *density[lev]);
@@ -312,12 +317,16 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
         else
 #endif
         {
+            // Because the different components may have different boundary conditions, we need to
+            // reset these for each solve
+            m_reg_vel_solve_op->setDomainBC(m_incflo->get_diffuse_velocity_bc(Orientation::low ,comp),
+                                            m_incflo->get_diffuse_velocity_bc(Orientation::high,comp));
+
             m_reg_vel_solve_op->setScalars(1.0, dt);
             for (int lev = 0; lev <= finest_level; ++lev) {
                 m_reg_vel_solve_op->setACoeffs(lev, *density[lev]);
             }
     
-
             for (int lev = 0; lev <= finest_level; ++lev) {
                 Array<MultiFab,AMREX_SPACEDIM> 
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *eta[lev]);
@@ -327,6 +336,7 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
 
         Vector<MultiFab> phi;
         for (int lev = 0; lev <= finest_level; ++lev) {
+            vel[lev]->FillBoundary(m_incflo->Geom(lev).periodicity());
             phi.emplace_back(*vel[lev], amrex::make_alias, comp, 1);
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -547,6 +557,11 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
             Vector<MultiFab> divtau_single;
             Vector<MultiFab>    vel_single;
 
+            // Because the different components may have different boundary conditions, we need to
+            // reset these for each solve
+            m_eb_vel_apply_op->setDomainBC(m_incflo->get_diffuse_velocity_bc(Orientation::low ,comp),
+                                           m_incflo->get_diffuse_velocity_bc(Orientation::high,comp));
+
             for (int lev = 0; lev <= finest_level; ++lev) {
                 divtau_single.emplace_back(divtau_tmp[lev],amrex::make_alias,comp,1);
                    vel_single.emplace_back(       vel[lev],amrex::make_alias,comp,1);
@@ -591,8 +606,13 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
             m_reg_vel_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b));
         }
 
-        for (int comp = 0; comp < m_incflo->m_ntrac; ++comp) 
+        for (int comp = 0; comp < a_divtau[0]->nComp(); ++comp) 
         {
+            // Because the different components may have different boundary conditions, we need to
+            // reset these for each solve
+            m_reg_vel_apply_op->setDomainBC(m_incflo->get_diffuse_velocity_bc(Orientation::low ,comp),
+                                        m_incflo->get_diffuse_velocity_bc(Orientation::high,comp));
+
             for (int lev = 0; lev <= finest_level; ++lev) {
                 divtau_single.emplace_back(*a_divtau[lev],amrex::make_alias,comp,1);
                    vel_single.emplace_back(      vel[lev],amrex::make_alias,comp,1);
