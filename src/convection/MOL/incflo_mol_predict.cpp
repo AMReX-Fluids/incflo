@@ -36,6 +36,7 @@ mol::predict_vels_on_faces (int lev,
     auto const& flags = ebfact->getMultiEBCellFlagFab();
     auto const& fcent = ebfact->getFaceCent();
     auto const& ccent = ebfact->getCentroid();
+    auto const& vfrac = ebfact->getVolFrac();
 #endif
 
 #ifdef _OPENMP
@@ -74,10 +75,11 @@ mol::predict_vels_on_faces (int lev,
                 AMREX_D_TERM(Array4<Real const> const& fcx = fcent[0]->const_array(mfi);,
                              Array4<Real const> const& fcy = fcent[1]->const_array(mfi);,
                              Array4<Real const> const& fcz = fcent[2]->const_array(mfi););
-                Array4<Real const> const& ccc = ccent.const_array(mfi);
+                Array4<Real const> const& ccent_arr = ccent.const_array(mfi);
+                Array4<Real const> const& vfrac_arr = vfrac.const_array(mfi);
                 predict_vels_on_faces_eb(lev,AMREX_D_DECL(ubx,vbx,wbx),
-                                         AMREX_D_DECL(u,v,w),vcc,flagarr,AMREX_D_DECL(fcx,fcy,fcz),ccc,
-                                         h_bcrec,d_bcrec,geom);
+                                         AMREX_D_DECL(u,v,w),vcc,flagarr,AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
+                                         vfrac_arr,h_bcrec,d_bcrec,geom);
             }
             else
 #endif

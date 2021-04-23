@@ -35,6 +35,7 @@ mol::predict_vels_on_faces_eb (int lev,
                                             Array4<Real const> const& fcy,
                                             Array4<Real const> const& fcz),
                                Array4<Real const> const& ccc,
+                               Array4<Real const> const& vfrac,
                                Vector<BCRec> const& h_bcrec,
                                       BCRec  const* d_bcrec,
                                Vector<Geometry> geom)
@@ -49,6 +50,8 @@ mol::predict_vels_on_faces_eb (int lev,
         const int domain_jhi = domain_box.bigEnd(1);,
         const int domain_klo = domain_box.smallEnd(2);
         const int domain_khi = domain_box.bigEnd(2););
+
+    int order = 2;
 
     // ****************************************************************************
     // Decide whether the stencil at each cell might need to see values that
@@ -88,10 +91,11 @@ mol::predict_vels_on_faces_eb (int lev,
 #endif
     {
         amrex::ParallelFor(Box(ubx),
-        [u,vcc,flag,ccc,d_bcrec,
+        [u,vcc,flag,ccc,vfrac,d_bcrec,
          AMREX_D_DECL(fcx,fcy,fcz),
          AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-         AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi)]
+         AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
+         order]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real u_val(0);
@@ -127,12 +131,13 @@ mol::predict_vels_on_faces_eb (int lev,
                Real cc_umin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "0" of vcc
-               const auto& slopes_eb_hi = amrex_lim_slopes_extdir_eb(i,j,k,0,vcc,ccc,
+               const auto& slopes_eb_hi = amrex_lim_slopes_extdir_eb(i,j,k,0,vcc,ccc,vfrac,
                                           AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
-                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
+                                          order);
 
 #if (AMREX_SPACEDIM == 3)
                Real upls = vcc_pls - delta_x * slopes_eb_hi[0]
@@ -149,12 +154,13 @@ mol::predict_vels_on_faces_eb (int lev,
                             delta_z = zf  - ccc(i-1,j,k,2););
 
                // Compute slopes of component "0" of vcc
-               const auto& slopes_eb_lo = amrex_lim_slopes_extdir_eb(i-1,j,k,0,vcc,ccc,
+               const auto& slopes_eb_lo = amrex_lim_slopes_extdir_eb(i-1,j,k,0,vcc,ccc,vfrac,
                                           AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
-                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
+                                          order);
 
 #if (AMREX_SPACEDIM == 3)
                Real umns = vcc_mns + delta_x * slopes_eb_lo[0]
@@ -190,7 +196,7 @@ mol::predict_vels_on_faces_eb (int lev,
     else
     {
         amrex::ParallelFor(Box(ubx),
-        [u,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc]
+        [u,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real u_val(0);
@@ -213,7 +219,7 @@ mol::predict_vels_on_faces_eb (int lev,
                Real cc_umin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "0" of vcc
-               const auto slopes_eb_hi = amrex_lim_slopes_eb(i,j,k,0,vcc,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag);
+               const auto slopes_eb_hi = amrex_lim_slopes_eb(i,j,k,0,vcc,ccc,vfrac,AMREX_D_DECL(fcx,fcy,fcz),flag,order);
 
 #if (AMREX_SPACEDIM == 3)
                Real upls = vcc_pls - delta_x * slopes_eb_hi[0]
@@ -230,7 +236,7 @@ mol::predict_vels_on_faces_eb (int lev,
                             delta_z = zf  - ccc(i-1,j,k,2););
 
                // Compute slopes of component "0" of vcc
-               const auto& slopes_eb_lo = amrex_lim_slopes_eb(i-1,j,k,0,vcc,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag);
+               const auto& slopes_eb_lo = amrex_lim_slopes_eb(i-1,j,k,0,vcc,ccc,vfrac,AMREX_D_DECL(fcx,fcy,fcz),flag,order);
 
 #if (AMREX_SPACEDIM == 3)
                Real umns = vcc_mns + delta_x * slopes_eb_lo[0]
@@ -291,10 +297,11 @@ mol::predict_vels_on_faces_eb (int lev,
 #endif
     {
         amrex::ParallelFor(Box(vbx),
-        [v,vcc,flag,ccc,d_bcrec,
+        [v,vcc,flag,ccc,vfrac,d_bcrec,
          AMREX_D_DECL(fcx,fcy,fcz),
          AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-         AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi)]
+         AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
+         order]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real v_val(0);
@@ -331,12 +338,13 @@ mol::predict_vels_on_faces_eb (int lev,
                Real cc_vmin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "1" of vcc
-               const auto& slopes_eb_hi = amrex_lim_slopes_extdir_eb(i,j,k,1,vcc,ccc,
+               const auto& slopes_eb_hi = amrex_lim_slopes_extdir_eb(i,j,k,1,vcc,ccc,vfrac,
                                           AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
-                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
+                                          order);
 
 #if (AMREX_SPACEDIM == 3)
                Real vpls = vcc_pls + delta_x * slopes_eb_hi[0]
@@ -354,12 +362,13 @@ mol::predict_vels_on_faces_eb (int lev,
                             delta_z = zf  - ccc(i,j-1,k,2););
 
                // Compute slopes of component "1" of vcc
-               const auto& slopes_eb_lo = amrex_lim_slopes_extdir_eb(i,j-1,k,1,vcc,ccc,
+               const auto& slopes_eb_lo = amrex_lim_slopes_extdir_eb(i,j-1,k,1,vcc,ccc,vfrac,
                                           AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
-                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
+                                          order);
 
 #if (AMREX_SPACEDIM == 3)
                Real vmns = vcc_mns + delta_x * slopes_eb_lo[0]
@@ -397,7 +406,8 @@ mol::predict_vels_on_faces_eb (int lev,
     else
     {
         amrex::ParallelFor(Box(vbx),
-        [v,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        [v,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order] 
+        AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real v_val(0);
 
@@ -419,7 +429,7 @@ mol::predict_vels_on_faces_eb (int lev,
                Real cc_vmin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "1" of vcc
-               const auto slopes_eb_hi = amrex_lim_slopes_eb(i,j,k,1,vcc,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag);
+               const auto slopes_eb_hi = amrex_lim_slopes_eb(i,j,k,1,vcc,ccc,vfrac,AMREX_D_DECL(fcx,fcy,fcz),flag,order);
 
 #if (AMREX_SPACEDIM == 3)
                Real vpls = vcc_pls + delta_x * slopes_eb_hi[0]
@@ -437,7 +447,7 @@ mol::predict_vels_on_faces_eb (int lev,
                             delta_z = zf  - ccc(i,j-1,k,2););
 
                // Compute slopes of component "1" of vcc
-               const auto& slopes_eb_lo = amrex_lim_slopes_eb(i,j-1,k,1,vcc,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag);
+               const auto& slopes_eb_lo = amrex_lim_slopes_eb(i,j-1,k,1,vcc,ccc,vfrac,AMREX_D_DECL(fcx,fcy,fcz),flag,order);
 
 #if (AMREX_SPACEDIM == 3)
                Real vmns = vcc_mns + delta_x * slopes_eb_lo[0]
@@ -500,9 +510,10 @@ mol::predict_vels_on_faces_eb (int lev,
 #endif
     {
         amrex::ParallelFor(Box(wbx),
-        [w,vcc,flag,ccc,d_bcrec,
+        [w,vcc,flag,ccc,vfrac,d_bcrec,
          AMREX_D_DECL(fcx,fcy,fcz),
-         domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi]
+         domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi,
+         order]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real w_val(0);
@@ -538,12 +549,13 @@ mol::predict_vels_on_faces_eb (int lev,
                Real cc_wmin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "2" of vcc
-               const auto& slopes_eb_hi = amrex_lim_slopes_extdir_eb(i,j,k,2,vcc,ccc,
+               const auto& slopes_eb_hi = amrex_lim_slopes_extdir_eb(i,j,k,2,vcc,ccc,vfrac,
                                           AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
-                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
+                                          order);
 
                Real wpls = vcc_pls + delta_x * slopes_eb_hi[0]
                                    + delta_y * slopes_eb_hi[1]
@@ -556,12 +568,13 @@ mol::predict_vels_on_faces_eb (int lev,
                delta_z = 0.5 - ccc(i,j,k-1,2);
 
                // Compute slopes of component "2" of vcc
-               const auto& slopes_eb_lo = amrex_lim_slopes_extdir_eb(i,j,k-1,2,vcc,ccc,
+               const auto& slopes_eb_lo = amrex_lim_slopes_extdir_eb(i,j,k-1,2,vcc,ccc,vfrac,
                                           AMREX_D_DECL(fcx,fcy,fcz), flag,
                                           AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
                                           AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                           AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
-                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi));
+                                          AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
+                                          order);
 
                Real wmns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]
@@ -594,7 +607,8 @@ mol::predict_vels_on_faces_eb (int lev,
     else
     {
         amrex::ParallelFor(Box(wbx),
-        [w,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        [w,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order] 
+        AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real w_val(0);
 
@@ -614,7 +628,7 @@ mol::predict_vels_on_faces_eb (int lev,
                Real cc_wmin = amrex::min(vcc_pls, vcc_mns);
 
                // Compute slopes of component "2" of vcc
-               const auto slopes_eb_hi = amrex_lim_slopes_eb(i,j,k,2,vcc,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag);
+               const auto slopes_eb_hi = amrex_lim_slopes_eb(i,j,k,2,vcc,ccc,vfrac,AMREX_D_DECL(fcx,fcy,fcz),flag,order);
 
                Real wpls = vcc_pls + delta_x * slopes_eb_hi[0]
                                    + delta_y * slopes_eb_hi[1]
@@ -627,7 +641,7 @@ mol::predict_vels_on_faces_eb (int lev,
                delta_z = 0.5 - ccc(i,j,k-1,2);
 
                // Compute slopes of component "2" of vcc
-               const auto& slopes_eb_lo = amrex_lim_slopes_eb(i,j,k-1,2,vcc,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag);
+               const auto& slopes_eb_lo = amrex_lim_slopes_eb(i,j,k-1,2,vcc,ccc,vfrac,AMREX_D_DECL(fcx,fcy,fcz),flag,order);
 
                Real wmns = vcc_mns + delta_x * slopes_eb_lo[0]
                                    + delta_y * slopes_eb_lo[1]

@@ -103,7 +103,7 @@ convection::compute_fluxes (Box const& bx, MFIter const& mfi,
                                                   l_bcrec_velocity.data(),
                                                   l_bcrec_velocity_d,
                                                   l_iconserv_velocity_d,
-                                                  flag, AMREX_D_DECL(fcx, fcy, fcz), ccc, geom);
+                                                  flag, AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, geom);
             flux_comp += AMREX_SPACEDIM;
 
             if (!l_constant_density) {
@@ -126,7 +126,7 @@ convection::compute_fluxes (Box const& bx, MFIter const& mfi,
                                                       l_bcrec_density.data(),
                                                       l_bcrec_density_d,
                                                       l_iconserv_density_d,
-                                                      flag, AMREX_D_DECL(fcx, fcy, fcz), ccc, geom);
+                                                      flag, AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, geom);
                 flux_comp += 1;
             }
             if (l_advect_tracer) {
@@ -149,7 +149,7 @@ convection::compute_fluxes (Box const& bx, MFIter const& mfi,
                                                       l_bcrec_tracer.data(),
                                                       l_bcrec_tracer_d,
                                                       l_iconserv_tracer_d,
-                                                      flag, AMREX_D_DECL(fcx, fcy, fcz), ccc, geom);
+                                                      flag, AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, geom);
             }
             Gpu::streamSynchronize();
         }

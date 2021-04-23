@@ -66,6 +66,7 @@ namespace mol {
                                                 amrex::Array4<amrex::Real const> const& fcy,
                                                 amrex::Array4<amrex::Real const> const& fcz), 
                                    amrex::Array4<amrex::Real const> const& ccc,
+                                   amrex::Array4<amrex::Real const> const& vfrac,
                                    amrex::Vector<amrex::BCRec> const& h_bcrec,
                                                  amrex::BCRec  const* d_bcrec,
                                    amrex::Vector<amrex::Geometry> geom);
@@ -86,6 +87,7 @@ namespace mol {
                                                     amrex::Array4<amrex::Real const> const& fcy,
                                                     amrex::Array4<amrex::Real const> const& fcz),
                                        amrex::Array4<amrex::Real const> const& ccc,
+                                       amrex::Array4<amrex::Real const> const& vfrac,
                                        amrex::Geometry& geom);
 #endif
 } // namespace mol
