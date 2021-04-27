@@ -5,9 +5,9 @@ CEXE_sources += incflo_mol_fluxes_eb.cpp
 CEXE_sources += incflo_mol_fluxes.cpp
 
 ifeq ($(USE_EB), TRUE)
+CEXE_sources += MOL_eb_predict_vel_on_faces.cpp
 CEXE_sources += incflo_correct_small_cells.cpp
 endif
 
 CEXE_sources += MOL_extrap_vel_to_faces.cpp
 CEXE_sources += MOL_predict_vel_on_faces.cpp
-CEXE_sources += MOL_eb_predict_vel_on_faces.cpp
