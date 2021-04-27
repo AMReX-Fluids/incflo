@@ -25,7 +25,7 @@ namespace {
 
 #ifdef AMREX_USE_EB
 void 
-mol::compute_convective_fluxes_eb (Box const& bx, int flux_comp, int ncomp,
+MOL::compute_convective_fluxes_eb (Box const& bx, int flux_comp, int ncomp,
                                    AMREX_D_DECL(Array4<Real> const& fx,
                                                 Array4<Real> const& fy,
                                                 Array4<Real> const& fz),

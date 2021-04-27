@@ -134,12 +134,8 @@ incflo::compute_MAC_projected_velocities (
 #endif
         } else if (m_advection_type == "MOL") {
 
-            mol::predict_vels_on_faces(lev, AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]), *vel[lev],
-                                       get_velocity_bcrec(), get_velocity_bcrec_device_ptr(), 
-#ifdef AMREX_USE_EB
-                                       ebfact,
-#endif
-                                       geom); 
+            MOL::ExtrapVelToFaces(*vel[lev], AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]), geom[lev],
+                                   get_velocity_bcrec(), get_velocity_bcrec_device_ptr());
         } else {
             amrex::Abort("Dont know this advection type");
         }

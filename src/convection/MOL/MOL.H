@@ -12,8 +12,26 @@
 #include <AMReX_MultiCutFab.H>
 #endif
 
+namespace MOL {
 
-namespace mol {
+    void ExtrapVelToFaces ( const amrex::MultiFab&  vel,
+                            AMREX_D_DECL(amrex::MultiFab& umac,
+                                         amrex::MultiFab& vmac,
+                                         amrex::MultiFab& wmac ),
+                            const amrex::Geometry&  a_geom,
+                            amrex::Vector<amrex::BCRec> const& h_bcrec,
+                                           amrex::BCRec const* d_bcrec );
+
+    void PredictVelOnFaces ( AMREX_D_DECL( amrex::Box const& ubx,
+                                           amrex::Box const& vbx,
+                                           amrex::Box const& wbx ),
+                             AMREX_D_DECL( amrex::Array4<amrex::Real> const& u,
+                                           amrex::Array4<amrex::Real> const& v,
+                                           amrex::Array4<amrex::Real> const& w ),
+                             amrex::Array4<amrex::Real const > const& vcc,
+                             const amrex::Geometry&  geom,
+                             amrex::Vector<amrex::BCRec> const& h_bcrec,
+                                           amrex::BCRec const* d_bcrec );
 
     void predict_vels_on_faces (int lev,  
                                 AMREX_D_DECL(amrex::MultiFab& u_mac,
@@ -53,6 +71,24 @@ namespace mol {
                                     amrex::Geometry& geom);
 
 #ifdef AMREX_USE_EB
+
+    void EB_PredictVelOnFaces ( AMREX_D_DECL( amrex::Box const& ubx,
+                                              amrex::Box const& vbx,
+                                              amrex::Box const& wbx ),
+                                AMREX_D_DECL( amrex::Array4<amrex::Real> const& u,
+                                              amrex::Array4<amrex::Real> const& v,
+                                              amrex::Array4<amrex::Real> const& w ),
+                                amrex::Array4<amrex::Real const > const& vcc,
+                                amrex::Array4<amrex::EBCellFlag const> const& flag,
+                                AMREX_D_DECL( amrex::Array4<amrex::Real const> const& fcx,
+                                              amrex::Array4<amrex::Real const> const& fcy,
+                                              amrex::Array4<amrex::Real const> const& fcz),
+                                amrex::Array4<amrex::Real const> const& ccc,
+                                amrex::Array4<amrex::Real const> const& vfrac,
+                                const amrex::Geometry&  geom,
+                                 amrex::Vector<amrex::BCRec> const& h_bcrec,
+                                         const amrex::BCRec       * d_bcrec );
+
     void predict_vels_on_faces_eb (int lev,
                                    AMREX_D_DECL(amrex::Box const& ubx,
                                                 amrex::Box const& vbx,

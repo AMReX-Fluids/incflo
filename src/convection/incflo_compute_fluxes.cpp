@@ -97,7 +97,7 @@ convection::compute_fluxes (Box const& bx, MFIter const& mfi,
                                                   AMREX_D_DECL(fcx, fcy, fcz), ccc, 
                                                   geom, true); // is_velocity
             else
-                mol::compute_convective_fluxes_eb(bx, flux_comp, AMREX_SPACEDIM,
+                MOL::compute_convective_fluxes_eb(bx, flux_comp, AMREX_SPACEDIM,
                                                   AMREX_D_DECL(fx, fy, fz), vel, 
                                                   AMREX_D_DECL(umac, vmac, wmac),
                                                   l_bcrec_velocity.data(),
@@ -120,7 +120,7 @@ convection::compute_fluxes (Box const& bx, MFIter const& mfi,
                                                       AMREX_D_DECL(fcx, fcy, fcz), ccc, 
                                                       geom);
                 else
-                    mol::compute_convective_fluxes_eb(bx, flux_comp, 1,
+                    MOL::compute_convective_fluxes_eb(bx, flux_comp, 1,
                                                       AMREX_D_DECL(fx, fy, fz), rho, 
                                                       AMREX_D_DECL(umac, vmac, wmac),
                                                       l_bcrec_density.data(),
@@ -143,7 +143,7 @@ convection::compute_fluxes (Box const& bx, MFIter const& mfi,
                                                       AMREX_D_DECL(fcx, fcy, fcz), ccc, 
                                                       geom);
                 else
-                    mol::compute_convective_fluxes_eb(bx, flux_comp, l_ntrac,
+                    MOL::compute_convective_fluxes_eb(bx, flux_comp, l_ntrac,
                                                       AMREX_D_DECL(fx, fy, fz), rhotra, 
                                                       AMREX_D_DECL(umac, vmac, wmac),
                                                       l_bcrec_tracer.data(),
@@ -168,7 +168,7 @@ convection::compute_fluxes (Box const& bx, MFIter const& mfi,
                                                     l_godunov_use_forces_in_trans, 
                                                     geom, true);
                 else
-                    mol::compute_convective_fluxes(bx, flux_comp, AMREX_SPACEDIM, AMREX_D_DECL(fx, fy, fz), vel,
+                    MOL::compute_convective_fluxes(bx, flux_comp, AMREX_SPACEDIM, AMREX_D_DECL(fx, fy, fz), vel,
                                                    AMREX_D_DECL(umac, vmac, wmac),
                                                    l_bcrec_velocity.data(),
                                                    l_bcrec_velocity_d,
@@ -188,7 +188,7 @@ convection::compute_fluxes (Box const& bx, MFIter const& mfi,
                                                     l_godunov_use_forces_in_trans,
                                                     geom);
                 else
-                    mol::compute_convective_fluxes(bx, flux_comp, 1, AMREX_D_DECL(fx, fy, fz), rho,
+                    MOL::compute_convective_fluxes(bx, flux_comp, 1, AMREX_D_DECL(fx, fy, fz), rho,
                                                    AMREX_D_DECL(umac, vmac, wmac),
                                                    l_bcrec_density.data(),
                                                    l_bcrec_density_d, 
@@ -207,7 +207,7 @@ convection::compute_fluxes (Box const& bx, MFIter const& mfi,
                                                     l_godunov_use_forces_in_trans,
                                                     geom);
                 else
-                   mol::compute_convective_fluxes(bx, flux_comp, l_ntrac, AMREX_D_DECL(fx, fy, fz), rhotra,
+                   MOL::compute_convective_fluxes(bx, flux_comp, l_ntrac, AMREX_D_DECL(fx, fy, fz), rhotra,
                                                   AMREX_D_DECL(umac, vmac, wmac),
                                                   l_bcrec_tracer.data(),
                                                   l_bcrec_tracer_d, 
