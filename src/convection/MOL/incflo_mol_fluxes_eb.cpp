@@ -89,8 +89,8 @@ MOL::compute_convective_fluxes_eb (Box const& bx, int flux_comp, int ncomp,
         )
 #elif (AMREX_SPACEDIM == 3)
         or 
-        (has_extdir_or_ho_lo_z and domain_jlo >= zbx.smallEnd(2)-1) or
-        (has_extdir_or_ho_hi_z and domain_jhi <= zbx.bigEnd(2)    ) )
+        (has_extdir_or_ho_lo_z and domain_klo >= zbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi_z and domain_khi <= zbx.bigEnd(2)    ) )
 #endif
     {
 
