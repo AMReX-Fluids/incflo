@@ -574,9 +574,9 @@ void incflo::init_periodic_tracer (Box const& vbx, Box const& gbx,
         Real x = (i+0.5)*dx[0];
         Real y = (j+0.5)*dx[1];
         Real z = (k+0.5)*dx[2];
-        vel(i,j,k,0) = 1.0;
-        vel(i,j,k,1) = 0.1*(std::sin(C*(x+z) - 0.00042) + 1.0) * std::exp(y);
-        vel(i,j,k,2) = 0.1*(std::sin(C*(x+y) - 0.00042) + 1.0) * std::exp(z);
+        AMREX_D_TERM(vel(i,j,k,0) = 1.0;,
+                     vel(i,j,k,1) = 0.1*(std::sin(C*(x+z) - 0.00042) + 1.0) * std::exp(y);,
+                     vel(i,j,k,2) = 0.1*(std::sin(C*(x+y) - 0.00042) + 1.0) * std::exp(z););
         tracer(i,j,k) = A *(std::sin(C*(y+z) - 0.00042) + 1.0) * std::exp(x);
     });
 }
