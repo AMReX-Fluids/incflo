@@ -316,7 +316,7 @@ void incflo::WritePlotFile()
 {
     BL_PROFILE("incflo::WritePlotFile()");
 
-    if (m_plt_vort or m_plt_divu or m_plt_forcing or m_plt_eta or m_plt_strainrate) {
+    if (m_plt_vort || m_plt_divu || m_plt_forcing || m_plt_eta || m_plt_strainrate) {
         for (int lev = 0; lev <= finest_level; ++lev) {
 #ifdef AMREX_USE_EB
             const int ng = (EBFactory(0).isAllRegular()) ? 1 : 2;

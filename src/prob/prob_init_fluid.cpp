@@ -118,7 +118,7 @@ void incflo::prob_init_fluid (int lev)
                              ld.tracer.array(mfi),
                              domain, dx, problo, probhi);
         }
-        else if (21 == m_probtype or 22 == m_probtype or 23 == m_probtype)
+        else if (21 == m_probtype || 22 == m_probtype || 23 == m_probtype)
         {
             init_double_shear_layer(vbx, gbx,
                                     ld.p.array(mfi),
@@ -127,8 +127,8 @@ void incflo::prob_init_fluid (int lev)
                                     ld.tracer.array(mfi),
                                     domain, dx, problo, probhi);
         }
-        else if (31  == m_probtype or 32  == m_probtype or 33  == m_probtype or 
-                 311 == m_probtype or 322 == m_probtype or 333 == m_probtype or
+        else if (31  == m_probtype || 32  == m_probtype || 33  == m_probtype || 
+                 311 == m_probtype || 322 == m_probtype || 333 == m_probtype ||
                  41  == m_probtype)
         {
             init_plane_poiseuille(vbx, gbx,
@@ -375,18 +375,18 @@ void incflo::init_channel_slant (Box const& vbx, Box const& gbx,
                 tracer(i,j,k,n) = 0.0;
                 
             if (direction == 0) {
-                if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
-                if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
-                if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
+                if (nt > 0 && i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
+                if (nt > 1 && i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
+                if (nt > 2 && i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
             } else if (direction == 1) {
-                if (nt > 0 and j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
-                if (nt > 1 and j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
-                if (nt > 2 and j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
+                if (nt > 0 && j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
+                if (nt > 1 && j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
+                if (nt > 2 && j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
 #if (AMREX_SPACEDIM == 3)
             } else {
-                if (nt > 0 and k <= dhi.z/8)   tracer(i,j,k,0) = 1.0;
-                if (nt > 1 and k <= dhi.z/2)   tracer(i,j,k,1) = 2.0;
-                if (nt > 2 and k <= dhi.z*3/4) tracer(i,j,k,2) = 3.0;
+                if (nt > 0 && k <= dhi.z/8)   tracer(i,j,k,0) = 1.0;
+                if (nt > 1 && k <= dhi.z/2)   tracer(i,j,k,1) = 2.0;
+                if (nt > 2 && k <= dhi.z*3/4) tracer(i,j,k,2) = 3.0;
 #endif
             }
         }
@@ -686,9 +686,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
             }
-            if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
-            if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
-            if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
+            if (nt > 0 && i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 && i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 && i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
         });
     }
     else if (311 == m_probtype)
@@ -705,9 +705,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
             }
-            if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
-            if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
-            if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
+            if (nt > 0 && i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 && i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 && i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
         });
     }
     else if (41 == m_probtype)
@@ -724,9 +724,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
             }
-            if (nt > 0 and i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
-            if (nt > 1 and i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
-            if (nt > 2 and i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
+            if (nt > 0 && i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 && i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 && i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
         });
     }
     else if (32 == m_probtype)
@@ -743,9 +743,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
             }
-            if (nt > 0 and j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
-            if (nt > 1 and j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
-            if (nt > 2 and j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
+            if (nt > 0 && j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 && j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 && j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
         });
     }
     else if (322 == m_probtype)
@@ -762,9 +762,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
             }
-            if (nt > 0 and j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
-            if (nt > 1 and j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
-            if (nt > 2 and j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
+            if (nt > 0 && j <= dhi.y/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 && j <= dhi.y/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 && j <= dhi.y*3/4) tracer(i,j,k,2) = 3.0;
         });
     }
     else if (33 == m_probtype)
@@ -781,9 +781,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
             }
-            if (nt > 0 and k <= dhi.z/8)   tracer(i,j,k,0) = 1.0;
-            if (nt > 1 and k <= dhi.z/2)   tracer(i,j,k,1) = 2.0;
-            if (nt > 2 and k <= dhi.z*3/4) tracer(i,j,k,2) = 3.0;
+            if (nt > 0 && k <= dhi.z/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 && k <= dhi.z/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 && k <= dhi.z*3/4) tracer(i,j,k,2) = 3.0;
         });
     }
     else if (333 == m_probtype)
@@ -800,9 +800,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
             }
-            if (nt > 0 and k <= dhi.z/8)   tracer(i,j,k,0) = 1.0;
-            if (nt > 1 and k <= dhi.z/2)   tracer(i,j,k,1) = 2.0;
-            if (nt > 2 and k <= dhi.z*3/4) tracer(i,j,k,2) = 3.0;
+            if (nt > 0 && k <= dhi.z/8)   tracer(i,j,k,0) = 1.0;
+            if (nt > 1 && k <= dhi.z/2)   tracer(i,j,k,1) = 2.0;
+            if (nt > 2 && k <= dhi.z*3/4) tracer(i,j,k,2) = 3.0;
         });
     }
     else

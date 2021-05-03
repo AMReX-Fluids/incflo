@@ -21,7 +21,7 @@ void incflo::init_bcs ()
         pp.query("type", bc_type_in);
         std::string bc_type = amrex::toLower(bc_type_in);
 
-        if (bc_type == "pressure_inflow" or bc_type == "pi")
+        if (bc_type == "pressure_inflow" || bc_type == "pi")
         {
             amrex::Print() << bcid << " set to pressure inflow.\n";
 
@@ -29,7 +29,7 @@ void incflo::init_bcs ()
 
             pp.get("pressure", m_bc_pressure[ori]);
         }
-        else if (bc_type == "pressure_outflow" or bc_type == "po")
+        else if (bc_type == "pressure_outflow" || bc_type == "po")
         {
             amrex::Print() << bcid << " set to pressure outflow.\n";
 
@@ -37,7 +37,7 @@ void incflo::init_bcs ()
 
             pp.get("pressure", m_bc_pressure[ori]);
         }
-        else if (bc_type == "mass_inflow" or bc_type == "mi")
+        else if (bc_type == "mass_inflow" || bc_type == "mi")
         {
             amrex::Print() << bcid << " set to mass inflow.\n";
 
@@ -53,7 +53,7 @@ void incflo::init_bcs ()
             pp.query("density", m_bc_density[ori]);
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }
-        else if (bc_type == "no_slip_wall" or bc_type == "nsw")
+        else if (bc_type == "no_slip_wall" || bc_type == "nsw")
         {
             amrex::Print() << bcid <<" set to no-slip wall.\n";
 
@@ -76,7 +76,7 @@ void incflo::init_bcs ()
             // tracer has Dirichlet bcs
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }
-        else if (bc_type == "slip_wall" or bc_type == "sw")
+        else if (bc_type == "slip_wall" || bc_type == "sw")
         {
             amrex::Print() << bcid <<" set to slip wall.\n";
 
@@ -145,7 +145,7 @@ void incflo::init_bcs ()
             int dir = ori.coordDir();
             Orientation::Side side = ori.faceDir();
             auto const bct = m_bc_type[ori];
-            if (bct == BC::pressure_inflow or
+            if (bct == BC::pressure_inflow ||
                 bct == BC::pressure_outflow)
             {
                 if (side == Orientation::low) {
@@ -158,7 +158,7 @@ void incflo::init_bcs ()
                                  m_bcrec_velocity[2].setHi(dir, BCType::foextrap););
                 }
             }
-            else if (bct == BC::mass_inflow or bct == BC::no_slip_wall)
+            else if (bct == BC::mass_inflow || bct == BC::no_slip_wall)
             {
                 if (side == Orientation::low) {
                     AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::ext_dir);,
@@ -218,8 +218,8 @@ void incflo::init_bcs ()
             int dir = ori.coordDir();
             Orientation::Side side = ori.faceDir();
             auto const bct = m_bc_type[ori];
-            if (bct == BC::pressure_inflow  or
-                bct == BC::pressure_outflow or
+            if (bct == BC::pressure_inflow  ||
+                bct == BC::pressure_outflow ||
                 bct == BC::no_slip_wall)
             {
                 if (side == Orientation::low) {
@@ -270,7 +270,7 @@ void incflo::init_bcs ()
             int dir = ori.coordDir();
             Orientation::Side side = ori.faceDir();
             auto const bct = m_bc_type[ori];
-            if (bct == BC::pressure_inflow  or
+            if (bct == BC::pressure_inflow  ||
                 bct == BC::pressure_outflow)
             {
                 if (side == Orientation::low) {

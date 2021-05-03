@@ -62,7 +62,7 @@ void incflo::Advance()
 #if 0
         // xxxxx
         PrintMaxValues(m_cur_time + dt);
-        if(m_probtype%10 == 3 or m_probtype == 5)
+        if(m_probtype%10 == 3 || m_probtype == 5)
         {
             ComputeDrag();
             amrex::Print() << "Drag force = " << (*drag[0]).sum(0, false) << std::endl;

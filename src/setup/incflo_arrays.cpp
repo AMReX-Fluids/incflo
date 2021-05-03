@@ -34,12 +34,12 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
         conv_density.define (ba, dm, 1             , 0, MFInfo(), fact);
         conv_tracer.define (ba, dm, ntrac         , 0, MFInfo(), fact);
 
-        if (!implicit_diffusion or use_tensor_correction) 
+        if (!implicit_diffusion || use_tensor_correction) 
         {
             divtau.define  (ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
             divtau_o.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
         }
-        if (!implicit_diffusion and advect_tracer)
+        if (!implicit_diffusion && advect_tracer)
         {
             laps.define  (ba, dm, ntrac, 0, MFInfo(), fact);
             laps_o.define(ba, dm, ntrac, 0, MFInfo(), fact);
