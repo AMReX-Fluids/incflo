@@ -258,8 +258,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     {
         IntVect rr  = geom[lev].Domain().size() / geom[lev-1].Domain().size();
 #ifdef AMREX_USE_EB
-        EB_average_down_faces(GetArrOfConstPtrs(macvel[lev]),macvelu[lev-1], rr, geom[lev-1]);
-        EB_average_down_faces(GetArrOfConstPtrs(fluxes[lev]), fluxes[lev-1], rr, geom[lev-1]);
+        EB_average_down_faces(GetArrOfConstPtrs(macvel[lev]),macvel[lev-1], rr, geom[lev-1]);
+        EB_average_down_faces(GetArrOfConstPtrs(fluxes[lev]),fluxes[lev-1], rr, geom[lev-1]);
 #else
         average_down_faces(GetArrOfConstPtrs(macvel[lev]), macvel[lev-1], rr, geom[lev-1]);
         average_down_faces(GetArrOfConstPtrs(fluxes[lev]), fluxes[lev-1], rr, geom[lev-1]);
