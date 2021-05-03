@@ -91,6 +91,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > inv_rho(finest_level+1);
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > fluxes(finest_level+1);
+    Vector<Array<MultiFab*,AMREX_SPACEDIM> > macvel(finest_level+1);
 
     for (int lev=0; lev <= finest_level; ++lev)
     {
@@ -101,6 +102,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         AMREX_D_TERM(fluxes[lev][0] = &flux_x[lev];,
                      fluxes[lev][1] = &flux_y[lev];,
                      fluxes[lev][2] = &flux_z[lev];);
+
+        AMREX_D_TERM(macvel[lev][0] = u_mac[lev];,
+                     macvel[lev][1] = v_mac[lev];,
+                     macvel[lev][2] = w_mac[lev];);
     }
 
     for (int lev = 0; lev <= finest_level; ++lev) {
@@ -168,20 +173,20 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         MultiFab divu(vel[lev]->boxArray(),vel[lev]->DistributionMap(),1,4);
         divu.setVal(0.);
+
         Array<MultiFab const*, AMREX_SPACEDIM> u;
         AMREX_D_TERM(u[0] = u_mac[lev];,
                      u[1] = v_mac[lev];,
                      u[2] = w_mac[lev];);
-                     
+                  
 #ifdef AMREX_USE_EB
         auto const& fact = EBFactory(lev);
-        if (fact.isAllRegular())
-            computeDivergence(divu,u,geom[lev]);
-        else
+        if (!fact.isAllRegular())
             EB_computeDivergence(divu,u,geom[lev],true);
-#else
-        computeDivergence(divu,u,geom[lev]);
+        else
 #endif
+            computeDivergence(divu,u,geom[lev]);
+
         divu.FillBoundary(geom[lev].periodicity());
 
 #ifdef AMREX_USE_EB
@@ -253,8 +258,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     {
         IntVect rr  = geom[lev].Domain().size() / geom[lev-1].Domain().size();
 #ifdef AMREX_USE_EB
+        EB_average_down_faces(GetArrOfConstPtrs(macvel[lev]),macvelu[lev-1], rr, geom[lev-1]);
         EB_average_down_faces(GetArrOfConstPtrs(fluxes[lev]), fluxes[lev-1], rr, geom[lev-1]);
 #else
+        average_down_faces(GetArrOfConstPtrs(macvel[lev]), macvel[lev-1], rr, geom[lev-1]);
         average_down_faces(GetArrOfConstPtrs(fluxes[lev]), fluxes[lev-1], rr, geom[lev-1]);
 #endif
     }
