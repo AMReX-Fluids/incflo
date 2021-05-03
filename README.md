@@ -11,22 +11,29 @@
 
 # Using incflo
 
-## Build AMReX Library
+To build and run incflo, you will need to fist clone the AMReX and AMReX-Hydro repositories.
 
-Clone AMReX from the official Git repository and checkout the _development_ branch.
+We suggest using the _main_ branch of both repositories.
+
+## Check out AMReX 
+
+Clone AMReX from the official Git repository
 ```shell
-> git clone https://github.com/AMReX-Codes/amrex.git
-> cd amrex
-> git checkout development
+> git clone git@github.com:AMReX-Codes/amrex.git
+```
+
+Clone AMReX-Hydro from the official Git repository
+```shell
+> git clone git@github.com:AMReX-Codes/AMReX-Hydro.git
 ```
 
 ## Build and run an example incflo problem
 Clone and build incflo
 ```shell
-> git clone http://github.com/AMReX-Codes/incflo.git
-> cd test
+> git clone git@github.com:AMReX-Codes/incflo.git
+> cd incflo/test_3d
 > make -j4
-> mpirun -np 4 incflo3d.gnu.MPI.ex inputs.channel_cylinder
+> mpirun -np 4 incflo3d.gnu.MPI.ex benchmark.channel_cylinder-x
 ```
 
 # Contributing
