@@ -7,8 +7,6 @@ include $(AMREX_HOME)/Tools/GNUMake/Make.defs
 Bdirs := src
 Bdirs += src/boundary_conditions
 Bdirs += src/convection
-Bdirs += src/convection/Godunov
-Bdirs += src/convection/MOL
 Bdirs += src/derive
 Bdirs += src/diffusion
 Bdirs += src/prob
@@ -19,13 +17,32 @@ Bdirs += src/utilities
 
 ifeq ($(USE_EB), TRUE)
   Bdirs += src/embedded_boundaries
-  Bdirs += src/convection/EBGodunov
-Bdirs += src/convection/Redistribution
+  Bdirs += src/convection/Redistribution
   USERSuffix += .EB
 endif
 
 Bpack += $(foreach dir, $(Bdirs), $(TOP)/$(dir)/Make.package)
 Blocs += $(foreach dir, $(Bdirs), $(TOP)/$(dir))
+
+Bpack += $(AMREX_HYDRO_HOME)/Godunov/Make.package
+Blocs += $(AMREX_HYDRO_HOME)/Godunov
+
+Bpack += $(AMREX_HYDRO_HOME)/MOL/Make.package
+Blocs += $(AMREX_HYDRO_HOME)/MOL
+
+Bpack += $(AMREX_HYDRO_HOME)/Utils/Make.package
+Blocs += $(AMREX_HYDRO_HOME)/Utils
+
+ifeq ($(USE_EB), TRUE)
+Bpack += $(AMREX_HYDRO_HOME)/EBMOL/Make.package
+Blocs += $(AMREX_HYDRO_HOME)/EBMOL
+
+Bpack += $(AMREX_HYDRO_HOME)/EBGodunov/Make.package
+Blocs += $(AMREX_HYDRO_HOME)/EBGodunov
+
+Bpack += $(AMREX_HYDRO_HOME)/Redistribution/Make.package
+Blocs += $(AMREX_HYDRO_HOME)/Redistribution
+endif
 
 include $(Bpack)
 INCLUDE_LOCATIONS += $(Blocs)

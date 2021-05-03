@@ -8,3 +8,7 @@ CEXE_sources += incflo_tagging.cpp
 CEXE_sources += incflo_regrid.cpp
 CEXE_sources += incflo_vol_wgt_sum.cpp
 CEXE_sources += main.cpp
+
+ifeq ($(USE_EB), TRUE)
+CEXE_sources += incflo_correct_small_cells.cpp
+endif
