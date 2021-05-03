@@ -102,7 +102,7 @@ void incflo::InitData ()
 #endif
 #endif
 
-    if (m_verbose > 0 and ParallelDescriptor::IOProcessor()) {
+    if (m_verbose > 0 && ParallelDescriptor::IOProcessor()) {
         printGridSummary(amrex::OutStream(), 0, finest_level);
     }
 }
@@ -121,11 +121,11 @@ void incflo::Evolve()
             amrex::Print() << "\n ============   NEW TIME STEP   ============ \n";
         }
 
-        if (m_regrid_int > 0 and m_nstep > 0 and m_nstep%m_regrid_int == 0)
+        if (m_regrid_int > 0 && m_nstep > 0 && m_nstep%m_regrid_int == 0)
         {
             if (m_verbose > 0) amrex::Print() << "Regridding...\n";
             regrid(0, m_cur_time);
-            if (m_verbose > 0 and ParallelDescriptor::IOProcessor()) {
+            if (m_verbose > 0 && ParallelDescriptor::IOProcessor()) {
                 printGridSummary(amrex::OutStream(), 0, finest_level);
             }
         }

@@ -73,7 +73,7 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
             [tag_rho,tag_gradrho,rhoerr,gradrhoerr,tagval,rho,tag]
             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                if (tag_rho and rho(i,j,k) > rhoerr) {
+                if (tag_rho && rho(i,j,k) > rhoerr) {
                     tag(i,j,k) = tagval;
                 }
                 if (tag_gradrho) {

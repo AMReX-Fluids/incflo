@@ -63,7 +63,7 @@ void incflo::ApplyProjection (Vector<MultiFab const*> density,
     // use a different form of the approximate projection that
     // projects (U^*-U^n + dt Gp) rather than (U^* + dt Gp)
 
-    bool proj_for_small_dt = (time > 0.0 and m_dt < 0.1 * m_prev_dt);
+    bool proj_for_small_dt = (time > 0.0 && m_dt < 0.1 * m_prev_dt);
 
     if (m_verbose > 2)
     {
@@ -142,7 +142,7 @@ void incflo::ApplyProjection (Vector<MultiFab const*> density,
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel.push_back(&(m_leveldata[lev]->velocity));
         vel[lev]->setBndry(0.0);
-        if (!proj_for_small_dt and !incremental) {
+        if (!proj_for_small_dt && !incremental) {
             set_inflow_velocity(lev, time, *vel[lev], 1);
         }
     }

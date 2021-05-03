@@ -148,7 +148,7 @@ void incflo::ApplyCorrector()
                        get_density_new_const(), GetVecOfConstPtrs(vel_eta));
     }
 
-    if (m_advect_tracer and m_diff_type == DiffusionType::Explicit) {
+    if (m_advect_tracer && m_diff_type == DiffusionType::Explicit) {
         compute_laps(get_laps_new(), get_tracer_new_const(),
                      get_density_new_const(), GetVecOfConstPtrs(tra_eta));
     }

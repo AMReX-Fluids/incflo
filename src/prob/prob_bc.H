@@ -40,66 +40,66 @@ struct IncfloVelFill
         {
             const BCRec& bc = bcr[bcomp+vcomp];
 
-            if (bc.lo(0) == BCType::ext_dir and i < domain_box.smallEnd(0))
+            if (bc.lo(0) == BCType::ext_dir && i < domain_box.smallEnd(0))
             {
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::x,Orientation::low)][vcomp];
 
-                if (31 == probtype and vcomp == 0)
+                if (31 == probtype && vcomp == 0)
                 {
                     Real y = (j+0.5)*(1.0/domain_box.length(1));
                     vel(i,j,k,0) *= 6. * y * (1.-y);
                 } else
-                if (311 == probtype and vcomp == 0)
+                if (311 == probtype && vcomp == 0)
                 {
                     Real z = (k+0.5)*(1.0/domain_box.length(2));
                     vel(i,j,k,0) *= 6. * z * (1.-z);
                 } else
-                if (41 == probtype and vcomp == 0)
+                if (41 == probtype && vcomp == 0)
                 {
                     Real z = (k+0.5)*(1.0/domain_box.length(2));
                     vel(i,j,k,0) =  0.5 * z;
                 }
             }
-            else if (bc.hi(0) == BCType::ext_dir and i > domain_box.bigEnd(0))
+            else if (bc.hi(0) == BCType::ext_dir && i > domain_box.bigEnd(0))
             {
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::x,Orientation::high)][vcomp];
             }
 
-            if (bc.lo(1) == BCType::ext_dir and j < domain_box.smallEnd(1))
+            if (bc.lo(1) == BCType::ext_dir && j < domain_box.smallEnd(1))
             {
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::y,Orientation::low)][vcomp];
-                if (32 == probtype and vcomp == 1)
+                if (32 == probtype && vcomp == 1)
                 {
                     Real z = (k+0.5)*(1.0/domain_box.length(2));
                     vel(i,j,k,1) *= 6. * z * (1.-z); 
                 }
-                if (322 == probtype and vcomp == 1)
+                if (322 == probtype && vcomp == 1)
                 {
                     Real x = (i+0.5)*(1.0/domain_box.length(0));
                     vel(i,j,k,1) *= 6. * x * (1.-x); 
                 }
             }
-            else if (bc.hi(1) == BCType::ext_dir and j > domain_box.bigEnd(1))
+            else if (bc.hi(1) == BCType::ext_dir && j > domain_box.bigEnd(1))
             {
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::y,Orientation::high)][vcomp];
             }
 
 #if (AMREX_SPACEDIM == 3)
-            if (bc.lo(2) == BCType::ext_dir and k < domain_box.smallEnd(2))
+            if (bc.lo(2) == BCType::ext_dir && k < domain_box.smallEnd(2))
             {
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::z,Orientation::low)][vcomp];
-                if (33 == probtype and vcomp == 2)
+                if (33 == probtype && vcomp == 2)
                 {
                     Real x = (i+0.5)*(1.0/domain_box.length(0));
                     vel(i,j,k,2) *= 6. * x * (1.-x); 
                 }
-                if (333 == probtype and vcomp == 2)
+                if (333 == probtype && vcomp == 2)
                 {
                     Real y = (j+0.5)*(1.0/domain_box.length(1));
                     vel(i,j,k,2) *= 6. * y * (1.-y); 
                 }
             }
-            else if (bc.hi(2) == BCType::ext_dir and k > domain_box.bigEnd(2))
+            else if (bc.hi(2) == BCType::ext_dir && k > domain_box.bigEnd(2))
             {
                 vel(i,j,k,vcomp) = bcv[Orientation(Direction::z,Orientation::high)][vcomp];
             }
@@ -138,29 +138,29 @@ struct IncfloDenFill
         const Box& domain_box = geom.Domain();
         const BCRec& bc = bcr[bcomp];
 
-        if (bc.lo(0) == BCType::ext_dir and i < domain_box.smallEnd(0))
+        if (bc.lo(0) == BCType::ext_dir && i < domain_box.smallEnd(0))
         {
             rho(i,j,k) = bcv[Orientation(Direction::x,Orientation::low)];
         }
-        else if (bc.hi(0) == BCType::ext_dir and i > domain_box.bigEnd(0))
+        else if (bc.hi(0) == BCType::ext_dir && i > domain_box.bigEnd(0))
         {
             rho(i,j,k) = bcv[Orientation(Direction::x,Orientation::high)];
         }
 
-        if (bc.lo(1) == BCType::ext_dir and j < domain_box.smallEnd(1))
+        if (bc.lo(1) == BCType::ext_dir && j < domain_box.smallEnd(1))
         {
             rho(i,j,k) = bcv[Orientation(Direction::y,Orientation::low)];
         }
-        else if (bc.hi(1) == BCType::ext_dir and j > domain_box.bigEnd(1))
+        else if (bc.hi(1) == BCType::ext_dir && j > domain_box.bigEnd(1))
         {
             rho(i,j,k) = bcv[Orientation(Direction::y,Orientation::high)];
         }
 #if (AMREX_SPACEDIM == 3)
-        if (bc.lo(2) == BCType::ext_dir and k < domain_box.smallEnd(2))
+        if (bc.lo(2) == BCType::ext_dir && k < domain_box.smallEnd(2))
         {
             rho(i,j,k) = bcv[Orientation(Direction::z,Orientation::low)];
         }
-        else if (bc.hi(2) == BCType::ext_dir and k > domain_box.bigEnd(2))
+        else if (bc.hi(2) == BCType::ext_dir && k > domain_box.bigEnd(2))
         {
             rho(i,j,k) = bcv[Orientation(Direction::z,Orientation::high)];
         }
@@ -202,29 +202,29 @@ struct IncfloTracFill
         {
             const BCRec& bc = bcr[bcomp+n];
 
-            if (bc.lo(0) == BCType::ext_dir and i < domain_box.smallEnd(0))
+            if (bc.lo(0) == BCType::ext_dir && i < domain_box.smallEnd(0))
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::x,Orientation::low)][n];
             }
-            else if (bc.hi(0) == BCType::ext_dir and i > domain_box.bigEnd(0))
+            else if (bc.hi(0) == BCType::ext_dir && i > domain_box.bigEnd(0))
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::x,Orientation::high)][n];
             }
 
-            if (bc.lo(1) == BCType::ext_dir and j < domain_box.smallEnd(1))
+            if (bc.lo(1) == BCType::ext_dir && j < domain_box.smallEnd(1))
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::y,Orientation::low)][n];
             }
-            else if (bc.hi(1) == BCType::ext_dir and j > domain_box.bigEnd(1))
+            else if (bc.hi(1) == BCType::ext_dir && j > domain_box.bigEnd(1))
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::y,Orientation::high)][n];
             }
 #if (AMREX_SPACEDIM == 3)
-            if (bc.lo(2) == BCType::ext_dir and k < domain_box.smallEnd(2))
+            if (bc.lo(2) == BCType::ext_dir && k < domain_box.smallEnd(2))
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::z,Orientation::low)][n];
             }
-            else if (bc.hi(2) == BCType::ext_dir and k > domain_box.bigEnd(2))
+            else if (bc.hi(2) == BCType::ext_dir && k > domain_box.bigEnd(2))
             {
                 tracer(i,j,k,n) = bcv[Orientation(Direction::z,Orientation::high)][n];
             }
