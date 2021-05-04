@@ -55,6 +55,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     amrex::Print() << "REDISTRIBUTION TYPE " << m_redistribution_type << std::endl;
 #endif
 
+    // Make one flux MF at each level to hold all the fluxes (velocity, density, tracers)
+    int n_flux_comp = AMREX_SPACEDIM;
+    if (!m_constant_density) n_flux_comp += 1;
+    if ( m_advect_tracer)    n_flux_comp += m_ntrac;
+
     // This will hold state on faces
     Vector<MultiFab> face_x(finest_level+1);
     Vector<MultiFab> face_y(finest_level+1);
@@ -69,10 +74,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     Vector<MultiFab> flux_z(finest_level+1);
 #endif
 
-    // Make one flux MF at each level to hold all the fluxes (velocity, density, tracers)
-    int n_flux_comp = AMREX_SPACEDIM;
-    if (!m_constant_density) n_flux_comp += 1;
-    if ( m_advect_tracer)    n_flux_comp += m_ntrac;
+    Vector<Array<MultiFab*,AMREX_SPACEDIM> > fluxes(finest_level+1);
+    Vector<Array<MultiFab*,AMREX_SPACEDIM> > macvel(finest_level+1);
+    Vector<Array<MultiFab*,AMREX_SPACEDIM> >  faces(finest_level+1);
 
     for (int lev = 0; lev <= finest_level; ++lev) {
         AMREX_D_TERM(
@@ -83,41 +87,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
            flux_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
            flux_y[lev].define(v_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
            flux_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev)););
-    }
-
-    // We first compute the velocity forcing terms to be used in predicting
-    //    to faces before the MAC projection
-    if (m_advection_type != "MOL") {
-
-        bool include_pressure_gradient = !(m_use_mac_phi_in_godunov);
-        compute_vel_forces(vel_forces, vel, density, tracer, tracer, include_pressure_gradient);
-
-        if (m_godunov_include_diff_in_forcing)
-            for (int lev = 0; lev <= finest_level; ++lev)
-                MultiFab::Add(*vel_forces[lev], m_leveldata[lev]->divtau_o, 0, 0, AMREX_SPACEDIM, 0);
-
-        if (nghost_force() > 0)
-            fillpatch_force(m_cur_time, vel_forces, nghost_force());
-    }
-
-
-    // This will hold (1/rho) on faces
-    Vector<MultiFab> inv_rho_x(finest_level+1);
-    Vector<MultiFab> inv_rho_y(finest_level+1);
-#if (AMREX_SPACEDIM == 3)
-    Vector<MultiFab> inv_rho_z(finest_level+1);
-#endif
-
-    Vector<Array<MultiFab*,AMREX_SPACEDIM> > inv_rho(finest_level+1);
-    Vector<Array<MultiFab*,AMREX_SPACEDIM> > fluxes(finest_level+1);
-    Vector<Array<MultiFab*,AMREX_SPACEDIM> > macvel(finest_level+1);
-    Vector<Array<MultiFab*,AMREX_SPACEDIM> >  faces(finest_level+1);
-
-    for (int lev=0; lev <= finest_level; ++lev)
-    {
-        AMREX_D_TERM(inv_rho[lev][0] = &inv_rho_x[lev];,
-                     inv_rho[lev][1] = &inv_rho_y[lev];,
-                     inv_rho[lev][2] = &inv_rho_z[lev];);
 
         AMREX_D_TERM(faces[lev][0] = &face_x[lev];,
                      faces[lev][1] = &face_y[lev];,
@@ -131,31 +100,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                      macvel[lev][1] = v_mac[lev];,
                      macvel[lev][2] = w_mac[lev];);
     }
-
-    for (int lev = 0; lev <= finest_level; ++lev) {
-
-        AMREX_D_TERM(
-           inv_rho_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
-           inv_rho_y[lev].define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
-           inv_rho_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev)););
-
-#ifdef AMREX_USE_EB
-        EB_interp_CellCentroid_to_FaceCentroid (*density[lev], inv_rho[lev],
-                                                0, 0, 1, geom[lev], get_density_bcrec());
-#else
-        amrex::average_cellcenter_to_face(inv_rho[lev], *density[lev], geom[lev]);
-#endif
-
-        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-            inv_rho[lev][idim]->invert(1.0, 0);
-        }
-    }
-
-    compute_MAC_projected_velocities(vel, 
-                                     AMREX_D_DECL(u_mac,v_mac,w_mac),
-                                     AMREX_D_DECL(GetVecOfPtrs(inv_rho_x), GetVecOfPtrs(inv_rho_y),
-                                                  GetVecOfPtrs(inv_rho_z)),
-                                     vel_forces, time);
 
     // We now re-compute the velocity forcing terms including the pressure gradient,
     //    and compute the tracer forcing terms for the first time

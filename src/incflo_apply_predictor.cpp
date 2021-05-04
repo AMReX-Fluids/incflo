@@ -152,6 +152,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
                      GetVecOfConstPtrs(tra_eta));
     }
 
+    // **********************************************************************************************
+    // Compute the MAC-projected velocities at all levels
+    // *************************************************************************************
+    bool include_pressure_gradient = !(m_use_mac_phi_in_godunov);
+    compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(), 
+                       get_density_old_const(), get_tracer_old_const(), get_tracer_new_const(),
+                       include_pressure_gradient);
+    compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(), 
+                                     AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
+                                     GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
+
     // *************************************************************************************
     // if (advection_type == "Godunov")
     //      Compute the explicit advective terms R_u^(n+1/2), R_s^(n+1/2) and R_t^(n+1/2)

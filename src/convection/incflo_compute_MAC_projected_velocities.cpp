@@ -15,12 +15,10 @@ using namespace amrex;
 void
 incflo::compute_MAC_projected_velocities (
                                  Vector<MultiFab const*> const& vel,
+                                 Vector<MultiFab const*> const& density,
                                  AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
                                               Vector<MultiFab*> const& v_mac,
                                               Vector<MultiFab*> const& w_mac),
-                                 AMREX_D_DECL(Vector<MultiFab*> const& inv_rho_x,
-                                              Vector<MultiFab*> const& inv_rho_y,
-                                              Vector<MultiFab*> const& inv_rho_z),
                                  Vector<MultiFab*> const& vel_forces,
                                  Real /*time*/)
 {
@@ -29,12 +27,55 @@ incflo::compute_MAC_projected_velocities (
 
     auto mac_phi = get_mac_phi();
 
-    Vector<Array<MultiFab const*,AMREX_SPACEDIM> > inv_rho(finest_level+1);
+    // We first compute the velocity forcing terms to be used in predicting
+    //    to faces before the MAC projection
+    if (m_advection_type != "MOL") {
+
+        // bool include_pressure_gradient = !(m_use_mac_phi_in_godunov);
+        // compute_vel_forces(vel_forces, vel, density, tracer, tracer, include_pressure_gradient);
+
+        if (m_godunov_include_diff_in_forcing)
+            for (int lev = 0; lev <= finest_level; ++lev)
+                MultiFab::Add(*vel_forces[lev], m_leveldata[lev]->divtau_o, 0, 0, AMREX_SPACEDIM, 0);
+
+        if (nghost_force() > 0)
+            fillpatch_force(m_cur_time, vel_forces, nghost_force());
+    }
+
+
+    // This will hold (1/rho) on faces
+    Vector<MultiFab*> inv_rho_x(finest_level+1);
+    Vector<MultiFab*> inv_rho_y(finest_level+1);
+#if (AMREX_SPACEDIM == 3)
+    Vector<MultiFab*> inv_rho_z(finest_level+1);
+#endif
+
+    for (int lev = 0; lev <= finest_level; ++lev) {
+
+        AMREX_D_TERM(
+           inv_rho_x[lev]->define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
+           inv_rho_y[lev]->define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
+           inv_rho_z[lev]->define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev)););
+    }
+
+    Vector<Array<MultiFab*,AMREX_SPACEDIM> > inv_rho(finest_level+1);
+
     for (int lev=0; lev <= finest_level; ++lev)
     {
         AMREX_D_TERM(inv_rho[lev][0] = inv_rho_x[lev];,
                      inv_rho[lev][1] = inv_rho_y[lev];,
                      inv_rho[lev][2] = inv_rho_z[lev];);
+
+#ifdef AMREX_USE_EB
+        EB_interp_CellCentroid_to_FaceCentroid (*density[lev], inv_rho[lev],
+                                                0, 0, 1, geom[lev], get_density_bcrec());
+#else
+        amrex::average_cellcenter_to_face(inv_rho[lev], *density[lev], geom[lev]);
+#endif
+
+        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+            inv_rho[lev][idim]->invert(1.0, 0);
+        }
     }
 
     //

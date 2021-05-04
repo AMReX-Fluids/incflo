@@ -116,12 +116,10 @@ public: // for cuda
 
     void compute_MAC_projected_velocities (
                                   amrex::Vector<amrex::MultiFab const*> const& vel,
+                                  amrex::Vector<amrex::MultiFab const*> const& density,
                                   AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
                                                amrex::Vector<amrex::MultiFab*> const& v_mac,
                                                amrex::Vector<amrex::MultiFab*> const& w_mac),
-                                  AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& inv_rho_x,
-                                               amrex::Vector<amrex::MultiFab*> const& inv_rho_y,
-                                               amrex::Vector<amrex::MultiFab*> const& inv_rho_z),
                                   amrex::Vector<amrex::MultiFab*> const& vel_forces,
                                   amrex::Real time);
 
