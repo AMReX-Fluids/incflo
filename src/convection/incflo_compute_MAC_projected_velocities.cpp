@@ -192,4 +192,7 @@ incflo::compute_MAC_projected_velocities (
     } else {
         macproj->project(m_mac_mg_rtol,m_mac_mg_atol);
     }
+
+    // Note that the macproj->project call above ensures that the MAC velocities are averaged down --
+    //      we don't need to do that again here
 }

@@ -5,6 +5,7 @@
 #include <hydro_utils.H>
 
 #ifdef AMREX_USE_EB
+#include <AMReX_EBFabFactory.H>
 #include <hydro_ebgodunov.H>
 #include <hydro_ebmol.H>
 #include <Redistribution.H>
@@ -75,7 +76,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > fluxes(finest_level+1);
-    Vector<Array<MultiFab*,AMREX_SPACEDIM> > macvel(finest_level+1);
     Vector<Array<MultiFab*,AMREX_SPACEDIM> >  faces(finest_level+1);
 
     for (int lev = 0; lev <= finest_level; ++lev) {
@@ -95,10 +95,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         AMREX_D_TERM(fluxes[lev][0] = &flux_x[lev];,
                      fluxes[lev][1] = &flux_y[lev];,
                      fluxes[lev][2] = &flux_z[lev];);
-
-        AMREX_D_TERM(macvel[lev][0] = u_mac[lev];,
-                     macvel[lev][1] = v_mac[lev];,
-                     macvel[lev][2] = w_mac[lev];);
     }
 
     // We now re-compute the velocity forcing terms including the pressure gradient,
@@ -151,7 +147,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_EB
         Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, AMREX_D_DECL(apx, apy, apz);
 
-        auto const& ebfact = EBFactory(lev);
+        const auto& ebfact = EBFactory(lev);
 
         if (!ebfact.isAllRegular())
             amrex::EB_computeDivergence(divu,u,geom[lev],true);
@@ -167,6 +163,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Box const& bx = mfi.tilebox();
+
+            Array4<Real const> const& divu_arr = divu.const_array(mfi);
 
 #ifdef AMREX_USE_EB
             EBCellFlagFab const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
@@ -191,235 +189,65 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             // ************************************************************************
             // Velocity
             // ************************************************************************
-            int edge_comp = 0;
-            if (m_advection_type == "MOL")
-            {
+            int face_comp = 0;  
+            int ncomp = AMREX_SPACEDIM;
+            bool is_velocity = true;
+            HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi, 
+                                                  vel[lev]->const_array(mfi),
+                                     AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
+                                                  flux_y[lev].array(mfi,face_comp),
+                                                  flux_z[lev].array(mfi,face_comp)),
+                                     AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
+                                                  face_y[lev].array(mfi,face_comp),
+                                                  face_z[lev].array(mfi,face_comp)),
+                                     AMREX_D_DECL(u_mac[lev]->const_array(mfi),
+                                                  v_mac[lev]->const_array(mfi),
+                                                  w_mac[lev]->const_array(mfi)),
+                                     divu_arr,
+                                     (!vel_forces.empty()) ? vel_forces[lev]->const_array(mfi) : Array4<Real const>{},
+                                     geom[lev], m_dt, 
+                                     get_velocity_bcrec(), 
+                                     get_velocity_bcrec_device_ptr(),
+                                     get_velocity_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-              if (!regular) 
-                EBMOL::ComputeEdgeState( bx, 
-                                       AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                    face_y[lev].array(mfi,edge_comp),
-                                                    face_z[lev].array(mfi,edge_comp)),
-                                       vel[lev]->const_array(mfi), AMREX_SPACEDIM,
-                                       AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                    v_mac[lev]->const_array(mfi),
-                                                    w_mac[lev]->const_array(mfi)),
-                                       geom[lev].Domain(), 
-                                       get_velocity_bcrec(), 
-                                       get_velocity_bcrec_device_ptr(),
-                                       AMREX_D_DECL(fcx,fcy,fcz),
-                                       ccc, vfrac, flag);
-            else
+                                     ebfact,
 #endif
-                MOL::ComputeEdgeState( bx, 
-                                       AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                    face_y[lev].array(mfi,edge_comp),
-                                                    face_z[lev].array(mfi,edge_comp)),
-                                       vel[lev]->const_array(mfi), AMREX_SPACEDIM,
-                                       AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                    v_mac[lev]->const_array(mfi),
-                                                    w_mac[lev]->const_array(mfi)),
-                                       geom[lev].Domain(), 
-                                       get_velocity_bcrec(), 
-                                       get_velocity_bcrec_device_ptr());
+                                     m_godunov_ppm, m_godunov_use_forces_in_trans,
+                                     is_velocity, fluxes_are_area_weighted,
+                                     m_advection_type);
 
-            } else if (m_advection_type == "Godunov") {
-
-              bool is_velocity = true;
-              int ncomp = AMREX_SPACEDIM;
-              FArrayBox tmpfab_v(amrex::grow(bx,ngrow),  (4*AMREX_SPACEDIM + 2)*ncomp);
-              Elixir    eli = tmpfab_v.elixir();
-#ifdef AMREX_USE_EB
-              if (!regular) 
-                EBGodunov::ComputeEdgeState(
-                                       bx, ncomp,
-                                       vel[lev]->const_array(mfi), 
-                                       AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                    face_y[lev].array(mfi,edge_comp),
-                                                    face_z[lev].array(mfi,edge_comp)),
-                                       AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                    v_mac[lev]->const_array(mfi),
-                                                    w_mac[lev]->const_array(mfi)),
-                                       divu.const_array(mfi),
-                                       (!vel_forces.empty()) ? vel_forces[lev]->const_array(mfi)
-                                                         : Array4<Real const>{},
-                                       geom[lev],
-                                       m_dt, 
-                                       get_velocity_bcrec(), 
-                                       get_velocity_bcrec_device_ptr(),
-                                       get_velocity_iconserv_device_ptr(),
-                                       tmpfab_v.dataPtr(), flag,
-                                       AMREX_D_DECL(apx,apy,apz), vfrac,
-                                       AMREX_D_DECL(fcx,fcy,fcz), ccc,
-                                       is_velocity);
-              else
-#endif
-
-                Godunov::ComputeEdgeState( 
-                                       bx, ncomp,
-                                       vel[lev]->const_array(mfi), 
-                                       AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                    face_y[lev].array(mfi,edge_comp),
-                                                    face_z[lev].array(mfi,edge_comp)),
-                                       AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                    v_mac[lev]->const_array(mfi),
-                                                    w_mac[lev]->const_array(mfi)),
-                                       divu.const_array(mfi),
-                                       (!vel_forces.empty()) ? vel_forces[lev]->const_array(mfi)
-                                                             : Array4<Real const>{},
-                                       geom[lev],
-                                       m_dt, 
-                                       get_velocity_bcrec_device_ptr(),
-                                       get_velocity_iconserv_device_ptr(),
-                                       m_godunov_ppm, m_godunov_use_forces_in_trans,
-                                       is_velocity);
-            } // Godunov
-
-            // Compute fluxes
-#ifdef AMREX_USE_EB
-              if (!regular) 
-                HydroUtils::EB_ComputeFluxes( bx,
-                                             AMREX_D_DECL(flux_x[lev].array(mfi,edge_comp),
-                                                          flux_y[lev].array(mfi,edge_comp),
-                                                          flux_z[lev].array(mfi,edge_comp)),
-                                             AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                          v_mac[lev]->const_array(mfi),
-                                                          w_mac[lev]->const_array(mfi)),
-                                             AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                          face_y[lev].array(mfi,edge_comp),
-                                                          face_z[lev].array(mfi,edge_comp)),
-                                             AMREX_D_DECL(apx,apy,apz),
-                                             geom[lev], AMREX_SPACEDIM,
-                                             flag, fluxes_are_area_weighted);
-
-              else
-#endif
-                HydroUtils::ComputeFluxes( bx,
-                                           AMREX_D_DECL(flux_x[lev].array(mfi,edge_comp),
-                                                        flux_y[lev].array(mfi,edge_comp),
-                                                        flux_z[lev].array(mfi,edge_comp)),
-                                           AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                        v_mac[lev]->const_array(mfi),
-                                                        w_mac[lev]->const_array(mfi)),
-                                           AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                        face_y[lev].array(mfi,edge_comp),
-                                                        face_z[lev].array(mfi,edge_comp)),
-                                           geom[lev], AMREX_SPACEDIM, fluxes_are_area_weighted );
 
             // ************************************************************************
             // Density
             // ************************************************************************
             if (!m_constant_density)
             {
-            edge_comp = AMREX_SPACEDIM;
-            if (m_advection_type == "MOL") {
-#ifdef AMREX_USE_EB
-              if (!regular) 
-                EBMOL::ComputeEdgeState( bx, 
-                                       AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                    face_y[lev].array(mfi,edge_comp),
-                                                    face_z[lev].array(mfi,edge_comp)),
-                                       density[lev]->const_array(mfi), 1,
-                                       AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                    v_mac[lev]->const_array(mfi),
-                                                    w_mac[lev]->const_array(mfi)),
-                                       geom[lev].Domain(), 
-                                       get_density_bcrec(), 
-                                       get_density_bcrec_device_ptr(),
-                                       AMREX_D_DECL(fcx,fcy,fcz),
-                                       ccc, vfrac, flag);
-
-              else
-#endif
-                MOL::ComputeEdgeState( bx, 
-                                       AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                    face_y[lev].array(mfi,edge_comp),
-                                                    face_z[lev].array(mfi,edge_comp)),
-                                       density[lev]->const_array(mfi), 1,
-                                       AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                    v_mac[lev]->const_array(mfi),
-                                                    w_mac[lev]->const_array(mfi)),
-                                       geom[lev].Domain(), 
-                                       get_density_bcrec(), 
-                                       get_density_bcrec_device_ptr());
-
-            } else if (m_advection_type == "Godunov") {
-              bool is_velocity = false;
-              int ncomp = 1;
-              FArrayBox tmpfab_d(amrex::grow(bx,ngrow),  (4*AMREX_SPACEDIM + 2)*ncomp);
-              Elixir    eli = tmpfab_d.elixir();
-#ifdef AMREX_USE_EB
-              if (!regular) 
-                EBGodunov::ComputeEdgeState(
-                                   bx, ncomp,
-                                   density[lev]->const_array(mfi), 
-                                   AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                face_y[lev].array(mfi,edge_comp),
-                                                face_z[lev].array(mfi,edge_comp)),
-                                   AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                v_mac[lev]->const_array(mfi),
-                                                w_mac[lev]->const_array(mfi)),
-                                   divu.const_array(mfi),
-                                   Array4<Real const>{},
-                                   geom[lev],
-                                   m_dt, 
-                                   get_density_bcrec(), 
-                                   get_density_bcrec_device_ptr(),
-                                   get_density_iconserv_device_ptr(),
-                                   tmpfab_d.dataPtr(), flag,
-                                   AMREX_D_DECL(apx,apy,apz), vfrac,
-                                   AMREX_D_DECL(fcx,fcy,fcz), ccc,
-                                   is_velocity);
-
-              else
-#endif
-                Godunov::ComputeEdgeState( bx, ncomp,
-                                           density[lev]->const_array(mfi), 
-                                           AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                        face_y[lev].array(mfi,edge_comp),
-                                                        face_z[lev].array(mfi,edge_comp)),
-                                           AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                        v_mac[lev]->const_array(mfi),
-                                                        w_mac[lev]->const_array(mfi)),
-                                           divu.const_array(mfi),
-                                           Array4<Real const>{},
-                                           geom[lev],
-                                           m_dt, 
-                                           get_density_bcrec_device_ptr(),
-                                           get_density_iconserv_device_ptr(),
-                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
-                                           is_velocity);
-            } // Godunov
-
-            // Compute fluxes
-#ifdef AMREX_USE_EB
-            if (!regular) 
-              HydroUtils::EB_ComputeFluxes(bx,
-                                           AMREX_D_DECL(flux_x[lev].array(mfi,edge_comp),
-                                                        flux_y[lev].array(mfi,edge_comp),
-                                                        flux_z[lev].array(mfi,edge_comp)),
-                                           AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                        v_mac[lev]->const_array(mfi),
-                                                        w_mac[lev]->const_array(mfi)),
-                                           AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                        face_y[lev].array(mfi,edge_comp),
-                                                        face_z[lev].array(mfi,edge_comp)),
-                                           AMREX_D_DECL(apx,apy,apz),
-                                           geom[lev], 1, flag, fluxes_are_area_weighted);
-              else
-#endif
-                HydroUtils::ComputeFluxes(bx,
-                                          AMREX_D_DECL(flux_x[lev].array(mfi,edge_comp),
-                                                       flux_y[lev].array(mfi,edge_comp),
-                                                       flux_z[lev].array(mfi,edge_comp)),
+                face_comp = AMREX_SPACEDIM;
+                ncomp = 1;
+                is_velocity = false;
+                HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi, 
+                                                       density[lev]->const_array(mfi),
+                                          AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
+                                                       flux_y[lev].array(mfi,face_comp),
+                                                       flux_z[lev].array(mfi,face_comp)),
+                                          AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
+                                                       face_y[lev].array(mfi,face_comp),
+                                                       face_z[lev].array(mfi,face_comp)),
                                           AMREX_D_DECL(u_mac[lev]->const_array(mfi),
                                                        v_mac[lev]->const_array(mfi),
                                                        w_mac[lev]->const_array(mfi)),
-                                          AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                       face_y[lev].array(mfi,edge_comp),
-                                                       face_z[lev].array(mfi,edge_comp)),
-                                          geom[lev], 1, fluxes_are_area_weighted );
-            } // !constant_density
+                                          divu_arr, Array4<Real const>{},
+                                          geom[lev], m_dt, 
+                                          get_density_bcrec(), 
+                                          get_density_bcrec_device_ptr(),
+                                          get_density_iconserv_device_ptr(),
+#ifdef AMREX_USE_EB
+                                     ebfact,
+#endif
+                                          m_godunov_ppm, m_godunov_use_forces_in_trans,
+                                          is_velocity, fluxes_are_area_weighted,
+                                          m_advection_type);
+            }
 
             // ************************************************************************
             // (Rho*Tracer)
@@ -427,6 +255,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             // Make a FAB holding (rho * tracer) that is the same size as the original tracer FAB
             FArrayBox rhotracfab;
             if (m_advect_tracer && (m_ntrac>0)) {
+
                 Box rhotrac_box = Box((*tracer[lev])[mfi].box());
                 Elixir eli_rt;
                 Array4<Real> rhotrac;
@@ -442,133 +271,50 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 });
 
                 if (m_constant_density)
-                   edge_comp = AMREX_SPACEDIM;
+                   face_comp = AMREX_SPACEDIM;
                 else
-                   edge_comp = AMREX_SPACEDIM+1;
-                if (m_advection_type == "MOL") {
+                   face_comp = AMREX_SPACEDIM+1;
+                ncomp = m_ntrac;
+                is_velocity = false;
+
+                HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi, 
+                                                       rhotrac,
+                                          AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
+                                                       flux_y[lev].array(mfi,face_comp),
+                                                       flux_z[lev].array(mfi,face_comp)),
+                                          AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
+                                                       face_y[lev].array(mfi,face_comp),
+                                                       face_z[lev].array(mfi,face_comp)),
+                                          AMREX_D_DECL(u_mac[lev]->const_array(mfi),
+                                                       v_mac[lev]->const_array(mfi),
+                                                       w_mac[lev]->const_array(mfi)),
+                                          divu_arr,
+                                          (!tra_forces.empty()) ? tra_forces[lev]->const_array(mfi) : Array4<Real const>{},
+                                          geom[lev], m_dt, 
+                                          get_tracer_bcrec(), 
+                                          get_tracer_bcrec_device_ptr(),
+                                          get_tracer_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                  if (!regular) 
-                    EBMOL::ComputeEdgeState (bx, 
-                                             AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                          face_y[lev].array(mfi,edge_comp),
-                                                          face_z[lev].array(mfi,edge_comp)),
-                                            rhotracfab.const_array(), m_ntrac,
-                                            AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                         v_mac[lev]->const_array(mfi),
-                                                         w_mac[lev]->const_array(mfi)),
-                                            geom[lev].Domain(), 
-                                            get_tracer_bcrec(), 
-                                            get_tracer_bcrec_device_ptr(),
-                                            AMREX_D_DECL(fcx,fcy,fcz),
-                                            ccc, vfrac, flag);
-
-                  else
+                                     ebfact,
 #endif
-                      MOL::ComputeEdgeState(bx, 
-                                            AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                         face_y[lev].array(mfi,edge_comp),
-                                                         face_z[lev].array(mfi,edge_comp)),
-                                            rhotracfab.const_array(), m_ntrac,
-                                            AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                         v_mac[lev]->const_array(mfi),
-                                                         w_mac[lev]->const_array(mfi)),
-                                            geom[lev].Domain(), 
-                                            get_tracer_bcrec(), 
-                                            get_tracer_bcrec_device_ptr());
+                                          m_godunov_ppm, m_godunov_use_forces_in_trans,
+                                          is_velocity, fluxes_are_area_weighted,
+                                          m_advection_type);
+            }
 
-                } else if (m_advection_type == "Godunov") {
-
-                  bool is_velocity = false;
-                  int ncomp = m_ntrac;
-                  FArrayBox tmpfab_t(amrex::grow(bx,ngrow),  (4*AMREX_SPACEDIM + 2)*ncomp);
-                  Elixir    eli = tmpfab_t.elixir();
-#ifdef AMREX_USE_EB
-                  if (!regular)
-                    EBGodunov::ComputeEdgeState(bx, ncomp,
-                                                rhotracfab.const_array(),
-                                                AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                             face_y[lev].array(mfi,edge_comp),
-                                                             face_z[lev].array(mfi,edge_comp)),
-                                                AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                             v_mac[lev]->const_array(mfi),
-                                                             w_mac[lev]->const_array(mfi)),
-                                                divu.const_array(mfi),
-                                                (!tra_forces.empty()) ? tra_forces[lev]->const_array(mfi)
-                                                                      : Array4<Real const>{},
-                                                geom[lev], m_dt, 
-                                                get_tracer_bcrec(), 
-                                                get_tracer_bcrec_device_ptr(),
-                                                get_tracer_iconserv_device_ptr(),
-                                                tmpfab_t.dataPtr(), flag,
-                                                AMREX_D_DECL(apx,apy,apz), vfrac,
-                                                AMREX_D_DECL(fcx,fcy,fcz), ccc,
-                                                is_velocity);
-    
-                  else
-#endif
-                    Godunov::ComputeEdgeState(bx, ncomp,
-                                              rhotracfab.const_array(),
-                                              AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                           face_y[lev].array(mfi,edge_comp),
-                                                           face_z[lev].array(mfi,edge_comp)),
-                                              AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                           v_mac[lev]->const_array(mfi),
-                                                           w_mac[lev]->const_array(mfi)),
-                                              divu.const_array(mfi),
-                                              (!tra_forces.empty()) ? tra_forces[lev]->const_array(mfi)
-                                                                    : Array4<Real const>{},
-                                              geom[lev], m_dt, 
-                                              get_tracer_bcrec_device_ptr(),
-                                              get_tracer_iconserv_device_ptr(),
-                                              m_godunov_ppm, m_godunov_use_forces_in_trans,
-                                              is_velocity);
-                } //  Godunov
-
-                // Compute fluxes
-#ifdef AMREX_USE_EB
-                if (!regular)
-                  HydroUtils::EB_ComputeFluxes(bx,
-                                               AMREX_D_DECL(flux_x[lev].array(mfi,edge_comp),
-                                                            flux_y[lev].array(mfi,edge_comp),
-                                                            flux_z[lev].array(mfi,edge_comp)),
-                                               AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                            v_mac[lev]->const_array(mfi),
-                                                            w_mac[lev]->const_array(mfi)),
-                                               AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                            face_y[lev].array(mfi,edge_comp),
-                                                            face_z[lev].array(mfi,edge_comp)),
-                                               AMREX_D_DECL(apx,apy,apz),
-                                               geom[lev], m_ntrac,
-                                               flag, fluxes_are_area_weighted);
-                else
-#endif
-                  HydroUtils::ComputeFluxes(bx,
-                                            AMREX_D_DECL(flux_x[lev].array(mfi,edge_comp),
-                                                         flux_y[lev].array(mfi,edge_comp),
-                                                         flux_z[lev].array(mfi,edge_comp)),
-                                            AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                         v_mac[lev]->const_array(mfi),
-                                                         w_mac[lev]->const_array(mfi)),
-                                            AMREX_D_DECL(face_x[lev].array(mfi,edge_comp),
-                                                         face_y[lev].array(mfi,edge_comp),
-                                                         face_z[lev].array(mfi,edge_comp)),
-                                             geom[lev], m_ntrac, fluxes_are_area_weighted );
-            } // Tracer
         } // mfi
     } // lev
 
     // In order to enforce conservation across coarse-fine boundaries we must be sure to average down the fluxes
-    //    before we use them.  Note we also need to average down the MAC velocities and face states if we are going to do
+    //    before we use them.  Note we also need to average down the face states if we are going to do
     //    convective differencing
     for (int lev = finest_level; lev > 0; --lev)
     {
         IntVect rr  = geom[lev].Domain().size() / geom[lev-1].Domain().size();
 #ifdef AMREX_USE_EB
-        EB_average_down_faces(GetArrOfConstPtrs(macvel[lev]),macvel[lev-1], rr, geom[lev-1]);
         EB_average_down_faces(GetArrOfConstPtrs( faces[lev]),  faces[lev-1], rr, geom[lev-1]);
         EB_average_down_faces(GetArrOfConstPtrs(fluxes[lev]), fluxes[lev-1], rr, geom[lev-1]);
 #else
-        average_down_faces(GetArrOfConstPtrs(macvel[lev]), macvel[lev-1], rr, geom[lev-1]);
         average_down_faces(GetArrOfConstPtrs( faces[lev]),  faces[lev-1], rr, geom[lev-1]);
         average_down_faces(GetArrOfConstPtrs(fluxes[lev]), fluxes[lev-1], rr, geom[lev-1]);
 #endif
@@ -653,7 +399,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac.const_array(mfi), 1, geom[lev], mult,
-//                                               get_density_iconserv_device_ptr(),
                                                  fluxes_are_area_weighted);
 #else
             HydroUtils::ComputeDivergence(bx, conv_r[lev]->array(mfi),
@@ -693,7 +438,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac.const_array(mfi), m_ntrac, geom[lev], mult,
                                                  fluxes_are_area_weighted);
-//                                               get_tracer_iconserv_device_ptr(),
 #else
             HydroUtils::ComputeDivergence(bx, conv_t[lev]->array(mfi),
                                           AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
