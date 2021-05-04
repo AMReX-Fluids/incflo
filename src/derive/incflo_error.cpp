@@ -31,7 +31,7 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
 #if (AMREX_SPACEDIM == 3)
                 Real z = (k+0.5)*dx[2];
 #endif
-                Real exact;
+                Real exact = 0.; // quiet compiler warning
                 if (err_comp == AMREX_SPACEDIM || err_comp == AMREX_SPACEDIM+1) {  // pressure 
                     exact = 0.25 * std::cos(fourpi*x) + 0.25 * std::cos(fourpi*y);
     
@@ -81,7 +81,7 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
 
                 Real x = (i+0.5)*dx[0];
                 Real y = (j+0.5)*dx[1];
-                Real exact;
+                Real exact = 0.; // quiet compiler warning
                 if (err_comp == AMREX_SPACEDIM || err_comp == AMREX_SPACEDIM+1) {  // pressure 
 
                     Real t_p = time - 0.5*dt;

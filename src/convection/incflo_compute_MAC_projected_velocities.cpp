@@ -44,37 +44,26 @@ incflo::compute_MAC_projected_velocities (
 
 
     // This will hold (1/rho) on faces
-    Vector<MultiFab*> inv_rho_x(finest_level+1);
-    Vector<MultiFab*> inv_rho_y(finest_level+1);
-#if (AMREX_SPACEDIM == 3)
-    Vector<MultiFab*> inv_rho_z(finest_level+1);
-#endif
+    Vector<Array<MultiFab,AMREX_SPACEDIM> > inv_rho(finest_level+1);
 
     for (int lev = 0; lev <= finest_level; ++lev) {
-
         AMREX_D_TERM(
-           inv_rho_x[lev]->define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
-           inv_rho_y[lev]->define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
-           inv_rho_z[lev]->define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev)););
+           inv_rho[lev][0].define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
+           inv_rho[lev][1].define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
+           inv_rho[lev][2].define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev)));
     }
-
-    Vector<Array<MultiFab*,AMREX_SPACEDIM> > inv_rho(finest_level+1);
 
     for (int lev=0; lev <= finest_level; ++lev)
     {
-        AMREX_D_TERM(inv_rho[lev][0] = inv_rho_x[lev];,
-                     inv_rho[lev][1] = inv_rho_y[lev];,
-                     inv_rho[lev][2] = inv_rho_z[lev];);
-
 #ifdef AMREX_USE_EB
-        EB_interp_CellCentroid_to_FaceCentroid (*density[lev], inv_rho[lev],
+        EB_interp_CellCentroid_to_FaceCentroid (*density[lev], GetArrOfPtrs(inv_rho[lev]),
                                                 0, 0, 1, geom[lev], get_density_bcrec());
 #else
-        amrex::average_cellcenter_to_face(inv_rho[lev], *density[lev], geom[lev]);
+        amrex::average_cellcenter_to_face(GetArrOfPtrs(inv_rho[lev]), *density[lev], geom[lev]);
 #endif
 
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-            inv_rho[lev][idim]->invert(1.0, 0);
+            inv_rho[lev][idim].invert(1.0, 0);
         }
     }
 
@@ -90,14 +79,14 @@ incflo::compute_MAC_projected_velocities (
             Vector<BoxArray> ba;
             Vector<DistributionMapping> dm;
             for (auto const& ir : inv_rho) {
-                ba.push_back(ir[0]->boxArray());
-                dm.push_back(ir[0]->DistributionMap());
+                ba.push_back(ir[0].boxArray());
+                dm.push_back(ir[0].DistributionMap());
             }
             macproj->initProjector(ba, dm, lp_info, 1.0/m_ro_0);
         } else
 #endif
         {
-            macproj->initProjector(lp_info, inv_rho);
+            macproj->initProjector(lp_info, GetVecOfArrOfConstPtrs(inv_rho));
         }
         macproj->setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
     } else {
@@ -107,7 +96,7 @@ incflo::compute_MAC_projected_velocities (
         } else
 #endif
         {
-            macproj->updateBeta(inv_rho);
+            macproj->updateBeta(GetVecOfArrOfConstPtrs(inv_rho));
         }
     }
 
