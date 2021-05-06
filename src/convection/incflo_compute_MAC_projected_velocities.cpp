@@ -1,12 +1,5 @@
-#include <hydro_mol.H>
-#include <hydro_godunov.H>
+#include <hydro_utils.H>
 #include <incflo.H>
-
-#ifdef AMREX_USE_EB
-#include <hydro_ebmol.H>
-#include <hydro_ebgodunov.H>
-#endif
-
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_MacProjector.H>
 
@@ -125,8 +118,8 @@ incflo::compute_MAC_projected_velocities (
                  m_fluxes[lev][idim].setVal(0.);
     }
 
-    for (int lev = 0; lev <= finest_level; ++lev) {
-
+    for (int lev = 0; lev <= finest_level; ++lev) 
+    {
         mac_phi[lev]->FillBoundary(geom[lev].periodicity());
 
 #ifdef AMREX_USE_EB
@@ -135,36 +128,17 @@ incflo::compute_MAC_projected_velocities (
 
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
-
-        if (m_advection_type == "Godunov") {
+        HydroUtils::ExtrapVelToFaces(*vel[lev], *vel_forces[lev], 
+                                      AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
+                                      get_velocity_bcrec(), get_velocity_bcrec_device_ptr(),
+                                      geom[lev], l_dt, 
 #ifdef AMREX_USE_EB
-            if (!ebfact->isAllRegular())
-                EBGodunov::ExtrapVelToFaces(*vel[lev], *vel_forces[lev], 
-                                            AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
-                                            get_velocity_bcrec(), get_velocity_bcrec_device_ptr(),
-                                            geom[lev], l_dt);  // Note that PPM not supported for EB
-//                                          m_use_mac_phi_in_godunov);
-            else
+                                      *ebfact,
 #endif
-                Godunov::ExtrapVelToFaces(*vel[lev], *vel_forces[lev], 
-                                          AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
-                                          get_velocity_bcrec(), get_velocity_bcrec_device_ptr(),
-                                          geom[lev], l_dt, m_godunov_ppm, m_godunov_use_forces_in_trans);
-//                                        m_use_mac_phi_in_godunov);
-        } else if (m_advection_type == "MOL") {
+                                      m_godunov_ppm, m_godunov_use_forces_in_trans,
+                                      m_advection_type);
+//                                    m_use_mac_phi_in_godunov);
 
-#ifdef AMREX_USE_EB
-            if (!ebfact->isAllRegular())
-                EBMOL::ExtrapVelToFaces(*vel[lev], AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]), geom[lev],
-                                        get_velocity_bcrec(), get_velocity_bcrec_device_ptr());
-            else
-#endif
-                MOL::ExtrapVelToFaces(*vel[lev], AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]), geom[lev],
-                                       get_velocity_bcrec(), get_velocity_bcrec_device_ptr());
-
-        } else {
-            amrex::Abort("Dont know this advection type");
-        }
     }
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
     for (int lev=0; lev <= finest_level; ++lev)
