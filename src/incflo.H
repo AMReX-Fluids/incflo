@@ -128,7 +128,6 @@ public: // for cuda
                                      AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
                                                   amrex::Vector<amrex::MultiFab const*> const& v_mac,
                                                   amrex::Vector<amrex::MultiFab const*> const& w_mac));
-#endif
 
     void redistribute_convective_term (amrex::Box const& bx, amrex::MFIter const& mfi,
                                        amrex::Array4<amrex::Real const> const& vel,       // velocity
@@ -144,6 +143,7 @@ public: // for cuda
                                        bool l_constant_density, bool l_advect_tracer, int l_ntrac,
                                        amrex::EBFArrayBoxFactory const* ebfact,
                                        amrex::Geometry& geom, amrex::Real l_dt);
+#endif
 
     ///////////////////////////////////////////////////////////////////////////
     //
