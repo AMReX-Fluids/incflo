@@ -130,6 +130,21 @@ public: // for cuda
                                                   amrex::Vector<amrex::MultiFab const*> const& w_mac));
 #endif
 
+    void redistribute_convective_term (amrex::Box const& bx, amrex::MFIter const& mfi,
+                                       amrex::Array4<amrex::Real const> const& vel,       // velocity
+                                       amrex::Array4<amrex::Real const> const& rho,       // density
+                                       amrex::Array4<amrex::Real const> const& rhotrac,   // tracer
+                                       amrex::Array4<amrex::Real> const& dvdt_tmp,  // initial velocity update
+                                       amrex::Array4<amrex::Real> const& drdt_tmp,  // initial density update
+                                       amrex::Array4<amrex::Real> const& dtdt_tmp,  // initial tracer update
+                                       amrex::Array4<amrex::Real> const& dvdt,      // final velocity update
+                                       amrex::Array4<amrex::Real> const& drdt,      // final density update
+                                       amrex::Array4<amrex::Real> const& dtdt,      // final tracer update
+                                       std::string l_redistribution_type,
+                                       bool l_constant_density, bool l_advect_tracer, int l_ntrac,
+                                       amrex::EBFArrayBoxFactory const* ebfact,
+                                       amrex::Geometry& geom, amrex::Real l_dt);
+
     ///////////////////////////////////////////////////////////////////////////
     //
     // derive

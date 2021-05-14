@@ -1,28 +1,28 @@
 #ifdef AMREX_USE_EB
 
-#include <Convection.H>
-#include <Redistribution.H>
-#include <AMReX_MultiFabUtil.H>
-#include <AMReX_MultiCutFab.H>
+#include <hydro_redistribution.H>
+//#include <AMReX_MultiFabUtil.H>
+//#include <AMReX_MultiCutFab.H>
+#include <incflo.H>
 
 using namespace amrex;
 
 void
-convection::redistribute_convective_term (Box const& bx, MFIter const& mfi,
-                                          Array4<Real const > const& vel, // velocity
-                                          Array4<Real const > const& rho, // density
-                                          Array4<Real const > const& rhotrac, // tracer
-                                          Array4<Real> const& dvdt_tmp, // velocity
-                                          Array4<Real> const& drdt_tmp, // density
-                                          Array4<Real> const& dtdt_tmp, // tracer
-                                          Array4<Real> const& dvdt, // velocity
-                                          Array4<Real> const& drdt, // density
-                                          Array4<Real> const& dtdt, // tracer
-                                          std::string l_redistribution_type,
-                                          bool l_constant_density,
-                                          bool l_advect_tracer, int l_ntrac,
-                                          EBFArrayBoxFactory const* ebfact,
-                                          Geometry& geom, Real l_dt) 
+incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
+                                       Array4<Real const > const& vel, // velocity
+                                       Array4<Real const > const& rho, // density
+                                       Array4<Real const > const& rhotrac, // tracer
+                                       Array4<Real> const& dvdt_tmp, // velocity
+                                       Array4<Real> const& drdt_tmp, // density
+                                       Array4<Real> const& dtdt_tmp, // tracer
+                                       Array4<Real> const& dvdt, // velocity
+                                       Array4<Real> const& drdt, // density
+                                       Array4<Real> const& dtdt, // tracer
+                                       std::string l_redistribution_type,
+                                       bool l_constant_density,
+                                       bool l_advect_tracer, int l_ntrac,
+                                       EBFArrayBoxFactory const* ebfact,
+                                       Geometry& geom, Real l_dt) 
 {
     EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
     Array4<EBCellFlag const> const& flag = flagfab.const_array();
@@ -59,21 +59,30 @@ convection::redistribute_convective_term (Box const& bx, MFIter const& mfi,
         Elixir eli_scratch = scratch_fab.elixir();
 
         // velocity
-        redistribution::redistribute_eb(bx, AMREX_SPACEDIM, dvdt, dvdt_tmp, vel, scratch, flag,
-                                        AMREX_D_DECL(apx, apy, apz), vfrac,
-                                        AMREX_D_DECL(fcx, fcy, fcz), ccc, geom, l_dt, l_redistribution_type);
+        int ncomp = AMREX_SPACEDIM;
+        auto const& bc_vel = get_velocity_bcrec_device_ptr();
+        Redistribution::Apply(bx, ncomp, dvdt, dvdt_tmp, vel, scratch, flag,
+                              AMREX_D_DECL(apx, apy, apz), vfrac,
+                              AMREX_D_DECL(fcx, fcy, fcz), ccc, 
+                              bc_vel, geom, l_dt, l_redistribution_type);
 
         // density
         if (!l_constant_density) {
-            redistribution::redistribute_eb(bx, 1, drdt, drdt_tmp, rho, scratch, flag,
-                                            AMREX_D_DECL(apx, apy, apz), vfrac,
-                                            AMREX_D_DECL(fcx, fcy, fcz), ccc, geom, l_dt, l_redistribution_type);
+            ncomp = 1;
+            auto const& bc_den = get_density_bcrec_device_ptr();
+            Redistribution::Apply(bx, ncomp, drdt, drdt_tmp, rho, scratch, flag,
+                                  AMREX_D_DECL(apx, apy, apz), vfrac,
+                                  AMREX_D_DECL(fcx, fcy, fcz), ccc,
+                                  bc_den, geom, l_dt, l_redistribution_type);
         }
 
         if (l_advect_tracer) {
-            redistribution::redistribute_eb(bx, l_ntrac, dtdt, dtdt_tmp, rhotrac, scratch, flag,
-                                            AMREX_D_DECL(apx, apy, apz), vfrac,
-                                            AMREX_D_DECL(fcx, fcy, fcz), ccc, geom, l_dt, l_redistribution_type);
+            ncomp = l_ntrac;
+            auto const& bc_tra = get_tracer_bcrec_device_ptr();
+            Redistribution::Apply(bx, ncomp, dtdt, dtdt_tmp, rhotrac, scratch, flag,
+                                  AMREX_D_DECL(apx, apy, apz), vfrac,
+                                  AMREX_D_DECL(fcx, fcy, fcz), ccc,
+                                  bc_tra, geom, l_dt, l_redistribution_type);
         }
     } else { 
         amrex::ParallelFor(bx,

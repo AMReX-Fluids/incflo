@@ -1,7 +1,7 @@
 #include <AMReX_BC_TYPES.H>
 #include <incflo.H>
 #ifdef AMREX_USE_EB
-#include <Redistribution.H>
+#include <hydro_redistribution.H>
 #endif
 
 using namespace amrex;
@@ -66,14 +66,13 @@ void incflo::ReadParameters ()
         pp.query("use_mac_phi_in_godunov"           , m_use_mac_phi_in_godunov);
 
         // What type of redistribution algorithm; default is FluxRedistribution, options are
-        // {NoRedist, FluxRedist, MergeRedist, StateRedist}
+        // {NoRedist, FluxRedist, StateRedist}
 #ifdef AMREX_USE_EB
         pp.query("redistribution_type"              , m_redistribution_type);
         if (m_redistribution_type != "NoRedist" &&
             m_redistribution_type != "FluxRedist" &&
-            m_redistribution_type != "MergeRedist" &&
             m_redistribution_type != "StateRedist")
-            amrex::Abort("redistribution type must be FluxRedist, MergeRedist, or StateRedist");
+            amrex::Abort("redistribution type must be NoRedist, FluxRedist, or StateRedist");
 
 	if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
 #endif
@@ -323,9 +322,8 @@ void
 incflo::InitialRedistribution ()
 {
     // Next we must redistribute the initial solution if we are going to use 
-    // MergeRedist or StateRedist  redistribution schemes
-    if ( m_redistribution_type == "StateRedist" ||
-         m_redistribution_type == "MergeRedist")
+    // StateRedist redistribution scheme
+    if ( m_redistribution_type == "StateRedist" )
     {
       for (int lev = 0; lev <= finest_level; lev++)
       {
@@ -378,28 +376,31 @@ incflo::InitialRedistribution ()
                 vfrac = fact.getVolFrac().const_array(mfi);
 
                 int ncomp = AMREX_SPACEDIM;
-                redistribution::redistribute_initial_data( bx,ncomp,
+                auto const& bc_vel = get_velocity_bcrec_device_ptr();
+                Redistribution::ApplyToInitialData( bx,ncomp,
                                           ld.velocity.array(mfi), ld.velocity_o.array(mfi),
                                           flag, AMREX_D_DECL(apx, apy, apz), vfrac, 
-                                          AMREX_D_DECL(fcx, fcy, fcz), 
-                                          ccc,geom[lev],m_redistribution_type);
+                                          AMREX_D_DECL(fcx, fcy, fcz), ccc,
+                                          bc_vel, geom[lev], m_redistribution_type);
                 if (!m_constant_density) 
                 {
                     ncomp = 1;
-                    redistribution::redistribute_initial_data( bx,ncomp,
+                    auto const& bc_den = get_density_bcrec_device_ptr();
+                    Redistribution::ApplyToInitialData( bx,ncomp,
                                               ld.density.array(mfi), ld.density_o.array(mfi),
                                               flag, AMREX_D_DECL(apx, apy, apz), vfrac, 
-                                              AMREX_D_DECL(fcx, fcy, fcz), 
-                                              ccc,geom[lev],m_redistribution_type);
+                                              AMREX_D_DECL(fcx, fcy, fcz), ccc,
+                                              bc_den, geom[lev], m_redistribution_type);
                 }
                 if (m_advect_tracer) 
                 {
                     ncomp = m_ntrac;
-                    redistribution::redistribute_initial_data( bx,ncomp,
+                    auto const& bc_tra = get_tracer_bcrec_device_ptr();
+                    Redistribution::ApplyToInitialData( bx,ncomp,
                                               ld.tracer.array(mfi), ld.tracer_o.array(mfi),
                                               flag, AMREX_D_DECL(apx, apy, apz), vfrac, 
-                                              AMREX_D_DECL(fcx, fcy, fcz), 
-                                              ccc,geom[lev],m_redistribution_type);
+                                              AMREX_D_DECL(fcx, fcy, fcz), ccc,
+                                              bc_tra, geom[lev], m_redistribution_type);
                 }
             }
         }

@@ -17,7 +17,6 @@ Bdirs += src/utilities
 
 ifeq ($(USE_EB), TRUE)
   Bdirs += src/embedded_boundaries
-  Bdirs += src/convection/Redistribution
   USERSuffix += .EB
 endif
 

@@ -1,4 +1,3 @@
-#include <Convection.H>
 #include <incflo.H>
 #include <hydro_godunov.H>
 #include <hydro_mol.H>
@@ -8,7 +7,6 @@
 #include <AMReX_EBFabFactory.H>
 #include <hydro_ebgodunov.H>
 #include <hydro_ebmol.H>
-#include <Redistribution.H>
 #endif
 
 using namespace amrex;
@@ -484,7 +482,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             }
 
             Box const& bx = mfi.tilebox();
-            convection::redistribute_convective_term (bx, mfi,
+            redistribute_convective_term (bx, mfi,
                                           vel[lev]->const_array(mfi),
                                           density[lev]->const_array(mfi),
                                           (m_advect_tracer && (m_ntrac>0)) ? rhotracfab.const_array() : Array4<Real const>{},
