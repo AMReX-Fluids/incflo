@@ -343,6 +343,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
 //      amrex::computeDivergence(divu,u,geom[lev]);
 
+        Real mult = -1.0;
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -352,7 +353,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             Box const& bx = mfi.tilebox();
 
             flux_comp = 0;
-            Real mult = 1.0;  
 #ifdef AMREX_USE_EB
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
             if (flagfab.getType(bx) != FabType::covered)
@@ -362,7 +362,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac.const_array(mfi), AMREX_SPACEDIM, geom[lev],
                                                  mult,
-//                                               get_velocity_iconserv_device_ptr(),
                                                  fluxes_are_area_weighted);
 #else
             HydroUtils::ComputeDivergence(bx, conv_u[lev]->array(mfi),
@@ -384,7 +383,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         if (!m_constant_density)
         {
           flux_comp = AMREX_SPACEDIM;
-          Real mult = 1.0;  
           for (MFIter mfi(*conv_r[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
@@ -422,7 +420,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
               flux_comp = AMREX_SPACEDIM;
           else
               flux_comp = AMREX_SPACEDIM+1;
-          Real mult = 1.0;  
           for (MFIter mfi(*conv_t[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
@@ -496,12 +493,5 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           ebfact, geom[lev], m_dt);
        } // mfi
 #endif
-
-        // We want to return MINUS divergence so here we multiply by -1
-        conv_u[lev]->mult(-1.0);
-        if (!m_constant_density)
-            conv_r[lev]->mult(-1.0);
-        if (m_advect_tracer && m_ntrac > 0)
-            conv_t[lev]->mult(-1.0);
     } // lev
 }
