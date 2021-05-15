@@ -22,7 +22,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                        bool l_constant_density,
                                        bool l_advect_tracer, int l_ntrac,
                                        EBFArrayBoxFactory const* ebfact,
-                                       Geometry& geom, Real l_dt) 
+                                       Geometry& lev_geom, Real l_dt) 
 {
     EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
     Array4<EBCellFlag const> const& flag = flagfab.const_array();
@@ -73,7 +73,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         Redistribution::Apply(bx, ncomp, dvdt, dvdt_tmp, vel, scratch, flag,
                               AMREX_D_DECL(apx, apy, apz), vfrac,
                               AMREX_D_DECL(fcx, fcy, fcz), ccc, 
-                              bc_vel, geom, l_dt, l_redistribution_type);
+                              bc_vel, lev_geom, l_dt, l_redistribution_type);
 
         // density
         if (!l_constant_density) {
@@ -82,7 +82,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
             Redistribution::Apply(bx, ncomp, drdt, drdt_tmp, rho, scratch, flag,
                                   AMREX_D_DECL(apx, apy, apz), vfrac,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
-                                  bc_den, geom, l_dt, l_redistribution_type);
+                                  bc_den, lev_geom, l_dt, l_redistribution_type);
         }
 
         if (l_advect_tracer) {
@@ -91,7 +91,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
             Redistribution::Apply(bx, ncomp, dtdt, dtdt_tmp, rhotrac, scratch, flag,
                                   AMREX_D_DECL(apx, apy, apz), vfrac,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
-                                  bc_tra, geom, l_dt, l_redistribution_type);
+                                  bc_tra, lev_geom, l_dt, l_redistribution_type);
         }
     } else { 
         amrex::ParallelFor(bx,
