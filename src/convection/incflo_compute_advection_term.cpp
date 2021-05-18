@@ -165,12 +165,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
             Array4<Real const> const& divu_arr = divu[lev].const_array(mfi);
 
-#ifdef AMREX_USE_EB
-            EBCellFlagFab const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
-            Array4<EBCellFlag const> const& flag = flagfab.const_array();
-
-            bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
-#endif
             // ************************************************************************
             // Velocity
             // ************************************************************************
@@ -305,8 +299,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
     }
 
-    int flux_comp;
-
     for (int lev = 0; lev <= finest_level; ++lev)
     {
 #ifdef AMREX_USE_EB
@@ -366,11 +358,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             AMREX_D_TERM(auto const& q_on_face_x  = face_x[lev].const_array(mfi);,
                          auto const& q_on_face_y  = face_y[lev].const_array(mfi);,
                          auto const& q_on_face_z  = face_z[lev].const_array(mfi););
-#ifdef AMREX_USE_EB
-            AMREX_D_TERM(auto const& apx_arr      = ebfact->getAreaFrac()[0]->const_array(mfi);,
-                         auto const& apy_arr      = ebfact->getAreaFrac()[1]->const_array(mfi);,
-                         auto const& apz_arr      = ebfact->getAreaFrac()[2]->const_array(mfi););
-#endif
+
             int const* iconserv_ptr = get_velocity_iconserv_device_ptr();
             if (m_advection_type == "MOL")
             {
@@ -383,37 +371,59 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 });
             } else if (m_advection_type == "Godunov")
             {
-                // Here we want to use q predicted to t^{n+1/2}
-                amrex::ParallelFor(bx, num_comp, [=]
-                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                {
-                    if (!iconserv_ptr[n])
-                    {
+                bool regular = true;
 #ifdef AMREX_USE_EB
-                        Real q  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
-                             q += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j,k)*q_on_face_y(i,j+1,k,n);
+                regular = (flagfab.getType(bx) == FabType::regular);
+#endif
+                // Here we want to use q predicted to t^{n+1/2}
+                if (regular)
+                {
+                    amrex::ParallelFor(bx, num_comp, [=]
+                    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                    {
+                        if (!iconserv_ptr[n])
+                        {
+                            Real qavg  = q_on_face_x(i,j,k,n) + q_on_face_x(i+1,j,k,n);
+                                 qavg += q_on_face_y(i,j,k,n) + q_on_face_y(i,j+1,k,n);
 #if (AMREX_SPACEDIM == 2)
-                             q *= 1.0 / (apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k));
+                                 qavg *= 0.25;
 #else
-                             q += apz_arr(i,j,k)*q_on_face_z(i,j,k,n) + apz_arr(i,j,k+1)*q_on_face_z(i,j,k+1,n);
-                             q *= 1.0 / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
-                                         +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
+                                 qavg += q_on_face_z(i,j,k,n) + q_on_face_z(i,j,k+1,n);
+                                 qavg *= 0.125;
 #endif
-#else
-                        Real q  = q_on_face_x(i,j,k,n) + q_on_face_x(i+1,j,k,n);
-                             q += q_on_face_y(i,j,k,n) + q_on_face_y(i,j+1,k,n);
+                            // Note that because we define update_arr as MINUS div(u u), here we add u div (u) 
+                            update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
+                        }
+                    });
+                } 
+#ifdef AMREX_USE_EB
+                else {
+                    AMREX_D_TERM(auto const& apx_arr      = ebfact->getAreaFrac()[0]->const_array(mfi);,
+                                 auto const& apy_arr      = ebfact->getAreaFrac()[1]->const_array(mfi);,
+                                 auto const& apz_arr      = ebfact->getAreaFrac()[2]->const_array(mfi););
+
+                    amrex::ParallelFor(bx, num_comp, [=]
+                    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                    {
+                        if (!iconserv_ptr[n])
+                        {
+                            Real qavg  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
+                                 qavg += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j,k)*q_on_face_y(i,j+1,k,n);
 #if (AMREX_SPACEDIM == 2)
-                             q *= 0.25;
+                                 qavg *= 1.0 / (apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k));
 #else
-                             q += q_on_face_z(i,j,k,n) + q_on_face_z(i,j,k+1,n);
-                             q *= 0.125;
+                                 qavg += apz_arr(i,j,k)*q_on_face_z(i,j,k,n) + apz_arr(i,j,k+1)*q_on_face_z(i,j,k+1,n);
+                                 qavg *= 1.0 / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
+                                                +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
+
+                            // Note that because we define update_arr as MINUS div(u u), here we add u div (u) 
+                            update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
+                        }
+                    });
 #endif
-#endif
-                        // Note that because we define update_arr as MINUS div(u u), here we add u div (u) 
-                        update_arr(i,j,k,n) += q*divu_arr(i,j,k);
-                    }
-                });
+                }
             }
+#endif
 
         } // mfi
 
@@ -421,7 +431,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         //       updating density convectively
         if (!m_constant_density)
         {
-          flux_comp = AMREX_SPACEDIM;
+          int flux_comp = AMREX_SPACEDIM;
           for (MFIter mfi(*conv_r[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
@@ -449,10 +459,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         //       updating (rho*trac) convectively
         if (m_advect_tracer && m_ntrac > 0)
         {
-          if (m_constant_density)
-              flux_comp = AMREX_SPACEDIM;
-          else
-              flux_comp = AMREX_SPACEDIM+1;
+          int flux_comp = (m_constant_density) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
+
           for (MFIter mfi(*conv_t[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
