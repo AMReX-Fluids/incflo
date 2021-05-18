@@ -26,7 +26,7 @@ incflo.ro_0             =   1.          # Reference density
 
 incflo.advection_type   = "MOL"
 
-incflo.fluid_model      =   "bingham"   # Fluid model (rheology)
+incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   1000.0      # Dynamic viscosity coefficient
 incflo.tau_0            = 340700.0      # Yield stress
 incflo.papa_reg         =   1.0e-1      # Regularisation parameter
