@@ -596,8 +596,9 @@ private:
     int nghost_eb_basic () const 
     { return 4; }
 
+    // We need 5 for doing StateRedistribution; otherwise 4 would be enough
     int nghost_eb_volume () const 
-    { return 4; }
+    { return 5; }
 
     int nghost_eb_full () const 
     { return 4; }
