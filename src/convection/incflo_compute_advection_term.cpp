@@ -73,6 +73,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     Vector<MultiFab> flux_z(finest_level+1);
 #endif
 
+    Vector<MultiFab> divu(finest_level+1);
+
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > fluxes(finest_level+1);
     Vector<Array<MultiFab*,AMREX_SPACEDIM> >  faces(finest_level+1);
 
@@ -85,6 +87,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
            flux_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
            flux_y[lev].define(v_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
            flux_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev)););
+
+        divu[lev].define(vel[lev]->boxArray(),dmap[lev],1,4,MFInfo(),Factory(lev));
 
         AMREX_D_TERM(faces[lev][0] = &face_x[lev];,
                      faces[lev][1] = &face_y[lev];,
@@ -135,25 +139,22 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                          w_mac[lev]->FillBoundary(geom[lev].periodicity()););
         }
 
-        MultiFab divu(vel[lev]->boxArray(),vel[lev]->DistributionMap(),1,4);
-        divu.setVal(0.);
+        divu[lev].setVal(0.);
         Array<MultiFab const*, AMREX_SPACEDIM> u;
         AMREX_D_TERM(u[0] = u_mac[lev];,
                      u[1] = v_mac[lev];,
                      u[2] = w_mac[lev];);
                      
 #ifdef AMREX_USE_EB
-        Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, AMREX_D_DECL(apx, apy, apz);
-
         const auto& ebfact = EBFactory(lev);
 
         if (!ebfact.isAllRegular())
-            amrex::EB_computeDivergence(divu,u,geom[lev],true);
+            amrex::EB_computeDivergence(divu[lev],u,geom[lev],true);
         else
 #endif
-        amrex::computeDivergence(divu,u,geom[lev]);
+        amrex::computeDivergence(divu[lev],u,geom[lev]);
 
-        divu.FillBoundary(geom[lev].periodicity());
+        divu[lev].FillBoundary(geom[lev].periodicity());
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -162,27 +163,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
             Box const& bx = mfi.tilebox();
 
-            Array4<Real const> const& divu_arr = divu.const_array(mfi);
+            Array4<Real const> const& divu_arr = divu[lev].const_array(mfi);
 
 #ifdef AMREX_USE_EB
             EBCellFlagFab const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
             Array4<EBCellFlag const> const& flag = flagfab.const_array();
 
             bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
-
-            if (!regular)
-            {
-                vfrac = ebfact.getVolFrac().const_array(mfi);
-                ccc   = ebfact.getCentroid().const_array(mfi);
-
-                AMREX_D_TERM( apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
-                              apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
-                              apz = ebfact.getAreaFrac()[2]->const_array(mfi););
-
-                AMREX_D_TERM( fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
-                              fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
-                              fcz = ebfact.getFaceCent()[2]->const_array(mfi););
-            }
 #endif
             // ************************************************************************
             // Velocity
@@ -240,7 +227,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           get_density_bcrec_device_ptr(),
                                           get_density_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                                     ebfact,
+                                          ebfact,
 #endif
                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
                                           is_velocity, fluxes_are_area_weighted,
@@ -293,7 +280,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           get_tracer_bcrec_device_ptr(),
                                           get_tracer_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                                     ebfact,
+                                          ebfact,
 #endif
                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
                                           is_velocity, fluxes_are_area_weighted,
@@ -352,34 +339,86 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
             Box const& bx = mfi.tilebox();
 
-            flux_comp = 0;
+            int flux_comp = 0;
+            int  num_comp = AMREX_SPACEDIM;
 #ifdef AMREX_USE_EB
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
+            auto const& update_arr  = dvdt_tmp.array(mfi);
             if (flagfab.getType(bx) != FabType::covered)
-                HydroUtils::EB_ComputeDivergence(bx, dvdt_tmp.array(mfi),
+                HydroUtils::EB_ComputeDivergence(bx, update_arr,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
-                                                 vfrac.const_array(mfi), AMREX_SPACEDIM, geom[lev],
-                                                 mult,
-                                                 fluxes_are_area_weighted);
+                                                 vfrac.const_array(mfi),
 #else
-            HydroUtils::ComputeDivergence(bx, conv_u[lev]->array(mfi),
+            auto const& update_arr  = conv_u[lev]->array(mfi);
+            HydroUtils::ComputeDivergence(bx, update_arr,
                                           AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                        flux_y[lev].const_array(mfi,flux_comp),
                                                        flux_z[lev].const_array(mfi,flux_comp)),
-                                          AMREX_D_DECL(face_x[lev].const_array(mfi,flux_comp),
-                                                       face_y[lev].const_array(mfi,flux_comp),
-                                                       face_z[lev].const_array(mfi,flux_comp)),
-                                          AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                       v_mac[lev]->const_array(mfi),
-                                                       w_mac[lev]->const_array(mfi)),
-                                          AMREX_SPACEDIM, geom[lev],
-                                          get_velocity_iconserv_device_ptr(), mult,
-                                          fluxes_are_area_weighted);
 #endif
+                                          num_comp, geom[lev],
+                                          mult, fluxes_are_area_weighted);
+
+            // If convective, we define u dot grad u = div (u u) - u div(u)
+            auto const& q           =  vel[lev]->array(mfi,0);
+            auto const& divu_arr    = divu[lev].array(mfi);
+            AMREX_D_TERM(auto const& q_on_face_x  = face_x[lev].const_array(mfi);,
+                         auto const& q_on_face_y  = face_y[lev].const_array(mfi);,
+                         auto const& q_on_face_z  = face_z[lev].const_array(mfi););
+#ifdef AMREX_USE_EB
+            AMREX_D_TERM(auto const& apx_arr      = ebfact->getAreaFrac()[0]->const_array(mfi);,
+                         auto const& apy_arr      = ebfact->getAreaFrac()[1]->const_array(mfi);,
+                         auto const& apz_arr      = ebfact->getAreaFrac()[2]->const_array(mfi););
+#endif
+            int const* iconserv_ptr = get_velocity_iconserv_device_ptr();
+            if (m_advection_type == "MOL")
+            {
+                // Here we use q at the same time as the velocity 
+                amrex::ParallelFor(bx, num_comp, [=]
+                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    if (!iconserv_ptr[n])
+                        update_arr(i,j,k,n) += q(i,j,k,n)*divu_arr(i,j,k);
+                });
+            } else if (m_advection_type == "Godunov")
+            {
+                // Here we want to use q predicted to t^{n+1/2}
+                amrex::ParallelFor(bx, num_comp, [=]
+                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    if (!iconserv_ptr[n])
+                    {
+#ifdef AMREX_USE_EB
+                        Real q  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
+                             q += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j,k)*q_on_face_y(i,j+1,k,n);
+#if (AMREX_SPACEDIM == 2)
+                             q *= 1.0 / (apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k));
+#else
+                             q += apz_arr(i,j,k)*q_on_face_z(i,j,k,n) + apz_arr(i,j,k+1)*q_on_face_z(i,j,k+1,n);
+                             q *= 1.0 / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
+                                         +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
+#endif
+#else
+                        Real q  = q_on_face_x(i,j,k,n) + q_on_face_x(i+1,j,k,n);
+                             q += q_on_face_y(i,j,k,n) + q_on_face_y(i,j+1,k,n);
+#if (AMREX_SPACEDIM == 2)
+                             q *= 0.25;
+#else
+                             q += q_on_face_z(i,j,k,n) + q_on_face_z(i,j,k+1,n);
+                             q *= 0.125;
+#endif
+#endif
+                        // Note that because we define update_arr as MINUS div(u u), here we add u div (u) 
+                        update_arr(i,j,k,n) += q*divu_arr(i,j,k);
+                    }
+                });
+            }
+
         } // mfi
 
+        // Note: density is always updated conservatively -- we do not provide an option for 
+        //       updating density convectively
         if (!m_constant_density)
         {
           flux_comp = AMREX_SPACEDIM;
@@ -394,26 +433,20 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
-                                                 vfrac.const_array(mfi), 1, geom[lev], mult,
-                                                 fluxes_are_area_weighted);
+                                                 vfrac.const_array(mfi), 
 #else
             HydroUtils::ComputeDivergence(bx, conv_r[lev]->array(mfi),
                                           AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                        flux_y[lev].const_array(mfi,flux_comp),
                                                        flux_z[lev].const_array(mfi,flux_comp)),
-                                          AMREX_D_DECL(face_x[lev].const_array(mfi,flux_comp),
-                                                       face_y[lev].const_array(mfi,flux_comp),
-                                                       face_z[lev].const_array(mfi,flux_comp)),
-                                          AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                       v_mac[lev]->const_array(mfi),
-                                                       w_mac[lev]->const_array(mfi)),
-                                          1, geom[lev],
-                                          get_density_iconserv_device_ptr(), mult,
-                                          fluxes_are_area_weighted);
 #endif
+                                          1, geom[lev], mult,
+                                          fluxes_are_area_weighted);
           } // mfi
         } // not constant density
 
+        // Note: (rho*trac) is always updated conservatively -- we do not provide an option for 
+        //       updating (rho*trac) convectively
         if (m_advect_tracer && m_ntrac > 0)
         {
           if (m_constant_density)
@@ -426,28 +459,23 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
 #ifdef AMREX_USE_EB
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
+            auto const& update_arr  = dtdt_tmp.array(mfi);
             if (flagfab.getType(bx) != FabType::covered)
-                HydroUtils::EB_ComputeDivergence(bx, dtdt_tmp.array(mfi),
+                HydroUtils::EB_ComputeDivergence(bx, update_arr,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
-                                                 vfrac.const_array(mfi), m_ntrac, geom[lev], mult,
-                                                 fluxes_are_area_weighted);
+                                                 vfrac.const_array(mfi), 
 #else
-            HydroUtils::ComputeDivergence(bx, conv_t[lev]->array(mfi),
-                                          AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
-                                                       flux_y[lev].const_array(mfi,flux_comp),
-                                                       flux_z[lev].const_array(mfi,flux_comp)),
-                                          AMREX_D_DECL(face_x[lev].const_array(mfi,flux_comp),
-                                                       face_y[lev].const_array(mfi,flux_comp),
-                                                       face_z[lev].const_array(mfi,flux_comp)),
-                                          AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                       v_mac[lev]->const_array(mfi),
-                                                       w_mac[lev]->const_array(mfi)),
-                                          m_ntrac, geom[lev],
-                                          get_tracer_iconserv_device_ptr(), mult,
-                                          fluxes_are_area_weighted);
+                auto const& update_arr  = conv_t[lev]->array(mfi);
+                HydroUtils::ComputeDivergence(bx, update_arr,
+                                              AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
+                                                           flux_y[lev].const_array(mfi,flux_comp),
+                                                           flux_z[lev].const_array(mfi,flux_comp)),
 #endif
+                                              m_ntrac, geom[lev], mult,
+                                              fluxes_are_area_weighted);
+
           } // mfi
         } // advect tracer
 
