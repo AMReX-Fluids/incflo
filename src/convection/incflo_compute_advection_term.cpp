@@ -397,7 +397,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                         if (!iconserv_ptr[n])
                         {
                             Real qavg  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
-                                 qavg += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j,k)*q_on_face_y(i,j+1,k,n);
+                                 qavg += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j+1,k)*q_on_face_y(i,j+1,k,n);
 #if (AMREX_SPACEDIM == 2)
                                  qavg *= 1.0 / (apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k));
 #else
