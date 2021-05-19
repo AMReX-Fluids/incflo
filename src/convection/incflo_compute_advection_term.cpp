@@ -13,15 +13,9 @@ using namespace amrex;
 
 void incflo::init_advection ()
 {
-#ifdef AMREX_USE_EB
-    // We default to conservative if using EB
-    m_iconserv_velocity.resize(AMREX_SPACEDIM, 1);
-    m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 1);
-#else
-    // We default to non-conservative if not using EB
+    // Use convective differencing for velocity
     m_iconserv_velocity.resize(AMREX_SPACEDIM, 0);
     m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 0);
-#endif
 
     // Density is always updated conservatively
     m_iconserv_density.resize(1, 1);
