@@ -124,13 +124,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         }
     }
 
-    int ngrow = 4;
-
-#ifdef AMREX_USE_EB
-    if (m_redistribution_type=="StateRedist")
-        ++ngrow;
-#endif
-
     for (int lev = 0; lev <= finest_level; ++lev)
     {
         if (ngmac > 0) {
@@ -315,13 +308,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         auto const& vfrac = ebfact->getVolFrac();
 #endif
 
-#ifdef AMREX_USE_EB
-//      if (!ebfact->isAllRegular())
-//          amrex::EB_computeDivergence(divu,u,geom[lev],true);
-//      else
-#endif
-//      amrex::computeDivergence(divu,u,geom[lev]);
-
         Real mult = -1.0;
 
 #ifdef _OPENMP
@@ -369,8 +355,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                     if (!iconserv_ptr[n])
                         update_arr(i,j,k,n) += q(i,j,k,n)*divu_arr(i,j,k);
                 });
-            } else if (m_advection_type == "Godunov")
+            } 
+            else if (m_advection_type == "Godunov")
             {
+
                 bool regular = true;
 #ifdef AMREX_USE_EB
                 regular = (flagfab.getType(bx) == FabType::regular);
@@ -395,9 +383,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                             update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
                         }
                     });
-                } 
+                }
 #ifdef AMREX_USE_EB
-                else {
+                else 
+                {
                     AMREX_D_TERM(auto const& apx_arr      = ebfact->getAreaFrac()[0]->const_array(mfi);,
                                  auto const& apy_arr      = ebfact->getAreaFrac()[1]->const_array(mfi);,
                                  auto const& apz_arr      = ebfact->getAreaFrac()[2]->const_array(mfi););
@@ -415,16 +404,15 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                  qavg += apz_arr(i,j,k)*q_on_face_z(i,j,k,n) + apz_arr(i,j,k+1)*q_on_face_z(i,j,k+1,n);
                                  qavg *= 1.0 / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
                                                 +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
+#endif
 
                             // Note that because we define update_arr as MINUS div(u u), here we add u div (u) 
                             update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
                         }
                     });
-#endif
                 }
-            }
 #endif
-
+            } // Godunov
         } // mfi
 
         // Note: density is always updated conservatively -- we do not provide an option for 
