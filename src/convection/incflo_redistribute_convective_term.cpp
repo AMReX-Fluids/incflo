@@ -83,6 +83,12 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                   AMREX_D_DECL(apx, apy, apz), vfrac,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_den, lev_geom, l_dt, l_redistribution_type);
+        } else {
+            amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                drdt(i,j,k) = 0.;
+            });
         }
 
         if (l_advect_tracer) {
@@ -92,8 +98,15 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                   AMREX_D_DECL(apx, apy, apz), vfrac,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_tra, lev_geom, l_dt, l_redistribution_type);
+        } else {
+            amrex::ParallelFor(bx, l_ntrac,
+            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                dtdt(i,j,k,n) = 0.;
+            });
         }
-    } else { 
+
+    } else {
         amrex::ParallelFor(bx,
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
