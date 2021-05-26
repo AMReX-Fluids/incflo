@@ -68,6 +68,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
 
     Vector<MultiFab> divu(finest_level+1);
+    Vector<MultiFab> rhotrac(finest_level+1);
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > fluxes(finest_level+1);
     Vector<Array<MultiFab*,AMREX_SPACEDIM> >  faces(finest_level+1);
@@ -83,6 +84,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
            flux_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev)););
 
         divu[lev].define(vel[lev]->boxArray(),dmap[lev],1,4,MFInfo(),Factory(lev));
+        if (m_advect_tracer && m_ntrac > 0)
+            rhotrac[lev].define(vel[lev]->boxArray(),dmap[lev],tracer[lev]->nComp(),
+                                tracer[lev]->nGrow(),MFInfo(),Factory(lev));
 
         AMREX_D_TERM(faces[lev][0] = &face_x[lev];,
                      faces[lev][1] = &face_y[lev];,
@@ -143,6 +147,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         divu[lev].FillBoundary(geom[lev].periodicity());
 
+        // ************************************************************************
+        // Define (rho*trac)
+        // ************************************************************************
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -219,21 +226,18 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             // (Rho*Tracer)
             // ************************************************************************
             // Make a FAB holding (rho * tracer) that is the same size as the original tracer FAB
-            FArrayBox rhotracfab;
             if (m_advect_tracer && (m_ntrac>0)) {
 
-                Box rhotrac_box = Box((*tracer[lev])[mfi].box());
-                Elixir eli_rt;
-                Array4<Real> rhotrac;
-                Array4<Real const> tra =  tracer[lev]->const_array(mfi);
-                Array4<Real const> rho = density[lev]->const_array(mfi);
-                rhotracfab.resize(rhotrac_box, m_ntrac);
-                eli_rt  = rhotracfab.elixir();
-                rhotrac = rhotracfab.array();
-                amrex::ParallelFor(rhotrac_box, m_ntrac,
+                Box const& bxg = mfi.growntilebox(tracer[lev]->nGrow());
+
+                Array4<Real const> tra     =  tracer[lev]->const_array(mfi);
+                Array4<Real const> rho     = density[lev]->const_array(mfi);
+                Array4<Real      > ro_trac = rhotrac[lev].array(mfi);
+
+                amrex::ParallelFor(bxg, m_ntrac,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
-                    rhotrac(i,j,k,n) = rho(i,j,k) * tra(i,j,k,n);
+                    ro_trac(i,j,k,n) = rho(i,j,k) * tra(i,j,k,n);
                 });
 
                 if (m_constant_density)
@@ -243,8 +247,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 ncomp = m_ntrac;
                 is_velocity = false;
 
-                HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi, 
-                                                       rhotrac,
+                HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi, ro_trac,
                                           AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
                                                        flux_y[lev].array(mfi,face_comp),
                                                        flux_z[lev].array(mfi,face_comp)),
@@ -478,35 +481,17 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
-            // Make a FAB holding (rho * tracer) that is the same size as the original tracer FAB
-            FArrayBox rhotracfab;
-            if (m_advect_tracer && (m_ntrac > 0)) {
-                Box rhotrac_box = Box((*tracer[lev])[mfi].box());
-                Elixir eli_rt;
-                Array4<Real> rhotrac;
-                Array4<Real const> tra =  tracer[lev]->const_array(mfi);
-                Array4<Real const> rho = density[lev]->const_array(mfi);
-                rhotracfab.resize(rhotrac_box, m_ntrac);
-                eli_rt  = rhotracfab.elixir();
-                rhotrac = rhotracfab.array();
-                amrex::ParallelFor(rhotrac_box, m_ntrac,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                {
-                    rhotrac(i,j,k,n) = rho(i,j,k) * tra(i,j,k,n);
-                });
-            }
-
             Box const& bx = mfi.tilebox();
             redistribute_convective_term (bx, mfi,
                                           vel[lev]->const_array(mfi),
                                           density[lev]->const_array(mfi),
-                                          (m_advect_tracer && (m_ntrac>0)) ? rhotracfab.const_array() : Array4<Real const>{},
+                                          (m_advect_tracer && (m_ntrac>0)) ? rhotrac[lev].const_array(mfi) : Array4<Real const>{},
                                           dvdt_tmp.array(mfi),
                                           drdt_tmp.array(mfi),
-                                          (m_ntrac>0) ? dtdt_tmp.array(mfi) : Array4<Real>{},
+                                          (m_advect_tracer && (m_ntrac>0)) ? dtdt_tmp.array(mfi) : Array4<Real>{},
                                           conv_u[lev]->array(mfi),
                                           conv_r[lev]->array(mfi),
-                                          (m_ntrac>0) ? conv_t[lev]->array(mfi) : Array4<Real>{},
+                                          (m_advect_tracer && (m_ntrac>0)) ? conv_t[lev]->array(mfi) : Array4<Real>{},
                                           m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
                                           ebfact, geom[lev], m_dt);
        } // mfi

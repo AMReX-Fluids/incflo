@@ -68,18 +68,16 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
             });
 
         // velocity
-        int ncomp = AMREX_SPACEDIM;
         auto const& bc_vel = get_velocity_bcrec_device_ptr();
-        Redistribution::Apply(bx, ncomp, dvdt, dvdt_tmp, vel, scratch, flag,
+        Redistribution::Apply(bx, AMREX_SPACEDIM, dvdt, dvdt_tmp, vel, scratch, flag,
                               AMREX_D_DECL(apx, apy, apz), vfrac,
                               AMREX_D_DECL(fcx, fcy, fcz), ccc, 
                               bc_vel, lev_geom, l_dt, l_redistribution_type);
 
         // density
         if (!l_constant_density) {
-            ncomp = 1;
             auto const& bc_den = get_density_bcrec_device_ptr();
-            Redistribution::Apply(bx, ncomp, drdt, drdt_tmp, rho, scratch, flag,
+            Redistribution::Apply(bx, 1, drdt, drdt_tmp, rho, scratch, flag,
                                   AMREX_D_DECL(apx, apy, apz), vfrac,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_den, lev_geom, l_dt, l_redistribution_type);
@@ -92,9 +90,8 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         }
 
         if (l_advect_tracer) {
-            ncomp = l_ntrac;
             auto const& bc_tra = get_tracer_bcrec_device_ptr();
-            Redistribution::Apply(bx, ncomp, dtdt, dtdt_tmp, rhotrac, scratch, flag,
+            Redistribution::Apply(bx, l_ntrac, dtdt, dtdt_tmp, rhotrac, scratch, flag,
                                   AMREX_D_DECL(apx, apy, apz), vfrac,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_tra, lev_geom, l_dt, l_redistribution_type);
