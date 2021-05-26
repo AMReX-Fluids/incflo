@@ -228,7 +228,12 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             // Make a FAB holding (rho * tracer) that is the same size as the original tracer FAB
             if (m_advect_tracer && (m_ntrac>0)) {
 
-                Box const& bxg = mfi.growntilebox(tracer[lev]->nGrow());
+                Box const& bx = mfi.tilebox();
+
+                // Note we must actually grow the tilebox, not use growntilebox, because
+                // we want to use this immediately below and we need all the "ghost cells" of 
+                // the tiled region
+                Box const& bxg = amrex::grow(bx,tracer[lev]->nGrow());
 
                 Array4<Real const> tra     =  tracer[lev]->const_array(mfi);
                 Array4<Real const> rho     = density[lev]->const_array(mfi);
@@ -270,7 +275,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           is_velocity, fluxes_are_area_weighted,
                                           m_advection_type);
             }
-
         } // mfi
     } // lev
 
