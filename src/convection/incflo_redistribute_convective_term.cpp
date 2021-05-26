@@ -27,7 +27,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
     EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
     Array4<EBCellFlag const> const& flag = flagfab.const_array();
 
-    bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
+    bool regular = (flagfab.getType(amrex::grow(bx,4)) == FabType::regular);
 
     Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), AMREX_D_DECL(apx, apy, apz);
     Array4<Real const> ccc, vfrac;
