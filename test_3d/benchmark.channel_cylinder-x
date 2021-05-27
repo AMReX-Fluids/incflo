@@ -67,7 +67,7 @@ incflo.geometry         = "cylinder"
 cylinder.internal_flow  = false
 cylinder.radius         = 0.05000001
 cylinder.direction      = 2
-cylinder.center         = 0.15  0.2  0.0 
+cylinder.center         = 0.151  0.2  0.0 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
