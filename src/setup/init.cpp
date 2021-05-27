@@ -362,8 +362,8 @@ incflo::InitialRedistribution ()
             EBCellFlagFab const& flagfab = fact.getMultiEBCellFlagFab()[mfi];
             Array4<EBCellFlag const> const& flag = flagfab.const_array();
 
-            if ( (flagfab.getType(amrex::grow(bx,1)) != FabType::covered) &&
-                 (flagfab.getType(amrex::grow(bx,1)) != FabType::regular) )
+            if ( (flagfab.getType(bx)                != FabType::covered) &&
+                 (flagfab.getType(amrex::grow(bx,4)) != FabType::regular) )
             {
                 Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, AMREX_D_DECL(apx, apy, apz);
                 AMREX_D_TERM(fcx = fact.getFaceCent()[0]->const_array(mfi);,
