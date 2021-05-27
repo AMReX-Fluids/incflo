@@ -29,8 +29,6 @@ incflo.mu               =   0.001       # Dynamic viscosity coefficient
 
 incflo.advection_type   = "MOL"
 
-incflo.constant_density = true          #
-
 incflo.ntrac            =   1           # Number of tracers
 incflo.advect_tracer    =   true        # Should we update them?
 incflo.mu_s             =   0.001       # Scalar diffusion coefficient
