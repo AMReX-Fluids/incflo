@@ -378,7 +378,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                  qavg *= 0.25;
 #else
                                  qavg += q_on_face_z(i,j,k,n) + q_on_face_z(i,j,k+1,n);
-                                 qavg *= 0.125;
+                                 qavg /= 6.0;
 #endif
                             // Note that because we define update_arr as MINUS div(u u), here we add u div (u) 
                             update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
