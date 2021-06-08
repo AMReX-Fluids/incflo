@@ -4,10 +4,10 @@ Multigrid Inputs
 ================
 
 The following inputs can be set directly in the AMReX solver classes but we 
-set them via the MFiX-Exa routines because we may want different inputs for the 
-different solvers called by MFiX-Exa. 
+set them via the incflo routines because we may want different inputs for the 
+different solvers called by incflo
 NOTE: the nodal solver settings are read in directly by AMReX, 
-the MAC and diffusion settings by MFiX. 
+the MAC and diffusion settings by incflo.
 
 These control the nodal projection and must be preceded by "nodal_proj": 
 

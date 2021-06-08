@@ -6,6 +6,6 @@ Time Discretization
 .. toctree::
    :maxdepth: 1
 
-   FluidTimeStep
+   TimeStep
    Slopes
    BuildingMacVelocities

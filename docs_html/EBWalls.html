@@ -1,40 +1,44 @@
 
 
 <!DOCTYPE html>
-<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
-<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8">
-  
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <title>Constructing Embedded Boundaries in incflo &mdash; incflo 20.04-dev documentation</title>
-  
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
+  <title>Constructing Embedded Boundaries in incflo &mdash; incflo 21.07-dev documentation</title>
   
-  
-  
-
-  
-  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
-  
-    
-      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/language_data.js"></script>
-        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-
-    
 
   
   <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
   <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Debugging" href="Debugging.html" />
@@ -62,7 +66,7 @@
             
             
               <div class="version">
-                20.04-dev
+                21.07-dev
               </div>
             
           
@@ -79,6 +83,7 @@
           
         </div>
 
+        
         <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
             
@@ -88,7 +93,7 @@
             
               <p class="caption"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">incflo Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
@@ -109,6 +114,7 @@
             
           
         </div>
+        
       </div>
     </nav>
 
@@ -143,11 +149,13 @@
 
 
 
+
+
 <div role="navigation" aria-label="breadcrumbs navigation">
 
   <ul class="wy-breadcrumbs">
     
-      <li><a href="index.html">Docs</a> &raquo;</li>
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
         
           <li><a href="EB.html">Embedded Boundaries</a> &raquo;</li>
         
@@ -156,7 +164,7 @@
     
       <li class="wy-breadcrumbs-aside">
         
-            
+          
             <a href="_sources/EBWalls.rst.txt" rel="nofollow"> View page source</a>
           
         
@@ -170,12 +178,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="constructing-embedded-boundaries-in-incflo">
+  <section id="constructing-embedded-boundaries-in-incflo">
 <span id="sec-eb-basics"></span><h1>Constructing Embedded Boundaries in incflo<a class="headerlink" href="#constructing-embedded-boundaries-in-incflo" title="Permalink to this headline">¶</a></h1>
 <p>MincfloFiX uses AMReX’s constructive solid geometry framework defined in the namespace
 <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">amrex</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">EB2</span></span></code>. See the <a href="#id5"><span class="problematic" id="id6">`AMReX EB documentation`_</span></a> for more details. These are
 defined in <a href="#id1"><span class="problematic" id="id2">``</span></a>incflo/src/embedded_boundaries <a href="#id3"><span class="problematic" id="id4">``</span></a>.</p>
-<div class="section" id="how-incflo-constructs-the-eb-geometry">
+<section id="how-incflo-constructs-the-eb-geometry">
 <h2>How incflo Constructs the EB Geometry<a class="headerlink" href="#how-incflo-constructs-the-eb-geometry" title="Permalink to this headline">¶</a></h2>
 <p>Once a geometry is selected by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">make_eb_geometry</span></span></code>, the procedure is
 the same for (almost) all geometries. Also see the <a href="#id7"><span class="problematic" id="id8">`AMReX geometry
@@ -193,8 +201,8 @@ of constructive solid geometry). For example</p></li>
 and fills the implicit function <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">MultiFab</span></span></code> (the later being used to
 construct the level-set function).</p></li>
 </ol>
-</div>
-<div class="section" id="incflo-s-eb-data-structures">
+</section>
+<section id="incflo-s-eb-data-structures">
 <h2>incflo’s EB Data Structures<a class="headerlink" href="#incflo-s-eb-data-structures" title="Permalink to this headline">¶</a></h2>
 <p>The <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span></code> class stores the following EB data:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//! EB levels representing fluid boundary conditions</span>
@@ -204,8 +212,8 @@ construct the level-set function).</p></li>
 <span class="n">Vector</span><span class="o">&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">amrex</span><span class="o">::</span><span class="n">EBFArrayBoxFactory</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">ebfactory</span><span class="p">;</span>
 </pre></div>
 </div>
-</div>
-<div class="section" id="a-note-about-constructing-eb-levels">
+</section>
+<section id="a-note-about-constructing-eb-levels">
 <h2>A note about constructing EB Levels<a class="headerlink" href="#a-note-about-constructing-eb-levels" title="Permalink to this headline">¶</a></h2>
 <p>incflo builds EB levels in <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">build_eb_levels</span></span></code> (via
 <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">LSCore</span></span><span class="operator"><span class="pre">&lt;</span></span><span class="name"><span class="pre">F</span></span><span class="operator"><span class="pre">&gt;::</span></span><span class="name"><span class="pre">BuildEBLevel</span></span></code>)</p>
@@ -221,8 +229,8 @@ immediately obvious, but the Poisson solver (used in the fluid solve) also
 depends indirectly on these parameters. Thus changing these during EB level
 creation might restrict how many levels the MLMG solver can use, and therefore
 give slightly different answers in the fluid solve.</p>
-</div>
-<div class="section" id="incflo-initialization-process">
+</section>
+<section id="incflo-initialization-process">
 <h2>incflo Initialization Process<a class="headerlink" href="#incflo-initialization-process" title="Permalink to this headline">¶</a></h2>
 <p>Since incflo requires the volume fraction when building grids (because this is
 needed by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">ErrorEst</span></span></code>), the EB geometries need to be built before
@@ -266,37 +274,37 @@ initialization functions inherited from <code class="code cpp c++ docutils liter
 <span class="n">InitFromScratch</span><span class="p">(</span><span class="mf">0.</span><span class="p">);</span>
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
            </div>
            
           </div>
           <footer>
-  
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="Debugging.html" class="btn btn-neutral float-right" title="Debugging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
-      
-      
-        <a href="EB.html" class="btn btn-neutral float-left" title="Embedded Boundaries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
-      
+        <a href="Debugging.html" class="btn btn-neutral float-right" title="Debugging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="EB.html" class="btn btn-neutral float-left" title="Embedded Boundaries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
-  
 
   <hr/>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2017-2018, Incflo Team
+        &#169; Copyright 2017-2018, Incflo Team.
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
-
         </div>
       </div>
 
@@ -304,7 +312,6 @@ initialization functions inherited from <code class="code cpp c++ docutils liter
 
   </div>
   
-
 
   <script type="text/javascript">
       jQuery(function () {
