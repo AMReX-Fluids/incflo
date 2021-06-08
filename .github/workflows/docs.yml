@@ -19,8 +19,6 @@ jobs:
         run: |
           cd Docs/sphinx_documentation
           echo "Build the Sphinx documentation for IAMR."
-          make latexpdf
-          mv build/latex/incflo.pdf source/
           make html
 
       - name: Deploy
