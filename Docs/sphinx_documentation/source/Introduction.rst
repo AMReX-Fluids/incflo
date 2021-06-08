@@ -1,22 +1,27 @@
-incflo Introduction
-=====================
+Introduction
+============
 
-incflo is a new massively parallel code for solving the incompressible Navier-Stokes
-equations in the presence of complex geometries.
+incflo is a massively parallel code for solving the incompressible Navier-Stokes
+equations in 2-D or 3-D,  with the option for an embedded boundary (cut cell) representation of
+of complex geometries.
 
 It is built on top of AMReX, a publicly available software framework designed for building
 massively parallel block-structured adaptive mesh refinement (AMR)
 applications.
 
-incfo relies on the same fundamental physics as in IAMR but does not support subcycling in time.
-A few technical details are below:
+Another AMReX-based code, IAMR, also solves the variable-density incompressible
+Navier-Stokes equations in 2-D or 3-D but is based on a subcycling-in-time approach.
+
+Key software and algorithmic features of IAMR include:
 
 -  Fluid velocity, density and tracers are defined at cell centroids; pressure is defined at nodes.
 
--  There are two possible advection algorithms: a Method-Of-Lines (MOL) approach and a Godunov-method algorithm.
+-  Possible advection algorithms: a Method-Of-Lines (MOL) approach and a Godunov-method algorithm.
    Both use an intermediate MAC projection for face-centered advection velocities
 
 -  Incompressibility of the fluid is imposed through the use of a projection at the end of the time step
+
+-  Implicit or explicit discretization of viscous terms with variable viscosity
 
 -  The representation of the complex geometry uses the embedded boundary, or cut-cell, approach
 
@@ -26,6 +31,7 @@ A few technical details are below:
 
 -  Plotfile format supported by AmrVis, VisIt, ParaView, and yt.
 
-incflo heavily leverages AMReX (see https://amrex-codes.github.io/) which is also supported by 
+The incflo source code can be found at https://github.com/AMReX-Codes/incflo/.
+incflo heavily leverages AMReX (see https://amrex-codes.github.io/) which is supported by 
 ECP as part of the AMReX Co-Design Center.
 

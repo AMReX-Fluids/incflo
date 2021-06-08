@@ -9,7 +9,7 @@
 Grid Creation
 -------------
 
-To run MFiX-Exa you must specify :cpp:`n_cell` in the inputs file -- 
+To run incflo you must specify :cpp:`n_cell` in the inputs file -- 
 this is the number of cells spanning the domain in each coordinate direction at level 0.
 
 Users often specify :cpp:`max_grid_size` as well. The default load balancing algorithm then divides the 
