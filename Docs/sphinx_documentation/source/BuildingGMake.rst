@@ -10,12 +10,23 @@ cloned amrex into a local directory:
 
     > git clone https://github.com/amrex-codes/amrex
 
-Then
+Then, 
 
 .. code:: shell
 
     > git clone http://github.com/amrex-codes/incflo.git
-    > cd incflo/test
+    > cd incflo
+
+Now decide whether you want to build the executable in 2-D vs 3-D,
+with EB (embedded boundaries / cut cells) or not.  For this example,
+let's say you want to build in 2-D with cut cells.  Then
+
+.. code:: shell
+
+    > git clone http://github.com/amrex-codes/incflo.git
+    > cd test_2d
+
+(The other directories are test_3d, test_no_eb, and test_no_eb_2d.)
 
 Edit the GNUmakefile to set AMREX_HOME to be the path to the directory
 where you have put amrex.  Other options that you can set include
