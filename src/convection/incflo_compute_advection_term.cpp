@@ -124,7 +124,18 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
-        if (ngmac > 0) {
+        if (lev > 0)
+        {
+            // We need to fill the MAC velocities outside the fine region so we can use them in the Godunov method
+            IntVect rr  = geom[lev].Domain().size() / geom[lev-1].Domain().size();
+            Array<MultiFab*, AMREX_SPACEDIM> u_crse;
+            Array<MultiFab*, AMREX_SPACEDIM> u_fine;
+            AMREX_D_TERM(u_crse[0] = u_mac[lev-1];, u_crse[1] = v_mac[lev-1];, u_crse[2] = w_mac[lev-1];);
+            AMREX_D_TERM(u_fine[0] = u_mac[lev  ];, u_fine[1] = v_mac[lev  ];, u_fine[2] = w_mac[lev  ];);
+            int nGrow = nghost_mac();
+            HydroUtils::create_umac_grown(lev,nGrow,grids[lev],geom[lev],u_crse,u_fine,rr); 
+
+        } else {
             AMREX_D_TERM(u_mac[lev]->FillBoundary(geom[lev].periodicity());,
                          v_mac[lev]->FillBoundary(geom[lev].periodicity());,
                          w_mac[lev]->FillBoundary(geom[lev].periodicity()););
