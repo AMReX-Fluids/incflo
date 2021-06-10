@@ -386,11 +386,10 @@ private:
     bool m_advect_tracer    = false;
     bool m_test_tracer_conservation = false;
 
-#ifdef AMREX_USE_EB
-    std::string m_advection_type = "MOL";
-    std::string m_redistribution_type = "StateRedist";
-#else
     std::string m_advection_type = "Godunov";
+
+#ifdef AMREX_USE_EB
+    std::string m_redistribution_type = "StateRedist";
 #endif
 
 #ifdef AMREX_USE_EB
