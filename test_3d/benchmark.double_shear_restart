@@ -5,8 +5,6 @@ incflo.cfl              =   0.45        # CFL factor
 amr.plot_int            =   20         # Steps between plot files
 amr.check_int           =   10          # Steps between checkpoint files
 
-incflo.advection_type   = "MOL"
-
 incflo.mu               =   0.0002      # Dynamic viscosity coefficient
 
 amr.max_level           =   0

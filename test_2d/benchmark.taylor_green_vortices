@@ -25,8 +25,6 @@ incflo.gravity          =   0.  0.      # Gravitational force (3D)
 incflo.ro_0             =   1.          # Reference density 
 incflo.mu               =   0.01        # Dynamic viscosity coefficient
 
-incflo.advection_type   = "MOL"
-
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#

@@ -31,7 +31,6 @@ incflo.constant_density =  false        #
 incflo.advect_tracer    =  true         #
 incflo.mu_s             =  0.1
 
-incflo.advection_type   = "MOL"
 incflo.diffusion_type   = 1             #  Crank-Nicolson (instead of Implicit)
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
