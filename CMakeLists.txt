@@ -52,6 +52,8 @@ endif ()
 #
 set(AMREX_HOME "" CACHE PATH "Path to AMReX top-level source directory")
 
+set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "")
+
 if (AMREX_HOME)  # SUPERBUILD MODE
 
   message(STATUS "AMReX top-level source directory path: ${AMREX_HOME}")
@@ -61,16 +63,19 @@ if (AMREX_HOME)  # SUPERBUILD MODE
   list(APPEND CMAKE_MODULE_PATH ${AMREX_HOME}/Tools/CMake)
 
   # Set required settings for AMReX
-  set(USE_XSDK_DEFAULTS       ON)
-  set(XSDK_ENABLE_Fortran     ON)
-  set(XSDK_PRECISION          "DOUBLE")
-  set(AMReX_SPACEDIM          ${INCFLO_DIM})
-  set(AMReX_MPI               ${INCFLO_MPI})
-  set(AMReX_OMP               ${INCFLO_OMP})
-  set(AMReX_CUDA              ${INCFLO_CUDA})
-  set(AMReX_EB                ${INCFLO_EB})
-  set(AMReX_LINEAR_SOLVERS    ON)
-  set(AMReX_BUILD_TUTORIALS   OFF)
+  set(USE_XSDK_DEFAULTS       ON            CACHE INTERNAL "")
+  set(XSDK_ENABLE_Fortran     OFF           CACHE INTERNAL "")
+  set(XSDK_PRECISION          "DOUBLE"      CACHE INTERNAL "")
+  set(AMReX_SPACEDIM          ${INCFLO_DIM} CACHE INTERNAL "")
+  set(AMReX_MPI               ${INCFLO_MPI} CACHE INTERNAL "")
+  set(AMReX_OMP               ${INCFLO_OMP} CACHE INTERNAL "")
+  if (INCFLO_CUDA)
+    set(AMReX_GPU_BACKEND     CUDA          CACHE INTERNAL "")
+  endif ()
+  set(AMReX_EB                ${INCFLO_EB}  CACHE INTERNAL "")
+  set(AMREX_FORTRAN           OFF           CACHE INTERNAL "")
+  set(AMReX_LINEAR_SOLVERS    ON            CACHE INTERNAL "")
+  set(AMReX_BUILD_TUTORIALS   OFF           CACHE INTERNAL "")
 
   # If CUDA is required, enable the language BEFORE adding the AMReX directory
   # Since AMReX_SetupCUDA has an include guard, it will be included only once here.
@@ -114,8 +119,32 @@ else ()  # STANDALONE MODE
 
 endif ()
 
+set(AMREX_HYDRO_HOME "" CACHE PATH "Path to AMReX-Hydro top-level source directory")
+
+if (AMREX_HYDRO_HOME)
+   message(STATUD "AMReX-Hydro top-level source directory path: ${AMREX_HYDRO_HOME}")
+   set(AMREX_HYDRO_BINARY_DIR "${incflo_BINARY_DIR}/AMReX-Hydro" CACHE INTERNAL "Path to AMReX-Hydro top-level binary directory")
+
+   # Set required settings for AMReX-Hydro
+   set(HYDRO_SPACEDIM    ${INCFLO_DIM} CACHE STRING "")
+   set(HYDRO_MPI         ${INCFLO_MPI} CACHE INTERNAL "")
+   set(HYDRO_OMP         ${INCFLO_OMP} CACHE INTERNAL "")
+   set(HYDRO_EB          ${INCFLO_EB}  CACHE INTERNAL "")
+   if (INCFLO_CUDA)
+     set(HYDRO_GPU_BACKEND CUDA CACHE INTERNAL "")
+   endif ()
+
+  # Add AMReX-Hydro directory to the build
+  add_subdirectory(${AMREX_HYDRO_HOME} ${AMREX_HYDRO_BINARY_DIR})
+
+else ()
+   message(FATAL_ERROR "Must provide AMREX_HYDRO_HOME")
+endif ()
+
 add_executable(incflo)
-target_link_libraries(incflo PUBLIC AMReX::amrex)
+
+#target_link_libraries(incflo PUBLIC AMReX::amrex amrex_hydro)
+target_link_libraries(incflo PUBLIC amrex_hydro) #link to amrex through amrex_hydro
 
 #
 # If INCFLO_EB=false, we could still link against an external
@@ -157,6 +186,8 @@ generate_buildinfo(incflo ${CMAKE_SOURCE_DIR})
 
 
 add_subdirectory(src)
+
+set_target_properties(incflo PROPERTIES OUTPUT_NAME "incflo.ex")
 
 #
 # Setup CUDA

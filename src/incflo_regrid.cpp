@@ -45,7 +45,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
 
-#if AMREX_USE_EB
+#ifdef AMREX_USE_EB
     macproj.reset(new MacProjector(Geom(0,finest_level),
                                    MLMG::Location::FaceCentroid,  // Location of mac_vec
                                    MLMG::Location::FaceCentroid,  // Location of beta
@@ -96,7 +96,7 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
 
-#if AMREX_USE_EB
+#ifdef AMREX_USE_EB
     macproj.reset(new MacProjector(Geom(0,finest_level),
                                    MLMG::Location::FaceCentroid,  // Location of mac_vec
                                    MLMG::Location::FaceCentroid,  // Location of beta

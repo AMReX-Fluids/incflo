@@ -1,3 +1,5 @@
+#include <AMReX_Config.H>
+
 #ifdef AMREX_USE_EB
 
 #include <hydro_redistribution.H>

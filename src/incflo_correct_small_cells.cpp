@@ -2,13 +2,13 @@
 
 using namespace amrex;
 
+#ifdef AMREX_USE_EB
 void
 incflo::incflo_correct_small_cells (Vector<MultiFab*      > const& vel_in,
                                     AMREX_D_DECL(Vector<MultiFab const*> const& u_mac,
                                                  Vector<MultiFab const*> const& v_mac,
                                                  Vector<MultiFab const*> const& w_mac))
 {
-#ifdef AMREX_USE_EB
     BL_PROFILE("incflo::incflo_correct_small_cells");
 
     for (int lev = 0; lev <= finest_level; lev++)
@@ -71,5 +71,5 @@ incflo::incflo_correct_small_cells (Vector<MultiFab*      > const& vel_in,
           }
        }
     }
-#endif
 }
+#endif
