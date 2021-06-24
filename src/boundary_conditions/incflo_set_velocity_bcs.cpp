@@ -35,4 +35,5 @@ incflo::set_inflow_velocity (int lev, amrex::Real time, MultiFab& vel, int nghos
             }
         }
     }
+    vel.EnforcePeriodicity(gm.periodicity());
 }
