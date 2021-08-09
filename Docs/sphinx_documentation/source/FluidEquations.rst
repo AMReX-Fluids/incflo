@@ -23,7 +23,7 @@ Conservation of fluid mass:
 Conservation of fluid momentum:
 
 .. math:: \frac{ \partial (\rho U)}{\partial t} 
-   + \nabla \cdot (\rho U g) + \nabla p = \nabla \cdot \tau + \rho g
+   + \nabla \cdot (\rho U U) + \nabla p = \nabla \cdot \tau + \rho g
 
 Incompressibility constraint:
 
