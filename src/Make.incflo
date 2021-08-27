@@ -29,6 +29,9 @@ Blocs += $(AMREX_HYDRO_HOME)/Godunov
 Bpack += $(AMREX_HYDRO_HOME)/MOL/Make.package
 Blocs += $(AMREX_HYDRO_HOME)/MOL
 
+Bpack += $(AMREX_HYDRO_HOME)/Slopes/Make.package
+Blocs += $(AMREX_HYDRO_HOME)/Slopes
+
 Bpack += $(AMREX_HYDRO_HOME)/Utils/Make.package
 Blocs += $(AMREX_HYDRO_HOME)/Utils
 
