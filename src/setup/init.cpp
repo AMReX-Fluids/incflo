@@ -65,14 +65,15 @@ void incflo::ReadParameters ()
         pp.query("godunov_include_diff_in_forcing"  , m_godunov_include_diff_in_forcing);
         pp.query("use_mac_phi_in_godunov"           , m_use_mac_phi_in_godunov);
 
-        // What type of redistribution algorithm; default is FluxRedistribution, options are
-        // {NoRedist, FluxRedist, StateRedist}
+        // What type of redistribution algorithm;
+        // {NoRedist, FluxRedist, StateRedist, NewStateRedist}
 #ifdef AMREX_USE_EB
         pp.query("redistribution_type"              , m_redistribution_type);
         if (m_redistribution_type != "NoRedist" &&
             m_redistribution_type != "FluxRedist" &&
-            m_redistribution_type != "StateRedist")
-            amrex::Abort("redistribution type must be NoRedist, FluxRedist, or StateRedist");
+            m_redistribution_type != "StateRedist" &&
+            m_redistribution_type != "NewStateRedist")
+            amrex::Abort("redistribution type must be NoRedist, FluxRedist, StateRedist or NewStateRedist");
 
 	if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
 #endif
@@ -322,8 +323,9 @@ void
 incflo::InitialRedistribution ()
 {
     // Next we must redistribute the initial solution if we are going to use 
-    // StateRedist redistribution scheme
-    if ( m_redistribution_type == "StateRedist" )
+    // NewStateRedist redistribution scheme
+    if ( (m_redistribution_type == "StateRedist") ||
+         (m_redistribution_type == "NewStateRedist") )
     {
       for (int lev = 0; lev <= finest_level; lev++)
       {
@@ -337,21 +339,21 @@ incflo::InitialRedistribution ()
         EB_set_covered(ld.velocity, 0, AMREX_SPACEDIM, ld.velocity.nGrow(), 0.0);
         ld.velocity.FillBoundary(geom[lev].periodicity());
         MultiFab::Copy(ld.velocity_o, ld.velocity, 0, 0, AMREX_SPACEDIM, ld.velocity.nGrow());
-        fillpatch_velocity(lev, m_t_new[lev], ld.velocity_o, 1);
+        fillpatch_velocity(lev, m_t_new[lev], ld.velocity_o, 3);
 
         if (!m_constant_density) 
         {
             EB_set_covered(ld.density, 0, 1, ld.density.nGrow(), 0.0);
             ld.density.FillBoundary(geom[lev].periodicity());
             MultiFab::Copy(ld.density_o, ld.density, 0, 0, 1, ld.density.nGrow());
-            fillpatch_density(lev, m_t_new[lev], ld.density_o, 1);
+            fillpatch_density(lev, m_t_new[lev], ld.density_o, 3);
         }
         if (m_advect_tracer) 
         {
             EB_set_covered(ld.tracer, 0, m_ntrac, ld.tracer.nGrow(), 0.0);
             ld.tracer.FillBoundary(geom[lev].periodicity());
             MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, 1, ld.tracer.nGrow());
-            fillpatch_tracer(lev, m_t_new[lev], ld.tracer_o, 1);
+            fillpatch_tracer(lev, m_t_new[lev], ld.tracer_o, 3);
         }
 
         for (MFIter mfi(ld.density,TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -382,6 +384,7 @@ incflo::InitialRedistribution ()
                                           flag, AMREX_D_DECL(apx, apy, apz), vfrac, 
                                           AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                           bc_vel, geom[lev], m_redistribution_type);
+
                 if (!m_constant_density) 
                 {
                     ncomp = 1;
