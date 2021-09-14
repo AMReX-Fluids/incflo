@@ -31,7 +31,6 @@ void incflo::prob_init_fluid (int lev)
         else if (1 == m_probtype)
         {
             init_taylor_green(vbx, gbx,
-                              ld.p.array(mfi),
                               ld.velocity.array(mfi),
                               ld.density.array(mfi),
                               ld.tracer.array(mfi),
@@ -40,7 +39,6 @@ void incflo::prob_init_fluid (int lev)
         else if (2 == m_probtype)
         {
             init_taylor_vortex(vbx, gbx,
-                               ld.p.array(mfi),
                                ld.velocity.array(mfi),
                                ld.density.array(mfi),
                                ld.tracer.array(mfi),
@@ -49,7 +47,6 @@ void incflo::prob_init_fluid (int lev)
         else if (3 == m_probtype)
         {
             init_taylor_green3d(vbx, gbx,
-                                ld.p.array(mfi),
                                 ld.velocity.array(mfi),
                                 ld.density.array(mfi),
                                 ld.tracer.array(mfi),
@@ -58,7 +55,6 @@ void incflo::prob_init_fluid (int lev)
         else if (4 == m_probtype)
         {
             init_couette(vbx, gbx,
-                         ld.p.array(mfi),
                          ld.velocity.array(mfi),
                          ld.density.array(mfi),
                          ld.tracer.array(mfi),
@@ -67,7 +63,6 @@ void incflo::prob_init_fluid (int lev)
         else if (5 == m_probtype)
         {
             init_rayleigh_taylor(vbx, gbx,
-                                 ld.p.array(mfi),
                                  ld.velocity.array(mfi),
                                  ld.density.array(mfi),
                                  ld.tracer.array(mfi),
@@ -76,7 +71,6 @@ void incflo::prob_init_fluid (int lev)
         else if (6 == m_probtype)
         {   
             init_channel_slant(vbx, gbx,
-                               ld.p.array(mfi),
                                ld.velocity.array(mfi),
                                ld.density.array(mfi),
                                ld.tracer.array(mfi),
@@ -85,7 +79,6 @@ void incflo::prob_init_fluid (int lev)
         else if (11 == m_probtype)
         {
             init_tuscan(vbx, gbx,
-                        ld.p.array(mfi),
                         ld.velocity.array(mfi),
                         ld.density.array(mfi),
                         ld.tracer.array(mfi),
@@ -94,7 +87,6 @@ void incflo::prob_init_fluid (int lev)
         else if (111 == m_probtype || 112 == m_probtype || 113 == m_probtype)
         {
             init_boussinesq_bubble(vbx, gbx,
-                                   ld.p.array(mfi),
                                    ld.velocity.array(mfi),
                                    ld.density.array(mfi),
                                    ld.tracer.array(mfi),
@@ -103,7 +95,6 @@ void incflo::prob_init_fluid (int lev)
         else if (12 == m_probtype)
         {
             init_periodic_tracer(vbx, gbx,
-                                 ld.p.array(mfi),
                                  ld.velocity.array(mfi),
                                  ld.density.array(mfi),
                                  ld.tracer.array(mfi),
@@ -112,7 +103,6 @@ void incflo::prob_init_fluid (int lev)
         else if (13 == m_probtype)
         {
             init_flow_in_box(vbx, gbx,
-                             ld.p.array(mfi),
                              ld.velocity.array(mfi),
                              ld.density.array(mfi),
                              ld.tracer.array(mfi),
@@ -121,7 +111,6 @@ void incflo::prob_init_fluid (int lev)
         else if (21 == m_probtype || 22 == m_probtype || 23 == m_probtype)
         {
             init_double_shear_layer(vbx, gbx,
-                                    ld.p.array(mfi),
                                     ld.velocity.array(mfi),
                                     ld.density.array(mfi),
                                     ld.tracer.array(mfi),
@@ -132,7 +121,6 @@ void incflo::prob_init_fluid (int lev)
                  41  == m_probtype)
         {
             init_plane_poiseuille(vbx, gbx,
-                                  ld.p.array(mfi),
                                   ld.velocity.array(mfi),
                                   ld.density.array(mfi),
                                   ld.tracer.array(mfi),
@@ -142,7 +130,6 @@ void incflo::prob_init_fluid (int lev)
         else if (500 == m_probtype)
         {
             init_heated_ground(vbx, gbx,
-                               ld.p.array(mfi),
                                ld.velocity.array(mfi),
                                ld.density.array(mfi),
                                ld.tracer.array(mfi),
@@ -157,7 +144,6 @@ void incflo::prob_init_fluid (int lev)
 }
 
 void incflo::init_taylor_green (Box const& vbx, Box const& gbx,
-                                Array4<Real> const& p,
                                 Array4<Real> const& vel,
                                 Array4<Real> const& density,
                                 Array4<Real> const& tracer,
@@ -180,7 +166,6 @@ void incflo::init_taylor_green (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_taylor_green3d (Box const& vbx, Box const& gbx,
-                                  Array4<Real> const& p,
                                   Array4<Real> const& vel,
                                   Array4<Real> const& density,
                                   Array4<Real> const& tracer,
@@ -202,7 +187,6 @@ void incflo::init_taylor_green3d (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_taylor_vortex (Box const& vbx, Box const& gbx,
-                                 Array4<Real> const& p,
                                  Array4<Real> const& vel,
                                  Array4<Real> const& density,
                                  Array4<Real> const& tracer,
@@ -227,7 +211,6 @@ void incflo::init_taylor_vortex (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_flow_in_box (Box const& vbx, Box const& gbx,
-                               Array4<Real> const& p,
                                Array4<Real> const& vel,
                                Array4<Real> const& density,
                                Array4<Real> const& tracer,
@@ -327,7 +310,6 @@ void incflo::init_flow_in_box (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_couette (Box const& vbx, Box const& gbx,
-                           Array4<Real> const& p,
                            Array4<Real> const& vel,
                            Array4<Real> const& density,
                            Array4<Real> const& tracer,
@@ -347,7 +329,6 @@ void incflo::init_couette (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_channel_slant (Box const& vbx, Box const& gbx,
-                                 Array4<Real> const& p,
                                  Array4<Real> const& vel,
                                  Array4<Real> const& density,
                                  Array4<Real> const& tracer,
@@ -394,7 +375,6 @@ void incflo::init_channel_slant (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_rayleigh_taylor (Box const& vbx, Box const& gbx,
-                                   Array4<Real> const& p,
                                    Array4<Real> const& vel,
                                    Array4<Real> const& density,
                                    Array4<Real> const& tracer,
@@ -454,7 +434,6 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_tuscan (Box const& vbx, Box const& gbx,
-                          Array4<Real> const& p,
                           Array4<Real> const& vel,
                           Array4<Real> const& density,
                           Array4<Real> const& tracer,
@@ -479,7 +458,6 @@ void incflo::init_tuscan (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_boussinesq_bubble (Box const& vbx, Box const& gbx,
-                                     Array4<Real> const& p,
                                      Array4<Real> const& vel,
                                      Array4<Real> const& density,
                                      Array4<Real> const& tracer,
@@ -557,7 +535,6 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_periodic_tracer (Box const& vbx, Box const& gbx,
-                                   Array4<Real> const& p,
                                    Array4<Real> const& vel,
                                    Array4<Real> const& density,
                                    Array4<Real> const& tracer,
@@ -582,7 +559,6 @@ void incflo::init_periodic_tracer (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
-                                      Array4<Real> const& p,
                                       Array4<Real> const& vel,
                                       Array4<Real> const& density,
                                       Array4<Real> const& tracer,
@@ -653,7 +629,6 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& gbx,
 }
 
 void incflo::init_plane_poiseuille (Box const& vbx, Box const& gbx,
-                                    Array4<Real> const& p,
                                     Array4<Real> const& vel,
                                     Array4<Real> const& density,
                                     Array4<Real> const& tracer,

@@ -40,8 +40,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                  Vector<MultiFab*      > const& tra_forces,
                                  Real time)
 {
-    int ngmac = nghost_mac();
-
     bool fluxes_are_area_weighted = false;
 
 #ifdef AMREX_USE_EB
@@ -238,8 +236,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             // ************************************************************************
             // Make a FAB holding (rho * tracer) that is the same size as the original tracer FAB
             if (m_advect_tracer && (m_ntrac>0)) {
-
-                Box const& bx = mfi.tilebox();
 
                 // Note we must actually grow the tilebox, not use growntilebox, because
                 // we want to use this immediately below and we need all the "ghost cells" of 
