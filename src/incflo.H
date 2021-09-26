@@ -399,7 +399,7 @@ private:
     std::string m_advection_type = "Godunov";
 
 #ifdef AMREX_USE_EB
-    std::string m_redistribution_type = "NewStateRedist";
+    std::string m_redistribution_type = "StateRedist";
 #endif
 
 #ifdef AMREX_USE_EB

@@ -47,7 +47,8 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
 
         Box gbx = bx;
 	  
-	if (l_redistribution_type == "NewStateRedist") 
+	if ( (l_redistribution_type == "StateRedist") ||
+	     (l_redistribution_type == "NewStateRedist") )
             gbx.grow(3);
 	else if (l_redistribution_type == "FluxRedist") 
             gbx.grow(2);
@@ -60,7 +61,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         Array4<Real> scratch = scratch_fab.array();
         Elixir eli_scratch = scratch_fab.elixir();
 
-        // This is scratch space if calling NewStateRedistribute,
+        // This is scratch space if calling StateRedistribute or NewStateRedistribute,
         //  but is used as the weights (here set to 1) if calling
         //  FluxRedistribute
         amrex::ParallelFor(Box(scratch),
