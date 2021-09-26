@@ -7,81 +7,6 @@
 #endif
 
 using namespace amrex;
-
-void 
-average_mac_to_ccvel (const Array<MultiFab*,AMREX_SPACEDIM>& fc, MultiFab& cc)
-{
-        AMREX_ASSERT(cc.nComp() == AMREX_SPACEDIM);
-        AMREX_ASSERT(fc[0]->nComp() == 1);
-#if (AMREX_SPACEDIM >= 2)
-        AMREX_ASSERT(fc[1]->nComp() == 1);
-#endif
-#if (AMREX_SPACEDIM == 3)
-        AMREX_ASSERT(fc[2]->nComp() == 1);
-#endif
-
-        int ncomp = AMREX_SPACEDIM;
-
-#ifdef AMREX_USE_GPU
-        if (Gpu::inLaunchRegion() && cc.isFusingCandidate()) {
-            auto const& ccma = cc.const_arrays();
-            AMREX_D_TERM(auto const& fxma = fc[0]->arrays();,
-                         auto const& fyma = fc[1]->arrays();,
-                         auto const& fzma = fc[2]->arrays(););
-            MultiFab foo(amrex::convert(cc.boxArray(),IntVect(1)), cc.DistributionMap(), 1, 0,
-                         MFInfo().SetAlloc(false));
-            ParallelFor(foo, IntVect(0), ncomp,
-            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k, int n) noexcept
-            {
-                Box ccbx(ccma[box_no]);
-                AMREX_D_TERM(Box const& xbx = amrex::surroundingNodes(ccbx,0);,
-                             Box const& ybx = amrex::surroundingNodes(ccbx,1);,
-                             Box const& zbx = amrex::surroundingNodes(ccbx,2););
-                if (xbx.contains(i,j,k) and n == 0) {
-                    ccma[box_no](i,j,k,n) = Real(0.5) * (fxma[box_no](i,j,k) + fxma[box_no](i+1,j,k));
-                }
-                if (ybx.contains(i,j,k) and n == 1) {
-                    ccma[box_no](i,j,k,n) = Real(0.5) * (fyma[box_no](i,j,k) + fyma[box_no](i,j+1,k));
-                }
-#if (AMREX_SPACEDIM == 3)
-                if (zbx.contains(i,j,k) and n == 2) {
-                    ccma[box_no](i,j,k,n) = Real(0.5) * (fzma[box_no](i,j,k) + fzma[box_no](i,j,k+1));
-                }
-#endif
-            });
-            Gpu::streamSynchronize();
-        } else
-#endif
-        {
-#ifdef AMREX_USE_OMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-            for (MFIter mfi(cc,TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                const Box& bx = mfi.tilebox();
-
-                AMREX_D_TERM(Array4<Real> const& fxarr = fc[0]->array(mfi);,
-                             Array4<Real> const& fyarr = fc[1]->array(mfi);,
-                             Array4<Real> const& fzarr = fc[2]->array(mfi););
-                Array4<Real> const& ccarr = cc.array(mfi);
-
-                AMREX_HOST_DEVICE_PARALLEL_FOR_4D(bx, ncomp, i, j, k, n,
-                {
-                   if (n == 0) 
-                       ccarr(i,j,k,0) = Real(0.5) * (fxarr(i,j,k) + fxarr(i+1,j,k));
-                   
-                   if (n == 1) 
-                       ccarr(i,j,k,1) = Real(0.5) * (fyarr(i,j,k) + fyarr(i,j+1,k));
-                   
-#if (AMREX_SPACEDIM == 3)
-                   if (n == 2) 
-                       ccarr(i,j,k,2) = Real(0.5) * (fzarr(i,j,k) + fzarr(i,j,k+1));
-#endif
-                });
-            }
-        }
-}
-
 //
 // Computes the following decomposition:
 //
@@ -308,10 +233,11 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 
     for (int lev=0; lev <= finest_level; ++lev)
     {
+        int dest_comp = 0;
 #ifdef AMREX_USE_EB
-        amrex::Abort("Haven't written mac_to_ccvel for EB");
+        amrex::EB_average_face_to_cellcenter(*cc_gphi[lev],dest_comp,GetArrOfConstPtrs(m_fluxes[lev]));
 #else
-        average_mac_to_ccvel(GetArrOfPtrs(m_fluxes[lev]),*cc_gphi[lev]);
+        amrex::average_face_to_cellcenter(*cc_gphi[lev],dest_comp,GetArrOfConstPtrs(m_fluxes[lev]));
 #endif
     }
 
