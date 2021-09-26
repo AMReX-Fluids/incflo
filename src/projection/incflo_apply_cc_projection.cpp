@@ -1,89 +1,12 @@
 #include <AMReX_BC_TYPES.H>
 #include <incflo.H>
+#ifdef AMREX_USE_EB
+#include <hydro_ebmol.H>
+#else
 #include <hydro_mol.H>
+#endif
 
 using namespace amrex;
-
-void 
-average_ccvel_to_mac (const Array<MultiFab*,AMREX_SPACEDIM>& fc, const MultiFab& cc)
-{
-        AMREX_ASSERT(cc.nComp() == AMREX_SPACEDIM);
-        AMREX_ASSERT(cc.nGrow() >= 1);
-        AMREX_ASSERT(fc[0]->nComp() == 1);
-#if (AMREX_SPACEDIM >= 2)
-        AMREX_ASSERT(fc[1]->nComp() == 1);
-#endif
-#if (AMREX_SPACEDIM == 3)
-        AMREX_ASSERT(fc[2]->nComp() == 1);
-#endif
-
-        int ncomp = AMREX_SPACEDIM;
-
-#ifdef AMREX_USE_GPU
-        if (Gpu::inLaunchRegion() && cc.isFusingCandidate()) {
-            auto const& ccma = cc.const_arrays();
-            AMREX_D_TERM(auto const& fxma = fc[0]->arrays();,
-                         auto const& fyma = fc[1]->arrays();,
-                         auto const& fzma = fc[2]->arrays(););
-            MultiFab foo(amrex::convert(cc.boxArray(),IntVect(1)), cc.DistributionMap(), 1, 0,
-                         MFInfo().SetAlloc(false));
-            IntVect ng = -cc.nGrowVect();
-            ParallelFor(foo, IntVect(0), ncomp,
-            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k, int n) noexcept
-            {
-                Box ccbx(ccma[box_no]);
-                ccbx.grow(ng);
-                AMREX_D_TERM(Box const& xbx = amrex::surroundingNodes(ccbx,0);,
-                             Box const& ybx = amrex::surroundingNodes(ccbx,1);,
-                             Box const& zbx = amrex::surroundingNodes(ccbx,2););
-                if (xbx.contains(i,j,k) and n == 0) {
-                    fxma[box_no](i,j,k) = Real(0.5)*(ccma[box_no](i-1,j,k,n) + ccma[box_no](i,j,k,n));
-                }
-                if (ybx.contains(i,j,k) and n == 1) {
-                    fyma[box_no](i,j,k) = Real(0.5)*(ccma[box_no](i,j-1,k,n) + ccma[box_no](i,j,k,n));
-                }
-#if (AMREX_SPACEDIM == 3)
-                if (zbx.contains(i,j,k) and n == 2) {
-                    fzma[box_no](i,j,k) = Real(0.5)*(ccma[box_no](i,j,k-1,n) + ccma[box_no](i,j,k,n));
-                }
-#endif
-            });
-            Gpu::streamSynchronize();
-        } else
-#endif
-        {
-#ifdef AMREX_USE_OMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-            for (MFIter mfi(cc,TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                AMREX_D_TERM(const Box& xbx = mfi.nodaltilebox(0);,
-                             const Box& ybx = mfi.nodaltilebox(1);,
-                             const Box& zbx = mfi.nodaltilebox(2););
-                const auto& index_bounds = amrex::getIndexBounds(AMREX_D_DECL(xbx,ybx,zbx));
-
-                AMREX_D_TERM(Array4<Real> const& fxarr = fc[0]->array(mfi);,
-                             Array4<Real> const& fyarr = fc[1]->array(mfi);,
-                             Array4<Real> const& fzarr = fc[2]->array(mfi););
-                Array4<Real const> const& ccarr = cc.const_array(mfi);
-
-                AMREX_HOST_DEVICE_PARALLEL_FOR_4D(index_bounds, ncomp, i, j, k, n,
-                {
-                   if (xbx.contains(i,j,k) and n == 0) {
-                       fxarr(i,j,k) = Real(0.5)*(ccarr(i-1,j,k,n) + ccarr(i,j,k,n));
-                   }
-                   if (ybx.contains(i,j,k) and n == 1) {
-                       fyarr(i,j,k) = Real(0.5)*(ccarr(i,j-1,k,n) + ccarr(i,j,k,n));
-                   }
-#if (AMREX_SPACEDIM == 3)
-                   if (zbx.contains(i,j,k) and n == 2) {
-                       fzarr(i,j,k) = Real(0.5)*(ccarr(i,j,k-1,n) + ccarr(i,j,k,n));
-                   }
-#endif
-                });
-            }
-        }
-}
 
 void 
 average_mac_to_ccvel (const Array<MultiFab*,AMREX_SPACEDIM>& fc, MultiFab& cc)
@@ -337,14 +260,17 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
         vel[lev]->FillBoundary(geom[lev].periodicity());
-#if 1
+#ifdef AMREX_USE_EB
+        EBMOL::ExtrapVelToFaces(*vel[lev],
+                                AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
+                                geom[lev], 
+                                get_velocity_bcrec(), get_velocity_bcrec_device_ptr());
+
+#else
         MOL::ExtrapVelToFaces(*vel[lev],
                               AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
                               geom[lev], 
                               get_velocity_bcrec(), get_velocity_bcrec_device_ptr());
-
-#else
-        average_ccvel_to_mac(             mac_vec[lev],      *vel[lev]);
 #endif
     }
 
