@@ -15,23 +15,10 @@ incflo::compute_MAC_projected_velocities (
                                  Vector<MultiFab*> const& vel_forces,
                                  Real /*time*/)
 {
-    BL_PROFILE("incflo::compute_MAC_projected_velocities()");
+    BL_PROFILE("incflo::cc_proj()");
     Real l_dt = m_dt;
 
     auto mac_phi = get_mac_phi();
-
-    // We first compute the velocity forcing terms to be used in predicting
-    //    to faces before the MAC projection
-    if (m_advection_type != "MOL") {
-
-        if (m_godunov_include_diff_in_forcing)
-            for (int lev = 0; lev <= finest_level; ++lev)
-                MultiFab::Add(*vel_forces[lev], m_leveldata[lev]->divtau_o, 0, 0, AMREX_SPACEDIM, 0);
-
-        if (nghost_force() > 0)
-            fillpatch_force(m_cur_time, vel_forces, nghost_force());
-    }
-
 
     // This will hold (1/rho) on faces
     Vector<Array<MultiFab,AMREX_SPACEDIM> > inv_rho(finest_level+1);
@@ -53,7 +40,7 @@ incflo::compute_MAC_projected_velocities (
 #endif
 
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-            inv_rho[lev][idim].invert(l_dt, 0);
+            inv_rho[lev][idim].invert(1.0, 0);
         }
     }
 
@@ -72,7 +59,7 @@ incflo::compute_MAC_projected_velocities (
                 ba.push_back(ir[0].boxArray());
                 dm.push_back(ir[0].DistributionMap());
             }
-            macproj->initProjector(ba, dm, lp_info, l_dt/m_ro_0);
+            macproj->initProjector(ba, dm, lp_info, 1.0/m_ro_0);
         } else
 #endif
         {
@@ -82,12 +69,37 @@ incflo::compute_MAC_projected_velocities (
     } else {
 #ifndef AMREX_USE_EB
         if (m_constant_density) {
-            macproj->updateBeta(l_dt/m_ro_0);  // unnecessary unless m_ro_0 changes.
+            macproj->updateBeta(1.0/m_ro_0);  // unnecessary unless m_ro_0 changes.
         } else
 #endif
         {
             macproj->updateBeta(GetVecOfArrOfConstPtrs(inv_rho));
         }
+    }
+
+    Vector<Array<MultiFab,AMREX_SPACEDIM> > m_fluxes;
+    m_fluxes.resize(finest_level+1);
+    for (int lev=0; lev <= finest_level; ++lev)
+    {
+        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) 
+        {
+             m_fluxes[lev][idim].define(
+                    amrex::convert(grids[lev], IntVect::TheDimensionVector(idim)),
+                    dmap[lev], 1, 0, MFInfo(), Factory(lev));
+        }
+    }
+
+    if (m_use_mac_phi_in_godunov)
+    {
+#ifdef AMREX_USE_EB
+        macproj->getFluxes(amrex::GetVecOfArrOfPtrs(m_fluxes), mac_phi, MLMG::Location::FaceCentroid);
+#else
+        macproj->getFluxes(amrex::GetVecOfArrOfPtrs(m_fluxes), mac_phi, MLMG::Location::FaceCenter);
+#endif
+    } else {
+        for (int lev=0; lev <= finest_level; ++lev)
+            for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) 
+                 m_fluxes[lev][idim].setVal(0.);
     }
 
     for (int lev = 0; lev <= finest_level; ++lev) 
@@ -109,8 +121,9 @@ incflo::compute_MAC_projected_velocities (
 #endif
                                       m_godunov_ppm, m_godunov_use_forces_in_trans,
                                       m_advection_type);
-    }
+//                                    m_use_mac_phi_in_godunov);
 
+    }
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
     for (int lev=0; lev <= finest_level; ++lev)
     {
@@ -121,26 +134,20 @@ incflo::compute_MAC_projected_velocities (
 
     macproj->setUMAC(mac_vec);
 
-    if (m_verbose > 0) amrex::Print() << "MAC Projection:\n";
+    if (m_verbose > 2) amrex::Print() << "MAC Projection:\n";
     //
     // Perform MAC projection
     //
     if (m_use_mac_phi_in_godunov)
     {
-        // The MAC projection always starts with phi == 0, but we might like  
-        //     to change that so we reduce the cost of the MAC projection
         for (int lev=0; lev <= finest_level; ++lev)
-            mac_phi[lev]->setVal(0.);
-            //mac_phi[lev]->mult(0.5,0,1,1);
+            mac_phi[lev]->mult(m_dt/2.,0,1,1);
 
         macproj->project(mac_phi,m_mac_mg_rtol,m_mac_mg_atol);
 
         for (int lev=0; lev <= finest_level; ++lev)
-            mac_phi[lev]->mult(2.0,0,1,1);
+            mac_phi[lev]->mult(2./m_dt,0,1,1);
     } else {
         macproj->project(m_mac_mg_rtol,m_mac_mg_atol);
     }
-
-    // Note that the macproj->project call above ensures that the MAC velocities are averaged down --
-    //      we don't need to do that again here
 }
