@@ -41,6 +41,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                  Real time)
 {
     bool fluxes_are_area_weighted = false;
+    bool knownFaceStates          = false; // HydroUtils always recompute face states
 
 #ifdef AMREX_USE_EB
     amrex::Print() << "REDISTRIBUTION TYPE " << m_redistribution_type << std::endl;
@@ -182,6 +183,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                      AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
                                                   face_y[lev].array(mfi,face_comp),
                                                   face_z[lev].array(mfi,face_comp)),
+                                     knownFaceStates,
                                      AMREX_D_DECL(u_mac[lev]->const_array(mfi),
                                                   v_mac[lev]->const_array(mfi),
                                                   w_mac[lev]->const_array(mfi)),
@@ -215,6 +217,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
                                                        face_y[lev].array(mfi,face_comp),
                                                        face_z[lev].array(mfi,face_comp)),
+                                          knownFaceStates,
                                           AMREX_D_DECL(u_mac[lev]->const_array(mfi),
                                                        v_mac[lev]->const_array(mfi),
                                                        w_mac[lev]->const_array(mfi)),
@@ -266,6 +269,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
                                                        face_y[lev].array(mfi,face_comp),
                                                        face_z[lev].array(mfi,face_comp)),
+                                          knownFaceStates,
                                           AMREX_D_DECL(u_mac[lev]->const_array(mfi),
                                                        v_mac[lev]->const_array(mfi),
                                                        w_mac[lev]->const_array(mfi)),

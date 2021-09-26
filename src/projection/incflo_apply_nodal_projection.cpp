@@ -3,38 +3,6 @@
 
 using namespace amrex;
 
-Array<amrex::LinOpBCType,AMREX_SPACEDIM>
-incflo::get_projection_bc (Orientation::Side side) const noexcept
-{
-    Array<LinOpBCType,AMREX_SPACEDIM> r;
-    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        if (geom[0].isPeriodic(dir)) {
-            r[dir] = LinOpBCType::Periodic;
-        } else {
-            auto bc = m_bc_type[Orientation(dir,side)];
-            switch (bc)
-            {
-            case BC::pressure_inflow:
-            case BC::pressure_outflow:
-            {
-                r[dir] = LinOpBCType::Dirichlet;
-                break;
-            }
-            case BC::mass_inflow:
-            case BC::slip_wall:
-            case BC::no_slip_wall:
-            {
-                r[dir] = LinOpBCType::Neumann;
-                break;
-            }
-            default:
-                amrex::Abort("get_projection_bc: undefined BC type");
-            };
-        }
-    }
-    return r;
-}
-
 //
 // Computes the following decomposition:
 //
@@ -54,11 +22,9 @@ incflo::get_projection_bc (Orientation::Side side) const noexcept
 //
 // Note: scaling_factor equals dt except when called during initial projection, when it is 1.0
 //
-void incflo::ApplyProjection (Vector<MultiFab const*> density,
-                              Real time, Real scaling_factor, bool incremental)
+void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
+                                   Real time, Real scaling_factor, bool incremental)
 {
-    BL_PROFILE("incflo::ApplyProjection");
-
     // If we have dropped the dt substantially for whatever reason,
     // use a different form of the approximate projection that
     // projects (U^*-U^n + dt Gp) rather than (U^* + dt Gp)
@@ -186,7 +152,7 @@ void incflo::ApplyProjection (Vector<MultiFab const*> density,
             Box const& tbx = mfi.tilebox();
             Box const& nbx = mfi.nodaltilebox();
             Array4<Real> const& gp_lev = ld.gp.array(mfi);
-            Array4<Real> const& p_lev = ld.p.array(mfi);
+            Array4<Real> const& p_lev = ld.p_nd.array(mfi);
             Array4<Real const> const& gp_proj = gradphi[lev]->const_array(mfi);
             Array4<Real const> const& p_proj = phi[lev]->const_array(mfi);
             if (incremental) {

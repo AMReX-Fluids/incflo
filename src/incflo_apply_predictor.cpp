@@ -202,21 +202,33 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Box const& bx = mfi.tilebox();
                 Array4<Real  const> const& rho_o  = ld.density_o.const_array(mfi);
                 Array4<Real> const& rho_new       = ld.density.array(mfi);
-                Array4<Real> const& rho_nph       = density_nph[lev].array(mfi);
                 Array4<Real const> const& drdt    = ld.conv_density_o.const_array(mfi);
 
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    const Real rho_old = rho_o(i,j,k);
-
-                    Real rho = rho_old + l_dt * drdt(i,j,k);
-                    rho_nph(i,j,k) = 0.5 * (rho_old + rho);
-
-                    rho_new(i,j,k) = rho;
+                    rho_new(i,j,k) = rho_o(i,j,k) + l_dt * drdt(i,j,k);
                 });
             } // mfi
-        } // lev
 
+            // Fill ghost cells of the new density field so that we can define density_nph
+            //      on the valid region grown by 1 (we will need this for ccproj)
+            int ng = 1;
+            fillpatch_density(lev, m_t_new[lev], ld.density, ng);
+
+            for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                Box const& gbx = mfi.growntilebox(1);
+                Array4<Real  const> const& rho_old  = ld.density_o.const_array(mfi);
+                Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
+                Array4<Real>        const& rho_nph  = density_nph[lev].array(mfi);
+
+                amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
+                });
+            } // mfi
+
+        } // lev
     } // not constant density
 
     // *************************************************************************************
@@ -406,7 +418,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Project velocity field, update pressure
     // 
     // **********************************************************************************************
-    ApplyProjection(GetVecOfConstPtrs(density_nph),new_time, m_dt, incremental_projection);
+    ApplyProjection(GetVecOfConstPtrs(density_nph), 
+                    AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
+                    GetVecOfPtrs(w_mac)),new_time,m_dt,incremental_projection);
 
 #ifdef AMREX_USE_EB
     // **********************************************************************************************
