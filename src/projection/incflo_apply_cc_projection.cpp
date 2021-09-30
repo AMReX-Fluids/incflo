@@ -241,6 +241,8 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 #endif
     }
 
+    Real l_ro_0 = m_ro_0;
+    
     for(int lev = 0; lev <= finest_level; lev++)
     {
         auto& ld = *m_leveldata[lev];
@@ -271,9 +273,9 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
             if (incremental && m_constant_density) {
                 amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    AMREX_D_TERM(gp_cc(i,j,k,0) -= gphi(i,j,k,0) * m_ro_0 / scaling_factor;,
-                                 gp_cc(i,j,k,1) -= gphi(i,j,k,1) * m_ro_0 / scaling_factor;,
-                                 gp_cc(i,j,k,2) -= gphi(i,j,k,2) * m_ro_0 / scaling_factor;);
+                    AMREX_D_TERM(gp_cc(i,j,k,0) -= gphi(i,j,k,0) * l_ro_0 / scaling_factor;,
+                                 gp_cc(i,j,k,1) -= gphi(i,j,k,1) * l_ro_0 / scaling_factor;,
+                                 gp_cc(i,j,k,2) -= gphi(i,j,k,2) * l_ro_0 / scaling_factor;);
 
                 });
             } else if (incremental && !m_constant_density) {
@@ -286,9 +288,9 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
             } else if (!incremental && m_constant_density) {
                 amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    AMREX_D_TERM(gp_cc(i,j,k,0) = -gphi(i,j,k,0) * m_ro_0 / scaling_factor;,
-                                 gp_cc(i,j,k,1) = -gphi(i,j,k,1) * m_ro_0 / scaling_factor;,
-                                 gp_cc(i,j,k,2) = -gphi(i,j,k,2) * m_ro_0 / scaling_factor;);
+                    AMREX_D_TERM(gp_cc(i,j,k,0) = -gphi(i,j,k,0) * l_ro_0 / scaling_factor;,
+                                 gp_cc(i,j,k,1) = -gphi(i,j,k,1) * l_ro_0 / scaling_factor;,
+                                 gp_cc(i,j,k,2) = -gphi(i,j,k,2) * l_ro_0 / scaling_factor;);
                 });
             } else if (!incremental && !m_constant_density) {
                 amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
