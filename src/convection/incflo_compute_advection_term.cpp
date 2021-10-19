@@ -397,32 +397,33 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                     });
                 }
 #ifdef AMREX_USE_EB
-                else 
-                {
-                    AMREX_D_TERM(auto const& apx_arr      = ebfact->getAreaFrac()[0]->const_array(mfi);,
-                                 auto const& apy_arr      = ebfact->getAreaFrac()[1]->const_array(mfi);,
-                                 auto const& apz_arr      = ebfact->getAreaFrac()[2]->const_array(mfi););
-                    auto const& vfrac_arr                 = ebfact->getVolFrac().const_array(mfi);
+                else {
+                    if (flagfab.getType(bx) != FabType::covered) {
+                        AMREX_D_TERM(auto const& apx_arr      = ebfact->getAreaFrac()[0]->const_array(mfi);,
+                                     auto const& apy_arr      = ebfact->getAreaFrac()[1]->const_array(mfi);,
+                                     auto const& apz_arr      = ebfact->getAreaFrac()[2]->const_array(mfi););
+                        auto const& vfrac_arr                 = ebfact->getVolFrac().const_array(mfi);
 
-                    amrex::ParallelFor(bx, num_comp, [=]
-                    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                    {
-                        if (!iconserv_ptr[n] && vfrac_arr(i,j,k) > 0.)
+                        amrex::ParallelFor(bx, num_comp, [=]
+                        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                         {
-                            Real qavg  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
-                                 qavg += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j+1,k)*q_on_face_y(i,j+1,k,n);
+                            if (!iconserv_ptr[n] && vfrac_arr(i,j,k) > 0.)
+                            {
+                                Real qavg  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
+                                     qavg += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j+1,k)*q_on_face_y(i,j+1,k,n);
 #if (AMREX_SPACEDIM == 2)
-                                 qavg *= 1.0 / (apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k));
+                                     qavg *= 1.0 / (apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k));
 #else
-                                 qavg += apz_arr(i,j,k)*q_on_face_z(i,j,k,n) + apz_arr(i,j,k+1)*q_on_face_z(i,j,k+1,n);
-                                 qavg *= 1.0 / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
-                                                +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
+                                     qavg += apz_arr(i,j,k)*q_on_face_z(i,j,k,n) + apz_arr(i,j,k+1)*q_on_face_z(i,j,k+1,n);
+                                     qavg *= 1.0 / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
+                                                    +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
 #endif
 
-                            // Note that because we define update_arr as MINUS div(u u), here we add u div (u) 
-                            update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
-                        }
-                    });
+                                // Note that because we define update_arr as MINUS div(u u), here we add u div (u) 
+                                update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
+                            }
+                        });
+                    }
                 }
 #endif
             } // Godunov
