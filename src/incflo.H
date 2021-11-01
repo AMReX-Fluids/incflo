@@ -333,7 +333,7 @@ private:
     //           mac_proj.bottom_rtol
     //           mac_proj.bottom_atol
     //           mac_proj.bottom_solver
-    // More info at "amrex/Src/LinearSolvers/Projections/AMReX_MacProjector.cpp"
+    // More info in "AMReX-Hydro/Projections/hydro_MacProjector.cpp"
 
     std::unique_ptr<amrex::MacProjector> macproj;
 
@@ -364,7 +364,7 @@ private:
     //           nodal_proj.bottom_rtol
     //           nodal_proj.bottom_atol
     //           nodal_proj.bottom_solver
-    // More info at "amrex/Src/LinearSolvers/Projections/AMReX_NodalProjector.cpp"
+    // More info in "AMReX-Hydro/Projections/hydro_NodalProjector.cpp"
     // Verbosity
 
     // Control MLMG behavior
