@@ -71,12 +71,12 @@ struct IncfloVelFill
                 if (32 == probtype && vcomp == 1)
                 {
                     Real z = (k+0.5)*(1.0/domain_box.length(2));
-                    vel(i,j,k,1) *= 6. * z * (1.-z); 
+                    vel(i,j,k,1) *= 6. * z * (1.-z);
                 }
                 if (322 == probtype && vcomp == 1)
                 {
                     Real x = (i+0.5)*(1.0/domain_box.length(0));
-                    vel(i,j,k,1) *= 6. * x * (1.-x); 
+                    vel(i,j,k,1) *= 6. * x * (1.-x);
                 }
             }
             else if (bc.hi(1) == BCType::ext_dir && j > domain_box.bigEnd(1))
@@ -91,12 +91,12 @@ struct IncfloVelFill
                 if (33 == probtype && vcomp == 2)
                 {
                     Real x = (i+0.5)*(1.0/domain_box.length(0));
-                    vel(i,j,k,2) *= 6. * x * (1.-x); 
+                    vel(i,j,k,2) *= 6. * x * (1.-x);
                 }
                 if (333 == probtype && vcomp == 2)
                 {
                     Real y = (j+0.5)*(1.0/domain_box.length(1));
-                    vel(i,j,k,2) *= 6. * y * (1.-y); 
+                    vel(i,j,k,2) *= 6. * y * (1.-y);
                 }
             }
             else if (bc.hi(2) == BCType::ext_dir && k > domain_box.bigEnd(2))

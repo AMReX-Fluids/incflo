@@ -70,7 +70,7 @@ void incflo::prob_init_fluid (int lev)
                                  domain, dx, problo, probhi);
         }
         else if (6 == m_probtype)
-        {   
+        {
             init_channel_slant(vbx, gbx,
                                ld.velocity.array(mfi),
                                ld.density.array(mfi),
@@ -125,7 +125,7 @@ void incflo::prob_init_fluid (int lev)
                                     ld.tracer.array(mfi),
                                     domain, dx, problo, probhi);
         }
-        else if (31  == m_probtype || 32  == m_probtype || 33  == m_probtype || 
+        else if (31  == m_probtype || 32  == m_probtype || 33  == m_probtype ||
                  311 == m_probtype || 322 == m_probtype || 333 == m_probtype ||
                  41  == m_probtype)
         {
@@ -302,7 +302,7 @@ void incflo::init_flow_in_box (Box const& vbx, Box const& gbx,
             vel(i,j,k,0) = 1.0;
             if (y < 0.5)
                 tracer(i,j,k) = 0.0;
-            else 
+            else
                 tracer(i,j,k) = 1.;
         });
     } else if (periodic_dir == 1)
@@ -318,7 +318,7 @@ void incflo::init_flow_in_box (Box const& vbx, Box const& gbx,
             vel(i,j,k,1) = 1.0;
             if (z < 0.5)
                 tracer(i,j,k) = 0.0;
-            else 
+            else
                 tracer(i,j,k) = 1.;
         });
     } else if (periodic_dir == 2)
@@ -336,7 +336,7 @@ void incflo::init_flow_in_box (Box const& vbx, Box const& gbx,
 #endif
             if (x < 0.5)
                 tracer(i,j,k) = 0.0;
-            else 
+            else
                 tracer(i,j,k) = 1.;
         });
 #if (AMREX_SPACEDIM == 3)
@@ -385,13 +385,13 @@ void incflo::init_channel_slant (Box const& vbx, Box const& gbx,
     pp.get("direction",  direction);
 
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {   
+    {
         if (density(i,j,k)>0) {
-    
+
             const int nt = tracer.nComp();
-            for (int n = 0; n < nt; ++n) 
+            for (int n = 0; n < nt; ++n)
                 tracer(i,j,k,n) = 0.0;
-                
+
             if (direction == 0) {
                 if (nt > 0 && i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
                 if (nt > 1 && i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
@@ -527,7 +527,7 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& gbx,
             else
                 tracer(i,j,k,0) = 0.01;
         });
-    } 
+    }
 #if (AMREX_SPACEDIM == 3)
     else if (112 == m_probtype) {
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept

@@ -45,7 +45,7 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
             // We don't call setDomainBC here because we will need to call it separately for each component
         }
 
-        if (m_incflo->need_divtau()) 
+        if (m_incflo->need_divtau())
         {
             m_eb_scal_apply_op.reset(new MLEBABecLap(m_incflo->Geom(0,finest_level),
                                                      m_incflo->boxArray(0,finest_level),
@@ -221,7 +221,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
                 m_eb_scal_solve_op->setLevelBC(lev, &phi[lev]);
 
                 // For when we use the stencil for centroid values
-                // m_eb_scal_solve_op->setPhiOnCentroid();  
+                // m_eb_scal_solve_op->setPhiOnCentroid();
             } else
 #endif
             {
@@ -248,7 +248,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
         mlmg.setMaxIter(m_mg_max_iter);
         mlmg.setMaxFmgIter(m_mg_max_fmg_iter);
         mlmg.setBottomMaxIter(m_mg_bottom_maxiter);
-        
+
         // Verbosity for MultiGrid / ConjugateGradients
         mlmg.setVerbose(m_mg_verbose);
         mlmg.setBottomVerbose(m_mg_bottom_verbose);
@@ -308,7 +308,7 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
             }
 
             for (int lev = 0; lev <= finest_level; ++lev) {
-                Array<MultiFab,AMREX_SPACEDIM> 
+                Array<MultiFab,AMREX_SPACEDIM>
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *eta[lev]);
 
                 m_eb_vel_solve_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
@@ -326,9 +326,9 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
             for (int lev = 0; lev <= finest_level; ++lev) {
                 m_reg_vel_solve_op->setACoeffs(lev, *density[lev]);
             }
-    
+
             for (int lev = 0; lev <= finest_level; ++lev) {
-                Array<MultiFab,AMREX_SPACEDIM> 
+                Array<MultiFab,AMREX_SPACEDIM>
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *eta[lev]);
                 m_reg_vel_solve_op->setBCoeffs(lev, GetArrOfConstPtrs(b));
             }
@@ -357,7 +357,7 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
             if (m_eb_vel_solve_op) {
 
                 // For when we use the stencil for centroid values
-                // m_eb_vel_solve_op->setPhiOnCentroid();  
+                // m_eb_vel_solve_op->setPhiOnCentroid();
 
                 m_eb_vel_solve_op->setLevelBC(lev, &phi[lev]);
 
@@ -387,7 +387,7 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
         mlmg.setMaxIter(m_mg_max_iter);
         mlmg.setMaxFmgIter(m_mg_max_fmg_iter);
         mlmg.setBottomMaxIter(m_mg_bottom_maxiter);
-        
+
         // Verbosity for MultiGrid / ConjugateGradients
         mlmg.setVerbose(m_mg_verbose);
         mlmg.setBottomVerbose(m_mg_bottom_verbose);
@@ -435,7 +435,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
         m_eb_scal_apply_op->setScalars(0.0, -1.0);
 
         // For when we use the stencil for centroid values
-        // m_eb_scal_apply_op->setPhiOnCentroid();  
+        // m_eb_scal_apply_op->setPhiOnCentroid();
 
         // This should have no effect since the first scalar is 0
         for (int lev = 0; lev <= finest_level; ++lev) {
@@ -451,7 +451,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                 laps_comp.emplace_back(laps_tmp[lev],amrex::make_alias,comp,1);
                 scalar_comp.emplace_back(scalar[lev],amrex::make_alias,comp,1);
 
-                Array<MultiFab,AMREX_SPACEDIM> 
+                Array<MultiFab,AMREX_SPACEDIM>
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);
 
                 m_eb_scal_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
@@ -489,7 +489,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
             for (int lev = 0; lev <= finest_level; ++lev) {
                 laps_comp.emplace_back(*a_laps[lev],amrex::make_alias,comp,1);
                 scalar_comp.emplace_back(scalar[lev],amrex::make_alias,comp,1);
-                Array<MultiFab,AMREX_SPACEDIM> 
+                Array<MultiFab,AMREX_SPACEDIM>
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);
 
                 m_reg_scal_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b));
@@ -543,7 +543,7 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
         m_eb_vel_apply_op->setScalars(0.0, -1.0);
 
         // For when we use the stencil for centroid values
-        // m_eb_vel_apply_op->setPhiOnCentroid();  
+        // m_eb_vel_apply_op->setPhiOnCentroid();
 
         // This should have no effect since the first scalar is 0
         for (int lev = 0; lev <= finest_level; ++lev) {
@@ -552,7 +552,7 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
         int eta_comp = 0;
 
-        for (int comp = 0; comp < a_divtau[0]->nComp(); ++comp) 
+        for (int comp = 0; comp < a_divtau[0]->nComp(); ++comp)
         {
             Vector<MultiFab> divtau_single;
             Vector<MultiFab>    vel_single;
@@ -599,14 +599,14 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
         Vector<MultiFab> divtau_single;
         Vector<MultiFab>    vel_single;
 
-        for (int lev = 0; lev <= finest_level; ++lev) 
+        for (int lev = 0; lev <= finest_level; ++lev)
         {
-            Array<MultiFab,AMREX_SPACEDIM> 
+            Array<MultiFab,AMREX_SPACEDIM>
                 b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);
             m_reg_vel_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b));
         }
 
-        for (int comp = 0; comp < a_divtau[0]->nComp(); ++comp) 
+        for (int comp = 0; comp < a_divtau[0]->nComp(); ++comp)
         {
             // Because the different components may have different boundary conditions, we need to
             // reset these for each solve

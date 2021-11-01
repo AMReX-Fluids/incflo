@@ -52,7 +52,7 @@ void incflo::compute_viscosity (Vector<MultiFab*> const& vel_eta,
                                 Vector<MultiFab*> const& vel,
                                 Real time, int nghost)
 {
-    for (int lev = 0; lev <= finest_level; ++lev) 
+    for (int lev = 0; lev <= finest_level; ++lev)
     {
         compute_viscosity_at_level(lev, vel_eta[lev], rho[lev], vel[lev], geom[lev], time, nghost);
     }

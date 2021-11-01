@@ -29,6 +29,9 @@ Blocs += $(AMREX_HYDRO_HOME)/Godunov
 Bpack += $(AMREX_HYDRO_HOME)/MOL/Make.package
 Blocs += $(AMREX_HYDRO_HOME)/MOL
 
+Bpack += $(AMREX_HYDRO_HOME)/Projections/Make.package
+Blocs += $(AMREX_HYDRO_HOME)/Projections
+
 Bpack += $(AMREX_HYDRO_HOME)/Slopes/Make.package
 Blocs += $(AMREX_HYDRO_HOME)/Slopes
 
@@ -51,7 +54,7 @@ INCLUDE_LOCATIONS += $(Blocs)
 VPATH_LOCATIONS   += $(Blocs)
 
 #These are the directories in AMReX
-Pdirs := Base AmrCore Boundary LinearSolvers/MLMG LinearSolvers/Projections
+Pdirs := Base AmrCore Boundary LinearSolvers/MLMG
 
 ifeq ($(USE_EB), TRUE)
   Pdirs += EB

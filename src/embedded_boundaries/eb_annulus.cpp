@@ -40,7 +40,7 @@ void incflo::make_eb_annulus()
     Real offset = 0.0;
     for(int i = 0; i < AMREX_SPACEDIM; i++)
         offset += pow(outer_center[i] - inner_center[i], 2);
-    offset = sqrt(offset); 
+    offset = sqrt(offset);
 
     // Check that the inner cylinder is fully contained in the outer one
     Real smallest_gap_width = outer_radius - inner_radius - offset;
@@ -49,21 +49,21 @@ void incflo::make_eb_annulus()
     // Compute standoff - measure of eccentricity
     Real standoff = 100 * smallest_gap_width / (outer_radius - inner_radius);
     AMREX_ASSERT((standoff >= 0) && (standoff <= 100));
-    
+
     // Print info about annulus
     amrex::Print() << " " << std::endl;
     amrex::Print() << " Direction:       " << direction << std::endl;
     amrex::Print() << " Outer radius:    " << outer_radius << std::endl;
     amrex::Print() << " Inner radius:    " << inner_radius << std::endl;
-    amrex::Print() << " Outer center:    " 
+    amrex::Print() << " Outer center:    "
                    << outer_center[0] << ", " << outer_center[1] << ", " << outer_center[2] << std::endl;
-    amrex::Print() << " Inner center:    " 
+    amrex::Print() << " Inner center:    "
                    << inner_center[0] << ", " << inner_center[1] << ", " << inner_center[2] << std::endl;
     amrex::Print() << " Offset:          " << offset << std::endl;
     amrex::Print() << " Smallest gap:    " << smallest_gap_width << std::endl;
     amrex::Print() << " Standoff:        " << standoff << std::endl;
 
-	// Build the annulus implifict function as a union of two cylinders
+    // Build the annulus implifict function as a union of two cylinders
     EB2::CylinderIF outer_cyl(outer_radius, direction, outer_center, true);
     EB2::CylinderIF inner_cyl(inner_radius, direction, inner_center, false);
     auto annulus = EB2::makeUnion(outer_cyl, inner_cyl);

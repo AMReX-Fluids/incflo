@@ -10,20 +10,20 @@ void incflo::ReadParameters ()
 {
     {
         // Variables without prefix in inputs file
-	ParmParse pp;
+    ParmParse pp;
 
-	pp.query("stop_time", m_stop_time);
-	pp.query("max_step", m_max_step);
-	pp.query("steady_state", m_steady_state);
+    pp.query("stop_time", m_stop_time);
+    pp.query("max_step", m_max_step);
+    pp.query("steady_state", m_steady_state);
     }
 
     ReadIOParameters();
     ReadRheologyParameters();
 
     { // Prefix amr
- 	ParmParse pp("amr");
+     ParmParse pp("amr");
 
-	pp.query("regrid_int", m_regrid_int);
+    pp.query("regrid_int", m_regrid_int);
 #ifdef AMREX_USE_EB
         pp.query("refine_cutcells", m_refine_cutcells);
 #endif
@@ -33,26 +33,26 @@ void incflo::ReadParameters ()
     } // end prefix amr
 
     { // Prefix incflo
-	ParmParse pp("incflo");
+    ParmParse pp("incflo");
 
         pp.query("verbose", m_verbose);
 
-	pp.query("steady_state_tol", m_steady_state_tol);
+    pp.query("steady_state_tol", m_steady_state_tol);
         pp.query("initial_iterations", m_initial_iterations);
         pp.query("do_initial_proj", m_do_initial_proj);
 
-	pp.query("fixed_dt", m_fixed_dt);
-	pp.query("cfl", m_cfl);
+    pp.query("fixed_dt", m_fixed_dt);
+    pp.query("cfl", m_cfl);
 
         // This will multiply the time-step in the very first step only
-	pp.query("init_shrink", m_init_shrink);
+    pp.query("init_shrink", m_init_shrink);
         if (m_init_shrink > 1.0) {
             amrex::Abort("We require m_init_shrink <= 1.0");
         }
 
         // Physics
-	pp.queryarr("delp", m_delp, 0, AMREX_SPACEDIM);
-	pp.queryarr("gravity", m_gravity, 0, AMREX_SPACEDIM);
+    pp.queryarr("delp", m_delp, 0, AMREX_SPACEDIM);
+    pp.queryarr("gravity", m_gravity, 0, AMREX_SPACEDIM);
 
         pp.query("constant_density"         , m_constant_density);
         pp.query("advect_tracer"            , m_advect_tracer);
@@ -76,7 +76,7 @@ void incflo::ReadParameters ()
             m_redistribution_type != "NewStateRedist")
             amrex::Abort("redistribution type must be NoRedist, FluxRedist, StateRedist or NewStateRedist");
 
-	if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
+    if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
 #endif
 
         if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;
@@ -282,7 +282,7 @@ void incflo::InitialIterations ()
     {
         if (m_verbose) amrex::Print() << "\n In initial_iterations: iter = " << iter << "\n";
 
- 	ApplyPredictor(true);
+     ApplyPredictor(true);
 
         copy_from_old_to_new_velocity();
         copy_from_old_to_new_density();
@@ -349,10 +349,10 @@ void incflo::InitialProjection()
 }
 
 #ifdef AMREX_USE_EB
-void 
+void
 incflo::InitialRedistribution ()
 {
-    // Next we must redistribute the initial solution if we are going to use 
+    // Next we must redistribute the initial solution if we are going to use
     // NewStateRedist redistribution scheme
     if ( (m_redistribution_type == "StateRedist") ||
          (m_redistribution_type == "NewStateRedist") )
@@ -371,14 +371,14 @@ incflo::InitialRedistribution ()
         MultiFab::Copy(ld.velocity_o, ld.velocity, 0, 0, AMREX_SPACEDIM, ld.velocity.nGrow());
         fillpatch_velocity(lev, m_t_new[lev], ld.velocity_o, 3);
 
-        if (!m_constant_density) 
+        if (!m_constant_density)
         {
             EB_set_covered(ld.density, 0, 1, ld.density.nGrow(), 0.0);
             ld.density.FillBoundary(geom[lev].periodicity());
             MultiFab::Copy(ld.density_o, ld.density, 0, 0, 1, ld.density.nGrow());
             fillpatch_density(lev, m_t_new[lev], ld.density_o, 3);
         }
-        if (m_advect_tracer) 
+        if (m_advect_tracer)
         {
             EB_set_covered(ld.tracer, 0, m_ntrac, ld.tracer.nGrow(), 0.0);
             ld.tracer.FillBoundary(geom[lev].periodicity());
@@ -411,27 +411,27 @@ incflo::InitialRedistribution ()
                 auto const& bc_vel = get_velocity_bcrec_device_ptr();
                 Redistribution::ApplyToInitialData( bx,ncomp,
                                           ld.velocity.array(mfi), ld.velocity_o.array(mfi),
-                                          flag, AMREX_D_DECL(apx, apy, apz), vfrac, 
+                                          flag, AMREX_D_DECL(apx, apy, apz), vfrac,
                                           AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                           bc_vel, geom[lev], m_redistribution_type);
 
-                if (!m_constant_density) 
+                if (!m_constant_density)
                 {
                     ncomp = 1;
                     auto const& bc_den = get_density_bcrec_device_ptr();
                     Redistribution::ApplyToInitialData( bx,ncomp,
                                               ld.density.array(mfi), ld.density_o.array(mfi),
-                                              flag, AMREX_D_DECL(apx, apy, apz), vfrac, 
+                                              flag, AMREX_D_DECL(apx, apy, apz), vfrac,
                                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                               bc_den, geom[lev], m_redistribution_type);
                 }
-                if (m_advect_tracer) 
+                if (m_advect_tracer)
                 {
                     ncomp = m_ntrac;
                     auto const& bc_tra = get_tracer_bcrec_device_ptr();
                     Redistribution::ApplyToInitialData( bx,ncomp,
                                               ld.tracer.array(mfi), ld.tracer_o.array(mfi),
-                                              flag, AMREX_D_DECL(apx, apy, apz), vfrac, 
+                                              flag, AMREX_D_DECL(apx, apy, apz), vfrac,
                                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                               bc_tra, geom[lev], m_redistribution_type);
                 }

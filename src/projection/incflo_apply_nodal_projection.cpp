@@ -119,7 +119,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
     if (m_constant_density)
     {
         Real constant_sigma = scaling_factor / m_ro_0;
-        nodal_projector.reset(new NodalProjector(vel, constant_sigma, 
+        nodal_projector.reset(new NodalProjector(vel, constant_sigma,
                                                  Geom(0,finest_level), info));
     } else
     {

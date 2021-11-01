@@ -2,7 +2,7 @@
 
 using namespace amrex;
 
-Real 
+Real
 incflo::vol_wgt_sum (Vector<MultiFab*> const& mf_in, int icomp)
 {
     Real  volwgtsum = 0.0;
@@ -29,11 +29,11 @@ incflo::vol_wgt_sum (Vector<MultiFab*> const& mf_in, int icomp)
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
             {
-    	        std::vector< std::pair<int,Box> > isects;
+                std::vector< std::pair<int,Box> > isects;
                 for (MFIter mfi(mf[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
                 {
                    auto const& fabarr = mf[lev].array(mfi);
-                   int          ncomp = mf[lev].nComp(); 
+                   int          ncomp = mf[lev].nComp();
                    baf.intersections(grids[lev][mfi.index()],isects);
                    for (const auto& is : isects)
                    {
@@ -52,7 +52,7 @@ incflo::vol_wgt_sum (Vector<MultiFab*> const& mf_in, int icomp)
 #ifdef AMREX_USE_EB
        const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
        auto const& vfrac = ebfact->getVolFrac();
-   
+
        Real sm = amrex::ReduceSum(mf[lev], vfrac, 0, [vol]
        AMREX_GPU_HOST_DEVICE (Box const& bx, Array4<Real const> const& mf_arr, Array4<Real const> const& vf_arr) -> Real
        {

@@ -1,4 +1,4 @@
-#include <incflo.H> 
+#include <incflo.H>
 
 using namespace amrex;
 

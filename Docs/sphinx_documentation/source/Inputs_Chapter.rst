@@ -7,10 +7,10 @@ Run-time Inputs
    :maxdepth: 1
 
    InputsProblemDefinition
-   InputsTimeStepping 
-   InputsInitialization 
-   InputsLoadBalancing 
+   InputsTimeStepping
+   InputsInitialization
+   InputsLoadBalancing
    InputsMultigrid
-   InputsPlotFiles 
+   InputsPlotFiles
    InputsCheckpoint
    InputsVerbosity

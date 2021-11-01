@@ -60,7 +60,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 // fill with existing fine and coarse data.
 // overrides the pure virtual function in AmrCore
 void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
-			 const DistributionMapping& dm)
+             const DistributionMapping& dm)
 {
     BL_PROFILE("incflo::RemakeLevel()");
 

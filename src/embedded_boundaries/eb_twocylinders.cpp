@@ -39,24 +39,24 @@ void incflo::make_eb_twocylinders()
     Real offset = 0.0;
     for(int i = 0; i < 3; i++)
         offset += pow(center1[i] - center2[i], 2);
-    offset = sqrt(offset); 
+    offset = sqrt(offset);
 
     // Print info about cylinders
     amrex::Print() << " CYLINDER 1" << std::endl;
     amrex::Print() << " Direction:       " << direction1 << std::endl;
     amrex::Print() << " Radius:    " << radius1 << std::endl;
-    amrex::Print() << " Center:    " 
+    amrex::Print() << " Center:    "
                    << center1[0] << ", " << center1[1] << ", " << center1[2] << std::endl;
 
     amrex::Print() << " CYLINDER 2" << std::endl;
     amrex::Print() << " Direction:       " << direction2 << std::endl;
     amrex::Print() << " Radius:    " << radius2 << std::endl;
-    amrex::Print() << " Center:    " 
+    amrex::Print() << " Center:    "
                    << center2[0] << ", " << center2[1] << ", " << center2[2] << std::endl;
 
     amrex::Print() << "\n Offset:          " << offset << std::endl;
 
-	// Build the implicit function as a union of two cylinders
+    // Build the implicit function as a union of two cylinders
     EB2::CylinderIF cyl1(radius1, direction1, center1, false);
     EB2::CylinderIF cyl2(radius2, direction2, center2, false);
     auto twocylinders = EB2::makeUnion(cyl1, cyl2);

@@ -64,7 +64,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                            {
                                if (!f(i,j,k).isCovered()) {
                                    mx = amrex::max(AMREX_D_DECL(amrex::Math::abs(v(i,j,k,0))*dxinv[0],
-                                                                amrex::Math::abs(v(i,j,k,1))*dxinv[1], 
+                                                                amrex::Math::abs(v(i,j,k,1))*dxinv[1],
                                                                 amrex::Math::abs(v(i,j,k,2))*dxinv[2]), mx);
                                }
                            });
@@ -106,7 +106,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                       {
                           if (!f(i,j,k).isCovered()) {
                               mx = amrex::max(AMREX_D_DECL(amrex::Math::abs(vf(i,j,k,0))*dxinv[0],
-                                                           amrex::Math::abs(vf(i,j,k,1))*dxinv[1], 
+                                                           amrex::Math::abs(vf(i,j,k,1))*dxinv[1],
                                                            amrex::Math::abs(vf(i,j,k,2))*dxinv[2]), mx);
                           }
                       });
@@ -160,7 +160,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                       amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                       {
                           mx = amrex::max(AMREX_D_DECL(amrex::Math::abs(vf(i,j,k,0))*dxinv[0],
-                                                       amrex::Math::abs(vf(i,j,k,1))*dxinv[1], 
+                                                       amrex::Math::abs(vf(i,j,k,1))*dxinv[1],
                                                        amrex::Math::abs(vf(i,j,k,2))*dxinv[2]), mx);
                       });
                       return mx;
@@ -198,11 +198,11 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
 
     } else {
 
-        // This is totally random but just a way to set a timestep 
+        // This is totally random but just a way to set a timestep
         // when the initial velocity is zero and the forcing term
         // is not a body force
         auto const dx    = geom[finest_level].CellSizeArray();
-        dt_new = std::min(dx[0],dx[1]); 
+        dt_new = std::min(dx[0],dx[1]);
 #if (AMREX_SPACEDIM == 3)
         dt_new = std::min(dt_new,dx[2]);
 #endif
@@ -223,20 +223,20 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
         dt_new = 0.5 * m_dt;
     }
 
-    // Don't let the timestep grow by more than 10% per step 
+    // Don't let the timestep grow by more than 10% per step
     // unless the previous time step was unduly shrunk to match m_plot_per_exact
     Real allowed_change_factor = 1.1;
     if( (m_dt > 0.0) && !(m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
     {
         dt_new = amrex::min(dt_new, allowed_change_factor * m_prev_dt);
-    } 
+    }
     else if ( (m_dt > 0.0) && (m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
     {
         dt_new = amrex::min( dt_new, allowed_change_factor * amrex::max(m_prev_dt, m_prev_prev_dt) );
     }
 
     // Don't overshoot specified plot times
-    if(m_plot_per_exact > 0.0 && 
+    if(m_plot_per_exact > 0.0 &&
             (std::trunc((m_cur_time + dt_new + eps) / m_plot_per_exact) > std::trunc((m_cur_time + eps) / m_plot_per_exact)))
     {
         dt_new = std::trunc((m_cur_time + dt_new) / m_plot_per_exact) * m_plot_per_exact - m_cur_time;
@@ -260,16 +260,16 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     // If using fixed time step, check CFL condition and give warning if not satisfied
     if (m_fixed_dt > 0.0)
     {
-	if(dt_new < m_fixed_dt)
-	{
-		amrex::Print() << "WARNING: fixed_dt does not satisfy CFL condition: \n"
-					   << "max dt by CFL     : " << dt_new << "\n"
-					   << "fixed dt specified: " << m_fixed_dt << std::endl;
-	}
-	m_dt = m_fixed_dt;
+    if(dt_new < m_fixed_dt)
+    {
+        amrex::Print() << "WARNING: fixed_dt does not satisfy CFL condition: \n"
+                       << "max dt by CFL     : " << dt_new << "\n"
+                       << "fixed dt specified: " << m_fixed_dt << std::endl;
+    }
+    m_dt = m_fixed_dt;
     }
     else
     {
-	m_dt = dt_new;
+    m_dt = dt_new;
     }
 }

@@ -1,7 +1,6 @@
 #include <hydro_utils.H>
 #include <incflo.H>
 #include <AMReX_MultiFabUtil.H>
-#include <AMReX_MacProjector.H>
 
 using namespace amrex;
 
@@ -60,7 +59,7 @@ incflo::compute_MAC_projected_velocities (
     //
     // Initialize (or redefine the beta in) the MacProjector
     //
-    if (macproj->needInitialization()) 
+    if (macproj->needInitialization())
     {
         LPInfo lp_info;
         lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
@@ -90,7 +89,7 @@ incflo::compute_MAC_projected_velocities (
         }
     }
 
-    for (int lev = 0; lev <= finest_level; ++lev) 
+    for (int lev = 0; lev <= finest_level; ++lev)
     {
         mac_phi[lev]->FillBoundary(geom[lev].periodicity());
 
@@ -100,10 +99,10 @@ incflo::compute_MAC_projected_velocities (
 
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
-        HydroUtils::ExtrapVelToFaces(*vel[lev], *vel_forces[lev], 
+        HydroUtils::ExtrapVelToFaces(*vel[lev], *vel_forces[lev],
                                       AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
                                       get_velocity_bcrec(), get_velocity_bcrec_device_ptr(),
-                                      geom[lev], l_dt, 
+                                      geom[lev], l_dt,
 #ifdef AMREX_USE_EB
                                       *ebfact,
 #endif
@@ -127,7 +126,7 @@ incflo::compute_MAC_projected_velocities (
     //
     if (m_use_mac_phi_in_godunov)
     {
-        // The MAC projection always starts with phi == 0, but we might like  
+        // The MAC projection always starts with phi == 0, but we might like
         //     to change that so we reduce the cost of the MAC projection
         for (int lev=0; lev <= finest_level; ++lev)
             mac_phi[lev]->setVal(0.);

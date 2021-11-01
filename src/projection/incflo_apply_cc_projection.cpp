@@ -131,7 +131,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 
     //
     // Initialize (or redefine the beta in) the MacProjector
-    if (macproj->needInitialization()) 
+    if (macproj->needInitialization())
     {
         LPInfo lp_info;
         lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
@@ -188,13 +188,13 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 #ifdef AMREX_USE_EB
         EBMOL::ExtrapVelToFaces(*vel[lev],
                                 AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
-                                geom[lev], 
+                                geom[lev],
                                 get_velocity_bcrec(), get_velocity_bcrec_device_ptr());
 
 #else
         MOL::ExtrapVelToFaces(*vel[lev],
                               AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
-                              geom[lev], 
+                              geom[lev],
                               get_velocity_bcrec(), get_velocity_bcrec_device_ptr());
 #endif
     }
@@ -214,7 +214,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
     m_fluxes.resize(finest_level+1);
     for (int lev=0; lev <= finest_level; ++lev)
     {
-        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) 
+        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
         {
              m_fluxes[lev][idim].define(
                     amrex::convert(grids[lev], IntVect::TheDimensionVector(idim)),
@@ -222,9 +222,9 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
         }
     }
 
-    // 
+    //
     // Note that "fluxes" comes back as MINUS (dt/rho) Gphi
-    // 
+    //
 #ifdef AMREX_USE_EB
     macproj->getFluxes(amrex::GetVecOfArrOfPtrs(m_fluxes), cc_phi, MLMG::Location::FaceCentroid);
 #else
@@ -242,7 +242,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
     }
 
     Real l_ro_0 = m_ro_0;
-    
+
     for(int lev = 0; lev <= finest_level; lev++)
     {
         auto& ld = *m_leveldata[lev];

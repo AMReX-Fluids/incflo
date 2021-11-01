@@ -59,8 +59,8 @@ void incflo::init_bcs ()
 
             m_bc_type[ori] = BC::no_slip_wall;
 
-            // Note that m_bc_velocity defaults to 0 above so we are ok if 
-            //      queryarr finds nothing 
+            // Note that m_bc_velocity defaults to 0 above so we are ok if
+            //      queryarr finds nothing
             // Here we make sure that we only use the tangential components
             //      of a specified velocity field -- the wall is not allowed
             //      to move in the normal direction
@@ -72,7 +72,7 @@ void incflo::init_bcs ()
                 }
             }
 
-            // We potentially read in values at no-slip walls in the event that the 
+            // We potentially read in values at no-slip walls in the event that the
             // tracer has Dirichlet bcs
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }
@@ -82,12 +82,12 @@ void incflo::init_bcs ()
 
             m_bc_type[ori] = BC::slip_wall;
 
-            // These values are set by default above - 
+            // These values are set by default above -
             //      note that we only actually use the zero value for the normal direction;
-            //      the tangential components are set to be first order extrap 
+            //      the tangential components are set to be first order extrap
             // m_bc_velocity[ori] = {0.0, 0.0, 0.0};
 
-            // We potentially read in values at slip walls in the event that the 
+            // We potentially read in values at slip walls in the event that the
             // tracer has Dirichlet bcs
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }

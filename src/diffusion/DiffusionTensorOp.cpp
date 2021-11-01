@@ -27,7 +27,7 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
             ebfact.push_back(&(m_incflo->EBFactory(lev)));
         }
 
-        if (m_incflo->useTensorSolve()) 
+        if (m_incflo->useTensorSolve())
         {
             m_eb_solve_op.reset(new MLEBTensorOp(m_incflo->Geom(0,finest_level),
                                                  m_incflo->boxArray(0,finest_level),
@@ -38,7 +38,7 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
                                        m_incflo->get_diffuse_tensor_bc(Orientation::high));
         }
 
-        if (m_incflo->need_divtau() || m_incflo->useTensorCorrection()) 
+        if (m_incflo->need_divtau() || m_incflo->useTensorCorrection())
         {
             m_eb_apply_op.reset(new MLEBTensorOp(m_incflo->Geom(0,finest_level),
                                                  m_incflo->boxArray(0,finest_level),
@@ -52,7 +52,7 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
     else
 #endif
     {
-        if (m_incflo->useTensorSolve()) 
+        if (m_incflo->useTensorSolve())
         {
             m_reg_solve_op.reset(new MLTensorOp(m_incflo->Geom(0,finest_level),
                                                 m_incflo->boxArray(0,finest_level),
@@ -63,7 +63,7 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
                                         m_incflo->get_diffuse_tensor_bc(Orientation::high));
         }
 
-        if (m_incflo->need_divtau() || m_incflo->useTensorCorrection()) 
+        if (m_incflo->need_divtau() || m_incflo->useTensorCorrection())
         {
             m_reg_apply_op.reset(new MLTensorOp(m_incflo->Geom(0,finest_level),
                                                 m_incflo->boxArray(0,finest_level),

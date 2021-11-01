@@ -6,11 +6,11 @@ void writeBuildInfo();
 using namespace amrex;
 
 void add_par () {
-   ParmParse pp("eb2"); 
+   ParmParse pp("eb2");
    if(not pp.contains("extend_domain_face")) {
       pp.add("extend_domain_face",true);
    }
-} 
+}
 
 int main(int argc, char* argv[])
 {
@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 
         BL_PROFILE("main()");
 
-        // Issue an error if input file is not given 
+        // Issue an error if input file is not given
         if(argc < 2) amrex::Abort("Input file must be given as command-line argument.");
 
         // Write out the incflo git hash (the AMReX git hash is already written)
@@ -41,7 +41,7 @@ int main(int argc, char* argv[])
         // Start timing the program
         Real start_time = ParallelDescriptor::second();
 
-        // Default constructor. Note inheritance: incflo : AmrCore : AmrMesh. 
+        // Default constructor. Note inheritance: incflo : AmrCore : AmrMesh.
         incflo my_incflo;
 
         // Initialize data, parameters, arrays and derived internals

@@ -11,7 +11,7 @@ void incflo::compute_tra_forces (Vector<MultiFab*> const& tra_forces,
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
         for (int lev = 0; lev <= finest_level; ++lev) {
-            for (MFIter mfi(*tra_forces[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) 
+            for (MFIter mfi(*tra_forces[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
                 Box const& bx = mfi.tilebox();
                 Array4<Real>       const& tra_f = tra_forces[lev]->array(mfi);
@@ -22,7 +22,7 @@ void incflo::compute_tra_forces (Vector<MultiFab*> const& tra_forces,
                 {
                     // For now we don't have any external forces on the scalars
                     tra_f(i,j,k,n) = 0.0;
-    
+
                     // Return the force term for the update of (rho s), NOT just s.
                     tra_f(i,j,k,n) *= rho(i,j,k);
                 });
@@ -38,8 +38,8 @@ void incflo::compute_vel_forces (Vector<MultiFab*> const& vel_forces,
                                  Vector<MultiFab const*> const& tracer_new,
                                  bool include_pressure_gradient)
 {
-    for (int lev = 0; lev <= finest_level; ++lev)  
-       compute_vel_forces_on_level (lev, *vel_forces[lev], *velocity[lev], *density[lev], 
+    for (int lev = 0; lev <= finest_level; ++lev)
+       compute_vel_forces_on_level (lev, *vel_forces[lev], *velocity[lev], *density[lev],
                                          *tracer_old[lev], *tracer_new[lev], include_pressure_gradient);
 }
 

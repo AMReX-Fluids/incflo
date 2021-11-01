@@ -4,9 +4,10 @@
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
 #include <AMReX_iMultiFab.H>
-#include <AMReX_MacProjector.H>
-#include <AMReX_NodalProjector.H>
 #include <AMReX_Math.H>
+
+#include <hydro_MacProjector.H>
+#include <hydro_NodalProjector.H>
 
 #ifdef AMREX_USE_EB
 #include <AMReX_EBMultiFabUtil.H>
@@ -157,7 +158,7 @@ public: // for cuda
     void ComputeDrag ();
     amrex::Real ComputeKineticEnergy () const;
 
-    void DiffFromExact (int lev, amrex::Geometry& lev_geom, amrex::Real time, amrex::Real dt, 
+    void DiffFromExact (int lev, amrex::Geometry& lev_geom, amrex::Real time, amrex::Real dt,
                         amrex::MultiFab& error, int icomp_src, int icomp_err);
 
     virtual void compute_strainrate_at_level (int lev,
@@ -183,7 +184,7 @@ public: // for cuda
     void diffuse_velocity (amrex::Vector<amrex::MultiFab      *> const&  velocity,
                            amrex::Vector<amrex::MultiFab      *> const&  density,
                            amrex::Vector<amrex::MultiFab const*> const& eta,
-                           amrex::Real dt_diff); 
+                           amrex::Real dt_diff);
 
     amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
     average_scalar_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
@@ -196,7 +197,7 @@ public: // for cuda
     void diffuse_scalar (amrex::Vector<amrex::MultiFab      *> const& scalar,
                          amrex::Vector<amrex::MultiFab      *> const& density,
                          amrex::Vector<amrex::MultiFab const*> const& eta,
-                         amrex::Real dt_diff); 
+                         amrex::Real dt_diff);
 
     void fixup_eta_on_domain_faces (int lev,
                                     amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>& fc,
@@ -414,12 +415,12 @@ private:
     //    terms in the forcing terms
     bool m_godunov_include_diff_in_forcing = true;
 
-    // If using Godunov, when to add the forcing terms in 
+    // If using Godunov, when to add the forcing terms in
     //    the construction of the "trans" velocities
     bool m_godunov_use_forces_in_trans = false;
 
     // If using Godunov, if true then don't include the pressure gradient
-    //    in the forcing term passed into the godunov routine; instead 
+    //    in the forcing term passed into the godunov routine; instead
     //    use gradient of mac phi which contains the full pressure
     bool m_use_mac_phi_in_godunov = false;
 
@@ -443,7 +444,7 @@ private:
 
     // Dump plotfiles at as close as possible to the designated period *without* changing dt
     amrex::Real m_plot_per_approx = -1.0;
-    
+
     // Dump plotfiles at exactcly the designated period by changing dt
     amrex::Real m_plot_per_exact  = -1.0;
 
@@ -492,7 +493,7 @@ private:
                    amrex::DistributionMapping const& dm,
                    amrex::FabFactory<amrex::FArrayBox> const& fact,
                    int ntrac, int ng_state,
-                   std::string advection_type, bool implicit_diffusion, 
+                   std::string advection_type, bool implicit_diffusion,
                    bool use_tensor_correction, bool advect_tracer);
         // cell-centered multifabs
         amrex::MultiFab velocity;
@@ -579,7 +580,7 @@ private:
     // Number of ghost cells for field arrays.
     int nghost_state () const {
 #ifdef AMREX_USE_EB
-        if (!EBFactory(0).isAllRegular()) 
+        if (!EBFactory(0).isAllRegular())
         {
             return 4;
         }
@@ -591,13 +592,13 @@ private:
 
     // For Godunov, we need 1 ghost cell in addition to the Box we are filling
     // For MOL    , we need 0 ghost cells
-    int nghost_force () const 
+    int nghost_force () const
     {
-       if (m_advection_type == "MOL") 
+       if (m_advection_type == "MOL")
            return 0;
-       else 
+       else
            return 1;
-    } 
+    }
 
     int nghost_mac () const {
 #ifdef AMREX_USE_EB
@@ -607,14 +608,14 @@ private:
     }
 
 #ifdef AMREX_USE_EB
-    int nghost_eb_basic () const 
+    int nghost_eb_basic () const
     { return 4; }
 
     // We need 5 for doing StateRedistribution; otherwise 4 would be enough
-    int nghost_eb_volume () const 
+    int nghost_eb_volume () const
     { return 5; }
 
-    int nghost_eb_full () const 
+    int nghost_eb_full () const
     { return 4; }
 #endif
 

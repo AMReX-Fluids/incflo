@@ -3,7 +3,7 @@
 using namespace amrex;
 
 void
-incflo::compute_divtau(Vector<MultiFab      *> const& divtau, 
+incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
                        Vector<MultiFab const*> const& vel,
                        Vector<MultiFab const*> const& density,
                        Vector<MultiFab const*> const& eta)
@@ -15,8 +15,8 @@ incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
         EB_set_covered(*divtau[0]     , 0.0);
 #endif
 
-        Vector<MultiFab*> divtau_scal; 
-        divtau_scal.push_back(new MultiFab(grids[0], dmap[0], divtau[0]->nComp(), 
+        Vector<MultiFab*> divtau_scal;
+        divtau_scal.push_back(new MultiFab(grids[0], dmap[0], divtau[0]->nComp(),
                                            divtau[0]->nGrow(),MFInfo(),*m_factory[0]));
         divtau_scal[0]->setVal(0.);
 
@@ -29,20 +29,20 @@ incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
         if (m_verbose > 0)
             amrex::Print() << " ... Defining divtau as the difference between tensor and scalar versions" << std::endl;
 
-        // amrex::Print() << "X-comp: Norm of tensor apply vs scalar apply " << 
+        // amrex::Print() << "X-comp: Norm of tensor apply vs scalar apply " <<
         //                    divtau[0]->norm0(0) << " " << divtau_scal[0]->norm0(0) << std::endl;
-        // amrex::Print() << "Y-comp: Norm of tensor apply vs scalar apply " << 
+        // amrex::Print() << "Y-comp: Norm of tensor apply vs scalar apply " <<
         //                    divtau[0]->norm0(1) << " " << divtau_scal[0]->norm0(1) << std::endl;
-        // amrex::Print() << "Z-comp: Norm of tensor apply vs scalar apply " << 
+        // amrex::Print() << "Z-comp: Norm of tensor apply vs scalar apply " <<
         //                    divtau[0]->norm0(2) << " " << divtau_scal[0]->norm0(2) << std::endl;
 
         divtau[0]->Saxpy(*divtau[0], -1.0, *divtau_scal[0], 0, 0, AMREX_SPACEDIM, 0);
 
-        // amrex::Print() << "X-comp: Norm of difference of tensor apply vs scalar apply " << 
+        // amrex::Print() << "X-comp: Norm of difference of tensor apply vs scalar apply " <<
         //                    divtau[0]->norm0(0) << std::endl;
-        // amrex::Print() << "Y-comp: Norm of difference of tensor apply vs scalar apply " << 
+        // amrex::Print() << "Y-comp: Norm of difference of tensor apply vs scalar apply " <<
         //                    divtau[0]->norm0(1) << std::endl;
-        // amrex::Print() << "Z-comp: Norm of difference of tensor apply vs scalar apply " << 
+        // amrex::Print() << "Z-comp: Norm of difference of tensor apply vs scalar apply " <<
         //                    divtau[0]->norm0(2) << std::endl;
 
     } else if (use_tensor_solve) {
@@ -54,7 +54,7 @@ incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
 
 
 void
-incflo::compute_laps(Vector<MultiFab      *> const& laps, 
+incflo::compute_laps(Vector<MultiFab      *> const& laps,
                      Vector<MultiFab const*> const& scalar,
                      Vector<MultiFab const*> const& density,
                      Vector<MultiFab const*> const& eta)
@@ -258,9 +258,9 @@ incflo::average_velocity_eta_to_faces (int lev, MultiFab const& cc_eta) const
                                               dm, 1, 0, MFInfo(), fact))};
 
 #ifdef AMREX_USE_EB
-    // Note we use the scalar bc's here only to know when the bc is ext_dir 
+    // Note we use the scalar bc's here only to know when the bc is ext_dir
     //      (this should be the same for scalar and eta)
-    EB_interp_CellCentroid_to_FaceCentroid (cc_eta, GetArrOfPtrs(r), 0, 0, 1, geom[lev], 
+    EB_interp_CellCentroid_to_FaceCentroid (cc_eta, GetArrOfPtrs(r), 0, 0, 1, geom[lev],
                                             get_tracer_bcrec());
     // amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc_eta, Geom(lev));
 #else
@@ -285,7 +285,7 @@ incflo::average_scalar_eta_to_faces (int lev, int comp, MultiFab const& cc_eta) 
                                      MultiFab(amrex::convert(ba,IntVect::TheDimensionVector(2)),
                                               dm, 1, 0, MFInfo(), fact))};
 #ifdef AMREX_USE_EB
-    EB_interp_CellCentroid_to_FaceCentroid (cc, GetArrOfPtrs(r), 0, 0, 1, geom[lev], 
+    EB_interp_CellCentroid_to_FaceCentroid (cc, GetArrOfPtrs(r), 0, 0, 1, geom[lev],
                                             get_tracer_bcrec());
 #else
     amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc, Geom(lev));

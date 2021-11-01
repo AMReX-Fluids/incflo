@@ -1,7 +1,6 @@
 #include <AMReX_Box.H>
 
 #include <incflo.H>
-#include <AMReX_NodalProjector.H>
 #include <incflo_derive_K.H>
 
 using namespace amrex;
@@ -240,7 +239,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         }
     }
 }
-    
+
 #elif (AMREX_SPACEDIM == 3)
 void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab const& vel)
 {
@@ -393,7 +392,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
 void incflo::ComputeDrag()
 {
 #if 0
-	BL_PROFILE("incflo::ComputeDrag");
+    BL_PROFILE("incflo::ComputeDrag");
 
     // Coefficients for one-sided difference estimation
     Real c0 = -1.5;

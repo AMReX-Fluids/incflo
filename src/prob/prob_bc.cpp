@@ -91,9 +91,9 @@ void incflo::prob_set_inflow_velocity (int /*grid_id*/, Orientation ori, Box con
     {
         const int  dir = ori.coordDir();
         const Real bcv = m_bc_velocity[ori][dir];
-        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept 
-        { 
-            vel(i,j,k,dir) = bcv; 
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            vel(i,j,k,dir) = bcv;
         });
     };
 }

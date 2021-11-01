@@ -9,7 +9,7 @@
 #include <AMReX_MLTensorOp.H>
 
 //
-// Solver for the implicit part of the diffusion equation: 
+// Solver for the implicit part of the diffusion equation:
 //
 // ( 1 - dt / rho * div ( eta grad ) ) u* = rhs
 //

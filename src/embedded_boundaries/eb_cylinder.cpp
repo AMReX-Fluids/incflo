@@ -44,12 +44,12 @@ void incflo::make_eb_cylinder()
     amrex::Print() << " Rotation axe: " << rotation_axe << std::endl;
 #if (AMREX_SPACDEIM == 3)
     amrex::Print() << " Center:    " << center[0] << ", " << center[1] << ", " << center[2]
-				   << std::endl;
+                   << std::endl;
 #else
     amrex::Print() << " Center:    " << center[0] << ", " << center[1] << std::endl;
 #endif
 
-    // Build the Cylinder implficit function representing the curved walls     
+    // Build the Cylinder implficit function representing the curved walls
     EB2::CylinderIF my_cyl(radius, direction, center, inside);
 
     auto my_cyl_rot = EB2::rotate(my_cyl, rotation, rotation_axe);

@@ -1,13 +1,12 @@
 #include <AMReX_Box.H>
 
 #include <incflo.H>
-#include <AMReX_NodalProjector.H>
 #include <incflo_derive_K.H>
 
 using namespace amrex;
 
 void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
-                            MultiFab& error, int soln_comp, int err_comp) 
+                            MultiFab& error, int soln_comp, int err_comp)
 {
     auto const& dx = lev_geom.CellSizeArray();
 
@@ -18,7 +17,7 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
         {
             Box bx = mfi.tilebox();
 
-            // When we enter this routine, this holds the computed solution 
+            // When we enter this routine, this holds the computed solution
             Array4<Real> const& err = error.array(mfi);
 
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -32,15 +31,15 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
                 Real z = (k+0.5)*dx[2];
 #endif
                 Real exact = 0.; // quiet compiler warning
-                if (err_comp == AMREX_SPACEDIM || err_comp == AMREX_SPACEDIM+1) {  // pressure 
+                if (err_comp == AMREX_SPACEDIM || err_comp == AMREX_SPACEDIM+1) {  // pressure
                     exact = 0.25 * std::cos(fourpi*x) + 0.25 * std::cos(fourpi*y);
-    
+
                 } else if (err_comp == 0) { // u
                     exact =  std::sin(twopi*x) * std::cos(twopi*y);
 #if (AMREX_SPACEDIM == 3)
                     exact *= std::cos(twopi*z);
 #endif
-    
+
                 } else if (err_comp == 1) { // v
                     exact = -std::cos(twopi*x) * std::sin(twopi*y);
 #if (AMREX_SPACEDIM == 3)
@@ -63,7 +62,7 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
         {
             Box bx = mfi.tilebox();
 
-            // When we enter this routine, this holds the computed solution 
+            // When we enter this routine, this holds the computed solution
             Array4<Real> const& err = error.array(mfi);
 
             constexpr Real     pi =    3.1415926535897932;
@@ -82,17 +81,17 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
                 Real x = (i+0.5)*dx[0];
                 Real y = (j+0.5)*dx[1];
                 Real exact = 0.; // quiet compiler warning
-                if (err_comp == AMREX_SPACEDIM || err_comp == AMREX_SPACEDIM+1) {  // pressure 
+                if (err_comp == AMREX_SPACEDIM || err_comp == AMREX_SPACEDIM+1) {  // pressure
 
                     Real t_p = time - 0.5*dt;
                     exact = -0.25 * ( std::cos(twopi*(x-u0*t_p)) + std::cos(twopi*(y-v0*t_p)) ) * std::exp(-4.*omega*t_p);
-    
+
                 } else if (err_comp == 0) { // u
                     exact =  u0 - std::cos(pi*(x-u0*time)) * std::sin(pi*(y-v0*time)) * std::exp(-2.*omega*time);
 #if (AMREX_SPACEDIM == 3)
                     exact =  u0 - std::cos(pi*(x-u0*time)) * std::sin(pi*(y-v0*time)) * std::exp(-2.*omega*time);
 #endif
-    
+
                 } else if (err_comp == 1) { // v
                     exact = v0 + std::sin(pi*(x-u0*time)) * std::cos(pi*(y-v0*time)) * std::exp(-2.*omega*time);
 #if (AMREX_SPACEDIM == 3)

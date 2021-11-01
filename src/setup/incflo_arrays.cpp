@@ -33,7 +33,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
         conv_density.define (ba, dm, 1             , 0, MFInfo(), fact);
         conv_tracer.define (ba, dm, ntrac         , 0, MFInfo(), fact);
 
-        if (!implicit_diffusion || use_tensor_correction) 
+        if (!implicit_diffusion || use_tensor_correction)
         {
             divtau.define  (ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
             divtau_o.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
@@ -47,7 +47,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
 }
 
 // Resize all arrays when instance of incflo class is constructed.
-// This is only done at the very start of the simulation. 
+// This is only done at the very start of the simulation.
 void incflo::ResizeArrays ()
 {
     // Time holders for fillpatch stuff

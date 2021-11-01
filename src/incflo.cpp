@@ -112,7 +112,7 @@ void incflo::Evolve()
     BL_PROFILE("incflo::Evolve()");
 
     bool do_not_evolve = ((m_max_step == 0) || ((m_stop_time >= 0.) && (m_cur_time > m_stop_time)) ||
-   					     ((m_stop_time <= 0.) && (m_max_step <= 0))) && !m_steady_state;
+                            ((m_stop_time <= 0.) && (m_max_step <= 0))) && !m_steady_state;
 
     while(!do_not_evolve)
     {
@@ -146,7 +146,7 @@ void incflo::Evolve()
             WriteCheckPointFile();
             m_last_chk = m_nstep;
         }
-        
+
         if(m_KE_int > 0 && (m_nstep % m_KE_int == 0))
         {
             amrex::Print() << "Time, Kinetic Energy: " << m_cur_time << ", " << ComputeKineticEnergy() << std::endl;
@@ -158,7 +158,7 @@ void incflo::Evolve()
                          (m_max_step >= 0 && m_nstep >= m_max_step));
     }
 
-	// Output at the final time
+    // Output at the final time
     if( m_check_int > 0 && m_nstep != m_last_chk) {
         WriteCheckPointFile();
     }
@@ -169,7 +169,7 @@ void incflo::Evolve()
     }
 }
 
-void 
+void
 incflo::ApplyProjection (Vector<MultiFab const*> density,
                          AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
                                       Vector<MultiFab*> const& v_mac,
@@ -244,10 +244,10 @@ incflo::writeNow()
 {
     bool write_now = false;
 
-    if ( m_plot_int > 0 && (m_nstep % m_plot_int == 0) ) 
+    if ( m_plot_int > 0 && (m_nstep % m_plot_int == 0) )
         write_now = true;
 
-    else if ( m_plot_per_exact  > 0 && (std::abs(std::remainder(m_cur_time, m_plot_per_exact)) < 1.e-12) ) 
+    else if ( m_plot_per_exact  > 0 && (std::abs(std::remainder(m_cur_time, m_plot_per_exact)) < 1.e-12) )
         write_now = true;
 
     else if (m_plot_per_approx > 0.0)

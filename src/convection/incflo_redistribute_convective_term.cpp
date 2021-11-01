@@ -24,7 +24,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                        bool l_constant_density,
                                        bool l_advect_tracer, int l_ntrac,
                                        EBFArrayBoxFactory const* ebfact,
-                                       Geometry& lev_geom, Real l_dt) 
+                                       Geometry& lev_geom, Real l_dt)
 {
     EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
     Array4<EBCellFlag const> const& flag = flagfab.const_array();
@@ -34,7 +34,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
     Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), AMREX_D_DECL(apx, apy, apz);
     Array4<Real const> ccc, vfrac;
 
-    if (!regular) 
+    if (!regular)
     {
         AMREX_D_TERM(fcx = ebfact->getFaceCent()[0]->const_array(mfi);,
                      fcy = ebfact->getFaceCent()[1]->const_array(mfi);,
@@ -46,15 +46,15 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         vfrac = ebfact->getVolFrac().const_array(mfi);
 
         Box gbx = bx;
-	  
-	if ( (l_redistribution_type == "StateRedist") ||
-	     (l_redistribution_type == "NewStateRedist") )
+
+    if ( (l_redistribution_type == "StateRedist") ||
+         (l_redistribution_type == "NewStateRedist") )
             gbx.grow(3);
-	else if (l_redistribution_type == "FluxRedist") 
+    else if (l_redistribution_type == "FluxRedist")
             gbx.grow(2);
 
         int nmaxcomp = AMREX_SPACEDIM;
-        if (l_advect_tracer) 
+        if (l_advect_tracer)
             nmaxcomp = std::max(nmaxcomp,l_ntrac);
 
         FArrayBox scratch_fab(gbx,nmaxcomp);
@@ -74,7 +74,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         auto const& bc_vel = get_velocity_bcrec_device_ptr();
         Redistribution::Apply(bx, AMREX_SPACEDIM, dvdt, dvdt_tmp, vel, scratch, flag,
                               AMREX_D_DECL(apx, apy, apz), vfrac,
-                              AMREX_D_DECL(fcx, fcy, fcz), ccc, 
+                              AMREX_D_DECL(fcx, fcy, fcz), ccc,
                               bc_vel, lev_geom, l_dt, l_redistribution_type);
 
         // density
@@ -98,7 +98,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                   AMREX_D_DECL(apx, apy, apz), vfrac,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_tra, lev_geom, l_dt, l_redistribution_type);
-        } 
+        }
 
     } else {
         amrex::ParallelFor(bx,

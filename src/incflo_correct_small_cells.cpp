@@ -29,7 +29,7 @@ incflo::incflo_correct_small_cells (Vector<MultiFab*      > const& vel_in,
           {
             // do nothing
           }
-  
+
           // No cut cells in this FAB
           else if (flags.getType(amrex::grow(bx,1)) == FabType::regular )
           {
@@ -55,11 +55,11 @@ incflo::incflo_correct_small_cells (Vector<MultiFab*      > const& vel_in,
              {
                  if (vfrac_fab(i,j,k) > 0.0 && vfrac_fab(i,j,k) < 1.e-4)
                  {
-                    AMREX_D_TERM(Real u_avg = (apx_fab(i,j,k) * umac_fab(i,j,k) + apx_fab(i+1,j,k) * umac_fab(i+1,j,k)) 
+                    AMREX_D_TERM(Real u_avg = (apx_fab(i,j,k) * umac_fab(i,j,k) + apx_fab(i+1,j,k) * umac_fab(i+1,j,k))
                                             / (apx_fab(i,j,k) + apx_fab(i+1,j,k));,
-                                 Real v_avg = (apy_fab(i,j,k) * vmac_fab(i,j,k) + apy_fab(i,j+1,k) * vmac_fab(i,j+1,k)) 
+                                 Real v_avg = (apy_fab(i,j,k) * vmac_fab(i,j,k) + apy_fab(i,j+1,k) * vmac_fab(i,j+1,k))
                                             / (apy_fab(i,j,k) + apy_fab(i,j+1,k));,
-                                 Real w_avg = (apz_fab(i,j,k) * wmac_fab(i,j,k) + apz_fab(i,j,k+1) * wmac_fab(i,j,k+1)) 
+                                 Real w_avg = (apz_fab(i,j,k) * wmac_fab(i,j,k) + apz_fab(i,j,k+1) * wmac_fab(i,j,k+1))
                                             / (apz_fab(i,j,k) + apz_fab(i,j,k+1)););
 
                     AMREX_D_TERM(ccvel_fab(i,j,k,0) = u_avg;,

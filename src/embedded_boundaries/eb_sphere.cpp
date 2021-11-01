@@ -34,7 +34,7 @@ void incflo::make_eb_sphere()
     amrex::Print() << " Center:    " << center[0] << ", " << center[1] << ", " << center[2]
                    << std::endl;
 
-    // Build the sphere implicit function 
+    // Build the sphere implicit function
     EB2::SphereIF my_sphere(radius, center, inside);
 
     // Generate GeometryShop

@@ -64,7 +64,7 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
         Box const& bx = mfi.tilebox();
         auto const& tag = tags.array(mfi);
 
-        if (tag_rho || tag_gradrho) 
+        if (tag_rho || tag_gradrho)
         {
             Array4<Real const> const& rho = m_leveldata[lev]->density.const_array(mfi);
             Real rhoerr = tag_rho ? rhoerr_v[lev]: std::numeric_limits<Real>::max();
@@ -94,8 +94,8 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
 #endif
                 }
             });
-        } 
- 
+        }
+
         if (tag_region) {
 
             Real xlo = tag_region_lo[0];
