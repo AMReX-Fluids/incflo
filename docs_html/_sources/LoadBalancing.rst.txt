@@ -11,7 +11,7 @@ Load Balancing
 
 The process of load balancing is typically independent of the process of grid creation;
 the inputs to load balancing are a given set of grids with a set of weights
-assigned to each grid. 
+assigned to each grid.
 
 Single-level load balancing algorithms are sequentially applied to each AMR level independently,
 and the resulting distributions are mapped onto the ranks taking into account the weights

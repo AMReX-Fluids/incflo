@@ -11,7 +11,7 @@ Constructing Embedded Boundaries in incflo
 
 MincfloFiX uses AMReX's constructive solid geometry framework defined in the namespace
 :cpp:`amrex::EB2`. See the `AMReX EB documentation`_ for more details. These are
-defined in ``incflo/src/embedded_boundaries ``. 
+defined in ``incflo/src/embedded_boundaries ``.
 
 How incflo Constructs the EB Geometry
 ---------------------------------------
@@ -32,7 +32,7 @@ documentation`_ for information on how to construct new geometries:
 
 2. Call :cpp:`incflo::build_eb_levels(gshop)` this function builds the EB levels
    and fills the implicit function :cpp:`MultiFab` (the later being used to
-   construct the level-set function). 
+   construct the level-set function).
 
 incflo's EB Data Structures
 -------------------------

@@ -44,6 +44,6 @@ The following inputs must be preceded by "incflo" and determine how we load bala
 | knapsack_weight_type | What weighting function to use if using Knapsack load balancing       |  String     | RunTimeCosts |
 |                      | Options are "RunTimeCosts"                                            |             |              |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
-| knapsack_nmax        | Maximum number of grids per MPI process if using knapsack algorithm   |  Int        | 128          | 
+| knapsack_nmax        | Maximum number of grids per MPI process if using knapsack algorithm   |  Int        | 128          |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 

@@ -1,7 +1,7 @@
 Building incflo with gmake
 ============================
 
-Building incflo with gmake 
+Building incflo with gmake
 
 If you want to use gmake to build incflo, you will need to have already
 cloned amrex into a local directory:
@@ -10,7 +10,7 @@ cloned amrex into a local directory:
 
     > git clone https://github.com/amrex-codes/amrex
 
-Then, 
+Then,
 
 .. code:: shell
 

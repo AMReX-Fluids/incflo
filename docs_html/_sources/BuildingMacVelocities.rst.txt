@@ -24,8 +24,8 @@ slopes as computed earlier, and upwind the face value to define  :math:`U^{pred}
                  }
              });
 
-For cut cells we test on whether the area fraction is non-zero: 
-       
+For cut cells we test on whether the area fraction is non-zero:
+
    .. code:: shell
 
              AMREX_CUDA_HOST_DEVICE_FOR_3D(ubx, i, j, k,
@@ -49,11 +49,11 @@ For cut cells we test on whether the area fraction is non-zero:
                  }
              });
 
-We then perform a MAC projection on the face-centered velocities to enforce that they satisfy 
+We then perform a MAC projection on the face-centered velocities to enforce that they satisfy
 
 .. math:: \nabla \cdot (U^{MAC})  = 0
 
-We do this by solving 
+We do this by solving
 
 .. math:: \nabla \cdot \frac{1}{\rho} \nabla \phi^{MAC} = \nabla \cdot \left(U^{pred} \right)
 
