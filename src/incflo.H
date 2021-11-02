@@ -335,7 +335,7 @@ private:
     //           mac_proj.bottom_solver
     // More info in "AMReX-Hydro/Projections/hydro_MacProjector.cpp"
 
-    std::unique_ptr<amrex::MacProjector> macproj;
+    std::unique_ptr<Hydro::MacProjector> macproj;
 
     int m_mac_mg_verbose = 0;
     int m_mac_mg_bottom_verbose = 0;

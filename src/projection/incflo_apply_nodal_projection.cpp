@@ -99,7 +99,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
     }
 
     // Perform projection
-    std::unique_ptr<NodalProjector> nodal_projector;
+    std::unique_ptr<Hydro::NodalProjector> nodal_projector;
 
     auto bclo = get_projection_bc(Orientation::low);
     auto bchi = get_projection_bc(Orientation::high);
@@ -119,12 +119,12 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
     if (m_constant_density)
     {
         Real constant_sigma = scaling_factor / m_ro_0;
-        nodal_projector.reset(new NodalProjector(vel, constant_sigma,
-                                                 Geom(0,finest_level), info));
+        nodal_projector.reset(new Hydro::NodalProjector(vel, constant_sigma,
+                                         Geom(0,finest_level), info));
     } else
     {
-        nodal_projector.reset(new NodalProjector(vel, GetVecOfConstPtrs(sigma),
-                                                 Geom(0,finest_level), info));
+        nodal_projector.reset(new Hydro::NodalProjector(vel, GetVecOfConstPtrs(sigma),
+                                         Geom(0,finest_level), info));
     }
     nodal_projector->setDomainBC(bclo, bchi);
     nodal_projector->project(m_nodal_mg_rtol, m_nodal_mg_atol);
