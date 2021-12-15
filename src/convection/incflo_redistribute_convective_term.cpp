@@ -32,7 +32,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
     bool regular = (flagfab.getType(amrex::grow(bx,4)) == FabType::regular);
 
     Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), AMREX_D_DECL(apx, apy, apz);
-    Array4<Real const> bcc, ccc, vfrac;
+    Array4<Real const> ccc, vfrac;
 
     if (!regular)
     {
@@ -40,7 +40,6 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                      fcy = ebfact->getFaceCent()[1]->const_array(mfi);,
                      fcz = ebfact->getFaceCent()[2]->const_array(mfi););
         ccc   = ebfact->getCentroid().const_array(mfi);
-        bcc   = ebfact->getBndryCent().const_array(mfi);
         AMREX_D_TERM(apx = ebfact->getAreaFrac()[0]->const_array(mfi);,
                      apy = ebfact->getAreaFrac()[1]->const_array(mfi);,
                      apz = ebfact->getAreaFrac()[2]->const_array(mfi););
@@ -74,7 +73,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         auto const& bc_vel = get_velocity_bcrec_device_ptr();
         Redistribution::Apply(bx, AMREX_SPACEDIM, dvdt, dvdt_tmp, vel, scratch, flag,
                               AMREX_D_DECL(apx, apy, apz), vfrac,
-                              AMREX_D_DECL(fcx, fcy, fcz), bcc, ccc,
+                              AMREX_D_DECL(fcx, fcy, fcz), ccc,
                               bc_vel, lev_geom, l_dt, l_redistribution_type);
 
         // density
@@ -82,7 +81,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
             auto const& bc_den = get_density_bcrec_device_ptr();
             Redistribution::Apply(bx, 1, drdt, drdt_tmp, rho, scratch, flag,
                                   AMREX_D_DECL(apx, apy, apz), vfrac,
-                                  AMREX_D_DECL(fcx, fcy, fcz), bcc, ccc,
+                                  AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_den, lev_geom, l_dt, l_redistribution_type);
         } else {
             amrex::ParallelFor(bx,
@@ -96,7 +95,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
             auto const& bc_tra = get_tracer_bcrec_device_ptr();
             Redistribution::Apply(bx, l_ntrac, dtdt, dtdt_tmp, rhotrac, scratch, flag,
                                   AMREX_D_DECL(apx, apy, apz), vfrac,
-                                  AMREX_D_DECL(fcx, fcy, fcz), bcc, ccc,
+                                  AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_tra, lev_geom, l_dt, l_redistribution_type);
         }
 
