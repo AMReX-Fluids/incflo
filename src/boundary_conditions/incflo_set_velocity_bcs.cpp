@@ -35,5 +35,8 @@ incflo::set_inflow_velocity (int lev, amrex::Real time, MultiFab& vel, int nghos
             }
         }
     }
-    vel.EnforcePeriodicity(gm.periodicity());
+    // We make sure to only fill "nghost" ghost cells so we don't accidentally 
+    // over-write good ghost cell values with unfilled ghost cell values 
+    IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
+    vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }
