@@ -67,14 +67,13 @@ void incflo::ReadParameters ()
         pp.query("use_cc_proj"                      , m_use_cc_proj);
 
         // What type of redistribution algorithm;
-        // {NoRedist, FluxRedist, StateRedist, NewStateRedist}
+        // {NoRedist, FluxRedist, StateRedist}
 #ifdef AMREX_USE_EB
         pp.query("redistribution_type"              , m_redistribution_type);
         if (m_redistribution_type != "NoRedist" &&
             m_redistribution_type != "FluxRedist" &&
-            m_redistribution_type != "StateRedist" &&
-            m_redistribution_type != "NewStateRedist")
-            amrex::Abort("redistribution type must be NoRedist, FluxRedist, StateRedist or NewStateRedist");
+            m_redistribution_type != "StateRedist")
+            amrex::Abort("redistribution type must be NoRedist, FluxRedist, or StateRedist");
 
     if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
 #endif
@@ -353,9 +352,8 @@ void
 incflo::InitialRedistribution ()
 {
     // Next we must redistribute the initial solution if we are going to use
-    // NewStateRedist redistribution scheme
-    if ( (m_redistribution_type == "StateRedist") ||
-         (m_redistribution_type == "NewStateRedist") )
+    // StateRedist redistribution scheme
+    if (m_redistribution_type == "StateRedist") 
     {
       for (int lev = 0; lev <= finest_level; lev++)
       {
