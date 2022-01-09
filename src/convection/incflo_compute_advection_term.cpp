@@ -2,6 +2,7 @@
 #include <hydro_godunov.H>
 #include <hydro_mol.H>
 #include <hydro_utils.H>
+#include <AMReX_FillPatchUtil.H>
 
 #ifdef AMREX_USE_EB
 #include <AMReX_EBFabFactory.H>
@@ -10,6 +11,37 @@
 #endif
 
 using namespace amrex;
+
+//
+// A dummy function because FillPatch requires something to exist for filling dirichlet boundary conditions,
+// even if we know we cannot have an ext_dir BC.
+// u_mac BCs are only either periodic (INT_DIR) or first order extrapolation (FOEXTRAP).
+//
+struct umacFill
+{
+    AMREX_GPU_DEVICE
+    void operator()(
+       const amrex::IntVect& /*iv*/,
+       amrex::Array4<amrex::Real> const& /*dummy*/,
+       const int /*dcomp*/,
+       const int numcomp,
+       amrex::GeometryData const& /*geom*/,
+       const amrex::Real /*time*/,
+       const amrex::BCRec* bcr,
+       const int bcomp,
+       const int /*orig_comp*/) const
+    {
+        // Abort if this function is expected to fill an ext_dir BC.
+        for (int n = bcomp; n < bcomp+numcomp; ++n) {
+            const amrex::BCRec& bc = bcr[n];
+            if ( AMREX_D_TERM(   bc.lo(0) == amrex::BCType::ext_dir || bc.hi(0) == amrex::BCType::ext_dir,
+                              || bc.lo(1) == amrex::BCType::ext_dir || bc.hi(1) == amrex::BCType::ext_dir,
+                              || bc.lo(2) == amrex::BCType::ext_dir || bc.hi(2) == amrex::BCType::ext_dir ) ) {
+               amrex::Abort("umacFill: umac should not have BCType::ext_dir");
+            }
+        }
+    }
+};
 
 void incflo::init_advection ()
 {
@@ -132,8 +164,40 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             AMREX_D_TERM(u_crse[0] = u_mac[lev-1];, u_crse[1] = v_mac[lev-1];, u_crse[2] = w_mac[lev-1];);
             AMREX_D_TERM(u_fine[0] = u_mac[lev  ];, u_fine[1] = v_mac[lev  ];, u_fine[2] = w_mac[lev  ];);
             int nGrow = nghost_mac();
-            HydroUtils::create_umac_grown(lev,nGrow,grids[lev],geom[lev],u_crse,u_fine,rr);
 
+            // Divergence preserving interp
+            //Interpolater* mapper = &face_divfree_interp;
+            // This one matches up with old create umac grown
+            Interpolater* mapper = &face_linear_interp;
+
+            // Set BCRec for Umac
+            Vector<BCRec> bcrec(1);
+            for (int idim = 0; idim < AMREX_SPACEDIM; idim++) {
+                if (geom[lev-1].isPeriodic(idim)) {
+                    bcrec[0].setLo(idim,BCType::int_dir);
+                    bcrec[0].setHi(idim,BCType::int_dir);
+                } else {
+                    bcrec[0].setLo(idim,BCType::foextrap);
+                    bcrec[0].setHi(idim,BCType::foextrap);
+                }
+            }
+            Array<Vector<BCRec>,AMREX_SPACEDIM> bcrecArr = {AMREX_D_DECL(bcrec,bcrec,bcrec)};
+
+            PhysBCFunct<GpuBndryFuncFab<umacFill>> crse_bndry_func(geom[lev-1], bcrec, umacFill{});
+            Array<PhysBCFunct<GpuBndryFuncFab<umacFill>>,AMREX_SPACEDIM> cbndyFuncArr = {AMREX_D_DECL(crse_bndry_func,crse_bndry_func,crse_bndry_func)};
+
+            PhysBCFunct<GpuBndryFuncFab<umacFill>> fine_bndry_func(geom[lev], bcrec, umacFill{});
+            Array<PhysBCFunct<GpuBndryFuncFab<umacFill>>,AMREX_SPACEDIM> fbndyFuncArr = {AMREX_D_DECL(fine_bndry_func,fine_bndry_func,fine_bndry_func)};
+
+            // Use piecewise constant interpolation in time, so create dummy variable for time
+            Real dummy = 0.;
+            FillPatchTwoLevels(u_fine, IntVect(nGrow), dummy,
+                               {u_crse}, {dummy},
+                               {u_fine}, {dummy},
+                               0, 0, 1,
+                               geom[lev-1], geom[lev],
+                               cbndyFuncArr, 0, fbndyFuncArr, 0,
+                               rr, mapper, bcrecArr, 0);
         } else {
             AMREX_D_TERM(u_mac[lev]->FillBoundary(geom[lev].periodicity());,
                          v_mac[lev]->FillBoundary(geom[lev].periodicity());,
