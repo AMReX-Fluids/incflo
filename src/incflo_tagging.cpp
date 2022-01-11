@@ -102,15 +102,16 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
             Real ylo = tag_region_lo[1];
             Real xhi = tag_region_hi[0];
             Real yhi = tag_region_hi[1];
+            auto const& problo = geom[lev].ProbLoArray();
 
 #if (AMREX_SPACEDIM == 2)
 
             amrex::ParallelFor(bx,
-            [xlo, xhi, ylo, yhi, l_dx, l_dy, tagval, tag]
+            [xlo, xhi, ylo, yhi, problo, l_dx, l_dy, tagval, tag]
             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                 Real x = (i+0.5)*l_dx;
-                 Real y = (j+0.5)*l_dy;
+                 Real x = problo[0] + (i+0.5)*l_dx;
+                 Real y = problo[1] + (j+0.5)*l_dy;
 
                  // Tag if we are inside the specified box
                  if (x >= xlo && x <= xhi && y >= ylo && y <= yhi)
@@ -124,12 +125,12 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
             Real zhi = tag_region_hi[2];
 
             amrex::ParallelFor(bx,
-            [xlo, xhi, ylo, yhi, zlo, zhi, l_dx, l_dy, l_dz,tagval, tag]
+            [xlo, xhi, ylo, yhi, zlo, zhi, problo, l_dx, l_dy, l_dz,tagval, tag]
             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                 Real x = (i+0.5)*l_dx;
-                 Real y = (j+0.5)*l_dy;
-                 Real z = (k+0.5)*l_dz;
+                 Real x = problo[0] + (i+0.5)*l_dx;
+                 Real y = problo[1] + (j+0.5)*l_dy;
+                 Real z = problo[2] + (k+0.5)*l_dz;
 
                  // Tag if we are inside the specified box
                  if (x >= xlo && x <= xhi && y >= ylo && y <= yhi && z >= zlo && z <= zhi)
