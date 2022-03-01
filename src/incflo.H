@@ -93,6 +93,8 @@ public: // for cuda
     ///////////////////////////////////////////////////////////////////////////
 
     void set_inflow_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost);
+    void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost, 
+          const amrex::Vector<amrex::Real>& eb_velocity, const amrex::Vector<amrex::Real>& eb_normal);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -406,6 +408,9 @@ private:
 #ifdef AMREX_USE_EB
     // If using Godunov with EB, default to PLM
     bool m_godunov_ppm         = false;
+    bool m_flow_through_eb = false;
+    amrex::Vector<amrex::Real> m_eb_velocity{AMREX_SPACEDIM, 0.0}; 
+    amrex::Vector<amrex::Real> m_eb_normal{AMREX_SPACEDIM, 0.0}; 
 #else
     // If using Godunov with no EB, default to PPM
     bool m_godunov_ppm         = true;
@@ -498,6 +503,7 @@ private:
         // cell-centered multifabs
         amrex::MultiFab velocity;
         amrex::MultiFab velocity_o;
+        amrex::MultiFab velocity_eb;
         amrex::MultiFab density;
         amrex::MultiFab density_o;
         amrex::MultiFab tracer;
@@ -636,6 +642,7 @@ private:
 
     amrex::Vector<amrex::MultiFab*> get_velocity_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_velocity_new () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_velocity_eb () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_old () noexcept;
@@ -656,6 +663,7 @@ private:
     //
     amrex::Vector<amrex::MultiFab const*> get_velocity_old_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_velocity_new_const () const noexcept;
+    amrex::Vector<amrex::MultiFab const*> get_velocity_eb () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_density_old_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_density_new_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_tracer_old_const () const noexcept;

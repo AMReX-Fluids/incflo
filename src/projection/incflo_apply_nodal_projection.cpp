@@ -106,6 +106,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
 
     Vector<MultiFab*> vel;
     for (int lev = 0; lev <= finest_level; ++lev) {
+        set_eb_velocity(lev, time, *get_velocity_eb()[lev], 1, m_eb_velocity, m_eb_normal);
         vel.push_back(&(m_leveldata[lev]->velocity));
         vel[lev]->setBndry(0.0);
         if (!proj_for_small_dt && !incremental) {
@@ -127,6 +128,13 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
                                          Geom(0,finest_level), info));
     }
     nodal_projector->setDomainBC(bclo, bchi);
+
+    if (m_flow_through_eb) {
+       for(int lev = 0; lev <= finest_level; ++lev) {
+          nodal_projector->getLinOp().setEBDirichlet(lev, *get_velocity_eb()[lev]);
+       }
+    }
+
     nodal_projector->project(m_nodal_mg_rtol, m_nodal_mg_atol);
 
     // Define "vel" to be U^{n+1} rather than (U^{n+1}-U^n)

@@ -40,3 +40,52 @@ incflo::set_inflow_velocity (int lev, amrex::Real time, MultiFab& vel, int nghos
     IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
     vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }
+
+void
+incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& vel, int nghost, 
+      const Vector<Real>& eb_velocity, const Vector<Real>& eb_normal)
+{
+    Geometry const& gm = Geom(lev);
+    vel.setVal(0.);
+
+    const auto& factory =
+       dynamic_cast<EBFArrayBoxFactory const&>(vel.Factory());
+
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+     for (MFIter mfi(vel, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+       const Box& bx = mfi.tilebox();
+
+       const auto& vel_arr      = vel[mfi].array();
+       const auto& flags_arr    = factory.getMultiEBCellFlagFab()[mfi].const_array();
+
+       const auto& norm_arr  = factory.getBndryNormal()[mfi].const_array();
+
+        ParallelFor(bx, [flags_arr,vel_arr,norm_arr,eb_velocity,eb_normal]
+          AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+          if (flags_arr(i,j,k).isSingleValued()) {
+            if (   norm_arr(i,j,k,0) == eb_normal[0] 
+                && norm_arr(i,j,k,1) == eb_normal[1]
+#if (AMREX_SPACEDIM == 3)
+                && norm_arr(i,j,k,1) == eb_normal[2]
+#endif
+               )
+            {
+               vel_arr(i,j,k,0) = eb_velocity[0];
+               vel_arr(i,j,k,1) = eb_velocity[1];
+#if (AMREX_SPACEDIM == 3)
+               vel_arr(i,j,k,2) = eb_velocity[2];
+#endif
+            }
+          }
+        });
+     }
+
+    // We make sure to only fill "nghost" ghost cells so we don't accidentally 
+    // over-write good ghost cell values with unfilled ghost cell values 
+    IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
+    vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
+}

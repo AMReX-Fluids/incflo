@@ -90,6 +90,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
     Vector<MultiFab*> vel;
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel.push_back(&(m_leveldata[lev]->velocity));
+        set_eb_velocity(lev, time, *get_velocity_eb()[lev], 1, m_eb_velocity, m_eb_normal);
         vel[lev]->setBndry(0.0);
         if (!proj_for_small_dt && !incremental) {
             set_inflow_velocity(lev, time, *vel[lev], 1);
