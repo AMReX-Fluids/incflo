@@ -67,10 +67,11 @@ incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& vel, int nghost,
           AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
           if (flags_arr(i,j,k).isSingleValued()) {
+            Print() << "norm = " << norm_arr(i,j,k,0) << "  " << norm_arr(i,j,k,1) << std::endl;
             if (   norm_arr(i,j,k,0) == eb_normal[0] 
                 && norm_arr(i,j,k,1) == eb_normal[1]
 #if (AMREX_SPACEDIM == 3)
-                && norm_arr(i,j,k,1) == eb_normal[2]
+                && norm_arr(i,j,k,2) == eb_normal[2]
 #endif
                )
             {
