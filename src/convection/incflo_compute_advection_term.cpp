@@ -476,7 +476,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           mult, fluxes_are_area_weighted);
 
             // TODO: should this go somewhere else?
-            if (m_flow_through_eb) {
+            if (m_flow_through_eb && flagfab.getType(bx) == FabType::singlevalued) {
                add_div_correction_from_eb_flow(bx, update_arr,
                                                flagfab.const_array(), 
                                                get_velocity_eb()[lev]->const_array(mfi), vfrac.const_array(mfi),

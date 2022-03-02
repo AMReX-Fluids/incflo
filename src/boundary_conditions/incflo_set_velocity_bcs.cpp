@@ -51,37 +51,38 @@ incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& vel, int nghost,
     const auto& factory =
        dynamic_cast<EBFArrayBoxFactory const&>(vel.Factory());
 
-
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
      for (MFIter mfi(vel, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
        const Box& bx = mfi.tilebox();
+       const auto& flagfab      = factory.getMultiEBCellFlagFab()[mfi];
 
-       const auto& vel_arr      = vel[mfi].array();
-       const auto& flags_arr    = factory.getMultiEBCellFlagFab()[mfi].const_array();
+       if (flagfab.getType(bx) == FabType::singlevalued) {
+          const auto& flags_arr    = flagfab.const_array();
+          const auto& vel_arr      = vel[mfi].array();
+          const auto& norm_arr     = factory.getBndryNormal()[mfi].const_array();
 
-       const auto& norm_arr  = factory.getBndryNormal()[mfi].const_array();
-
-        ParallelFor(bx, [flags_arr,vel_arr,norm_arr,eb_velocity,eb_normal]
-          AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {
-          if (flags_arr(i,j,k).isSingleValued()) {
-            if (   norm_arr(i,j,k,0) == eb_normal[0] 
-                && norm_arr(i,j,k,1) == eb_normal[1]
+           ParallelFor(bx, [flags_arr,vel_arr,norm_arr,eb_velocity,eb_normal]
+             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+           {
+             if (flags_arr(i,j,k).isSingleValued()) {
+               if (   norm_arr(i,j,k,0) == eb_normal[0] 
+                   && norm_arr(i,j,k,1) == eb_normal[1]
 #if (AMREX_SPACEDIM == 3)
-                && norm_arr(i,j,k,2) == eb_normal[2]
+                   && norm_arr(i,j,k,2) == eb_normal[2]
 #endif
-               )
-            {
-               vel_arr(i,j,k,0) = eb_velocity[0];
-               vel_arr(i,j,k,1) = eb_velocity[1];
+                  )
+               {
+                  vel_arr(i,j,k,0) = eb_velocity[0];
+                  vel_arr(i,j,k,1) = eb_velocity[1];
 #if (AMREX_SPACEDIM == 3)
-               vel_arr(i,j,k,2) = eb_velocity[2];
+                  vel_arr(i,j,k,2) = eb_velocity[2];
 #endif
-            }
-          }
-        });
+               }
+             }
+           });
+        }
      }
 
     // We make sure to only fill "nghost" ghost cells so we don't accidentally 

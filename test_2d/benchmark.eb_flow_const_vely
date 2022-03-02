@@ -3,13 +3,13 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =   1           # Max number of time steps
-steady_state            =   0           # Steady-state solver? 
+max_step                =  1            # Max number of time steps
+steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-incflo.fixed_dt             =   1.e-5   # Use this constant dt if > 0
+incflo.fixed_dt             =   1.e-5       # Use this constant dt if > 0
 incflo.do_initial_proj      =   0
 incflo.initial_iterations   =   0
 
@@ -22,19 +22,21 @@ amr.plt_regtest         =   1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #
 #.......................................#
-incflo.gravity          =   0.  0.  0.  # Gravitational force (3D)
+incflo.gravity          =   0.  0.      # Gravitational force (3D)
 incflo.ro_0             =   1.          # Reference density 
 
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.001       # Dynamic viscosity coefficient
+incflo.constant_density =   true        #
 
 incflo.advection_type        =  "Godunov" 
 incflo.redistribution_type   =  "StateRedist" 
 
+
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   16 16 34    # Grid cells at coarsest AMRlevel
+amr.n_cell              =   16 34       # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.max_grid_size_x     =   1024
 amr.max_grid_size_y     =   1024
@@ -44,29 +46,28 @@ amr.blocking_factor     =   2
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
-geometry.prob_lo        =   0.  0.  0.  # Lo corner coordinates
-geometry.prob_hi        =   1.6 1.6 3.4 # Hi corner coordinates
-geometry.is_periodic    =   1   1   0   # Periodicity x y z (0/1)
+geometry.prob_lo        =   0.  0.      # Lo corner coordinates
+geometry.prob_hi        =   1.6 3.4     # Hi corner coordinates
+geometry.is_periodic    =   1   0       # Periodicity x y z (0/1)
 
 # Boundary conditions
-zlo.type                =   "nsw"
-zlo.velocity            =   0.  0.  0.
-zhi.type                =   "po"
-zhi.pressure            =   0.0
+ylo.type                =   "nsw"
+ylo.velcoity            =   0.0  0.0  0.0
+yhi.type                =   "po"
+yhi.pressure            =   0.0
 
-# Add geometry
-incflo.geometry         = "box"
-box.internal_flow       = true
-box.Lo                  =  -0.20 -0.20  0.21  
-box.Hi                  =   1.80  1.80  3.60 
+# Add box
+incflo.geometry = "box"
+box.internal_flow = true
 
+box.Lo =  -0.20  0.21  
+box.Hi =   1.80  3.60 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
 incflo.ic_u             =   0.0         #
 incflo.ic_v             =   0.0         #
-incflo.ic_w             =   0.0         #
 incflo.ic_p             =   0.0         #
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -81,6 +82,5 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #               EB FLOW                 #
 #.......................................#
 incflo.flow_through_eb   =  true
-incflo.eb_velocity       =  0.   0.   0.1
-incflo.eb_normal         =  0.   0.  -1.0
-
+incflo.eb_velocity       =  0.   0.1
+incflo.eb_normal         =  0.  -1.0
