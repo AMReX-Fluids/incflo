@@ -23,6 +23,9 @@ endif
 Bpack += $(foreach dir, $(Bdirs), $(TOP)/$(dir)/Make.package)
 Blocs += $(foreach dir, $(Bdirs), $(TOP)/$(dir))
 
+Bpack += $(AMREX_HYDRO_HOME)/BDS/Make.package
+Blocs += $(AMREX_HYDRO_HOME)/BDS
+
 Bpack += $(AMREX_HYDRO_HOME)/Godunov/Make.package
 Blocs += $(AMREX_HYDRO_HOME)/Godunov
 
