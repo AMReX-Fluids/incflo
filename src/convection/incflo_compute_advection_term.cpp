@@ -21,12 +21,13 @@ void add_div_correction_from_eb_flow(
       AMREX_D_DECL(Array4<Real const> const& apx, 
                    Array4<Real const> const& apy,
                    Array4<Real const> const& apz),
-      Array4<Real const> const& barea, Geometry const& geom, const Real mult)
+      Array4<Real const> const& barea, Geometry const& geom, const Real mult, const int ncomp)
 {
    const auto &dxinv = geom.InvCellSizeArray();
 
-   amrex::ParallelFor(bx, [term,eb_vel,flag_arr,barea,vfrac,AMREX_D_DECL(apx,apy,apz),dxinv,mult]
-    AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+   amrex::ParallelFor(bx, ncomp, 
+         [term,eb_vel,flag_arr,barea,vfrac,AMREX_D_DECL(apx,apy,apz),dxinv,mult]
+    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
    {
     if (flag_arr(i,j,k).isSingleValued()) {
       Real apxm = apx(i,j,k);
@@ -65,7 +66,7 @@ void add_div_correction_from_eb_flow(
                       + eb_vel(i,j,k,1)*anrmy;
 #endif
    
-      term(i,j,k) -= dxinv[0]*barea(i,j,k)*mag_eb_vel*mult / vfrac(i,j,k);
+      term(i,j,k,n) -= dxinv[0]*barea(i,j,k)*eb_vel(i,j,k,n)*mag_eb_vel*mult/vfrac(i,j,k);
     }
    });
 }
@@ -483,7 +484,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                             ebfact->getAreaFrac()[1]->const_array(mfi),
                                                             ebfact->getAreaFrac()[2]->const_array(mfi)),
                                                ebfact->getBndryArea().const_array(mfi),
-                                               geom[lev], mult);
+                                               geom[lev], mult, num_comp);
             }
 
             // If convective, we define u dot grad u = div (u u) - u div(u)
