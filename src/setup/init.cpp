@@ -54,9 +54,8 @@ void incflo::ReadParameters ()
     pp.queryarr("delp", m_delp, 0, AMREX_SPACEDIM);
     pp.queryarr("gravity", m_gravity, 0, AMREX_SPACEDIM);
 
-    pp.query("flow_through_eb",        m_flow_through_eb);
-    pp.queryarr("eb_velocity",         m_eb_velocity, 0, AMREX_SPACEDIM);
-    pp.queryarr("eb_normal",           m_eb_normal, 0, AMREX_SPACEDIM);
+    pp.query("flow_through_eb", m_flow_through_eb);
+    pp.query("eb_vel_mag",      m_eb_vel_mag);
 
         pp.query("constant_density"         , m_constant_density);
         pp.query("advect_tracer"            , m_advect_tracer);

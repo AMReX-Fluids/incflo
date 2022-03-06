@@ -42,44 +42,68 @@ incflo::set_inflow_velocity (int lev, amrex::Real time, MultiFab& vel, int nghos
 }
 
 void
-incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& vel, int nghost, 
-      const Vector<Real>& eb_velocity, const Vector<Real>& eb_normal)
+incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& eb_vel, int nghost, 
+      const amrex::Real eb_vel_mag)
 {
     Geometry const& gm = Geom(lev);
-    vel.setVal(0.);
+    eb_vel.setVal(0.);
 
     const auto& factory =
-       dynamic_cast<EBFArrayBoxFactory const&>(vel.Factory());
+       dynamic_cast<EBFArrayBoxFactory const&>(eb_vel.Factory());
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-     for (MFIter mfi(vel, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+     for (MFIter mfi(eb_vel, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
        const Box& bx = mfi.tilebox();
        const auto& flagfab      = factory.getMultiEBCellFlagFab()[mfi];
 
        if (flagfab.getType(bx) == FabType::singlevalued) {
           const auto& flags_arr    = flagfab.const_array();
-          const auto& vel_arr      = vel[mfi].array();
+          const auto& eb_vel_arr   = eb_vel[mfi].array();
           const auto& norm_arr     = factory.getBndryNormal()[mfi].const_array();
 
-           ParallelFor(bx, [flags_arr,vel_arr,norm_arr,eb_velocity,eb_normal]
+          AMREX_D_TERM(
+                const auto& apx = factory.getAreaFrac()[0]->const_array(mfi);,
+                const auto& apy = factory.getAreaFrac()[1]->const_array(mfi);,
+                const auto& apz = factory.getAreaFrac()[2]->const_array(mfi));
+
+           ParallelFor(bx, [flags_arr,eb_vel_arr,norm_arr,
+                 eb_vel_mag,AMREX_D_DECL(apx,apy,apz)]
              AMREX_GPU_DEVICE (int i, int j, int k) noexcept
            {
              if (flags_arr(i,j,k).isSingleValued()) {
-               if (   norm_arr(i,j,k,0) == eb_normal[0] 
-                   && norm_arr(i,j,k,1) == eb_normal[1]
+               AMREX_D_TERM(
+                  Real apxm = apx(i  ,j  ,k  );,
+                  Real apym = apy(i  ,j  ,k  );,
+                  Real apzm = apz(i  ,j  ,k  ));
+
+               AMREX_D_TERM(
+                  Real apxp = apx(i+1,j  ,k  );,
+                  Real apyp = apy(i  ,j+1,k  );,
+                  Real apzp = apz(i  ,j  ,k+1));
+
+               AMREX_D_TERM(
+                  Real dapx = apxm-apxp;,
+                  Real dapy = apym-apyp;,
+                  Real dapz = apzm-apzp);
+
 #if (AMREX_SPACEDIM == 3)
-                   && norm_arr(i,j,k,2) == eb_normal[2]
+               Real anorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
+#else
+               Real anorm = std::sqrt(dapx*dapx+dapy*dapy);
 #endif
-                  )
-               {
-                  vel_arr(i,j,k,0) = eb_velocity[0];
-                  vel_arr(i,j,k,1) = eb_velocity[1];
-#if (AMREX_SPACEDIM == 3)
-                  vel_arr(i,j,k,2) = eb_velocity[2];
-#endif
-               }
+               Real anorminv = 1.0/anorm;
+
+               AMREX_D_TERM(
+                     Real anrmx = dapx * anorminv;,
+                     Real anrmy = dapy * anorminv;,
+                     Real anrmz = dapz * anorminv);
+
+               AMREX_D_TERM(
+                     eb_vel_arr(i,j,k,0) = -anrmx*eb_vel_mag;,
+                     eb_vel_arr(i,j,k,1) = -anrmy*eb_vel_mag;,
+                     eb_vel_arr(i,j,k,2) = -anrmz*eb_vel_mag);
              }
            });
         }
@@ -88,5 +112,5 @@ incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& vel, int nghost,
     // We make sure to only fill "nghost" ghost cells so we don't accidentally 
     // over-write good ghost cell values with unfilled ghost cell values 
     IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
-    vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
+    eb_vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }

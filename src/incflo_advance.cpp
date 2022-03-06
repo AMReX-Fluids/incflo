@@ -44,7 +44,7 @@ void incflo::Advance()
 
     if (m_flow_through_eb) {
        for (int lev = 0; lev <= finest_level; ++lev) {
-         set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb()[lev], 1, m_eb_velocity, m_eb_normal);
+         set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb()[lev], 1, m_eb_vel_mag);
        }
     }
 

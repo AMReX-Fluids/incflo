@@ -93,8 +93,8 @@ public: // for cuda
     ///////////////////////////////////////////////////////////////////////////
 
     void set_inflow_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost);
-    void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost, 
-          const amrex::Vector<amrex::Real>& eb_velocity, const amrex::Vector<amrex::Real>& eb_normal);
+    void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost, 
+          amrex::Real eb_vel_mag);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -409,8 +409,7 @@ private:
     // If using Godunov with EB, default to PLM
     bool m_godunov_ppm         = false;
     bool m_flow_through_eb = false;
-    amrex::Vector<amrex::Real> m_eb_velocity{AMREX_SPACEDIM, 0.0}; 
-    amrex::Vector<amrex::Real> m_eb_normal{AMREX_SPACEDIM, 0.0}; 
+    amrex::Real m_eb_vel_mag = 0.0;
 #else
     // If using Godunov with no EB, default to PPM
     bool m_godunov_ppm         = true;
@@ -544,6 +543,7 @@ private:
     amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>
                                                , AMREX_SPACEDIM*2> m_bc_velocity;
     amrex::GpuArray<amrex::Vector<amrex::Real> , AMREX_SPACEDIM*2> m_bc_tracer;
+    amrex::Vector<amrex::Real>                                     m_bc_eb_velocity;
 
     // amrex::Vector cannot be used on gpu, so ...
     amrex::GpuArray<amrex::Real const*, AMREX_SPACEDIM*2> m_bc_tracer_d;
