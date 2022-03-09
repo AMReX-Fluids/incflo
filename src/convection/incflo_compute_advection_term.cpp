@@ -12,67 +12,6 @@
 
 using namespace amrex;
 
-namespace {
-
-void add_div_correction_from_eb_flow(
-      Box const& bx, Array4<Real> const& term,
-      Array4<EBCellFlag const> const& flag_arr, Array4<Real const> const& eb_vel,
-      Array4<Real const> const& vfrac,
-      AMREX_D_DECL(Array4<Real const> const& apx, 
-                   Array4<Real const> const& apy,
-                   Array4<Real const> const& apz),
-      Array4<Real const> const& barea, Geometry const& geom, const Real mult, const int ncomp)
-{
-   const auto &dxinv = geom.InvCellSizeArray();
-
-   amrex::ParallelFor(bx, ncomp, 
-         [term,eb_vel,flag_arr,barea,vfrac,AMREX_D_DECL(apx,apy,apz),dxinv,mult]
-    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-   {
-    if (flag_arr(i,j,k).isSingleValued()) {
-      Real apxm = apx(i,j,k);
-      Real apxp = apx(i+1,j,k);
-      Real apym = apy(i,j,k);
-      Real apyp = apy(i,j+1,k);
-   
-      Real dapx = apxm-apxp;
-      Real dapy = apym-apyp;
-
-#if (AMREX_SPACEDIM == 3)
-      Real apzm = apz(i,j,k);
-      Real apzp = apz(i,j,k+1);
-      Real dapz = apzm-apzp;
-#endif
-
-#if (AMREX_SPACEDIM == 3)
-      Real anorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
-#else
-      Real anorm = std::sqrt(dapx*dapx+dapy*dapy);
-#endif
-      Real anorminv = 1.0/anorm;
-   
-      Real anrmx = dapx * anorminv;
-      Real anrmy = dapy * anorminv;
-#if (AMREX_SPACEDIM == 3)
-      Real anrmz = dapz * anorminv;
-#endif
-   
-#if (AMREX_SPACEDIM == 3)
-      Real mag_eb_vel = eb_vel(i,j,k,0)*anrmx 
-                      + eb_vel(i,j,k,1)*anrmy 
-                      + eb_vel(i,j,k,2)*anrmz;
-#else
-      Real mag_eb_vel = eb_vel(i,j,k,0)*anrmx 
-                      + eb_vel(i,j,k,1)*anrmy;
-#endif
-   
-      term(i,j,k,n) -= dxinv[0]*barea(i,j,k)*eb_vel(i,j,k,n)*mag_eb_vel*mult/vfrac(i,j,k);
-    }
-   });
-}
-
-}
-
 //
 // A dummy function because FillPatch requires something to exist for filling dirichlet boundary conditions,
 // even if we know we cannot have an ext_dir BC.
@@ -464,28 +403,26 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
-                                                 vfrac.const_array(mfi),
+                                                 vfrac.const_array(mfi), num_comp, geom[lev],
+                                                 mult, fluxes_are_area_weighted,
+                                                 m_flow_through_eb ? 
+                                                    get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                 m_flow_through_eb ? 
+                                                    get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                 flagfab.const_array(),
+                                                 ebfact->getBndryArea().const_array(mfi),
+                                                 AMREX_D_DECL(ebfact->getAreaFrac()[0]->const_array(mfi),
+                                                              ebfact->getAreaFrac()[1]->const_array(mfi),
+                                                              ebfact->getAreaFrac()[2]->const_array(mfi)));
 #else
             auto const& update_arr  = conv_u[lev]->array(mfi);
             HydroUtils::ComputeDivergence(bx, update_arr,
                                           AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                        flux_y[lev].const_array(mfi,flux_comp),
                                                        flux_z[lev].const_array(mfi,flux_comp)),
-#endif
                                           num_comp, geom[lev],
                                           mult, fluxes_are_area_weighted);
-
-            // TODO: should this go somewhere else?
-            if (m_flow_through_eb && flagfab.getType(bx) == FabType::singlevalued) {
-               add_div_correction_from_eb_flow(bx, update_arr,
-                                               flagfab.const_array(), 
-                                               get_velocity_eb()[lev]->const_array(mfi), vfrac.const_array(mfi),
-                                               AMREX_D_DECL(ebfact->getAreaFrac()[0]->const_array(mfi),
-                                                            ebfact->getAreaFrac()[1]->const_array(mfi),
-                                                            ebfact->getAreaFrac()[2]->const_array(mfi)),
-                                               ebfact->getBndryArea().const_array(mfi),
-                                               geom[lev], mult, num_comp);
-            }
+#endif
 
             // If convective, we define u dot grad u = div (u u) - u div(u)
             auto const& q           =  vel[lev]->array(mfi,0);
