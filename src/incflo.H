@@ -93,8 +93,7 @@ public: // for cuda
     ///////////////////////////////////////////////////////////////////////////
 
     void set_inflow_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost);
-    void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost, 
-          amrex::Real eb_vel_mag);
+    void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -408,8 +407,29 @@ private:
 #ifdef AMREX_USE_EB
     // If using Godunov with EB, default to PLM
     bool m_godunov_ppm         = false;
-    bool m_flow_through_eb = false;
-    amrex::Real m_eb_vel_mag = 0.0;
+
+    // EB flow settings
+    struct EBFlow_t {
+       bool enabled;
+       bool has_normal;
+       bool is_mag;
+       amrex::Real vel_mag;
+       amrex::Vector<amrex::Real> velocity;
+
+       // Normal to exclude EB faces. By default all faces within a specified
+       // region will
+       amrex::Vector<amrex::Real> normal;
+       amrex::Real normal_tol;
+
+       EBFlow_t ()
+         : enabled(false)
+         , has_normal(false)
+         , is_mag(false)
+         , vel_mag(0.)
+         , normal_tol(0.)
+       {}
+    };
+    EBFlow_t m_eb_flow;
 #else
     // If using Godunov with no EB, default to PPM
     bool m_godunov_ppm         = true;

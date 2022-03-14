@@ -82,5 +82,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 #               EB FLOW                 #
 #.......................................#
-incflo.flow_through_eb   =  true
-incflo.eb_vel_mag        =  0.1 
+eb_flow.vel_mag        =  0.1 

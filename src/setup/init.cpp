@@ -54,9 +54,6 @@ void incflo::ReadParameters ()
     pp.queryarr("delp", m_delp, 0, AMREX_SPACEDIM);
     pp.queryarr("gravity", m_gravity, 0, AMREX_SPACEDIM);
 
-    pp.query("flow_through_eb", m_flow_through_eb);
-    pp.query("eb_vel_mag",      m_eb_vel_mag);
-
         pp.query("constant_density"         , m_constant_density);
         pp.query("advect_tracer"            , m_advect_tracer);
         pp.query("test_tracer_conservation" , m_test_tracer_conservation);
@@ -168,6 +165,30 @@ void incflo::ReadParameters ()
         pp_nodal.query( "mg_rtol"                , m_nodal_mg_rtol );
         pp_nodal.query( "mg_atol"                , m_nodal_mg_atol );
     } // end prefix nodal
+
+#ifdef AMREX_USE_EB
+    { // Prefix eb_flow
+       ParmParse pp_eb_flow("eb_flow");
+
+       if (pp_eb_flow.contains("vel_mag")) {
+          m_eb_flow.enabled = true;
+          m_eb_flow.is_mag = true;
+          pp_eb_flow.query("vel_mag", m_eb_flow.vel_mag);
+       } else if (pp_eb_flow.contains("velocity")) {
+          m_eb_flow.enabled = true;
+          pp_eb_flow.getarr("velocity", m_eb_flow.velocity, 0, AMREX_SPACEDIM);
+       }
+
+       if (pp_eb_flow.contains("normal")) {
+          m_eb_flow.has_normal = true;
+          pp_eb_flow.getarr("normal", m_eb_flow.normal, 0, AMREX_SPACEDIM);
+
+          amrex::Real tol_deg(0.);
+          pp_eb_flow.query("normal_tol", tol_deg);
+          m_eb_flow.normal_tol = tol_deg*M_PI/amrex::Real(180.);
+       }
+    } // end prefix eb_flow
+#endif
 }
 
 void incflo::ReadIOParameters()

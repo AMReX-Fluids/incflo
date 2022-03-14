@@ -42,8 +42,7 @@ incflo::set_inflow_velocity (int lev, amrex::Real time, MultiFab& vel, int nghos
 }
 
 void
-incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& eb_vel, int nghost, 
-      const amrex::Real eb_vel_mag)
+incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int nghost)
 {
     Geometry const& gm = Geom(lev);
     eb_vel.setVal(0.);
@@ -68,7 +67,8 @@ incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& eb_vel, int nghost
                 const auto& apy = factory.getAreaFrac()[1]->const_array(mfi);,
                 const auto& apz = factory.getAreaFrac()[2]->const_array(mfi));
 
-           ParallelFor(bx, [flags_arr,eb_vel_arr,norm_arr,
+          Real eb_vel_mag = m_eb_flow.vel_mag;
+          ParallelFor(bx, [flags_arr,eb_vel_arr,norm_arr,
                  eb_vel_mag,AMREX_D_DECL(apx,apy,apz)]
              AMREX_GPU_DEVICE (int i, int j, int k) noexcept
            {

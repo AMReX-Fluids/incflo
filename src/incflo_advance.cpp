@@ -42,9 +42,9 @@ void incflo::Advance()
         }
     }
 
-    if (m_flow_through_eb) {
+    if (m_eb_flow.enabled) {
        for (int lev = 0; lev <= finest_level; ++lev) {
-         set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb()[lev], 1, m_eb_vel_mag);
+         set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb()[lev], 1);
        }
     }
 

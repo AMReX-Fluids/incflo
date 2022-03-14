@@ -405,9 +405,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac.const_array(mfi), num_comp, geom[lev],
                                                  mult, fluxes_are_area_weighted,
-                                                 m_flow_through_eb ? 
+                                                 m_eb_flow.enabled ? 
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
-                                                 m_flow_through_eb ? 
+                                                 m_eb_flow.enabled ? 
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  flagfab.const_array(),
                                                  ebfact->getBndryArea().const_array(mfi),

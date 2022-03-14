@@ -120,7 +120,7 @@ incflo::compute_MAC_projected_velocities (
 
     macproj->setUMAC(mac_vec);
 
-    if (m_flow_through_eb) {
+    if (m_eb_flow.enabled) {
        for (int lev=0; lev <= finest_level; ++lev)
        {
           macproj->setEBDirichlet(lev, *get_velocity_eb()[lev]);
