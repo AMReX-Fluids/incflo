@@ -62,55 +62,73 @@ incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int ng
           const auto& eb_vel_arr   = eb_vel[mfi].array();
           const auto& norm_arr     = factory.getBndryNormal()[mfi].const_array();
 
-          AMREX_D_TERM(
-                const auto& apx = factory.getAreaFrac()[0]->const_array(mfi);,
-                const auto& apy = factory.getAreaFrac()[1]->const_array(mfi);,
-                const auto& apz = factory.getAreaFrac()[2]->const_array(mfi));
+          bool has_normal = m_eb_flow.has_normal;
+          GpuArray<Real, AMREX_SPACEDIM> normal{0.};
+          if (has_normal) {
+             AMREX_D_TERM(
+             normal[0] = m_eb_flow.normal[0];,
+             normal[1] = m_eb_flow.normal[1];,
+             normal[2] = m_eb_flow.normal[2]);
+          }
+          Real pad = std::numeric_limits<float>::epsilon();
+          Real normal_tol = m_eb_flow.normal_tol;
+          Real norm_tol_lo = Real(-1.) - (normal_tol + pad);
+          Real norm_tol_hi = Real(-1.) + (normal_tol + pad);
 
-          Real eb_vel_mag = m_eb_flow.vel_mag;
-          ParallelFor(bx, [flags_arr,eb_vel_arr,norm_arr,
-                 eb_vel_mag,AMREX_D_DECL(apx,apy,apz)]
+          bool has_comps = false;
+          Real eb_vel_mag(0.0);
+          GpuArray<amrex::Real,3> eb_vel_comps{0.};
+          // Flow is specified as a velocity magnitude
+          if ( m_eb_flow.is_mag ) {
+             eb_vel_mag = m_eb_flow.vel_mag;
+          } else {
+             has_comps = 1;
+             const auto& vels = m_eb_flow.velocity;
+             AMREX_D_TERM(eb_vel_comps[0] = vels[0];,
+                          eb_vel_comps[1] = vels[1];,
+                          eb_vel_comps[2] = vels[2]);
+          }
+
+          ParallelFor(bx, [flags_arr,eb_vel_arr,norm_arr,has_comps,has_normal,normal,
+                 norm_tol_lo, norm_tol_hi,eb_vel_mag,eb_vel_comps]
              AMREX_GPU_DEVICE (int i, int j, int k) noexcept
            {
              if (flags_arr(i,j,k).isSingleValued()) {
-               AMREX_D_TERM(
-                  Real apxm = apx(i  ,j  ,k  );,
-                  Real apym = apy(i  ,j  ,k  );,
-                  Real apzm = apz(i  ,j  ,k  ));
+                Real mask = Real(1.0);
 
-               AMREX_D_TERM(
-                  Real apxp = apx(i+1,j  ,k  );,
-                  Real apyp = apy(i  ,j+1,k  );,
-                  Real apzp = apz(i  ,j  ,k+1));
-
-               AMREX_D_TERM(
-                  Real dapx = apxm-apxp;,
-                  Real dapy = apym-apyp;,
-                  Real dapz = apzm-apzp);
-
-#if (AMREX_SPACEDIM == 3)
-               Real anorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
+                if(has_normal) {
+#if (AMREX_SPACEDIM==3)
+                  Real dotprod = norm_arr(i,j,k,0)*normal[0]
+                                 + norm_arr(i,j,k,1)*normal[1]
+                                 + norm_arr(i,j,k,2)*normal[2];
 #else
-               Real anorm = std::sqrt(dapx*dapx+dapy*dapy);
+                  Real dotprod = norm_arr(i,j,k,0)*normal[0]
+                                 + norm_arr(i,j,k,1)*normal[1];
 #endif
-               Real anorminv = 1.0/anorm;
 
-               AMREX_D_TERM(
-                     Real anrmx = dapx * anorminv;,
-                     Real anrmy = dapy * anorminv;,
-                     Real anrmz = dapz * anorminv);
+                  mask = ((norm_tol_lo <= dotprod) &&
+                          (dotprod <= norm_tol_hi)) ? Real(1.0) : Real(0.0);
+                }
 
-               AMREX_D_TERM(
-                     eb_vel_arr(i,j,k,0) = -anrmx*eb_vel_mag;,
-                     eb_vel_arr(i,j,k,1) = -anrmy*eb_vel_mag;,
-                     eb_vel_arr(i,j,k,2) = -anrmz*eb_vel_mag);
+                if (has_comps) {
+                   AMREX_D_TERM(eb_vel_arr(i,j,k,0) = mask*eb_vel_comps[0];,
+                                eb_vel_arr(i,j,k,1) = mask*eb_vel_comps[1];,
+                                eb_vel_arr(i,j,k,2) = mask*eb_vel_comps[2]);
+                } else {
+                   // The EB normal points out of the domain so we need to flip the
+                   // when using it to convert magnitude to velocity components so
+                   // the resulting vector points into the domain.
+                   AMREX_D_TERM(eb_vel_arr(i,j,k,0) = -mask*norm_arr(i,j,k,0)*eb_vel_mag;,
+                                eb_vel_arr(i,j,k,1) = -mask*norm_arr(i,j,k,1)*eb_vel_mag;,
+                                eb_vel_arr(i,j,k,2) = -mask*norm_arr(i,j,k,2)*eb_vel_mag);
+                }
              }
            });
-        }
+       }
      }
 
-    // We make sure to only fill "nghost" ghost cells so we don't accidentally 
-    // over-write good ghost cell values with unfilled ghost cell values 
-    IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
-    eb_vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
+     // We make sure to only fill "nghost" ghost cells so we don't accidentally 
+     // over-write good ghost cell values with unfilled ghost cell values 
+     IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
+     eb_vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }
