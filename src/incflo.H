@@ -93,7 +93,9 @@ public: // for cuda
     ///////////////////////////////////////////////////////////////////////////
 
     void set_inflow_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost);
+#ifdef AMREX_USE_EB
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
+#endif
 
     ///////////////////////////////////////////////////////////////////////////
     //

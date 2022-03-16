@@ -41,6 +41,7 @@ incflo::set_inflow_velocity (int lev, amrex::Real time, MultiFab& vel, int nghos
     vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }
 
+#ifdef AMREX_USE_EB
 void
 incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int nghost)
 {
@@ -132,3 +133,4 @@ incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int ng
      IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
      eb_vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }
+#endif
