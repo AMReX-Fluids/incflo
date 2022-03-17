@@ -213,11 +213,18 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_EB
         const auto& ebfact = EBFactory(lev);
 
-        if (!ebfact.isAllRegular())
-            amrex::EB_computeDivergence(divu[lev],u,geom[lev],true);
+        if (!ebfact.isAllRegular()) {
+            if (m_eb_flow.enabled) {
+               amrex::EB_computeDivergence(divu[lev],u,geom[lev],true,*get_velocity_eb()[lev]);
+            } else {
+               amrex::EB_computeDivergence(divu[lev],u,geom[lev],true);
+            }
+        }
         else
 #endif
-        amrex::computeDivergence(divu[lev],u,geom[lev]);
+        {
+            amrex::computeDivergence(divu[lev],u,geom[lev]);
+        }
 
         divu[lev].FillBoundary(geom[lev].periodicity());
 
