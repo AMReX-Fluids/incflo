@@ -191,7 +191,7 @@ incflo::set_eb_density (int lev, amrex::Real /*time*/, MultiFab& eb_density, int
                           (dotprod <= norm_tol_hi)) ? Real(1.0) : Real(0.0);
                 }
 
-                eb_density_arr(i,j,k) = -mask*eb_flow_density;
+                eb_density_arr(i,j,k) = mask*eb_flow_density;
              }
            });
        }
@@ -262,7 +262,7 @@ incflo::set_eb_tracer (int lev, amrex::Real /*time*/, MultiFab& eb_tracer, int n
                 }
 
                 for(int n(0); n<num_trac; n++) {
-                  eb_tracer_arr(i,j,k,n) = -mask*eb_flow_tracer[n];
+                  eb_tracer_arr(i,j,k,n) = mask*eb_flow_tracer[n];
                 }
              }
            });
