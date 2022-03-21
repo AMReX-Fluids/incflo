@@ -95,6 +95,8 @@ public: // for cuda
     void set_inflow_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost);
 #ifdef AMREX_USE_EB
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
+    void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
+    void set_eb_tracer (int lev, amrex::Real time, amrex::MultiFab& eb_tracer, int nghost);
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
@@ -423,12 +425,17 @@ private:
        amrex::Vector<amrex::Real> normal;
        amrex::Real normal_tol;
 
+       // scalars
+       amrex::Real density;
+       amrex::Vector<amrex::Real> tracer;
+
        EBFlow_t ()
          : enabled(false)
          , has_normal(false)
          , is_mag(false)
          , vel_mag(0.)
          , normal_tol(0.)
+         , density(1.)
        {}
     };
     EBFlow_t m_eb_flow;
@@ -526,8 +533,10 @@ private:
         amrex::MultiFab velocity_o;
         amrex::MultiFab velocity_eb;
         amrex::MultiFab density;
+        amrex::MultiFab density_eb;
         amrex::MultiFab density_o;
         amrex::MultiFab tracer;
+        amrex::MultiFab tracer_eb;
         amrex::MultiFab tracer_o;
 
         amrex::MultiFab mac_phi; // cell-centered pressure used in MAC projection
@@ -665,6 +674,8 @@ private:
     amrex::Vector<amrex::MultiFab*> get_velocity_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_velocity_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_velocity_eb () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_density_eb () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_tracer_eb () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_old () noexcept;
@@ -686,6 +697,8 @@ private:
     amrex::Vector<amrex::MultiFab const*> get_velocity_old_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_velocity_new_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_velocity_eb () const noexcept;
+    amrex::Vector<amrex::MultiFab const*> get_density_eb () const noexcept;
+    amrex::Vector<amrex::MultiFab const*> get_tracer_eb () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_density_old_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_density_new_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_tracer_old_const () const noexcept;

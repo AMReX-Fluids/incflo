@@ -170,6 +170,11 @@ void incflo::ReadParameters ()
     { // Prefix eb_flow
        ParmParse pp_eb_flow("eb_flow");
 
+       pp_eb_flow.query("density", m_eb_flow.density);
+
+       m_eb_flow.tracer.resize(m_ntrac, 0.0);
+       pp_eb_flow.queryarr("tracer", m_eb_flow.tracer, 0, m_ntrac);
+
        if (pp_eb_flow.contains("vel_mag")) {
           m_eb_flow.enabled = true;
           m_eb_flow.is_mag = true;

@@ -266,6 +266,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                      get_velocity_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
                                      ebfact,
+                                     m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
 #endif
                                      m_godunov_ppm, m_godunov_use_forces_in_trans,
                                      is_velocity, fluxes_are_area_weighted,
@@ -299,6 +300,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           get_density_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
                                           ebfact,
+                                          m_eb_flow.enabled ? get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
 #endif
                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
                                           is_velocity, fluxes_are_area_weighted,
@@ -352,6 +354,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           get_tracer_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
                                           ebfact,
+                                          m_eb_flow.enabled ? get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
 #endif
                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
                                           is_velocity, fluxes_are_area_weighted,
@@ -520,22 +523,31 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             Box const& bx = mfi.tilebox();
 
 #ifdef AMREX_USE_EB
-            // TODO: Support for EB flow of scalars
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
             if (flagfab.getType(bx) != FabType::covered)
                 HydroUtils::EB_ComputeDivergence(bx, drdt_tmp.array(mfi),
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
-                                                 vfrac.const_array(mfi),
+                                                 vfrac.const_array(mfi), 1, geom[lev], mult,
+                                                 fluxes_are_area_weighted,
+                                                 m_eb_flow.enabled ? 
+                                                    get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                 m_eb_flow.enabled ? 
+                                                    get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                 flagfab.const_array(),
+                                                 (flagfab.getType(bx) != FabType::regular) ?
+                                                    ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
+                                                 (flagfab.getType(bx) != FabType::regular) ?
+                                                    ebfact->getBndryNormal().const_array(mfi) : Array4<Real const>{});
 #else
             HydroUtils::ComputeDivergence(bx, conv_r[lev]->array(mfi),
                                           AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                        flux_y[lev].const_array(mfi,flux_comp),
                                                        flux_z[lev].const_array(mfi,flux_comp)),
-#endif
                                           1, geom[lev], mult,
                                           fluxes_are_area_weighted);
+#endif
           } // mfi
         } // not constant density
 
@@ -550,7 +562,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             Box const& bx = mfi.tilebox();
 
 #ifdef AMREX_USE_EB
-            // TODO: Support for EB flow of scalars
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
             auto const& update_arr  = dtdt_tmp.array(mfi);
             if (flagfab.getType(bx) != FabType::covered)
@@ -558,16 +569,26 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
-                                                 vfrac.const_array(mfi),
+                                                 vfrac.const_array(mfi), m_ntrac, geom[lev], mult,
+                                                 fluxes_are_area_weighted,
+                                                 m_eb_flow.enabled ? 
+                                                    get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                 m_eb_flow.enabled ? 
+                                                    get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                 flagfab.const_array(),
+                                                 (flagfab.getType(bx) != FabType::regular) ?
+                                                    ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
+                                                 (flagfab.getType(bx) != FabType::regular) ?
+                                                    ebfact->getBndryNormal().const_array(mfi) : Array4<Real const>{});
 #else
                 auto const& update_arr  = conv_t[lev]->array(mfi);
                 HydroUtils::ComputeDivergence(bx, update_arr,
                                               AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                            flux_y[lev].const_array(mfi,flux_comp),
                                                            flux_z[lev].const_array(mfi,flux_comp)),
-#endif
                                               m_ntrac, geom[lev], mult,
                                               fluxes_are_area_weighted);
+#endif
 
           } // mfi
         } // advect tracer
