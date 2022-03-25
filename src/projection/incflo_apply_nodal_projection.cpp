@@ -138,7 +138,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
 #ifdef AMREX_USE_EB
     if (m_eb_flow.enabled) {
        for(int lev = 0; lev <= finest_level; ++lev) {
-          nodal_projector->getLinOp().setEBDirichlet(lev, *get_velocity_eb()[lev]);
+          nodal_projector->getLinOp().setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
        }
     }
 #endif
