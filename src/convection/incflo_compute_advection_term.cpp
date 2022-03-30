@@ -580,7 +580,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                     ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact->getBndryNormal().const_array(mfi) : Array4<Real const>{});
-            amrex::Print() << "end" << std::endl;
 #else
                 auto const& update_arr  = conv_t[lev]->array(mfi);
                 HydroUtils::ComputeDivergence(bx, update_arr,
