@@ -237,8 +237,13 @@ incflo::set_eb_tracer (int lev, amrex::Real /*time*/, MultiFab& eb_tracer, int n
           Real norm_tol_lo = Real(-1.) - (normal_tol + pad);
           Real norm_tol_hi = Real(-1.) + (normal_tol + pad);
 
-          auto& eb_flow_tracer = m_eb_flow.tracer;
           int num_trac = m_ntrac;
+          // Create a device vector
+          Gpu::DeviceVector<Real> eb_flow_tracer_dv;
+          for(int n(0); n < num_trac; ++n) {
+             eb_flow_tracer_dv.push_back(m_eb_flow.tracer[n]);
+          }
+          Real* eb_flow_tracer = eb_flow_tracer_dv.data();
 
           ParallelFor(bx, [flags_arr,eb_tracer_arr,norm_arr,has_normal,normal,
                  norm_tol_lo, norm_tol_hi, num_trac, eb_flow_tracer]
