@@ -165,6 +165,35 @@ void incflo::ReadParameters ()
         pp_nodal.query( "mg_rtol"                , m_nodal_mg_rtol );
         pp_nodal.query( "mg_atol"                , m_nodal_mg_atol );
     } // end prefix nodal
+
+#ifdef AMREX_USE_EB
+    { // Prefix eb_flow
+       ParmParse pp_eb_flow("eb_flow");
+
+       pp_eb_flow.query("density", m_eb_flow.density);
+
+       m_eb_flow.tracer.resize(m_ntrac, 0.0);
+       pp_eb_flow.queryarr("tracer", m_eb_flow.tracer, 0, m_ntrac);
+
+       if (pp_eb_flow.contains("vel_mag")) {
+          m_eb_flow.enabled = true;
+          m_eb_flow.is_mag = true;
+          pp_eb_flow.query("vel_mag", m_eb_flow.vel_mag);
+       } else if (pp_eb_flow.contains("velocity")) {
+          m_eb_flow.enabled = true;
+          pp_eb_flow.getarr("velocity", m_eb_flow.velocity, 0, AMREX_SPACEDIM);
+       }
+
+       if (pp_eb_flow.contains("normal")) {
+          m_eb_flow.has_normal = true;
+          pp_eb_flow.getarr("normal", m_eb_flow.normal, 0, AMREX_SPACEDIM);
+
+          amrex::Real tol_deg(0.);
+          pp_eb_flow.query("normal_tol", tol_deg);
+          m_eb_flow.normal_tol = tol_deg*M_PI/amrex::Real(180.);
+       }
+    } // end prefix eb_flow
+#endif
 }
 
 void incflo::ReadIOParameters()

@@ -120,6 +120,15 @@ incflo::compute_MAC_projected_velocities (
 
     macproj->setUMAC(mac_vec);
 
+#ifdef AMREX_USE_EB
+    if (m_eb_flow.enabled) {
+       for (int lev=0; lev <= finest_level; ++lev)
+       {
+          macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
+       }
+    }
+#endif
+
     if (m_verbose > 0) amrex::Print() << "MAC Projection:\n";
     //
     // Perform MAC projection
