@@ -135,14 +135,6 @@ void incflo::prob_init_fluid (int lev)
                                   ld.tracer.array(mfi),
                                   domain, dx, problo, probhi);
         }
-        else if (14 == m_probtype) 
-        {
-            init_const_tracer(vbx, gbx,
-                              ld.velocity.array(mfi),
-                              ld.density.array(mfi),
-                              ld.tracer.array(mfi),
-                              domain, dx, problo, probhi);
-        }
 #if 0
         else if (500 == m_probtype)
         {
@@ -600,22 +592,6 @@ void incflo::init_periodic_tracer (Box const& vbx, Box const& gbx,
                      vel(i,j,k,1) = 0.1*(std::sin(C*(x+z) - 0.00042) + 1.0) * std::exp(y);,
                      vel(i,j,k,2) = 0.1*(std::sin(C*(x+y) - 0.00042) + 1.0) * std::exp(z););
         tracer(i,j,k) = A *(std::sin(C*(y+z) - 0.00042) + 1.0) * std::exp(x);
-    });
-}
-
-void incflo::init_const_tracer (Box const& vbx, Box const& gbx,
-                                   Array4<Real> const& vel,
-                                   Array4<Real> const& density,
-                                   Array4<Real> const& tracer,
-                                   Box const& domain,
-                                   GpuArray<Real, AMREX_SPACEDIM> const& dx,
-                                   GpuArray<Real, AMREX_SPACEDIM> const& problo,
-                                   GpuArray<Real, AMREX_SPACEDIM> const& probhi)
-{
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        constexpr Real A = 1.0;
-        tracer(i,j,k) = A;
     });
 }
 
