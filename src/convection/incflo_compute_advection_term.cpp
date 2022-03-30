@@ -532,7 +532,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  vfrac.const_array(mfi), 1, geom[lev], mult,
                                                  fluxes_are_area_weighted,
                                                  m_eb_flow.enabled ? 
-                                                    get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                    get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ? 
                                                     get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  flagfab.const_array(),
@@ -572,7 +572,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  vfrac.const_array(mfi), m_ntrac, geom[lev], mult,
                                                  fluxes_are_area_weighted,
                                                  m_eb_flow.enabled ? 
-                                                    get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                    get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ? 
                                                     get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  flagfab.const_array(),
@@ -580,6 +580,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                     ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact->getBndryNormal().const_array(mfi) : Array4<Real const>{});
+            amrex::Print() << "end" << std::endl;
 #else
                 auto const& update_arr  = conv_t[lev]->array(mfi);
                 HydroUtils::ComputeDivergence(bx, update_arr,
