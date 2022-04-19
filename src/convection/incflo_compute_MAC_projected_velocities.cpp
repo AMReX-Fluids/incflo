@@ -105,6 +105,7 @@ incflo::compute_MAC_projected_velocities (
                                       geom[lev], l_dt,
 #ifdef AMREX_USE_EB
                                       *ebfact,
+                                      m_eb_flow.enabled ? get_velocity_eb()[lev] : nullptr,
 #endif
                                       m_godunov_ppm, m_godunov_use_forces_in_trans,
                                       m_advection_type);

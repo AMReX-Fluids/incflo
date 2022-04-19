@@ -668,6 +668,12 @@ private:
         return use_tensor_correction;
     }
 
+#ifdef AMREX_USE_EB
+    bool hasEBFlow () const {
+       return m_eb_flow.enabled;
+    }
+#endif
+
     DiffusionTensorOp* get_diffusion_tensor_op ();
     DiffusionScalarOp* get_diffusion_scalar_op ();
 

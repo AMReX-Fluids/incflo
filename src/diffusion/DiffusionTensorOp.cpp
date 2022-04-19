@@ -133,7 +133,11 @@ DiffusionTensorOp::diffuse_velocity (Vector<MultiFab*> const& velocity,
 
             m_eb_solve_op->setShearViscosity(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
 
-            m_eb_solve_op->setEBShearViscosity(lev, *eta[lev]);
+            if (m_incflo->hasEBFlow()) {
+               m_eb_solve_op->setEBShearViscosityWithInflow(lev, *eta[lev], *(m_incflo->get_velocity_eb()[lev]));
+            } else {
+               m_eb_solve_op->setEBShearViscosity(lev, *eta[lev]);
+            }
         }
     }
     else
@@ -250,7 +254,11 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
             m_eb_apply_op->setShearViscosity(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
 
-            m_eb_apply_op->setEBShearViscosity(lev, *a_eta[lev]);
+            if (m_incflo->hasEBFlow()) {
+               m_eb_apply_op->setEBShearViscosityWithInflow(lev, *a_eta[lev], *(m_incflo->get_velocity_eb()[lev]));
+            } else {
+               m_eb_apply_op->setEBShearViscosity(lev, *a_eta[lev]);
+            }
             m_eb_apply_op->setLevelBC(lev, &velocity[lev]);
         }
 
