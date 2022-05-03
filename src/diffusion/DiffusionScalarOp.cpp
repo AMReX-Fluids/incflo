@@ -304,7 +304,13 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
             m_eb_vel_solve_op->setScalars(1.0, dt);
             for (int lev = 0; lev <= finest_level; ++lev) {
                 m_eb_vel_solve_op->setACoeffs(lev, *density[lev]);
-                m_eb_vel_solve_op->setEBHomogDirichlet(lev, *eta[lev]);
+
+                if (m_incflo->hasEBFlow()) {
+                  MultiFab phi(*m_incflo->get_velocity_eb()[lev], amrex::make_alias, comp, 1);
+                  m_eb_vel_solve_op->setEBDirichlet(lev, phi, *eta[lev]);
+                } else {
+                  m_eb_vel_solve_op->setEBHomogDirichlet(lev, *eta[lev]);
+                }
             }
 
             for (int lev = 0; lev <= finest_level; ++lev) {
