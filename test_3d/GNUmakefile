@@ -4,8 +4,6 @@ TOP = ..
 
 EBASE = incflo
 
-BL_NO_FORT = FALSE
-
 DIM = 3
 
 PRECISION  = DOUBLE
@@ -22,6 +20,7 @@ USE_OMP    = FALSE
 USE_CUDA   = FALSE
 
 USE_HYPRE = FALSE
+BL_NO_FORT = TRUE
 
 USE_EB = TRUE
 
