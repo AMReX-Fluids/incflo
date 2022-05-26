@@ -450,7 +450,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                         update_arr(i,j,k,n) += q(i,j,k,n)*divu_arr(i,j,k);
                 });
             }
-            else if (m_advection_type == "Godunov")
+            else if (m_advection_type == "Godunov" || m_advection_type == "BDS")
             {
 
                 bool regular = true;
@@ -508,7 +508,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                     }
                 }
 #endif
-            } // Godunov
+            }
+            else {
+                amrex::Abort("incflo::compute_convective_term: unknown advection_type ");
+            }
         } // mfi
 
         // Note: density is always updated conservatively -- we do not provide an option for
