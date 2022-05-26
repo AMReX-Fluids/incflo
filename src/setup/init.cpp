@@ -112,7 +112,7 @@ void incflo::ReadParameters ()
             amrex::Abort("We currently require cfl <= 0.5 when using the MOL advection scheme");
         }
         if (m_advection_type != "MOL" && m_cfl > 1.0) {
-            amrex::Abort("We currently require cfl <= 1.0 when using the Godunov advection scheme");
+            amrex::Abort("We currently require cfl <= 1.0 when using this advection scheme");
         }
 
         // Initial conditions
