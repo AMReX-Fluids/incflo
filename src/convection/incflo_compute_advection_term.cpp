@@ -166,9 +166,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int nGrow = nghost_mac();
 
             // Divergence preserving interp
-            //Interpolater* mapper = &face_divfree_interp;
-            // This one matches up with old create umac grown
-            Interpolater* mapper = &face_linear_interp;
+            Interpolater* mapper = &face_divfree_interp;
 
             // Set BCRec for Umac
             Vector<BCRec> bcrec(1);
