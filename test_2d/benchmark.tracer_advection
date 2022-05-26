@@ -53,17 +53,20 @@ geometry.is_periodic    =   1   0       # Periodicity x y z (0/1)
 ylo.type                =   "nsw"
 yhi.type                =   "nsw"
 
+incflo.advection_type = "BDS"
+
 # Add Tuscan geometry
-incflo.geometry         = "cylinder"
+incflo.geometry = "all_regular"
+#incflo.geometry         = "cylinder"
 
-cylinder.internal_flow = true
-cylinder.radius = 0.49
-cylinder.height = -1.0
+#cylinder.internal_flow = true
+#cylinder.radius = 0.49
+#cylinder.height = -1.0
 
-cylinder.direction = 0
-cylinder.center    =  0.5  1.5   1.5
+#cylinder.direction = 0
+#cylinder.center    =  0.5  1.5   1.5
 
-incflo.write_eb_surface = false
+#incflo.write_eb_surface = false
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
