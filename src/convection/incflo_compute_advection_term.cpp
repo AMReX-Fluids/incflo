@@ -237,14 +237,15 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                     cbndyFuncArr = {AMREX_D_DECL(crse_bndry_func,crse_bndry_func,crse_bndry_func)};
 
                 // Use piecewise constant interpolation in time, so create dummy variable for time
-                Real dummy = 0.;
-                FillPatchTwoLevels(u_fine, IntVect(nghost_mac()), dummy,
-                                   {u_crse}, {dummy},
-                                   {u_fine}, {dummy},
+                Real fake_time = 0.;
+		Array<int, AMREX_SPACEDIM> idx = {AMREX_D_DECL(0,1,2)};
+                FillPatchTwoLevels(u_fine, IntVect(nghost_mac()), fake_time,
+                                   {u_crse}, {fake_time},
+                                   {u_fine}, {fake_time},
                                    0, 0, 1,
                                    geom[lev-1], geom[lev],
-                                   cbndyFuncArr, 0, fbndyFuncArr, 0,
-                                   rr, mapper, bcrecArr, 0);
+                                   cbndyFuncArr, idx, fbndyFuncArr, idx,
+                                   rr, mapper, bcrecArr, idx);
             }
         } // end umac fill
 
