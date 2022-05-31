@@ -166,21 +166,25 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
             PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>
                 fine_bndry_func_x(geom[lev],
-                                  {m_bcrec_velocity[0]},
-                                  IncfloVelFill{m_probtype, {m_bc_velocity[0]}});
+                                  m_bcrec_velocity,
+                                  IncfloVelFill{m_probtype, m_bc_velocity});
             PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>
                 fine_bndry_func_y(geom[lev],
-                                  {m_bcrec_velocity[1]},
-                                  IncfloVelFill{m_probtype, {m_bc_velocity[1]}});
+                                  m_bcrec_velocity,
+                                  IncfloVelFill{m_probtype, m_bc_velocity});
 #if (AMREX_SPACEDIM == 3)
             PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>
                 fine_bndry_func_z(geom[lev],
-                                  {m_bcrec_velocity[2]},
-                                  IncfloVelFill{m_probtype, {m_bc_velocity[2]}});
+                                  m_bcrec_velocity,
+                                  IncfloVelFill{m_probtype, m_bc_velocity});
 #endif
             Array<PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>,AMREX_SPACEDIM>
                 fbndyFuncArr = {AMREX_D_DECL(fine_bndry_func_x,fine_bndry_func_y,fine_bndry_func_z)};
 
+	    //fixme
+	    // check BCs...
+	    Print()<<"vel xlo BC: "<<m_bc_velocity[0][0]<<", "<<m_bc_velocity[0][1]<<std::endl;
+	    
             if (lev == 0)
             {
                 //
@@ -198,7 +202,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                         amrex::FillPatchSingleLevel(*u_fine[idim], IntVect(nghost_mac()), fake_time,
                                                     {u_fine[idim]}, {fake_time},
                                                     0, 0, 1, geom[lev],
-                                                    fbndyFuncArr[idim], 0);
+                                                    fbndyFuncArr[idim], idim);
                     }
                 }
                 else
