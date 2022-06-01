@@ -20,6 +20,10 @@ incflo::get_projection_bc (Orientation::Side side) const noexcept
                 break;
             }
             case BC::mass_inflow:
+	    {
+                r[dir] = LinOpBCType::inflow;
+		break;
+            }
             case BC::slip_wall:
             case BC::no_slip_wall:
             {
