@@ -189,27 +189,17 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             {
                 //
                 // BDS needs umac on physical boundaries.
-                // Godunov handles physical boudnaries interally.
+                // Godunov handles physical boundaries interally, but needs periodic ghosts filled.
                 // MOL doesn't need any umac ghost cells, so it doesn't get here.
                 //
-                // probably could do away with this if BDS and just always call FPSingleLevel...
-                if ( m_advection_type == "BDS" )
-                {
-                    Real fake_time = 0.;
+                Real fake_time = 0.;
 
-                    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
-                    {
-                        amrex::FillPatchSingleLevel(*u_fine[idim], IntVect(nghost_mac()), fake_time,
-                                                    {u_fine[idim]}, {fake_time},
-                                                    0, 0, 1, geom[lev],
-                                                    fbndyFuncArr[idim], idim);
-                    }
-                }
-                else
+                for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
                 {
-                    AMREX_D_TERM(u_mac[lev]->FillBoundary(geom[lev].periodicity());,
-                                 v_mac[lev]->FillBoundary(geom[lev].periodicity());,
-                                 w_mac[lev]->FillBoundary(geom[lev].periodicity()););
+                    amrex::FillPatchSingleLevel(*u_fine[idim], IntVect(nghost_mac()), fake_time,
+                                                {u_fine[idim]}, {fake_time},
+                                                0, 0, 1, geom[lev],
+                                                fbndyFuncArr[idim], idim);
                 }
             }
             else // lev > 0
@@ -224,7 +214,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 // Divergence preserving interp
                 Interpolater* mapper = &face_divfree_interp;
 
-                // this isn't right from here...
                 const Array<Vector<BCRec>,AMREX_SPACEDIM> bcrecArr = {AMREX_D_DECL(m_bcrec_velocity,
                                                                                    m_bcrec_velocity,
                                                                                    m_bcrec_velocity)};
