@@ -94,7 +94,7 @@ struct IncfloVelFill
 #if (AMREX_SPACEDIM == 3)
             if (bc.lo(2) == BCType::ext_dir && k < domain_box.smallEnd(2))
             {
-                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::z,Orientation::low)][orig_comp];
+                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::z,Orientation::low)][orig_comp+nc];
 
                 if (orig_comp+nc == 2) // z velocity
                 {
