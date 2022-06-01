@@ -77,7 +77,7 @@ incflo::compute_MAC_projected_velocities (
         {
             macproj->initProjector(lp_info, GetVecOfArrOfConstPtrs(inv_rho));
         }
-        macproj->setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
+        macproj->setDomainBC(get_mac_projection_bc(Orientation::low), get_mac_projection_bc(Orientation::high));
     } else {
 #ifndef AMREX_USE_EB
         if (m_constant_density) {

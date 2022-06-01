@@ -738,7 +738,9 @@ private:
         return m_bcrec_force_d.data(); }
 
     amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
-    get_projection_bc (amrex::Orientation::Side side) const noexcept;
+    get_nodal_projection_bc (amrex::Orientation::Side side) const noexcept;
+    amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
+    get_mac_projection_bc (amrex::Orientation::Side side) const noexcept;
 
     amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
     get_diffuse_velocity_bc (amrex::Orientation::Side side, int comp) const noexcept;
