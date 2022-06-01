@@ -84,8 +84,8 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
         }
     }
 
-    auto bclo = get_projection_bc(Orientation::low);
-    auto bchi = get_projection_bc(Orientation::high);
+    auto bclo = get_mac_projection_bc(Orientation::low);
+    auto bchi = get_mac_projection_bc(Orientation::high);
 
     Vector<MultiFab*> vel;
     for (int lev = 0; lev <= finest_level; ++lev) {
