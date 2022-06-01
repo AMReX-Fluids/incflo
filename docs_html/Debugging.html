@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Debugging &mdash; incflo 22.06-dev documentation</title>
+  <title>Debugging &mdash; incflo 22.07-dev documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
@@ -15,6 +15,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -30,7 +31,7 @@
             <a href="index.html" class="icon icon-home"> incflo
           </a>
               <div class="version">
-                22.06-dev
+                22.07-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -76,27 +77,27 @@
            <div itemprop="articleBody">
              
   <section id="debugging">
-<span id="chap-debugging"></span><h1>Debugging<a class="headerlink" href="#debugging" title="Permalink to this headline"></a></h1>
+<span id="chap-debugging"></span><h1>Debugging<a class="headerlink" href="#debugging" title="Permalink to this heading"></a></h1>
 <p>Debugging is an art.  Everyone has their own favorite method.  Here we
 offer a few tips we have found to be useful.</p>
-<p>Compiling in debug mode (e.g., <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">make</span></span> <span class="name"><span class="pre">DEBUG</span></span><span class="operator"><span class="pre">=</span></span><span class="name"><span class="pre">TRUE</span></span></code> for gmake users;
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">cmake</span></span> <span class="operator"><span class="pre">-</span></span><span class="name"><span class="pre">DDEBUG</span></span></code> for cmake users) and running with
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">amrex</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">fpe_trap_invalid</span></span><span class="operator"><span class="pre">=</span></span><span class="literal number integer"><span class="pre">1</span></span></code> in the inputs file can be helpful.
+<p>Compiling in debug mode (e.g., <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">make</span> <span class="n">DEBUG</span><span class="o">=</span><span class="n">TRUE</span></code> for gmake users;
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">cmake</span> <span class="o">-</span><span class="n">DDEBUG</span></code> for cmake users) and running with
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">amrex</span><span class="p">.</span><span class="n">fpe_trap_invalid</span><span class="o">=</span><span class="mi">1</span></code> in the inputs file can be helpful.
 In debug mode, many compiler debugging flags are turned on and all
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">MultiFab</span></span></code> s are initialized to signaling NaNs.  The
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">amrex</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">fpe_trap_invalid</span></span></code> parameter will result in backtrace files
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">MultiFab</span></code> s are initialized to signaling NaNs.  The
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">amrex</span><span class="p">.</span><span class="n">fpe_trap_invalid</span></code> parameter will result in backtrace files
 when a floating point exception occurs.  One can then examine those
 files to track down the origin of the issue.</p>
 <p>Several other ways to look at the data include:</p>
 <ol class="arabic simple">
-<li><p>Writing a <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">MultiFab</span></span></code> to disk with</p></li>
+<li><p>Writing a <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">MultiFab</span></code> to disk with</p></li>
 </ol>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">VisMF</span><span class="o">::</span><span class="n">Write</span><span class="p">(</span><span class="k">const</span> <span class="n">FabArray</span><span class="o">&lt;</span><span class="n">FArrayBox</span><span class="o">&gt;&amp;</span> <span class="n">mf</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>and examining it with <code class="docutils literal notranslate"><span class="pre">Amrvis</span></code> (section <span class="xref std std-ref">sec:amrvis</span> in the AMReX documentation).</p>
 <ol class="arabic simple" start="2">
-<li><p>You can also use the <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">print_state</span></span></code> routine:</p></li>
+<li><p>You can also use the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">print_state</span></code> routine:</p></li>
 </ol>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="nf">print_state</span><span class="p">(</span><span class="k">const</span> <span class="n">MultiFab</span><span class="o">&amp;</span> <span class="n">mf</span><span class="p">,</span> <span class="k">const</span> <span class="n">IntVect</span><span class="o">&amp;</span> <span class="n">cell</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">n</span><span class="o">=-</span><span class="mi">1</span><span class="p">);</span>
 </pre></div>
@@ -111,7 +112,7 @@ files to track down the origin of the issue.</p>
 <p>will print out the maximum absolute and relative differences between the two plotfiles
 for each variable and will also create a new plotfile “diffs” that contains the difference
 in u_g (in this case) between the two plotfiles.</p>
-<p>The <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">fcompare</span></span></code> executable can be built in AMReX (go to amrex/Tools/Plotfile and type “make”).</p>
+<p>The <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">fcompare</span></code> executable can be built in AMReX (go to amrex/Tools/Plotfile and type “make”).</p>
 <p>4) Valgrind is another useful debugging tool.  Note that for runs using
 more than one MPI process, one can tell valgrind to output to different
 files for different processes.  For example,</p>

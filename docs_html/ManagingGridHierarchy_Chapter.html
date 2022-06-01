@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gridding and Load Balancing &mdash; incflo 22.06-dev documentation</title>
+  <title>Gridding and Load Balancing &mdash; incflo 22.07-dev documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
@@ -15,6 +15,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -31,7 +32,7 @@
             <a href="index.html" class="icon icon-home"> incflo
           </a>
               <div class="version">
-                22.06-dev
+                22.07-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -81,20 +82,20 @@
            <div itemprop="articleBody">
              
   <section id="gridding-and-load-balancing">
-<h1>Gridding and Load Balancing<a class="headerlink" href="#gridding-and-load-balancing" title="Permalink to this headline"></a></h1>
+<h1>Gridding and Load Balancing<a class="headerlink" href="#gridding-and-load-balancing" title="Permalink to this heading"></a></h1>
 <p>incflo has a great deal of flexibility when it comes to how to decompose the
 computational domain into individual rectangular grids, and how to distribute
 those grids to MPI ranks.  There can be grids of different sizes,
 more than one grid per MPI rank, and different strategies for distributing the grids to MPI ranks.</p>
 <p>We use the phrase “load balancing” here to refer to the combined process
 of grid creation (and re-creation when regridding) and distribution of grids to MPI ranks.</p>
-<p>See <a class="reference internal" href="GridCreation.html#sec-grid-creation"><span class="std std-ref">Grid Creation</span></a> for grids are created, i.e. how the <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">BoxArray</span></span></code> on which
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">MultiFabs</span></span></code> will be built is defined at each level.</p>
+<p>See <a class="reference internal" href="GridCreation.html#sec-grid-creation"><span class="std std-ref">Grid Creation</span></a> for grids are created, i.e. how the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">BoxArray</span></code> on which
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">MultiFabs</span></code> will be built is defined at each level.</p>
 <p>See <a class="reference internal" href="LoadBalancing.html#sec-load-balancing"><span class="std std-ref">Load Balancing</span></a> for the strategies AMReX supports for distributing
-grids to MPI ranks, i.e. defining the <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">DistributionMapping</span></span></code> with which
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">MultiFabs</span></span></code> at that level will be built.</p>
+grids to MPI ranks, i.e. defining the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">DistributionMapping</span></code> with which
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">MultiFabs</span></code> at that level will be built.</p>
 <p>When running on multicore machines with OpenMP, we can also control the distribution of
-work by setting the size of grid tiles (by defining <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">fabarray</span></span><span class="punctuation"><span class="pre">.</span></span><span class="name"><span class="pre">mfiter_tile_size</span></span></code>).
+work by setting the size of grid tiles (by defining <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">fabarray</span><span class="p">.</span><span class="n">mfiter_tile_size</span></code>).
 We can also specify the strategy for assigning tiles to OpenMP threads.
 See <span class="xref std std-ref">sec:basics:mfiter:tiling:</span> for more about tiling.</p>
 <div class="toctree-wrapper compound">

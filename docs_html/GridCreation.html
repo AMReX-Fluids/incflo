@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Grid Creation &mdash; incflo 22.06-dev documentation</title>
+  <title>Grid Creation &mdash; incflo 22.07-dev documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
@@ -15,6 +15,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -31,7 +32,7 @@
             <a href="index.html" class="icon icon-home"> incflo
           </a>
               <div class="version">
-                22.06-dev
+                22.07-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -82,51 +83,51 @@
            <div itemprop="articleBody">
              
   <section id="grid-creation">
-<span id="sec-grid-creation"></span><h1>Grid Creation<a class="headerlink" href="#grid-creation" title="Permalink to this headline"></a></h1>
-<p>To run incflo you must specify <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">n_cell</span></span></code> in the inputs file –
+<span id="sec-grid-creation"></span><h1>Grid Creation<a class="headerlink" href="#grid-creation" title="Permalink to this heading"></a></h1>
+<p>To run incflo you must specify <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">n_cell</span></code> in the inputs file –
 this is the number of cells spanning the domain in each coordinate direction at level 0.</p>
-<p>Users often specify <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span></code> as well. The default load balancing algorithm then divides the
-domain in every direction so that each grid is no longer than <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span></code> in that direction.
-If not specified by the user, <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span></code> defaults to 128 in 2D and 32 in 3D (in each coordinate direction).</p>
-<p>Another popular input is <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code>.  The value of <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code>
-constrains grid creation in that in that each grid must be divisible by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code>.
-Note that both the domain (at each level) and <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span></code> must be divisible by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code>
-If not specified by the user, <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code> defaults to 8 in each coordinate direction.
-The typical purpose of <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code> is to ensure that the grids will be
+<p>Users often specify <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span></code> as well. The default load balancing algorithm then divides the
+domain in every direction so that each grid is no longer than <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span></code> in that direction.
+If not specified by the user, <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span></code> defaults to 128 in 2D and 32 in 3D (in each coordinate direction).</p>
+<p>Another popular input is <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code>.  The value of <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code>
+constrains grid creation in that in that each grid must be divisible by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code>.
+Note that both the domain (at each level) and <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span></code> must be divisible by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code>
+If not specified by the user, <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code> defaults to 8 in each coordinate direction.
+The typical purpose of <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code> is to ensure that the grids will be
 sufficiently coarsenable for good multigrid performance.</p>
-<p>There is one more default behavior to be aware of.  There is a boolean <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">refine_grid_layout</span></span></code>
+<p>There is one more default behavior to be aware of.  There is a boolean <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">refine_grid_layout</span></code>
 that defaults to true but can be over-ridden at run-time.
-If <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">refine_grid_layout</span></span></code> is true and the number of grids created is less than the number of processors
+If <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">refine_grid_layout</span></code> is true and the number of grids created is less than the number of processors
 (Ngrids &lt; Nprocs), then grids will be further subdivided until Ngrids &gt;= Nprocs.</p>
 <p>Caveat: if subdividing the grids to achieve Ngrids &gt;= Nprocs would violate the
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code> criterion then additional grids are not created and the
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code> criterion then additional grids are not created and the
 number of grids will remain less than the number of processors</p>
-<p>Note that <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">n_cell</span></span></code> must be given as three separate integers, one for each coordinate direction.</p>
-<p>However, <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span></code> and <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code> can be specified as a single value
+<p>Note that <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">n_cell</span></code> must be given as three separate integers, one for each coordinate direction.</p>
+<p>However, <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span></code> and <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code> can be specified as a single value
 applying to all coordinate directions, or as separate values for each direction.</p>
 <blockquote>
 <div><ul class="simple">
-<li><p>if <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span></code> (or <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code>) is specified as multiple integers then the first
+<li><p>if <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span></code> (or <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code>) is specified as multiple integers then the first
 integer applies to level 0, the second to level 1, etc.  If you don’t specify as many
 integers as there are levels, the final value will be used for the remaining levels.</p></li>
-<li><p>if different values of <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span></code> (or <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code>) are wanted for each coordinate direction,
-then <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size_x</span></span></code>, <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size_y</span></span></code> and <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size_z</span></span></code>
-(or <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor_x</span></span></code>, <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor_y</span></span></code> and <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor_z</span></span></code>) must be used.
+<li><p>if different values of <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span></code> (or <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code>) are wanted for each coordinate direction,
+then <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size_x</span></code>, <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size_y</span></code> and <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size_z</span></code>
+(or <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor_x</span></code>, <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor_y</span></code> and <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor_z</span></code>) must be used.
 If you don’t specify as many integers as there are levels, the final value will be used for the remaining levels.</p></li>
-<li><p>note that <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span></code> is just an upper bound; with <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">n_cell</span></span> <span class="operator"><span class="pre">=</span></span> <span class="literal number integer"><span class="pre">48</span></span></code>
-and <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span> <span class="operator"><span class="pre">=</span></span> <span class="literal number integer"><span class="pre">32</span></span></code>, we will typically have one grid of length 32 and one of length 16.</p></li>
+<li><p>note that <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span></code> is just an upper bound; with <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">n_cell</span> <span class="o">=</span> <span class="mi">48</span></code>
+and <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span> <span class="o">=</span> <span class="mi">32</span></code>, we will typically have one grid of length 32 and one of length 16.</p></li>
 </ul>
 </div></blockquote>
 <p>The grid creation process at level 0 proceeds as follows (if not using the KD-tree approach):</p>
 <ol class="arabic simple">
-<li><p>The domain is initially defined by a single grid of size <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">n_cell</span></span></code>.</p></li>
-<li><p>If <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">n_cell</span></span></code> is greater than <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span></code> then the grids are subdivided until
-each grid is no longer than  <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">max_grid_size</span></span></code> cells on each side.  The <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code> criterion
-(ie that the length of each side of each grid is divisible by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code> in that direction)
+<li><p>The domain is initially defined by a single grid of size <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">n_cell</span></code>.</p></li>
+<li><p>If <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">n_cell</span></code> is greater than <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span></code> then the grids are subdivided until
+each grid is no longer than  <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">max_grid_size</span></code> cells on each side.  The <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code> criterion
+(ie that the length of each side of each grid is divisible by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code> in that direction)
 is satisfied during this process.</p></li>
-<li><p>Next, if <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">refine_grid_layout</span></span> <span class="operator"><span class="pre">=</span></span> <span class="name builtin"><span class="pre">true</span></span></code> and there are more processors than grids
+<li><p>Next, if <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">refine_grid_layout</span> <span class="o">=</span> <span class="nb">true</span></code> and there are more processors than grids
 at this level, then the grids at this level are further divided until Ngrids &gt;= Nprocs
-(unless doing so would violate the <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">blocking_factor</span></span></code> criterion).</p></li>
+(unless doing so would violate the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">blocking_factor</span></code> criterion).</p></li>
 </ol>
 </section>
 

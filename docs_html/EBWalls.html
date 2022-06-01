@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Constructing Embedded Boundaries in incflo &mdash; incflo 22.06-dev documentation</title>
+  <title>Constructing Embedded Boundaries in incflo &mdash; incflo 22.07-dev documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
@@ -15,6 +15,7 @@
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
@@ -31,7 +32,7 @@
             <a href="index.html" class="icon icon-home"> incflo
           </a>
               <div class="version">
-                22.06-dev
+                22.07-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -87,13 +88,13 @@
            <div itemprop="articleBody">
              
   <section id="constructing-embedded-boundaries-in-incflo">
-<span id="sec-eb-basics"></span><h1>Constructing Embedded Boundaries in incflo<a class="headerlink" href="#constructing-embedded-boundaries-in-incflo" title="Permalink to this headline"></a></h1>
+<span id="sec-eb-basics"></span><h1>Constructing Embedded Boundaries in incflo<a class="headerlink" href="#constructing-embedded-boundaries-in-incflo" title="Permalink to this heading"></a></h1>
 <p>MincfloFiX uses AMReX’s constructive solid geometry framework defined in the namespace
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">amrex</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">EB2</span></span></code>. See the <a href="#id5"><span class="problematic" id="id6">`AMReX EB documentation`_</span></a> for more details. These are
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">amrex</span><span class="o">::</span><span class="n">EB2</span></code>. See the <a href="#id5"><span class="problematic" id="id6">`AMReX EB documentation`_</span></a> for more details. These are
 defined in <a href="#id1"><span class="problematic" id="id2">``</span></a>incflo/src/embedded_boundaries <a href="#id3"><span class="problematic" id="id4">``</span></a>.</p>
 <section id="how-incflo-constructs-the-eb-geometry">
-<h2>How incflo Constructs the EB Geometry<a class="headerlink" href="#how-incflo-constructs-the-eb-geometry" title="Permalink to this headline"></a></h2>
-<p>Once a geometry is selected by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">make_eb_geometry</span></span></code>, the procedure is
+<h2>How incflo Constructs the EB Geometry<a class="headerlink" href="#how-incflo-constructs-the-eb-geometry" title="Permalink to this heading"></a></h2>
+<p>Once a geometry is selected by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">make_eb_geometry</span></code>, the procedure is
 the same for (almost) all geometries. Also see the <a href="#id7"><span class="problematic" id="id8">`AMReX geometry
 documentation`_</span></a> for information on how to construct new geometries:</p>
 <ol class="arabic simple">
@@ -105,14 +106,14 @@ of constructive solid geometry). For example</p></li>
 </pre></div>
 </div>
 <ol class="arabic simple" start="2">
-<li><p>Call <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">build_eb_levels</span></span><span class="punctuation"><span class="pre">(</span></span><span class="name"><span class="pre">gshop</span></span><span class="punctuation"><span class="pre">)</span></span></code> this function builds the EB levels
-and fills the implicit function <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">MultiFab</span></span></code> (the later being used to
+<li><p>Call <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">build_eb_levels</span><span class="p">(</span><span class="n">gshop</span><span class="p">)</span></code> this function builds the EB levels
+and fills the implicit function <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">MultiFab</span></code> (the later being used to
 construct the level-set function).</p></li>
 </ol>
 </section>
 <section id="incflo-s-eb-data-structures">
-<h2>incflo’s EB Data Structures<a class="headerlink" href="#incflo-s-eb-data-structures" title="Permalink to this headline"></a></h2>
-<p>The <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span></code> class stores the following EB data:</p>
+<h2>incflo’s EB Data Structures<a class="headerlink" href="#incflo-s-eb-data-structures" title="Permalink to this heading"></a></h2>
+<p>The <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span></code> class stores the following EB data:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//! EB levels representing fluid boundary conditions</span>
 <span class="n">Vector</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">EB2</span><span class="o">::</span><span class="n">Level</span> <span class="o">*&gt;</span> <span class="n">eb_levels</span><span class="p">;</span>
 
@@ -122,16 +123,16 @@ construct the level-set function).</p></li>
 </div>
 </section>
 <section id="a-note-about-constructing-eb-levels">
-<h2>A note about constructing EB Levels<a class="headerlink" href="#a-note-about-constructing-eb-levels" title="Permalink to this headline"></a></h2>
-<p>incflo builds EB levels in <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">build_eb_levels</span></span></code> (via
-<code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">LSCore</span></span><span class="operator"><span class="pre">&lt;</span></span><span class="name"><span class="pre">F</span></span><span class="operator"><span class="pre">&gt;::</span></span><span class="name"><span class="pre">BuildEBLevel</span></span></code>)</p>
+<h2>A note about constructing EB Levels<a class="headerlink" href="#a-note-about-constructing-eb-levels" title="Permalink to this heading"></a></h2>
+<p>incflo builds EB levels in <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">build_eb_levels</span></code> (via
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">LSCore</span><span class="o">&lt;</span><span class="n">F</span><span class="o">&gt;::</span><span class="n">BuildEBLevel</span></code>)</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">EB2</span><span class="o">::</span><span class="n">Build</span><span class="p">(</span><span class="n">gshop</span><span class="p">,</span> <span class="n">geom</span><span class="p">[</span><span class="n">lev</span><span class="p">],</span> <span class="n">required_crse_lev</span><span class="p">,</span> <span class="n">max_crse_level</span><span class="p">);</span>
 <span class="k">const</span> <span class="n">EB2</span><span class="o">::</span><span class="n">IndexSpace</span> <span class="o">&amp;</span> <span class="n">ebis</span> <span class="o">=</span> <span class="n">EB2</span><span class="o">::</span><span class="n">IndexSpace</span><span class="o">::</span><span class="n">top</span><span class="p">();</span>
 </pre></div>
 </div>
-<p>When building an EB level, the maximum coarsening level (<code class="code cpp c++ docutils literal notranslate"><span class="keyword type"><span class="pre">int</span></span>
-<span class="name"><span class="pre">max_crse_level</span></span></code>) and the required coarsening level (<code class="code cpp c++ docutils literal notranslate"><span class="keyword type"><span class="pre">int</span></span>
-<span class="name"><span class="pre">required_crse_lev</span></span></code>) need to be specified. The reason for this is that we need to
+<p>When building an EB level, the maximum coarsening level (<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="kt">int</span>
+<span class="n">max_crse_level</span></code>) and the required coarsening level (<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="kt">int</span>
+<span class="n">required_crse_lev</span></code>) need to be specified. The reason for this is that we need to
 specify to which level of coarseness the EB is still defined. It might not be
 immediately obvious, but the Poisson solver (used in the fluid solve) also
 depends indirectly on these parameters. Thus changing these during EB level
@@ -139,10 +140,10 @@ creation might restrict how many levels the MLMG solver can use, and therefore
 give slightly different answers in the fluid solve.</p>
 </section>
 <section id="incflo-initialization-process">
-<h2>incflo Initialization Process<a class="headerlink" href="#incflo-initialization-process" title="Permalink to this headline"></a></h2>
+<h2>incflo Initialization Process<a class="headerlink" href="#incflo-initialization-process" title="Permalink to this heading"></a></h2>
 <p>Since incflo requires the volume fraction when building grids (because this is
-needed by <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">ErrorEst</span></span></code>), the EB geometries need to be built before
-calling <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">Init</span></span></code>. The recommended procedure therefore is</p>
+needed by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">ErrorEst</span></code>), the EB geometries need to be built before
+calling <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">Init</span></code>. The recommended procedure therefore is</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Default constructor (geom[lev] is defined here)</span>
 <span class="n">incflo</span> <span class="n">my_incflo</span><span class="p">;</span>
 
@@ -168,8 +169,8 @@ calling <code class="code cpp c++ docutils literal notranslate"><span class="nam
 <span class="n">my_incflo</span><span class="p">.</span><span class="n">Regrid</span><span class="p">();</span>
 </pre></div>
 </div>
-<p>The grids for each level are build in the <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">incflo</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">Init</span></span></code> by invoking the
-initialization functions inherited from <code class="code cpp c++ docutils literal notranslate"><span class="name"><span class="pre">amrex</span></span><span class="operator"><span class="pre">::</span></span><span class="name"><span class="pre">AmrCore</span></span></code>.</p>
+<p>The grids for each level are build in the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">Init</span></code> by invoking the
+initialization functions inherited from <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">amrex</span><span class="o">::</span><span class="n">AmrCore</span></code>.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// This tells the AmrMesh class not to iterate when creating the initial</span>
 <span class="c1">// grid hierarchy</span>
 <span class="n">SetIterateToFalse</span><span class="p">();</span>
