@@ -181,10 +181,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             Array<PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>,AMREX_SPACEDIM>
                 fbndyFuncArr = {AMREX_D_DECL(fine_bndry_func_x,fine_bndry_func_y,fine_bndry_func_z)};
 
-	    //fixme
-	    // check BCs...
-	    Print()<<"vel xlo BC: "<<m_bc_velocity[0][0]<<", "<<m_bc_velocity[0][1]<<std::endl;
-	    
             if (lev == 0)
             {
                 //
@@ -227,7 +223,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
                 // Use piecewise constant interpolation in time, so create dummy variable for time
                 Real fake_time = 0.;
-		Array<int, AMREX_SPACEDIM> idx = {AMREX_D_DECL(0,1,2)};
+                Array<int, AMREX_SPACEDIM> idx = {AMREX_D_DECL(0,1,2)};
                 FillPatchTwoLevels(u_fine, IntVect(nghost_mac()), fake_time,
                                    {u_crse}, {fake_time},
                                    {u_fine}, {fake_time},
