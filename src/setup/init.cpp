@@ -75,13 +75,13 @@ void incflo::ReadParameters ()
             m_redistribution_type != "StateRedist")
             amrex::Abort("redistribution type must be NoRedist, FluxRedist, or StateRedist");
 
-    if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
+        if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
 #endif
 
         if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;
 
-        if (m_advection_type != "MOL" and m_advection_type != "Godunov")
-            amrex::Abort("advection type must be MOL or Godunov");
+        if (m_advection_type != "MOL" && m_advection_type != "Godunov" && m_advection_type != "BDS")
+            amrex::Abort("advection type must be MOL, Godunov, or BDS");
 
         // The default for diffusion_type is 2, i.e. the default m_diff_type is DiffusionType::Implicit
         int diffusion_type = 2;
@@ -112,7 +112,7 @@ void incflo::ReadParameters ()
             amrex::Abort("We currently require cfl <= 0.5 when using the MOL advection scheme");
         }
         if (m_advection_type != "MOL" && m_cfl > 1.0) {
-            amrex::Abort("We currently require cfl <= 1.0 when using the Godunov advection scheme");
+            amrex::Abort("We currently require cfl <= 1.0 when using this advection scheme");
         }
 
         // Initial conditions

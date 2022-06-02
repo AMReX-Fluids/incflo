@@ -639,9 +639,9 @@ private:
 
     int nghost_mac () const {
 #ifdef AMREX_USE_EB
-        if (!EBFactory(0).isAllRegular()) return (m_advection_type == "Godunov") ? 4 : 3;
+        if (!EBFactory(0).isAllRegular()) return (m_advection_type == "MOL") ? 3 : 4;
 #endif
-        return (m_advection_type == "Godunov") ? 1 : 0;
+        return (m_advection_type == "MOL") ? 0 : 1;
     }
 
 #ifdef AMREX_USE_EB

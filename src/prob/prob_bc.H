@@ -18,10 +18,10 @@ struct IncfloVelFill
 
     AMREX_GPU_DEVICE
     void operator() (const amrex::IntVect& iv, amrex::Array4<amrex::Real> const& vel,
-                     const int /*dcomp*/, const int /*numcomp*/,
+                     const int dcomp, const int num_comp,
                      amrex::GeometryData const& geom, const amrex::Real /*time*/,
                      const amrex::BCRec* bcr, const int bcomp,
-                     const int /*orig_comp*/) const
+                     const int orig_comp) const
     {
         using namespace amrex;
 
@@ -36,72 +36,83 @@ struct IncfloVelFill
 
         const Box& domain_box = geom.Domain();
 
-        for (int vcomp = 0; vcomp < AMREX_SPACEDIM; ++vcomp)
+        for (int nc = 0; nc < num_comp; ++nc)
         {
-            const BCRec& bc = bcr[bcomp+vcomp];
+            const BCRec& bc = bcr[bcomp+nc];
 
             if (bc.lo(0) == BCType::ext_dir && i < domain_box.smallEnd(0))
             {
-                vel(i,j,k,vcomp) = bcv[Orientation(Direction::x,Orientation::low)][vcomp];
+                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::x,Orientation::low)][orig_comp+nc];
 
-                if (31 == probtype && vcomp == 0)
+                if (orig_comp+nc == 0) // x velocity
                 {
-                    Real y = (j+0.5)*(1.0/domain_box.length(1));
-                    vel(i,j,k,0) *= 6. * y * (1.-y);
-                } else
-                if (311 == probtype && vcomp == 0)
-                {
-                    Real z = (k+0.5)*(1.0/domain_box.length(2));
-                    vel(i,j,k,0) *= 6. * z * (1.-z);
-                } else
-                if (41 == probtype && vcomp == 0)
-                {
-                    Real z = (k+0.5)*(1.0/domain_box.length(2));
-                    vel(i,j,k,0) =  0.5 * z;
+                    if (31 == probtype)
+                    {
+                        Real y = (j+0.5)*(1.0/domain_box.length(1));
+                        vel(i,j,k,dcomp+nc) *= 6. * y * (1.-y);
+                    }
+                    else if (311 == probtype)
+                    {
+                        Real z = (k+0.5)*(1.0/domain_box.length(2));
+                        vel(i,j,k,dcomp+nc) *= 6. * z * (1.-z);
+                    }
+                    else if (41 == probtype)
+                    {
+                        Real z = (k+0.5)*(1.0/domain_box.length(2));
+                        vel(i,j,k,dcomp+nc) =  0.5 * z;
+                    }
                 }
             }
             else if (bc.hi(0) == BCType::ext_dir && i > domain_box.bigEnd(0))
             {
-                vel(i,j,k,vcomp) = bcv[Orientation(Direction::x,Orientation::high)][vcomp];
+                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::x,Orientation::high)][orig_comp+nc];
             }
 
             if (bc.lo(1) == BCType::ext_dir && j < domain_box.smallEnd(1))
             {
-                vel(i,j,k,vcomp) = bcv[Orientation(Direction::y,Orientation::low)][vcomp];
-                if (32 == probtype && vcomp == 1)
+                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::y,Orientation::low)][orig_comp+nc];
+
+                if (orig_comp+nc == 1) // y velocity
                 {
-                    Real z = (k+0.5)*(1.0/domain_box.length(2));
-                    vel(i,j,k,1) *= 6. * z * (1.-z);
-                }
-                if (322 == probtype && vcomp == 1)
-                {
-                    Real x = (i+0.5)*(1.0/domain_box.length(0));
-                    vel(i,j,k,1) *= 6. * x * (1.-x);
+                    if (32 == probtype)
+                    {
+                        Real z = (k+0.5)*(1.0/domain_box.length(2));
+                        vel(i,j,k,dcomp+nc) *= 6. * z * (1.-z);
+                    }
+                    else if (322 == probtype)
+                    {
+                        Real x = (i+0.5)*(1.0/domain_box.length(0));
+                        vel(i,j,k,dcomp+nc) *= 6. * x * (1.-x);
+                    }
                 }
             }
             else if (bc.hi(1) == BCType::ext_dir && j > domain_box.bigEnd(1))
             {
-                vel(i,j,k,vcomp) = bcv[Orientation(Direction::y,Orientation::high)][vcomp];
+                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::y,Orientation::high)][orig_comp+nc];
             }
 
 #if (AMREX_SPACEDIM == 3)
             if (bc.lo(2) == BCType::ext_dir && k < domain_box.smallEnd(2))
             {
-                vel(i,j,k,vcomp) = bcv[Orientation(Direction::z,Orientation::low)][vcomp];
-                if (33 == probtype && vcomp == 2)
+                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::z,Orientation::low)][orig_comp+nc];
+
+                if (orig_comp+nc == 2) // z velocity
                 {
-                    Real x = (i+0.5)*(1.0/domain_box.length(0));
-                    vel(i,j,k,2) *= 6. * x * (1.-x);
-                }
-                if (333 == probtype && vcomp == 2)
-                {
-                    Real y = (j+0.5)*(1.0/domain_box.length(1));
-                    vel(i,j,k,2) *= 6. * y * (1.-y);
+                    if (33 == probtype)
+                    {
+                        Real x = (i+0.5)*(1.0/domain_box.length(0));
+                        vel(i,j,k,dcomp+nc) *= 6. * x * (1.-x);
+                    }
+                    if (333 == probtype)
+                    {
+                        Real y = (j+0.5)*(1.0/domain_box.length(1));
+                        vel(i,j,k,dcomp+nc) *= 6. * y * (1.-y);
+                    }
                 }
             }
             else if (bc.hi(2) == BCType::ext_dir && k > domain_box.bigEnd(2))
             {
-                vel(i,j,k,vcomp) = bcv[Orientation(Direction::z,Orientation::high)][vcomp];
+                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::z,Orientation::high)][orig_comp+nc];
             }
 #endif
         }
