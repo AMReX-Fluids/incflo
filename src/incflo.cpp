@@ -138,6 +138,9 @@ void incflo::Evolve()
         m_nstep++;
         m_cur_time += m_dt;
 
+        // Move EBGeometry
+        MakeEBGeometry(1.0);
+
         if (writeNow())
         {
             WritePlotFile();

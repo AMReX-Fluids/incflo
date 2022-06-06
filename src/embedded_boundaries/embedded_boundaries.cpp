@@ -5,7 +5,7 @@
 
 using namespace amrex;
 
-void incflo::MakeEBGeometry()
+void incflo::MakeEBGeometry(Real cur_time)
 {
    /******************************************************************************
    * incflo.geometry=<string> specifies the EB geometry. <string> can be one of    *
@@ -31,7 +31,7 @@ void incflo::MakeEBGeometry()
     else if(geom_type == "box")
     {
         amrex::Print() << "\n Building box geometry." << std::endl;
-        make_eb_box();
+        make_eb_box(cur_time);
     }
 #if (AMREX_SPACEDIM == 3)
     else if(geom_type == "twocylinders")

@@ -24,5 +24,9 @@ USE_CUDA   = FALSE
 USE_HYPRE = FALSE
 
 USE_EB = TRUE
+<<<<<<< HEAD
+USE_MOVING_EB = TRUE
+=======
+>>>>>>> 553e82b60463db47aa0654317d32ae3e683bc574
 
 include ../src/Make.incflo

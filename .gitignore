@@ -56,3 +56,8 @@ test/tmp_build_dir/
 test/Backtrace.*
 test/*plt*/
 test/chk*/
+
+# ignore build files
+test_2d_moving/*.ex
+test_2d_moving/plt*
+test_2d_moving/tmp_build_dir/

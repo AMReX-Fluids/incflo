@@ -838,9 +838,9 @@ private:
     ///////////////////////////////////////////////////////////////////////////
 
 #ifdef AMREX_USE_EB
-    void MakeEBGeometry ();
+    void MakeEBGeometry (amrex::Real time = 0.0);
     void make_eb_annulus ();
-    void make_eb_box ();
+    void make_eb_box (amrex::Real time = 0.0);
     void make_eb_cylinder ();
     void make_eb_twocylinders ();
     void make_eb_regular ();

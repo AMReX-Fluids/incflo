@@ -11,10 +11,11 @@ using namespace amrex;
  * Function to create a simple rectangular box with EB walls.               *
  *                                                                          *
  ****************************************************************************/
-void incflo::make_eb_box()
+void incflo::make_eb_box(Real cur_time)
 {
     // Get box information from inputs file
     ParmParse pp("box");
+    ParmParse eb("eb_flow");
 
     if(geom[0].isAllPeriodic())
     {
@@ -41,9 +42,14 @@ void incflo::make_eb_box()
         }
 
         pp.queryarr("Lo", boxLo, 0, AMREX_SPACEDIM);
-        pp.queryarr("Hi", boxHi, 0, AMREX_SPACEDIM);
+        pp.queryarr("Hi", boxHi, 0, AMREX_SPACEDIM);  
+        
+        Real velx = 0.0;
+        eb.query("vel_mag", velx);
 
         pp.query("offset", offset);
+
+        amrex::Print() << "velx * cur_time: " << velx *cur_time << std::endl;
 
         Real xlo = boxLo[0] + offset;
         Real xhi = boxHi[0] - offset;
@@ -68,6 +74,10 @@ void incflo::make_eb_box()
         }
 
 #if (AMREX_SPACEDIM == 2)
+
+        xlo = xlo + velx * cur_time;
+        xhi = xhi + velx * cur_time; 
+
         Array<Real, 2> point_lox{xlo, 0.0};
         Array<Real, 2> normal_lox{-1.0, 0.0};
         Array<Real, 2> point_hix{xhi, 0.0};
