@@ -81,7 +81,12 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
     {
         for (int lev = 0; lev <= finest_level; ++lev )
         {
-            sigma[lev].define(grids[lev], dmap[lev], 1, 0, MFInfo(), *m_factory[lev]);
+            sigma[lev].define(grids[lev], dmap[lev], 1, 0, MFInfo(), 
+#ifdef INCFLO_USE_MOVING_EB
+                              *m_new_factory[lev]);
+#else
+                              *m_factory[lev]);
+#endif
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif

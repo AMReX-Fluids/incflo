@@ -17,7 +17,12 @@ incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
 
         Vector<MultiFab*> divtau_scal;
         divtau_scal.push_back(new MultiFab(grids[0], dmap[0], divtau[0]->nComp(),
-                                           divtau[0]->nGrow(),MFInfo(),*m_factory[0]));
+                                           divtau[0]->nGrow(),MFInfo(),
+#ifdef INCFLO_USE_MOVING_EB
+                                           *m_new_factory[0]));
+#else
+                                           *m_factory[0]));
+#endif
         divtau_scal[0]->setVal(0.);
 
         get_diffusion_scalar_op()->compute_divtau({divtau_scal}, vel, density, eta);

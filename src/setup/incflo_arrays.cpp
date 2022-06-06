@@ -59,5 +59,10 @@ void incflo::ResizeArrays ()
 
     m_leveldata.resize(max_level+1);
 
+#ifdef INCFLO_USE_MOVING_EB
+    m_old_factory.resize(max_level+1);
+    m_new_factory.resize(max_level+1);
+#else
     m_factory.resize(max_level+1);
+#endif
 }

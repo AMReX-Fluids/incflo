@@ -20,6 +20,10 @@ ifeq ($(USE_EB), TRUE)
   USERSuffix += .EB
 endif
 
+ifeq ($(USE_MOVING_EB), TRUE)
+  DEFINES += -DINCFLO_USE_MOVING_EB
+endif
+
 Bpack += $(foreach dir, $(Bdirs), $(TOP)/$(dir)/Make.package)
 Blocs += $(foreach dir, $(Bdirs), $(TOP)/$(dir))
 

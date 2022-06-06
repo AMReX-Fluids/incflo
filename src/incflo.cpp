@@ -19,6 +19,10 @@ incflo::incflo ()
 #ifdef AMREX_USE_EB
     // This is needed before initializing level MultiFab
     MakeEBGeometry();
+
+#ifdef INCFLO_USE_MOVING_EB
+    eb_new = &(EB2::IndexSpace::top());
+#endif
 #endif
 
     // Initialize memory for data-array internals
@@ -65,8 +69,7 @@ void incflo::InitData ()
         // Set m_nstep to 0 before entering time loop
         m_nstep = 0;
 
-        // xxxxx TODO averagedown ???
-
+        // xxxxx TODO averagedown ??? 
         if (m_check_int > 0) { WriteCheckPointFile(); }
 
         // Plot initial distribution
@@ -206,14 +209,27 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
     SetDistributionMap(lev, new_dmap);
 
 #ifdef AMREX_USE_EB
+
+#ifdef INCFLO_USE_MOVING_EB
+    EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(eb_old));  // erase old EB
+    m_new_factory[lev] = makeEBFabFactory(eb_new, geom[lev], grids[lev], dmap[lev],
+                                         {nghost_eb_basic(),
+                                          nghost_eb_volume(),
+                                          nghost_eb_full()},
+                                          EBSupport::full);
+
+    m_leveldata[lev].reset(new LevelData(grids[lev], dmap[lev], *m_new_factory[lev],
+                                         m_ntrac, nghost_state(),
+                                         m_advection_type,
+                                         m_diff_type==DiffusionType::Implicit,
+                                           use_tensor_correction,
+                                         m_advect_tracer));
+#else
     m_factory[lev] = makeEBFabFactory(geom[lev], grids[lev], dmap[lev],
                                       {nghost_eb_basic(),
                                        nghost_eb_volume(),
                                        nghost_eb_full()},
                                        EBSupport::full);
-#else
-    m_factory[lev].reset(new FArrayBoxFactory());
-#endif
 
     m_leveldata[lev].reset(new LevelData(grids[lev], dmap[lev], *m_factory[lev],
                                          m_ntrac, nghost_state(),
@@ -221,6 +237,11 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
                                          m_diff_type==DiffusionType::Implicit,
                                            use_tensor_correction,
                                          m_advect_tracer));
+#endif
+
+#else
+    m_factory[lev].reset(new FArrayBoxFactory());
+#endif
 
     m_t_new[lev] = time;
     m_t_old[lev] = time - 1.e200;

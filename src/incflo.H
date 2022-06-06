@@ -13,6 +13,11 @@
 #include <AMReX_EBMultiFabUtil.H>
 #endif
 
+#ifdef INCFLO_USE_MOVING_EB
+#include <AMReX_EB2.H>
+#include <AMReX_EB2_IF.H>
+#endif
+
 #include <DiffusionTensorOp.H>
 #include <DiffusionScalarOp.H>
 
@@ -444,6 +449,11 @@ private:
     bool m_godunov_ppm         = true;
 #endif
 
+#ifdef INCFLO_USE_MOVING_EB
+    amrex::EB2::IndexSpace const* eb_new = nullptr;
+    amrex::EB2::IndexSpace const* eb_old;
+#endif
+
     // If using Godunov, default to including viscous/diffusive
     //    terms in the forcing terms
     bool m_godunov_include_diff_in_forcing = true;
@@ -561,7 +571,12 @@ private:
 
     amrex::Vector<std::unique_ptr<LevelData> > m_leveldata;
 
-    amrex::Vector<std::unique_ptr<amrex::FabFactory<amrex::FArrayBox> > > m_factory;
+#ifdef INCFLO_USE_MOVING_EB
+    amrex::Vector< std::unique_ptr<amrex::EBFArrayBoxFactory> > m_old_factory;
+    amrex::Vector< std::unique_ptr<amrex::EBFArrayBoxFactory> > m_new_factory;
+#else
+    amrex::Vector<std::unique_ptr<amrex::EBFArrayBoxFactory> > m_factory;
+#endif
 
     enum struct BC {
         pressure_inflow, pressure_outflow, mass_inflow, no_slip_wall, slip_wall,
@@ -605,13 +620,32 @@ private:
     // end of member variables
     //
 
+#ifdef INCFLO_USE_MOVING_EB
     amrex::FabFactory<amrex::FArrayBox> const&
-    Factory (int lev) const noexcept { return *m_factory[lev]; }
+        Factory (int lev) const noexcept { return *m_new_factory[lev]; }
+    amrex::FabFactory<amrex::FArrayBox> const&
+        OldFactory (int lev) const noexcept { return *m_old_factory[lev]; }
+#else
+    amrex::FabFactory<amrex::FArrayBox> const&
+        Factory (int lev) const noexcept { return *m_factory[lev]; }
+#endif
+
 #ifdef AMREX_USE_EB
+#ifdef INCFLO_USE_MOVING_EB
     amrex::EBFArrayBoxFactory const&
-    EBFactory (int lev) const noexcept {
-        return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
+        EBFactory (int lev) const noexcept {
+            return static_cast<amrex::EBFArrayBoxFactory const&>(*m_new_factory[lev]);
     }
+    amrex::EBFArrayBoxFactory const&
+        OldEBFactory (int lev) const noexcept {
+            return static_cast<amrex::EBFArrayBoxFactory const&>(*m_old_factory[lev]);
+    }
+#else
+    amrex::EBFArrayBoxFactory const&
+        EBFactory (int lev) const noexcept {
+            return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
+    }
+#endif
 #endif
 
     // Number of ghost cells for field arrays.
