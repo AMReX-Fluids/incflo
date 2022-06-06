@@ -77,7 +77,7 @@ void incflo::make_eb_box(Real cur_time)
 
         xlo = xlo + velx * cur_time;
         xhi = xhi + velx * cur_time; 
-
+        
         Array<Real, 2> point_lox{xlo, 0.0};
         Array<Real, 2> normal_lox{-1.0, 0.0};
         Array<Real, 2> point_hix{xhi, 0.0};

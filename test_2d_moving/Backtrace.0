@@ -1,0 +1,30 @@
+=== If no file names and line numbers are shown below, one can run
+            addr2line -Cpfie my_exefile my_line_address
+    to convert `my_line_address` (e.g., 0x4a6b) into file name and line number.
+    Or one can use amrex/Tools/Backtrace/parse_bt.py.
+
+=== Please note that the line number reported by addr2line may not be accurate.
+    One can use
+            readelf -wl my_exefile | grep my_line_address'
+    to find out the offset for that line.
+
+ 0: amrvis2d(+0x1656a5) [0x55f3f1f1f6a5]
+
+ 1: amrvis2d(+0x167555) [0x55f3f1f21555]
+
+ 2: /lib/x86_64-linux-gnu/libc.so.6(+0x43090) [0x7f5d70f2e090]
+
+ 3: /lib/x86_64-linux-gnu/libc.so.6(__poll+0x17) [0x7f5d70ffd967]
+
+ 4: /lib/x86_64-linux-gnu/libXt.so.6(_XtWaitForSomething+0x47a) [0x7f5d7187fe7a]
+
+ 5: /lib/x86_64-linux-gnu/libXt.so.6(XtAppProcessEvent+0x2c2) [0x7f5d71881632]
+
+ 6: /lib/x86_64-linux-gnu/libXt.so.6(XtAppMainLoop+0x2d) [0x7f5d71875d2d]
+
+ 7: amrvis2d(+0x1f783) [0x55f3f1dd9783]
+
+ 8: /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xf3) [0x7f5d70f0f083]
+
+ 9: amrvis2d(+0x234ce) [0x55f3f1ddd4ce]
+
