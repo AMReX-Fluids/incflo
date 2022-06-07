@@ -17,42 +17,17 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     }
 
 #ifdef AMREX_USE_EB
-#ifdef INCFLO_USE_MOVING_EB
-
-    // Erase old EB
-    EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(eb_old));
-
-    // Build a new EB
-    MakeEBGeometry();
-    eb_old = eb_new;
-    eb_new = &(EB2::IndexSpace::top());
-
-    m_old_factory[lev] = std::move(m_new_factory[lev]);
-    m_new_factory[lev] = makeEBFabFactory(eb_new, geom[lev], ba, dm,
-                                          {nghost_eb_basic(),
-                                           nghost_eb_volume(),
-                                           nghost_eb_full()},
-                                           EBSupport::full);
-#else // EB but not moving
-    m_factory[lev] = makeEBFabFactory(geom[lev], ba, dm,
-                                      {nghost_eb_basic(),
-                                      nghost_eb_volume(),
-                                      nghost_eb_full()},
-                                      EBSupport::full);
-#endif // end moving
-
-#else // No EB
-    std::unique_ptr<FabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
+    std::unique_ptr<EBFArrayBoxFactory> new_fact = makeEBFabFactory(geom[lev], ba, dm,
+                                                                    {nghost_eb_basic(),
+                                                                    nghost_eb_volume(),
+                                                                    nghost_eb_full()},
+                                                                    EBSupport::full);
+#else
+    std::unique_ptr<EBFabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
 #endif
 
     std::unique_ptr<LevelData> new_leveldata
-        (new LevelData(ba, dm, 
-#ifdef INCFLO_USE_MOVING_EB
-                       *m_new_factory[lev],
-#else
-                       *m_factory[lev],
-#endif
-                       m_ntrac, nghost_state(),
+        (new LevelData(ba, dm, *new_fact, m_ntrac, nghost_state(),
                        m_advection_type,
                        m_diff_type==DiffusionType::Implicit,
                        use_tensor_correction,
@@ -68,6 +43,12 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     new_leveldata->p_cc.setVal(0.0);
 
     m_leveldata[lev] = std::move(new_leveldata);
+#ifdef INCFLO_USE_MOVING_EB
+    m_old_factory[lev] = std::move(m_new_factory[lev]);
+    m_new_factory[lev] = std::move(new_fact);
+#else
+    m_factory[lev] = std::move(new_fact);
+#endif
 
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
@@ -95,20 +76,11 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
     }
 
 #ifdef AMREX_USE_EB
-#ifdef INCFLO_USE_MOVING_EB
-    std::unique_ptr<EBFArrayBoxFactory> new_fact = makeEBFabFactory(eb_new, geom[lev], ba, dm,
-                                                                    {nghost_eb_basic(),
-                                                                     nghost_eb_volume(),
-                                                                     nghost_eb_full()},
-                                                                     EBSupport::full);
-#else
     std::unique_ptr<EBFArrayBoxFactory> new_fact = makeEBFabFactory(geom[lev], ba, dm,
                                                                     {nghost_eb_basic(),
                                                                      nghost_eb_volume(),
                                                                      nghost_eb_full()},
                                                                      EBSupport::full);
-#endif
-
 #else
     std::unique_ptr<FabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
 #endif
@@ -128,7 +100,6 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
     new_leveldata->p_cc.setVal(0.0);
 
     m_leveldata[lev] = std::move(new_leveldata);
-
 #ifdef INCFLO_USE_MOVING_EB
     m_old_factory[lev] = std::move(m_new_factory[lev]);
     m_new_factory[lev] = std::move(new_fact);
@@ -160,18 +131,29 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
         amrex::Print() << "Remaking level " << lev << " with new geometry" << std::endl;
     }
 
-    std::unique_ptr<EBFArrayBoxFactory> new_fact = makeEBFabFactory(eb_new, geom[lev], grids[lev], dmap[lev],
-                                                                    {nghost_eb_basic(),
-                                                                     nghost_eb_volume(),
-                                                                     nghost_eb_full()},
-                                                                     EBSupport::full);
+    // Erase old EB
+    EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(eb_old));
+
+    // Build a new EB
+    MakeEBGeometry(time);
+    eb_old = eb_new;
+    eb_new = &(EB2::IndexSpace::top());
+
+    m_old_factory[lev] = std::move(m_new_factory[lev]);
+
+    m_new_factory[lev] = makeEBFabFactory(eb_new, geom[lev], grids[lev], dmap[lev],
+                                          {nghost_eb_basic(),
+                                           nghost_eb_volume(),
+                                           nghost_eb_full()},
+                                          EBSupport::full);
 
     std::unique_ptr<LevelData> new_leveldata
-        (new LevelData(grids[lev], dmap[lev], *new_fact, m_ntrac, nghost_state(),
+        (new LevelData(grids[lev], dmap[lev], *m_new_factory[lev], m_ntrac, nghost_state(),
                        m_advection_type,
                        m_diff_type==DiffusionType::Implicit,
                        use_tensor_correction,
                        m_advect_tracer));
+
     fillpatch_velocity(lev, time, new_leveldata->velocity, 0);
     fillpatch_density(lev, time, new_leveldata->density, 0);
     if (m_ntrac > 0) {
@@ -182,9 +164,6 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     new_leveldata->p_cc.setVal(0.0);
 
     m_leveldata[lev] = std::move(new_leveldata);
-
-    m_old_factory[lev] = std::move(m_new_factory[lev]);
-    m_new_factory[lev] = std::move(new_fact);
 }
 #endif
 #endif
