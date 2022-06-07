@@ -9,6 +9,14 @@ void incflo::Advance()
     // Start timing current time step
     Real strt_step = ParallelDescriptor::second();
 
+#ifdef INCFLO_USE_MOVING_EB
+    // Update the moving geometry and arrays
+    for(int lev = 0; lev <= finest_level; lev++)
+    {
+        RemakeLevelWithNewGeometry(lev, m_cur_time);
+    }
+#endif
+
     // Compute time step size
     int initialisation = 0;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);

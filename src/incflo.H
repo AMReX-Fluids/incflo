@@ -66,6 +66,10 @@ public:
                               const amrex::BoxArray& ba,
                               const amrex::DistributionMapping& dm) override;
 
+#ifdef INCFLO_USE_MOVING_EB
+    void RemakeLevelWithNewGeometry (int lev, amrex::Real time);
+#endif
+
     // Delete level data
     virtual void ClearLevel (int lev) override;
 

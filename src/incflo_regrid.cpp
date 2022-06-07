@@ -149,6 +149,46 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 #endif
 }
 
+#ifdef AMREX_USE_EB
+#ifdef INCFLO_USE_MOVING_EB
+// Remake an existing level with a new geometry but nothing else changed
+void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
+{
+    BL_PROFILE("incflo::RemakeLevelWithNewGeometry()");
+
+    if (m_verbose > 0) {
+        amrex::Print() << "Remaking level " << lev << " with new geometry" << std::endl;
+    }
+
+    std::unique_ptr<EBFArrayBoxFactory> new_fact = makeEBFabFactory(eb_new, geom[lev], grids[lev], dmap[lev],
+                                                                    {nghost_eb_basic(),
+                                                                     nghost_eb_volume(),
+                                                                     nghost_eb_full()},
+                                                                     EBSupport::full);
+
+    std::unique_ptr<LevelData> new_leveldata
+        (new LevelData(grids[lev], dmap[lev], *new_fact, m_ntrac, nghost_state(),
+                       m_advection_type,
+                       m_diff_type==DiffusionType::Implicit,
+                       use_tensor_correction,
+                       m_advect_tracer));
+    fillpatch_velocity(lev, time, new_leveldata->velocity, 0);
+    fillpatch_density(lev, time, new_leveldata->density, 0);
+    if (m_ntrac > 0) {
+        fillpatch_tracer(lev, time, new_leveldata->tracer, 0);
+    }
+    fillpatch_gradp(lev, time, new_leveldata->gp, 0);
+    new_leveldata->p_nd.setVal(0.0);
+    new_leveldata->p_cc.setVal(0.0);
+
+    m_leveldata[lev] = std::move(new_leveldata);
+
+    m_old_factory[lev] = std::move(m_new_factory[lev]);
+    m_new_factory[lev] = std::move(new_fact);
+}
+#endif
+#endif
+
 // Delete level data
 // overrides the pure virtual function in AmrCore
 void incflo::ClearLevel (int lev)
