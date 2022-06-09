@@ -170,6 +170,15 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
         EB_set_covered( new_leveldata->tracer  , 1.e45);
     EB_set_covered( new_leveldata->gp , 1.e45);
 
+    // Now let's make sure to fill cells that were previously covered but are now cut cell
+    EB_fill_uncovered(lev,new_leveldata->velocity, m_leveldata[lev]->velocity);
+    EB_fill_uncovered(lev,new_leveldata->density , m_leveldata[lev]->density );
+    if (m_ntrac > 0) 
+        EB_fill_uncovered(lev,new_leveldata->tracer  , m_leveldata[lev]->tracer  );
+    EB_fill_uncovered(lev,new_leveldata->gp      , m_leveldata[lev]->gp      );
+    EB_fill_uncovered(lev,new_leveldata->p_nd    , m_leveldata[lev]->p_nd    );
+    EB_fill_uncovered(lev,new_leveldata->p_cc    , m_leveldata[lev]->p_cc    );
+
     m_leveldata[lev] = std::move(new_leveldata);
 
     // Reset the solvers as well
@@ -199,4 +208,26 @@ void incflo::ClearLevel (int lev)
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
     macproj.reset();
+}
+
+void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old) 
+{
+    // auto vfrac_old = m_old_factory[lev]->getVolFrac();
+    // auto vfrac_new = m_new_factory[lev]->getVolFrac();
+
+    for (MFIter mfi(mf_new,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        Box const& bx = mfi.tilebox();
+        Array4<Real>       const& fab_new = mf_new.array(mfi);
+        Array4<Real const> const& fab_old = mf_old.const_array(mfi);
+
+        const int ncomp = mf_new.nComp();
+
+        amrex::ParallelFor(bx, ncomp
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+            // This would be a straight copy ... just as an example... 
+            fab_new(i,j,k,n) = fab_old(i,j,k,n);
+        });
+    }
 }
