@@ -12,8 +12,8 @@ PRECISION  = DOUBLE
 
 TINY_PROFILE = FALSE
 
-DEBUG      = TRUE
 DEBUG      = FALSE
+DEBUG      = TRUE
 
 COMP	   = gnu
 
