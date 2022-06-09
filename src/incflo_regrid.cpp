@@ -154,14 +154,21 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
                        use_tensor_correction,
                        m_advect_tracer));
 
-    fillpatch_velocity(lev, time, new_leveldata->velocity, 0);
-    fillpatch_density(lev, time, new_leveldata->density, 0);
+    MultiFab::Copy(new_leveldata->velocity, m_leveldata[lev]->velocity,0,0,AMREX_SPACEDIM,0);
+    MultiFab::Copy(new_leveldata->density , m_leveldata[lev]->density ,0,0,1,0);
     if (m_ntrac > 0) {
-        fillpatch_tracer(lev, time, new_leveldata->tracer, 0);
+        MultiFab::Copy(new_leveldata->tracer, m_leveldata[lev]->tracer,0,0,1,0);
     }
-    fillpatch_gradp(lev, time, new_leveldata->gp, 0);
-    new_leveldata->p_nd.setVal(0.0);
-    new_leveldata->p_cc.setVal(0.0);
+    MultiFab::Copy(new_leveldata->gp   , m_leveldata[lev]->gp   ,0,0,AMREX_SPACEDIM,0);
+    MultiFab::Copy(new_leveldata->p_nd , m_leveldata[lev]->p_nd ,0,0,1,0);
+    MultiFab::Copy(new_leveldata->p_cc , m_leveldata[lev]->p_cc ,0,0,1,0);
+
+    // Let's fill the newly covered cells with 1e45 to be different
+    EB_set_covered( new_leveldata->velocity, 1.e45);
+    EB_set_covered( new_leveldata->density , 1.e45);
+    if (m_ntrac > 0) 
+        EB_set_covered( new_leveldata->tracer  , 1.e45);
+    EB_set_covered( new_leveldata->gp , 1.e45);
 
     m_leveldata[lev] = std::move(new_leveldata);
 }
