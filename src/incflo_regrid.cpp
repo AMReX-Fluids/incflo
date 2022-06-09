@@ -229,13 +229,22 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
         amrex::ParallelFor(bx, 
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            // If the wall moves left
             if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
             {
                 amrex::Print() << "Need to fill cell " << IntVect(i,j) << std::endl;
                 for (int n = 0; n < ncomp; n++)
                 {
-                    // This hack works only for our special case of the wall moving left
                     fab_new(i,j,k,n) = fab_old(i+1,j,k,n);
+                }
+            }
+            // If the wall moves right 
+            if (vf_new(i,j,k) == 0.0 && vf_old(i,j,k) > 0.0)
+            {
+                amrex::Print() << "Need to fill cell " << IntVect(i,j) << std::endl;
+                for (int n = 0; n < ncomp; n++)
+                {
+                    fab_new(i,j,k,n) = fab_old(i-1,j,k,n);
                 }
             }
         });
