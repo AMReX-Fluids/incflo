@@ -65,7 +65,7 @@ xhi.pressure            =   0.0
 incflo.geometry = "box"
 box.internal_flow = true
 
-box.Lo =  3.05  -0.20  
+box.Lo =  1.05  -0.20  
 box.Hi =  3.80   1.80   
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
