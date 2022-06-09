@@ -68,7 +68,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 // overrides the pure virtual function in AmrCore
 void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
                           const DistributionMapping& dm)
-{
+{ 
     BL_PROFILE("incflo::RemakeLevel()");
 
     if (m_verbose > 0) {
@@ -171,6 +171,15 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     EB_set_covered( new_leveldata->gp , 1.e45);
 
     m_leveldata[lev] = std::move(new_leveldata);
+
+    // Reset the solvers as well
+    m_diffusion_tensor_op.reset();
+    m_diffusion_scalar_op.reset();
+
+    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
+                      MLMG::Location::FaceCentroid,  // Location of mac_vec
+                      MLMG::Location::FaceCentroid,  // Location of beta
+                      MLMG::Location::CellCenter  ) ); // Location of solution variable phi
 }
 #endif
 #endif
