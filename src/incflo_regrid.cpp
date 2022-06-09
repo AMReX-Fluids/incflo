@@ -212,8 +212,8 @@ void incflo::ClearLevel (int lev)
 
 void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old) 
 {
-    // auto vfrac_old = m_old_factory[lev]->getVolFrac();
-    // auto vfrac_new = m_new_factory[lev]->getVolFrac();
+    auto const& vfrac_old = OldEBFactory(lev).getVolFrac();
+    auto const& vfrac_new =    EBFactory(lev).getVolFrac();
 
     for (MFIter mfi(mf_new,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
@@ -221,13 +221,23 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
         Array4<Real>       const& fab_new = mf_new.array(mfi);
         Array4<Real const> const& fab_old = mf_old.const_array(mfi);
 
+        Array4<Real const> const&  vf_old = vfrac_old.const_array(mfi);
+        Array4<Real const> const&  vf_new = vfrac_new.const_array(mfi);
+
         const int ncomp = mf_new.nComp();
 
-        amrex::ParallelFor(bx, ncomp
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        amrex::ParallelFor(bx, 
+        [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            // This would be a straight copy ... just as an example... 
-            fab_new(i,j,k,n) = fab_old(i,j,k,n);
+            if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
+            {
+                amrex::Print() << "Need to fill cell " << IntVect(i,j) << std::endl;
+                for (int n = 0; n < ncomp; n++)
+                {
+                    // This hack works only for our special case of the wall moving left
+                    fab_new(i,j,k,n) = fab_old(i+1,j,k,n);
+                }
+            }
         });
     }
 }
