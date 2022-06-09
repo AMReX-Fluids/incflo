@@ -343,10 +343,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
     for (int lev = 0; lev <= finest_level; lev++)
     {
         auto& ld = *m_leveldata[lev];
-
-        // HACK HACK -- this should be 0 because mu is 0 ...
-        ld.divtau_o.setVal(0.);
-
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
