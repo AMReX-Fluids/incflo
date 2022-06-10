@@ -3,7 +3,7 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  50            # Max number of time steps
+max_step                =  50           # Max number of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -52,20 +52,20 @@ amr.blocking_factor     =   2
 #.......................................#
 geometry.prob_lo        =   0.  0.      # Lo corner coordinates
 geometry.prob_hi        =   3.4 1.6     # Hi corner coordinates
-geometry.is_periodic    =   0   1       # Periodicity x y z (0/1)
+geometry.is_periodic    =   1   0       # Periodicity x y z (0/1)
 
 # Boundary conditions
-xlo.type                =   "nsw"
-xlo.velocity            =   0.0  0.0  0.0
+ylo.type                =   "nsw"
+ylo.velocity            =   0.0  0.0  0.0
 
-xhi.type                =   "po"
-xhi.pressure            =   0.0
+yhi.type                =   "po"
+yhi.pressure            =  0.0
 
 # Add box
 incflo.geometry = "box"
 box.internal_flow = true
 
-box.Lo =  1.05  -0.20  
+box.Lo =  -0.2   0.45  
 box.Hi =  3.80   1.80   
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -85,4 +85,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 #               EB FLOW                 #
 #.......................................#
-eb_flow.velocity        =  2.0 0.0 0.0
+eb_flow.velocity        = 0.0 2.0 0.0

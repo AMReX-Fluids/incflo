@@ -44,12 +44,13 @@ void incflo::make_eb_box(Real cur_time)
         pp.queryarr("Lo", boxLo, 0, AMREX_SPACEDIM);
         pp.queryarr("Hi", boxHi, 0, AMREX_SPACEDIM);  
         
-        Real velx = 0.0;
-        eb.query("vel_mag", velx);
+        Vector<Real> vel(AMREX_SPACEDIM);
+        eb.queryarr("velocity", vel, 0, AMREX_SPACEDIM);
 
         pp.query("offset", offset);
 
-        amrex::Print() << "velx * cur_time: " << velx *cur_time << std::endl;
+        amrex::Print() << "velx * cur_time: " << vel[0] *cur_time << std::endl;
+        amrex::Print() << "vely * cur_time: " << vel[1] *cur_time << std::endl;
 
         Real xlo = boxLo[0] + offset;
         Real xhi = boxHi[0] - offset;
@@ -73,10 +74,14 @@ void incflo::make_eb_box(Real cur_time)
             yhi = 2.0 * geom[0].ProbHi(1) - geom[0].ProbLo(1);
         }
 
-#if (AMREX_SPACEDIM == 2)
+        xlo = xlo + vel[0] * cur_time;
+        xhi = xhi + vel[0] * cur_time;
 
-        xlo = xlo + velx * cur_time;
-        xhi = xhi + velx * cur_time; 
+        ylo = ylo + vel[1] * cur_time;
+        yhi = yhi + vel[1] * cur_time; 
+
+
+#if (AMREX_SPACEDIM == 2)
 
         amrex::Print() << "Making new box with left face at " << xlo << std::endl;
         
@@ -110,6 +115,9 @@ void incflo::make_eb_box(Real cur_time)
             zlo = 2.0 * geom[0].ProbLo(2) - geom[0].ProbHi(2);
             zhi = 2.0 * geom[0].ProbHi(2) - geom[0].ProbLo(2);
         }
+
+        zlo = zlo + vel[2] * cur_time;
+        zhi = zhi + vel[2] * cur_time; 
 
         Array<Real, 3> point_lox{xlo, 0.0, 0.0};
         Array<Real, 3> normal_lox{-1.0, 0.0, 0.0};

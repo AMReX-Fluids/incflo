@@ -229,7 +229,7 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
         amrex::ParallelFor(bx, 
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            // If the wall moves left
+            /*// If new cell is uncovered
             if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
             {
                 amrex::Print() << "Need to fill cell " << IntVect(i,j) << std::endl;
@@ -237,14 +237,42 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
                 {
                     fab_new(i,j,k,n) = fab_old(i+1,j,k,n);
                 }
-            }
-            // If the wall moves right 
-            if (vf_new(i,j,k) == 0.0 && vf_old(i,j,k) > 0.0)
+            }*/
+            // If new cell is uncovered... avg from neighbors that are cut or regular
+            if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
             {
                 amrex::Print() << "Need to fill cell " << IntVect(i,j) << std::endl;
                 for (int n = 0; n < ncomp; n++)
                 {
-                    fab_new(i,j,k,n) = fab_old(i-1,j,k,n);
+                    fab_new(i,j,k,n) = 0;
+                    Real den = 0.;
+                    if (vf_old(i+1,j,k) > 0.0)
+                    { 
+                        fab_new(i,j,k,n) += fab_old(i+1,j,k,n);
+                        den += 1.;
+                        amrex::Print() << "Fill from left." << std::endl;
+                    }
+                    if (vf_old(i-1,j,k) > 0.0)
+                    { 
+                        fab_new(i,j,k,n) += fab_old(i-1,j,k,n);
+                        den += 1.;
+                        amrex::Print() << "Fill from right." << std::endl;
+                    }
+               
+                    if (vf_old(i,j+1,k) > 0.0)
+                    { 
+                        fab_new(i,j,k,n) += fab_old(i,j+1,k,n);
+                        den += 1.;
+                        amrex::Print() << "Fill from above." << std::endl;
+                    }
+                    if (vf_old(i,j-1,k) > 0.0)
+                    { 
+                        fab_new(i,j,k,n) += fab_old(i,j-1,k,n);
+                        den += 1.;
+                        amrex::Print() << "Fill from below." << std::endl;
+                    }
+                    
+                    fab_new(i,j,k,n) = fab_new(i,j,k,n) / den; 
                 }
             }
         });
