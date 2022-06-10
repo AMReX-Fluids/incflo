@@ -58,7 +58,7 @@ void incflo::MakeEBGeometry(Real cur_time)
     else if(geom_type == "sphere")
     {
     amrex::Print() << "\n Building sphere geometry." << std::endl;
-        make_eb_sphere();
+        make_eb_sphere(cur_time);
     }
     else if(geom_type == "jcap")
     {

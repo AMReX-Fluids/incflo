@@ -849,7 +849,7 @@ private:
     void make_eb_cylinder ();
     void make_eb_twocylinders ();
     void make_eb_regular ();
-    void make_eb_sphere ();
+    void make_eb_sphere (amrex::Real time = 0.0);
     void make_eb_spherecube ();
     void make_eb_cyl_tuscan ();
     void make_eb_tuscan ();
