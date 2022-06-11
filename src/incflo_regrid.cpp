@@ -229,19 +229,10 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
         amrex::ParallelFor(bx, 
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            /*// If new cell is uncovered
-            if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
-            {
-                amrex::Print() << "Need to fill cell " << IntVect(i,j) << std::endl;
-                for (int n = 0; n < ncomp; n++)
-                {
-                    fab_new(i,j,k,n) = fab_old(i+1,j,k,n);
-                }
-            }*/
             // If new cell is uncovered... avg from neighbors that are cut or regular
             if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
             {
-                amrex::Print() << "Need to fill cell " << IntVect(i,j) << std::endl;
+                amrex::Print() << "Need to fill cell " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
                 for (int n = 0; n < ncomp; n++)
                 {
                     fab_new(i,j,k,n) = 0;
