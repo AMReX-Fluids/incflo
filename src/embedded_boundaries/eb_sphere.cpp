@@ -41,8 +41,12 @@ void incflo::make_eb_sphere(Real cur_time)
     amrex::Print() << " " << std::endl;
     amrex::Print() << " Internal Flow: " << inside << std::endl;
     amrex::Print() << " Radius:    " << radius << std::endl;
+#if (AMREX_SPACEDIM == 2)
+    amrex::Print() << " Center:    " << center[0] << ", " << center[1] << std::endl;
+#else
     amrex::Print() << " Center:    " << center[0] << ", " << center[1] << ", " << center[2]
                    << std::endl;
+#endif
 
     // Build the sphere implicit function
     EB2::SphereIF my_sphere(radius, center, inside);
