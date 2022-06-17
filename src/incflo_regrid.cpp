@@ -181,13 +181,13 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
         EB_fill_uncovered(lev,new_leveldata->tracer  , m_leveldata[lev]->tracer  );
     
     //amrex::Print() << "\nFill gp" << std::endl;
-    EB_fill_uncovered_with_zero(lev,new_leveldata->gp      , m_leveldata[lev]->gp      );
+    EB_fill_uncovered(lev,new_leveldata->gp      , m_leveldata[lev]->gp      );
     
     //amrex::Print() << "\nFill p_nd" << std::endl;
-    EB_fill_uncovered_with_zero(lev,new_leveldata->p_nd    , m_leveldata[lev]->p_nd    );
+    EB_fill_uncovered(lev,new_leveldata->p_nd    , m_leveldata[lev]->p_nd    );
     
     //amrex::Print() << "\nFill p_cc" << std::endl;
-    EB_fill_uncovered_with_zero(lev,new_leveldata->p_cc    , m_leveldata[lev]->p_cc    );
+    EB_fill_uncovered(lev,new_leveldata->p_cc    , m_leveldata[lev]->p_cc    );
 
     m_leveldata[lev] = std::move(new_leveldata);
 
@@ -248,7 +248,7 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
                     fab_new(i,j,k,n) = 0.;
                     Real den = 0.;
                     
-                    if (n == 0) {
+                    //if (n == 0) {
                     if (vf_old(i+1,j,k) > 0.0)
                     { 
                         fab_new(i,j,k,n) += fab_old(i+1,j,k,n);
@@ -276,9 +276,9 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
 
                     fab_new(i,j,k,n) = fab_new(i,j,k,n) / den; 
 
-                    } else {
-                        fab_new(i,j,k,n) = 0.0;
-                    }
+                    //} else {
+                    //    fab_new(i,j,k,n) = 0.0;
+                    //}
                     
                     // This routine will set u velocity to 1 and all others to 0
                     /*
