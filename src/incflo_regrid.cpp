@@ -171,13 +171,23 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     EB_set_covered( new_leveldata->gp , 1.e45);
 
     // Now let's make sure to fill cells that were previously covered but are now cut cell
+    //amrex::Print() << "Fill Velocity" << std::endl;
     EB_fill_uncovered(lev,new_leveldata->velocity, m_leveldata[lev]->velocity);
+    
+    //amrex::Print() << "\nFill density" << std::endl;
     EB_fill_uncovered(lev,new_leveldata->density , m_leveldata[lev]->density );
+    
     if (m_ntrac > 0) 
         EB_fill_uncovered(lev,new_leveldata->tracer  , m_leveldata[lev]->tracer  );
-    EB_fill_uncovered(lev,new_leveldata->gp      , m_leveldata[lev]->gp      );
-    EB_fill_uncovered(lev,new_leveldata->p_nd    , m_leveldata[lev]->p_nd    );
-    EB_fill_uncovered(lev,new_leveldata->p_cc    , m_leveldata[lev]->p_cc    );
+    
+    //amrex::Print() << "\nFill gp" << std::endl;
+    EB_fill_uncovered_with_zero(lev,new_leveldata->gp      , m_leveldata[lev]->gp      );
+    
+    //amrex::Print() << "\nFill p_nd" << std::endl;
+    EB_fill_uncovered_with_zero(lev,new_leveldata->p_nd    , m_leveldata[lev]->p_nd    );
+    
+    //amrex::Print() << "\nFill p_cc" << std::endl;
+    EB_fill_uncovered_with_zero(lev,new_leveldata->p_cc    , m_leveldata[lev]->p_cc    );
 
     m_leveldata[lev] = std::move(new_leveldata);
 
@@ -235,35 +245,83 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
                 amrex::Print() << "Need to fill cell " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
                 for (int n = 0; n < ncomp; n++)
                 {
-                    fab_new(i,j,k,n) = 0;
+                    fab_new(i,j,k,n) = 0.;
                     Real den = 0.;
+                    
+                    if (n == 0) {
                     if (vf_old(i+1,j,k) > 0.0)
                     { 
                         fab_new(i,j,k,n) += fab_old(i+1,j,k,n);
+                        amrex::Print() << "right fill: " << fab_old(i+1,j,k,n) << std::endl;
                         den += 1.;
-                        amrex::Print() << "Fill from left." << std::endl;
                     }
                     if (vf_old(i-1,j,k) > 0.0)
                     { 
                         fab_new(i,j,k,n) += fab_old(i-1,j,k,n);
+                        amrex::Print() << "left fill: " << fab_old(i-1,j,k,n) << std::endl;
                         den += 1.;
-                        amrex::Print() << "Fill from right." << std::endl;
                     }
-               
                     if (vf_old(i,j+1,k) > 0.0)
                     { 
                         fab_new(i,j,k,n) += fab_old(i,j+1,k,n);
+                        amrex::Print() << "top fill: " << fab_old(i,j+1,k,n) << std::endl;
                         den += 1.;
-                        amrex::Print() << "Fill from above." << std::endl;
                     }
                     if (vf_old(i,j-1,k) > 0.0)
                     { 
                         fab_new(i,j,k,n) += fab_old(i,j-1,k,n);
+                        amrex::Print() << "bottom fill: " << fab_old(i,j-1,k,n) << std::endl;
                         den += 1.;
-                        amrex::Print() << "Fill from below." << std::endl;
+                    }
+
+                    fab_new(i,j,k,n) = fab_new(i,j,k,n) / den; 
+
+                    } else {
+                        fab_new(i,j,k,n) = 0.0;
                     }
                     
-                    fab_new(i,j,k,n) = fab_new(i,j,k,n) / den; 
+                    // This routine will set u velocity to 1 and all others to 0
+                    /*
+                    if (n == 0) 
+                    {
+                        fab_new(i,j,k,n) = 1.0; //fab_new(i,j,k,n) / den; 
+                    } else {
+                        fab_new(i,j,k,n) = 0.0; 
+                    }*/
+
+                    //amrex::Print() << "filled val: " << fab_new(i,j,k,n) << std::endl;
+                }
+            }
+        });
+    }
+}
+
+void incflo::EB_fill_uncovered_with_zero (int lev, MultiFab& mf_new, MultiFab& mf_old) 
+{
+    auto const& vfrac_old = OldEBFactory(lev).getVolFrac();
+    auto const& vfrac_new =    EBFactory(lev).getVolFrac();
+
+    for (MFIter mfi(mf_new,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        Box const& bx = mfi.tilebox();
+        Array4<Real>       const& fab_new = mf_new.array(mfi);
+        Array4<Real const> const& fab_old = mf_old.const_array(mfi);
+
+        Array4<Real const> const&  vf_old = vfrac_old.const_array(mfi);
+        Array4<Real const> const&  vf_new = vfrac_new.const_array(mfi);
+
+        const int ncomp = mf_new.nComp();
+
+        amrex::ParallelFor(bx, 
+        [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            // If new cell is uncovered... avg from neighbors that are cut or regular
+            if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
+            {
+                amrex::Print() << "Need to fill cell with zero " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
+                for (int n = 0; n < ncomp; n++)
+                {
+                    fab_new(i,j,k,n) = 0.; 
                 }
             }
         });

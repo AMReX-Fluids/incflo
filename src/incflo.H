@@ -68,7 +68,8 @@ public:
 
 #ifdef INCFLO_USE_MOVING_EB
     void RemakeLevelWithNewGeometry (int lev, amrex::Real time);
-    void EB_fill_uncovered(int lev, amrex::MultiFab& mf_new, amrex::MultiFab& mf_old); 
+    void EB_fill_uncovered(int lev, amrex::MultiFab& mf_new, amrex::MultiFab& mf_old);  
+    void EB_fill_uncovered_with_zero(int lev, amrex::MultiFab& mf_new, amrex::MultiFab& mf_old);
 #endif
 
     // Delete level data

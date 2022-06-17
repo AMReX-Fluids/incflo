@@ -477,6 +477,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
                             // Note that because we define update_arr as MINUS div(u u), here we add u div (u)
                             update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
+
                         }
                     });
                 }
@@ -502,10 +503,16 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                      qavg *= 1.0 / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
                                                     +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
 #endif
-
+                             
                                 // Note that because we define update_arr as MINUS div(u u), here we add u div (u)
                                 update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
+                                
+                                if (divu_arr(i,j,k) > 1e-8)  amrex::Print() << "(" << i << ", " << j << ") above threshold: " << divu_arr(i,j,k) << std::endl;
+                               
+                                // MATT -- below shuts off the advection
+                                //update_arr(i,j,k,n) = 0.;
                             }
+
                         });
                     }
                 }

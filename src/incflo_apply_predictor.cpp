@@ -159,9 +159,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
     compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(),
                        get_density_old_const(), get_tracer_old_const(), get_tracer_new_const(),
                        include_pressure_gradient);
+
+    //MATT 
+    amrex::Print() << "\n\n\nPRE MAC PROJECTION\n\n" << std::endl;
+
     compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
+
+    // MATT 
+    amrex::Print() << "\nconv_u: " << m_cur_time << std::endl;
 
     // *************************************************************************************
     // if (advection_type == "Godunov")
