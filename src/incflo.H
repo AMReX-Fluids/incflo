@@ -240,9 +240,6 @@ public: // for cuda
     ///////////////////////////////////////////////////////////////////////////
 
     void ApplyProjection(amrex::Vector<amrex::MultiFab const*> density,
-                         AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
-                                      amrex::Vector<amrex::MultiFab*> const& v_mac,
-                                      amrex::Vector<amrex::MultiFab*> const& w_mac),
                          amrex::Real time, amrex::Real scaling_factor, bool incremental);
     void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> density,
                               amrex::Real time, amrex::Real scaling_factor, bool incremental);
@@ -473,9 +470,6 @@ private:
     //    use gradient of mac phi which contains the full pressure
     bool m_use_mac_phi_in_godunov = false;
 
-    // If true use CC projection; if false use nodal projection
-    bool m_use_cc_proj = false;
-
     enum struct DiffusionType {
         Invalid, Explicit, Crank_Nicolson, Implicit
     };
@@ -522,7 +516,6 @@ private:
     int m_plt_rho         = 1;
     int m_plt_tracer      = 1;
     int m_plt_p_nd        = 0;
-    int m_plt_p_cc        = 0;
     int m_plt_macphi      = 0;
     int m_plt_eta         = 0;
     int m_plt_vort        = 1;
@@ -558,7 +551,6 @@ private:
         amrex::MultiFab mac_phi; // cell-centered pressure used in MAC projection
 
         amrex::MultiFab gp; // pressure gradient
-        amrex::MultiFab p_cc; // pressure gradient
         // nodal multifabs
         amrex::MultiFab p_nd;
         //

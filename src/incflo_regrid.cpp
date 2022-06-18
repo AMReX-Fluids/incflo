@@ -40,7 +40,6 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     }
     fillcoarsepatch_gradp(lev, time, new_leveldata->gp, 0);
     new_leveldata->p_nd.setVal(0.0);
-    new_leveldata->p_cc.setVal(0.0);
 
     m_leveldata[lev] = std::move(new_leveldata);
 #ifdef INCFLO_USE_MOVING_EB
@@ -97,7 +96,6 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
     }
     fillpatch_gradp(lev, time, new_leveldata->gp, 0);
     new_leveldata->p_nd.setVal(0.0);
-    new_leveldata->p_cc.setVal(0.0);
 
     m_leveldata[lev] = std::move(new_leveldata);
 #ifdef INCFLO_USE_MOVING_EB
@@ -161,7 +159,6 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     }
     MultiFab::Copy(new_leveldata->gp   , m_leveldata[lev]->gp   ,0,0,AMREX_SPACEDIM,0);
     MultiFab::Copy(new_leveldata->p_nd , m_leveldata[lev]->p_nd ,0,0,1,0);
-    MultiFab::Copy(new_leveldata->p_cc , m_leveldata[lev]->p_cc ,0,0,1,0);
 
     // Let's fill the newly covered cells with 1e45 to be different
     EB_set_covered( new_leveldata->velocity, 1.e45);
@@ -185,9 +182,6 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
 
     //amrex::Print() << "\nFill p_nd" << std::endl;
     EB_fill_uncovered(lev,new_leveldata->p_nd    , m_leveldata[lev]->p_nd    );
-
-    //amrex::Print() << "\nFill p_cc" << std::endl;
-    EB_fill_uncovered(lev,new_leveldata->p_cc    , m_leveldata[lev]->p_cc    );
 
     m_leveldata[lev] = std::move(new_leveldata);
 

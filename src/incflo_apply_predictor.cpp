@@ -420,8 +420,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     //
     // **********************************************************************************************
     ApplyProjection(GetVecOfConstPtrs(density_nph),
-                    AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                    GetVecOfPtrs(w_mac)),new_time,m_dt,incremental_projection);
+                    new_time,m_dt,incremental_projection);
 
 #ifdef AMREX_USE_EB
     // **********************************************************************************************

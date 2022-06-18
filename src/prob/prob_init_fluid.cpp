@@ -11,7 +11,6 @@ void incflo::prob_init_fluid (int lev)
     auto const& probhi = geom[lev].ProbHiArray();
 
     ld.p_nd.setVal(0.0);
-    ld.p_cc.setVal(0.0);
     ld.gp.setVal(0.0);
 
     ld.density.setVal(m_ro_0);
