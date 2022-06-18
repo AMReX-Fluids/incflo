@@ -22,7 +22,7 @@ void incflo::prob_init_fluid (int lev)
                  ld.velocity.setVal(m_ic_w, 2, 1););
 
     if (m_ntrac > 0) ld.tracer.setVal(0.0);
- 
+
     amrex::Print() <<" TYPE " << m_probtype << std::endl;
 
     for (MFIter mfi(ld.density); mfi.isValid(); ++mfi)

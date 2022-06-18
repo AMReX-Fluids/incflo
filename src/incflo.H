@@ -68,7 +68,7 @@ public:
 
 #ifdef INCFLO_USE_MOVING_EB
     void RemakeLevelWithNewGeometry (int lev, amrex::Real time);
-    void EB_fill_uncovered(int lev, amrex::MultiFab& mf_new, amrex::MultiFab& mf_old);  
+    void EB_fill_uncovered(int lev, amrex::MultiFab& mf_new, amrex::MultiFab& mf_old);
     void EB_fill_uncovered_with_zero(int lev, amrex::MultiFab& mf_new, amrex::MultiFab& mf_old);
 #endif
 
@@ -851,6 +851,7 @@ private:
     void make_eb_twocylinders ();
     void make_eb_regular ();
     void make_eb_sphere (amrex::Real time = 0.0);
+    void make_eb_stirrer (amrex::Real time = 0.0);
     void make_eb_spherecube ();
     void make_eb_cyl_tuscan ();
     void make_eb_tuscan ();

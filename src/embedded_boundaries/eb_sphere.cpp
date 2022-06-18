@@ -21,20 +21,20 @@ void incflo::make_eb_sphere(Real cur_time)
 
     // Get sphere information from inputs file.                               *
     ParmParse pp("sphere");
-    ParmParse eb("eb_flow"); 
+    ParmParse eb("eb_flow");
 
     pp.query("internal_flow", inside);
     pp.query("radius", radius);
     pp.getarr("center", centervec, 0, 3);
- 
+
     Vector<Real> vels(AMREX_SPACEDIM);
     eb.queryarr("velocity", vels, 0, AMREX_SPACEDIM);
 
     // Print velocity info:
-    amrex::Print() << "EB Velocity: " << vels[0] << ", " << vels[1] << std::endl; 
+    amrex::Print() << "EB Velocity: " << vels[0] << ", " << vels[1] << std::endl;
 
-    Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0] + vels[0]*cur_time, 
-                                                       centervec[1] + vels[1]*cur_time, 
+    Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0] + vels[0]*cur_time,
+                                                       centervec[1] + vels[1]*cur_time,
                                                        centervec[2] + vels[2]*cur_time)};
 
     // Print info about sphere

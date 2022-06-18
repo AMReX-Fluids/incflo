@@ -382,7 +382,7 @@ incflo::InitialRedistribution ()
 {
     // Next we must redistribute the initial solution if we are going to use
     // StateRedist redistribution scheme
-    if (m_redistribution_type == "StateRedist") 
+    if (m_redistribution_type == "StateRedist")
     {
       for (int lev = 0; lev <= finest_level; lev++)
       {

@@ -42,8 +42,8 @@ void incflo::make_eb_box(Real cur_time)
         }
 
         pp.queryarr("Lo", boxLo, 0, AMREX_SPACEDIM);
-        pp.queryarr("Hi", boxHi, 0, AMREX_SPACEDIM);  
-        
+        pp.queryarr("Hi", boxHi, 0, AMREX_SPACEDIM);
+
         Vector<Real> vel(AMREX_SPACEDIM);
         eb.queryarr("velocity", vel, 0, AMREX_SPACEDIM);
 
@@ -78,13 +78,13 @@ void incflo::make_eb_box(Real cur_time)
         xhi = xhi + vel[0] * cur_time;
 
         ylo = ylo + vel[1] * cur_time;
-        yhi = yhi + vel[1] * cur_time; 
+        yhi = yhi + vel[1] * cur_time;
 
 
 #if (AMREX_SPACEDIM == 2)
 
         amrex::Print() << "Making new box with left face at " << xlo << std::endl;
-        
+
         Array<Real, 2> point_lox{xlo, 0.0};
         Array<Real, 2> normal_lox{-1.0, 0.0};
         Array<Real, 2> point_hix{xhi, 0.0};
@@ -117,7 +117,7 @@ void incflo::make_eb_box(Real cur_time)
         }
 
         zlo = zlo + vel[2] * cur_time;
-        zhi = zhi + vel[2] * cur_time; 
+        zhi = zhi + vel[2] * cur_time;
 
         Array<Real, 3> point_lox{xlo, 0.0, 0.0};
         Array<Real, 3> normal_lox{-1.0, 0.0, 0.0};

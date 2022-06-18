@@ -60,6 +60,11 @@ void incflo::MakeEBGeometry(Real cur_time)
     amrex::Print() << "\n Building sphere geometry." << std::endl;
         make_eb_sphere(cur_time);
     }
+    else if(geom_type == "stirrer")
+    {
+    amrex::Print() << "\n Building stirrer geometry." << std::endl;
+        make_eb_stirrer(cur_time);
+    }
     else if(geom_type == "jcap")
     {
     amrex::Print() << "\n Building JCAP geometry." << std::endl;
