@@ -73,6 +73,19 @@ void incflo::ApplyPredictor (bool incremental_projection)
         PrintMaxValues(new_time);
     }
 
+#ifdef INCFLO_USE_MOVING_EB
+    // *************************************************************************************
+    // Reset the solvers to work with the new EB
+    // *************************************************************************************
+    m_diffusion_tensor_op.reset();
+    m_diffusion_scalar_op.reset();
+
+    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
+                      MLMG::Location::FaceCentroid,  // Location of mac_vec
+                      MLMG::Location::FaceCentroid,  // Location of beta
+                      MLMG::Location::CellCenter  ) ); // Location of solution variable phi
+#endif
+
     // *************************************************************************************
     // Allocate space for the MAC velocities
     // *************************************************************************************
@@ -421,16 +434,4 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // **********************************************************************************************
     ApplyProjection(GetVecOfConstPtrs(density_nph),
                     new_time,m_dt,incremental_projection);
-
-#ifdef AMREX_USE_EB
-    // **********************************************************************************************
-    //
-    // Over-write velocity in cells with vfrac < 1e-4
-    //
-    // **********************************************************************************************
-    if (m_advection_type == "MOL")
-        incflo_correct_small_cells(get_velocity_new(),
-                                   AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
-                                   GetVecOfConstPtrs(w_mac)));
-#endif
 }

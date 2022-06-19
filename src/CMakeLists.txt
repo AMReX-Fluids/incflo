@@ -5,10 +5,8 @@ target_sources(incflo
    incflo.cpp
    incflo_advance.cpp
    incflo_apply_predictor.cpp
-   incflo_apply_corrector.cpp
    incflo_compute_dt.cpp
    incflo_compute_forces.cpp
-   incflo_correct_small_cells.cpp
    incflo_tagging.cpp
    incflo_regrid.cpp
    incflo_vol_wgt_sum.cpp

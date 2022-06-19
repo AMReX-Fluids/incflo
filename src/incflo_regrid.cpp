@@ -184,15 +184,6 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     EB_fill_uncovered(lev,new_leveldata->p_nd    , m_leveldata[lev]->p_nd    );
 
     m_leveldata[lev] = std::move(new_leveldata);
-
-    // Reset the solvers as well
-    m_diffusion_tensor_op.reset();
-    m_diffusion_scalar_op.reset();
-
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
-                      MLMG::Location::FaceCentroid,  // Location of mac_vec
-                      MLMG::Location::FaceCentroid,  // Location of beta
-                      MLMG::Location::CellCenter  ) ); // Location of solution variable phi
 }
 #endif
 #endif
