@@ -431,7 +431,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     if (!incremental_projection) {
         for (int lev = 0; lev <= finest_level; lev++)
         {
-            RemakeLevelWithNewGeometry(lev, m_cur_time);
+            RemakeLevelWithNewGeometry(lev, new_time);
         }
     }
 #endif
