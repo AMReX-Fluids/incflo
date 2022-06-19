@@ -67,12 +67,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // We use the new time value for things computed on the "*" state
     Real new_time = m_cur_time + m_dt;
 
-    if (m_verbose > 2)
-    {
-        amrex::Print() << "Before predictor step:" << std::endl;
-        PrintMaxValues(new_time);
-    }
-
 #ifdef INCFLO_USE_MOVING_EB
     // *************************************************************************************
     // Reset the solvers to work with the new EB
@@ -85,6 +79,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
                       MLMG::Location::FaceCentroid,  // Location of beta
                       MLMG::Location::CellCenter  ) ); // Location of solution variable phi
 #endif
+
+    if (m_verbose > 2)
+    {
+        amrex::Print() << "Before predictor step:" << std::endl;
+        PrintMaxValues(new_time);
+    }
 
     // *************************************************************************************
     // Allocate space for the MAC velocities
@@ -105,15 +105,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
                          w_mac[lev].setBndry(0.0););
         }
     }
-
     // *************************************************************************************
-    // Allocate space for half-time density
+    // Allocate space for half-time density using "old" EB
     // *************************************************************************************
-    Vector<MultiFab> density_nph;
+    Vector<MultiFab> density_nph_oldeb;
     for (int lev = 0; lev <= finest_level; ++lev)
-        density_nph.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+        density_nph_oldeb.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
 
+    // *************************************************************************************
     // Forcing terms
+    // *************************************************************************************
     Vector<MultiFab> vel_forces, tra_forces;
 
     Vector<MultiFab> vel_eta, tra_eta;
@@ -203,7 +204,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     if (l_constant_density)
     {
         for (int lev = 0; lev <= finest_level; lev++)
-            MultiFab::Copy(density_nph[lev], m_leveldata[lev]->density_o, 0, 0, 1, 1);
+            MultiFab::Copy(density_nph_oldeb[lev], m_leveldata[lev]->density_o, 0, 0, 1, 1);
     } else {
         for (int lev = 0; lev <= finest_level; lev++)
         {
@@ -222,26 +223,20 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 {
                     rho_new(i,j,k) = rho_o(i,j,k) + l_dt * drdt(i,j,k);
                 });
+             } // mfi
+
+             for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+             {
+                 Box const& gbx = mfi.growntilebox(1);
+                 Array4<Real  const> const& rho_old  = ld.density_o.const_array(mfi);
+                 Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
+                 Array4<Real>        const& rho_nph  = density_nph_oldeb[lev].array(mfi);
+ 
+                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                 {
+                     rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
+                 });
             } // mfi
-
-            // Fill ghost cells of the new density field so that we can define density_nph
-            //      on the valid region grown by 1 (we will need this for ccproj)
-            int ng = 1;
-            fillpatch_density(lev, m_t_new[lev], ld.density, ng);
-
-            for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                Box const& gbx = mfi.growntilebox(1);
-                Array4<Real  const> const& rho_old  = ld.density_o.const_array(mfi);
-                Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
-                Array4<Real>        const& rho_nph  = density_nph[lev].array(mfi);
-
-                amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                {
-                    rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
-                });
-            } // mfi
-
         } // lev
     } // not constant density
 
@@ -249,7 +244,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Compute (or if Godunov, re-compute) the tracer forcing terms (forcing for (rho s), not for s)
     // *************************************************************************************
     if (m_advect_tracer)
-       compute_tra_forces(GetVecOfPtrs(tra_forces), GetVecOfConstPtrs(density_nph));
+       compute_tra_forces(GetVecOfPtrs(tra_forces), GetVecOfConstPtrs(density_nph_oldeb));
 
     // *************************************************************************************
     // Update the tracer next
@@ -347,7 +342,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     //    and using the half-time density
     // *************************************************************************************
     compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(),
-                       GetVecOfConstPtrs(density_nph),
+                       GetVecOfConstPtrs(density_nph_oldeb),
                        get_tracer_old_const(), get_tracer_new_const());
 
 
@@ -427,11 +422,61 @@ void incflo::ApplyPredictor (bool incremental_projection)
         diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
 
+#ifdef INCFLO_USE_MOVING_EB
+    // **********************************************************************************************
+    //
+    // Update the moving geometry and arrays
+    //
+    // **********************************************************************************************
+    if (!incremental_projection) {
+        for (int lev = 0; lev <= finest_level; lev++)
+        {
+            RemakeLevelWithNewGeometry(lev, m_cur_time);
+        }
+    }
+#endif
+
+    // *************************************************************************************
+    // Allocate space for half-time density after we have updated EB
+    // *************************************************************************************
+    Vector<MultiFab> density_nph_neweb;
+    for (int lev = 0; lev <= finest_level; ++lev)
+        density_nph_neweb.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+
+    // *************************************************************************************
+    // Update density first
+    // *************************************************************************************
+    if (l_constant_density)
+    {
+        for (int lev = 0; lev <= finest_level; lev++)
+            MultiFab::Copy(density_nph_neweb[lev], m_leveldata[lev]->density_o, 0, 0, 1, 1);
+    } else {
+        for (int lev = 0; lev <= finest_level; lev++)
+        {
+            auto& ld = *m_leveldata[lev];
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                Box const& gbx = mfi.growntilebox(1);
+                Array4<Real  const> const& rho_old  = ld.density_o.const_array(mfi);
+                Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
+                Array4<Real>        const& rho_nph  = density_nph_neweb[lev].array(mfi);
+
+                amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
+                });
+            } // mfi
+        } // lev
+    } // not constant density
+
     // **********************************************************************************************
     //
     // Project velocity field, update pressure
     //
     // **********************************************************************************************
-    ApplyProjection(GetVecOfConstPtrs(density_nph),
+    ApplyProjection(GetVecOfConstPtrs(density_nph_neweb),
                     new_time,m_dt,incremental_projection);
 }

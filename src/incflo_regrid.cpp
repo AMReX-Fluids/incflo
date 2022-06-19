@@ -48,18 +48,6 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 #else
     m_factory[lev] = std::move(new_fact);
 #endif
-
-    m_diffusion_tensor_op.reset();
-    m_diffusion_scalar_op.reset();
-
-#ifdef AMREX_USE_EB
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
-                      MLMG::Location::FaceCentroid,  // Location of mac_vec
-                      MLMG::Location::FaceCentroid,  // Location of beta
-                      MLMG::Location::CellCenter  ) ); // Location of solution variable phi
-#else
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level)));
-#endif
 }
 
 // Remake an existing level using provided BoxArray and DistributionMapping and
@@ -152,30 +140,41 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
                        use_tensor_correction,
                        m_advect_tracer));
 
-    MultiFab::Copy(new_leveldata->velocity, m_leveldata[lev]->velocity,0,0,AMREX_SPACEDIM,0);
-    MultiFab::Copy(new_leveldata->density , m_leveldata[lev]->density ,0,0,1,0);
+    MultiFab::Copy(new_leveldata->velocity  , m_leveldata[lev]->velocity  ,0,0,AMREX_SPACEDIM,0);
+    MultiFab::Copy(new_leveldata->velocity_o, m_leveldata[lev]->velocity_o,0,0,AMREX_SPACEDIM,0);
+    MultiFab::Copy(new_leveldata->density   , m_leveldata[lev]->density  ,0,0,1,0);
+    MultiFab::Copy(new_leveldata->density_o , m_leveldata[lev]->density_o,0,0,1,0);
     if (m_ntrac > 0) {
-        MultiFab::Copy(new_leveldata->tracer, m_leveldata[lev]->tracer,0,0,1,0);
+        MultiFab::Copy(new_leveldata->tracer  , m_leveldata[lev]->tracer  ,0,0,1,0);
+        MultiFab::Copy(new_leveldata->tracer_o, m_leveldata[lev]->tracer_o,0,0,1,0);
     }
     MultiFab::Copy(new_leveldata->gp   , m_leveldata[lev]->gp   ,0,0,AMREX_SPACEDIM,0);
     MultiFab::Copy(new_leveldata->p_nd , m_leveldata[lev]->p_nd ,0,0,1,0);
 
     // Let's fill the newly covered cells with 1e45 to be different
-    EB_set_covered( new_leveldata->velocity, 1.e45);
-    EB_set_covered( new_leveldata->density , 1.e45);
-    if (m_ntrac > 0)
-        EB_set_covered( new_leveldata->tracer  , 1.e45);
+    EB_set_covered( new_leveldata->velocity  , 1.e45);
+    EB_set_covered( new_leveldata->velocity_o, 1.e45);
+    EB_set_covered( new_leveldata->density   , 1.e45);
+    EB_set_covered( new_leveldata->density_o , 1.e45);
+    if (m_ntrac > 0) {
+        EB_set_covered( new_leveldata->tracer    , 1.e45);
+        EB_set_covered( new_leveldata->tracer_o  , 1.e45);
+    }
     EB_set_covered( new_leveldata->gp , 1.e45);
 
     // Now let's make sure to fill cells that were previously covered but are now cut cell
     //amrex::Print() << "Fill Velocity" << std::endl;
-    EB_fill_uncovered(lev,new_leveldata->velocity, m_leveldata[lev]->velocity);
+    EB_fill_uncovered(lev,new_leveldata->velocity  , m_leveldata[lev]->velocity  );
+    EB_fill_uncovered(lev,new_leveldata->velocity_o, m_leveldata[lev]->velocity_o);
 
     //amrex::Print() << "\nFill density" << std::endl;
-    EB_fill_uncovered(lev,new_leveldata->density , m_leveldata[lev]->density );
+    EB_fill_uncovered(lev,new_leveldata->density   , m_leveldata[lev]->density   );
+    EB_fill_uncovered(lev,new_leveldata->density_o , m_leveldata[lev]->density_o );
 
-    if (m_ntrac > 0)
-        EB_fill_uncovered(lev,new_leveldata->tracer  , m_leveldata[lev]->tracer  );
+    if (m_ntrac > 0) {
+        EB_fill_uncovered(lev,new_leveldata->tracer    , m_leveldata[lev]->tracer    );
+        EB_fill_uncovered(lev,new_leveldata->tracer_o  , m_leveldata[lev]->tracer_o  );
+    }
 
     //amrex::Print() << "\nFill gp" << std::endl;
     EB_fill_uncovered(lev,new_leveldata->gp      , m_leveldata[lev]->gp      );
