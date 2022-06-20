@@ -108,6 +108,7 @@ public: // for cuda
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
     void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
     void set_eb_tracer (int lev, amrex::Real time, amrex::MultiFab& eb_tracer, int nghost);
+    void set_eb_velocity_for_rotation (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
@@ -419,8 +420,11 @@ private:
        bool enabled;
        bool has_normal;
        bool is_mag;
+       bool is_omega;
        amrex::Real vel_mag;
        amrex::Vector<amrex::Real> velocity;
+       amrex::Vector<amrex::Real> omega;
+       amrex::Vector<amrex::Real> center_of_rotation;
 
        // Normal to exclude EB faces. By default all faces within a specified
        // region will
@@ -435,7 +439,10 @@ private:
          : enabled(false)
          , has_normal(false)
          , is_mag(false)
+         , is_omega(false)
          , vel_mag(0.)
+         , omega(0.)
+         , center_of_rotation(0.)
          , normal_tol(0.)
          , density(1.)
        {}
