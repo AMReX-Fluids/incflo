@@ -232,7 +232,6 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
                     fab_new(i,j,k,n) = 0.;
                     Real den = 0.;
 
-                    //if (n == 0) {
                     if (vf_old(i+1,j,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i+1,j,k,n);
@@ -257,23 +256,22 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
                         amrex::Print() << "bottom fill: " << fab_old(i,j-1,k,n) << std::endl;
                         den += 1.;
                     }
+#if (AMREX_SPACEDIM == 3)
+                    if (vf_old(i,j,k+1) > 0.0)
+                    {
+                        fab_new(i,j,k,n) += fab_old(i,j,k+1,n);
+                        amrex::Print() << "up fill: " << fab_old(i,j,k+1,n) << std::endl;
+                        den += 1.;
+                    }
+                    if (vf_old(i,j,k-1) > 0.0)
+                    {
+                        fab_new(i,j,k,n) += fab_old(i,j,k-1,n);
+                        amrex::Print() << "down fill: " << fab_old(i,j,k-1,n) << std::endl;
+                        den += 1.;
+                    }
+#endif
 
                     fab_new(i,j,k,n) = fab_new(i,j,k,n) / den;
-
-                    //} else {
-                    //    fab_new(i,j,k,n) = 0.0;
-                    //}
-
-                    // This routine will set u velocity to 1 and all others to 0
-                    /*
-                    if (n == 0)
-                    {
-                        fab_new(i,j,k,n) = 1.0; //fab_new(i,j,k,n) / den;
-                    } else {
-                        fab_new(i,j,k,n) = 0.0;
-                    }*/
-
-                    //amrex::Print() << "filled val: " << fab_new(i,j,k,n) << std::endl;
                 }
             }
         });
