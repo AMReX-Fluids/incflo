@@ -48,8 +48,29 @@ void incflo::make_eb_stirrer(Real time)
 
     auto stirrer = EB2::makeUnion(spheres, rectangle);
 
+    // Rotate the stirrer
+    ParmParse eb("eb_flow");
+    Vector<Real> omega(3);
+    eb.queryarr("omega", omega, 0, 3);
+
+    Real alpha  = omega[2]*time;
+    Real beta   = omega[1]*time;
+    Real gamma  = omega[0]*time;
+
+    auto stirrer_at_center = EB2::translate(stirrer, {
+                                AMREX_D_DECL(-domain_center_x,-domain_center_y,-domain_center_z)});
+
+    auto rotated_stirrer_at_center = EB2::rotate( 
+                                        EB2::rotate(
+                                           EB2::rotate(
+                                              stirrer_at_center, alpha, 2),
+                                        beta, 1), gamma, 0);
+
+    auto stirrer_final = EB2::translate(rotated_stirrer_at_center, {
+                                AMREX_D_DECL(domain_center_x,domain_center_y,domain_center_z)});
+
     // Generate GeometryShop
-    auto gshop = EB2::makeShop(stirrer);
+    auto gshop = EB2::makeShop(stirrer_final);
 
     // Build index space
     int max_level_here = 0;
