@@ -279,4 +279,71 @@ incflo::set_eb_tracer (int lev, amrex::Real /*time*/, MultiFab& eb_tracer, int n
      IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
      eb_tracer.EnforcePeriodicity(0,m_ntrac,ng_vect,gm.periodicity());
 }
+
+void
+incflo::set_eb_velocity_for_rotation (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int nghost)
+{
+    Geometry const& gm = Geom(lev);
+    const auto dx = gm.CellSizeArray();
+    eb_vel.setVal(0.);
+
+    const auto& factory =
+       dynamic_cast<EBFArrayBoxFactory const&>(eb_vel.Factory());
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+     for (MFIter mfi(eb_vel, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+       const Box& bx = mfi.tilebox();
+       const auto& flagfab      = factory.getMultiEBCellFlagFab()[mfi];
+
+       if (flagfab.getType(bx) == FabType::singlevalued) {
+          const auto& flags_arr    = flagfab.const_array();
+          const auto& eb_vel_arr   = eb_vel[mfi].array();
+          const auto& bcent_arr     = factory.getBndryCent()[mfi].const_array();
+
+          GpuArray<amrex::Real,3> eb_omega{0.}, eb_cor{0.};
+          if ( m_eb_flow.is_omega ) {
+             const auto& omega = m_eb_flow.omega;
+             eb_omega[0] = omega[0];
+             eb_omega[1] = omega[1];
+             eb_omega[2] = omega[2];
+
+             const auto& cor = m_eb_flow.center_of_rotation;
+             AMREX_D_TERM(eb_cor[0] = cor[0];,
+                          eb_cor[1] = cor[1];,
+                          eb_cor[2] = cor[2];);
+          }
+
+          ParallelFor(bx, [dx,flags_arr,eb_vel_arr,bcent_arr,eb_omega,eb_cor]
+             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+           {
+             if (flags_arr(i,j,k).isSingleValued()) {
+               Vector<Real> r(3, 0.0);
+               RealVect btan;
+
+               // Compute r as vector from EB surface to center of rotation
+               AMREX_D_TERM(r[0] = (i + 0.5 + bcent_arr(i,j,k,0))*dx[0] - eb_cor[0];,
+                            r[1] = (j + 0.5 + bcent_arr(i,j,k,1))*dx[1] - eb_cor[1];,
+                            r[2] = (k + 0.5 + bcent_arr(i,j,k,2))*dx[2] - eb_cor[2];);
+
+               // Compute tangent vector as omega x r
+               AMREX_D_TERM(btan[0] = eb_omega[1]*r[2] - eb_omega[2]*r[1];,
+                            btan[1] = eb_omega[0]*r[2] - eb_omega[2]*r[0];,
+                            btan[2] = eb_omega[0]*r[1] - eb_omega[1]*r[0];);
+
+               AMREX_D_TERM(eb_vel_arr(i,j,k,0) = btan[0];,
+                            eb_vel_arr(i,j,k,1) = btan[1];,
+                            eb_vel_arr(i,j,k,2) = btan[2];);
+             }
+
+           });
+       }
+     }
+
+     // We make sure to only fill "nghost" ghost cells so we don't accidentally
+     // over-write good ghost cell values with unfilled ghost cell values
+     IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
+     eb_vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
+}
 #endif
