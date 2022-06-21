@@ -84,4 +84,5 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 #               EB FLOW                 #
 #.......................................#
-eb_flow.velocity        = 1.0 0.0 0.0
+eb_flow.omega              = 0.0 0.0 1.0
+eb_flow.center_of_rotation = 0.5 0.5 0.0
