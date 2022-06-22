@@ -329,12 +329,13 @@ incflo::set_eb_velocity_for_rotation (int lev, amrex::Real /*time*/, MultiFab& e
 
                // Compute tangent vector as omega x r
                AMREX_D_TERM(btan[0] = eb_omega[1]*r[2] - eb_omega[2]*r[1];,
-                            btan[1] = eb_omega[0]*r[2] - eb_omega[2]*r[0];,
+                            btan[1] = eb_omega[2]*r[0] - eb_omega[0]*r[2];,
                             btan[2] = eb_omega[0]*r[1] - eb_omega[1]*r[0];);
 
                AMREX_D_TERM(eb_vel_arr(i,j,k,0) = btan[0];,
                             eb_vel_arr(i,j,k,1) = btan[1];,
                             eb_vel_arr(i,j,k,2) = btan[2];);
+            
              }
 
            });

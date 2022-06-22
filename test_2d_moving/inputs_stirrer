@@ -3,7 +3,7 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  5              # Max number of time steps
+max_step                =  314         # Max number of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -23,7 +23,7 @@ amr.plt_regtest         =   1
 #               PHYSICS                 #
 #.......................................#
 incflo.gravity          =   0.  0.      # Gravitational force (3D)
-incflo.ro_0             =   1.          # Reference density 
+incflo.ro_0             =   0.1         # Reference density 
 
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
@@ -52,14 +52,21 @@ amr.blocking_factor     =   2
 #.......................................#
 geometry.prob_lo        =   0.  0.      # Lo corner coordinates
 geometry.prob_hi        =   1.0 1.0     # Hi corner coordinates
-geometry.is_periodic    =   0   1       # Periodicity x y z (0/1)
+geometry.is_periodic    =   0  0        # Periodicity x y z (0/1)
 
 # Boundary conditions
-xlo.type                =   "mi"
-xlo.velocity            =   1.0  0.0  0.0
+xlo.type                =   "po"
+xlo.pressure            =   0.0  0.0  0.0
 
 xhi.type                =   "po"
 xhi.pressure            =   0.0
+
+ylo.type                =   "po"
+ylo.pressure            =   0.0  0.0  0.0
+
+yhi.type                =   "po"
+yhi.pressure            =   0.0
+
 
 # Add box
 incflo.geometry = "stirrer"
@@ -67,7 +74,7 @@ incflo.geometry = "stirrer"
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.ic_u             =   1.0         #
+incflo.ic_u             =   0.0         #
 incflo.ic_v             =   0.0         #
 incflo.ic_p             =   0.0         #
 
