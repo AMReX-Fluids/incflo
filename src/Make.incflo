@@ -14,6 +14,7 @@ Bdirs += src/projection
 Bdirs += src/rheology
 Bdirs += src/setup
 Bdirs += src/utilities
+Bdirs += Redistribution
 
 ifeq ($(USE_EB), TRUE)
   Bdirs += src/embedded_boundaries
@@ -52,8 +53,8 @@ Blocs += $(AMREX_HYDRO_HOME)/EBMOL
 Bpack += $(AMREX_HYDRO_HOME)/EBGodunov/Make.package
 Blocs += $(AMREX_HYDRO_HOME)/EBGodunov
 
-Bpack += $(AMREX_HYDRO_HOME)/Redistribution/Make.package
-Blocs += $(AMREX_HYDRO_HOME)/Redistribution
+#Bpack += $(AMREX_HYDRO_HOME)/Redistribution/Make.package
+#Blocs += $(AMREX_HYDRO_HOME)/Redistribution
 endif
 
 include $(Bpack)
