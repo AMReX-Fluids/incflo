@@ -27,8 +27,9 @@ incflo.ro_0             =   1.          # Reference density
 
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.001       # Dynamic viscosity coefficient
-incflo.mu               =   0.0         # Dynamic viscosity coefficient
+#incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   true        #
+incflo.constant_density =   false        #
 
 incflo.advection_type        =  "Godunov" 
 incflo.diffusion_type        =  0
@@ -85,4 +86,5 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 #               EB FLOW                 #
 #.......................................#
-eb_flow.velocity        =  2.0 0.0 0.0
+eb_flow.velocity        = 2.0 0.0 0.0
+eb_flow.density         = 0.0
