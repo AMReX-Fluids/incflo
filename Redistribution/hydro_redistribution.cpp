@@ -35,10 +35,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     // redistribution_type = "FluxRedist"      // flux_redistribute
     // redistribution_type = "StateRedist";    // (weighted) state redistribute
 
-
-    // MATT -- Print Statement
-    amrex::Print() << "\n\n\n\n\n\nHEY CHECK THIS OUT!!!!!\n\n\n\n\n\n" << std::endl;
-
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {

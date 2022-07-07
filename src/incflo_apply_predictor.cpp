@@ -191,7 +191,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                             GetVecOfPtrs(w_mac)),
                             GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
                             m_cur_time);
-
+    
     // *************************************************************************************
     // Define local variables for lambda to capture.
     // *************************************************************************************
@@ -443,6 +443,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     for (int lev = 0; lev <= finest_level; ++lev)
         density_nph_neweb.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
 
+    
     // *************************************************************************************
     // Update density first
     // *************************************************************************************
@@ -464,6 +465,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                 Array4<Real>        const& rho_nph  = density_nph_neweb[lev].array(mfi);
 
+                /*amrex::Print() << "rho_old: " << rho_old << std::endl;
+                amrex::Print() << "rho_new: " << rho_new << std::endl;
+
+                for (int i = -4; i < 37; i++){
+                    for (int j = -4; j < 19; j++){
+                        amrex::Print() << "rho_old(" << i << ", " << j << "): " << rho_old(i,j,0,0) << std::endl;
+                        amrex::Print() << "rho_new(" << i << ", " << j << "): " << rho_new(i,j,0,0) << std::endl;
+                    }
+                }*/
+
                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
@@ -471,7 +482,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
             } // mfi
         } // lev
     } // not constant density
-
+    
     // **********************************************************************************************
     //
     // Project velocity field, update pressure

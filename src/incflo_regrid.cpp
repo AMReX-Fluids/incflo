@@ -151,6 +151,18 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     MultiFab::Copy(new_leveldata->gp   , m_leveldata[lev]->gp   ,0,0,AMREX_SPACEDIM,0);
     MultiFab::Copy(new_leveldata->p_nd , m_leveldata[lev]->p_nd ,0,0,1,0);
 
+    // Fill in ghost cells for new MultiFabs (Matt - Not sure if 4 is the correct ng)
+    fillpatch_velocity(lev, time, new_leveldata->velocity_o, 4);
+    fillpatch_velocity(lev, time, new_leveldata->velocity, 4);
+    fillpatch_density(lev, time, new_leveldata->density_o, 4);
+    fillpatch_density(lev, time, new_leveldata->density, 4);
+    if (m_ntrac > 0) {
+        fillpatch_tracer(lev, time, new_leveldata->tracer_o, 4);
+        fillpatch_tracer(lev, time, new_leveldata->tracer, 4);
+    }
+    fillpatch_gradp(lev, time, new_leveldata->gp, 0);
+    new_leveldata->p_nd.setVal(0.0);
+    
     // Let's fill the newly covered cells with 1e45 to be different
     EB_set_covered( new_leveldata->velocity  , 1.e45);
     EB_set_covered( new_leveldata->velocity_o, 1.e45);
@@ -235,38 +247,38 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
                     if (vf_old(i+1,j,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i+1,j,k,n);
-                        amrex::Print() << "right fill: " << fab_old(i+1,j,k,n) << std::endl;
+                        //amrex::Print() << "right fill: " << fab_old(i+1,j,k,n) << std::endl;
                         den += 1.;
                     }
                     if (vf_old(i-1,j,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i-1,j,k,n);
-                        amrex::Print() << "left fill: " << fab_old(i-1,j,k,n) << std::endl;
+                        //amrex::Print() << "left fill: " << fab_old(i-1,j,k,n) << std::endl;
                         den += 1.;
                     }
                     if (vf_old(i,j+1,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i,j+1,k,n);
-                        amrex::Print() << "top fill: " << fab_old(i,j+1,k,n) << std::endl;
+                        //amrex::Print() << "top fill: " << fab_old(i,j+1,k,n) << std::endl;
                         den += 1.;
                     }
                     if (vf_old(i,j-1,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i,j-1,k,n);
-                        amrex::Print() << "bottom fill: " << fab_old(i,j-1,k,n) << std::endl;
+                        //amrex::Print() << "bottom fill: " << fab_old(i,j-1,k,n) << std::endl;
                         den += 1.;
                     }
 #if (AMREX_SPACEDIM == 3)
                     if (vf_old(i,j,k+1) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i,j,k+1,n);
-                        amrex::Print() << "up fill: " << fab_old(i,j,k+1,n) << std::endl;
+                        //amrex::Print() << "up fill: " << fab_old(i,j,k+1,n) << std::endl;
                         den += 1.;
                     }
                     if (vf_old(i,j,k-1) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i,j,k-1,n);
-                        amrex::Print() << "down fill: " << fab_old(i,j,k-1,n) << std::endl;
+                        //amrex::Print() << "down fill: " << fab_old(i,j,k-1,n) << std::endl;
                         den += 1.;
                     }
 #endif
@@ -299,7 +311,7 @@ void incflo::EB_fill_uncovered_with_zero (int lev, MultiFab& mf_new, MultiFab& m
             // If new cell is uncovered... avg from neighbors that are cut or regular
             if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
             {
-                amrex::Print() << "Need to fill cell with zero " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
+                //amrex::Print() << "Need to fill cell with zero " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
                 for (int n = 0; n < ncomp; n++)
                 {
                     fab_new(i,j,k,n) = 0.;

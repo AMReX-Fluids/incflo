@@ -3,20 +3,20 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  10000         # Max number of time steps
+max_step                =  1000         # Max number of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-incflo.fixed_dt             =   1.5e-3       # Use this constant dt if > 0
+incflo.fixed_dt             =   3.e-3       # Use this constant dt if > 0
 incflo.do_initial_proj      =   1
 incflo.initial_iterations   =   2
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =   5           # Steps between plot files
+amr.plot_int            =   3           # Steps between plot files
 amr.plt_regtest         =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -28,6 +28,7 @@ incflo.ro_0             =   0.1         # Reference density
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   true        #
+incflo.constant_density =   false        #
 
 incflo.advection_type        =  "Godunov" 
 incflo.diffusion_type        =  0
@@ -40,7 +41,7 @@ incflo.godunov_include_diff_in_forcing = false
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   128 128       # Grid cells at coarsest AMRlevel
+amr.n_cell              =   64 64       # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.max_grid_size_x     =   1024
 amr.max_grid_size_y     =   1024
