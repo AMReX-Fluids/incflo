@@ -247,25 +247,25 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
                     if (vf_old(i+1,j,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i+1,j,k,n);
-                        //amrex::Print() << "right fill: " << fab_old(i+1,j,k,n) << std::endl;
+                        amrex::Print() << "right fill: " << fab_old(i+1,j,k,n) << std::endl;
                         den += 1.;
                     }
                     if (vf_old(i-1,j,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i-1,j,k,n);
-                        //amrex::Print() << "left fill: " << fab_old(i-1,j,k,n) << std::endl;
+                        amrex::Print() << "left fill: " << fab_old(i-1,j,k,n) << std::endl;
                         den += 1.;
                     }
                     if (vf_old(i,j+1,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i,j+1,k,n);
-                        //amrex::Print() << "top fill: " << fab_old(i,j+1,k,n) << std::endl;
+                        amrex::Print() << "top fill: " << fab_old(i,j+1,k,n) << std::endl;
                         den += 1.;
                     }
                     if (vf_old(i,j-1,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i,j-1,k,n);
-                        //amrex::Print() << "bottom fill: " << fab_old(i,j-1,k,n) << std::endl;
+                        amrex::Print() << "bottom fill: " << fab_old(i,j-1,k,n) << std::endl;
                         den += 1.;
                     }
 #if (AMREX_SPACEDIM == 3)
