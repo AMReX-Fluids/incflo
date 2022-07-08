@@ -14,7 +14,7 @@ Bdirs += src/projection
 Bdirs += src/rheology
 Bdirs += src/setup
 Bdirs += src/utilities
-Bdirs += Redistribution
+Bdirs += src/redistribution
 
 ifeq ($(USE_EB), TRUE)
   Bdirs += src/embedded_boundaries
