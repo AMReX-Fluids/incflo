@@ -17,17 +17,12 @@ void incflo::ReadParameters ()
     pp.query("steady_state", m_steady_state);
     }
 
-    ReadIOParameters();
-    ReadRheologyParameters();
-
     { // Prefix amr
-     ParmParse pp("amr");
-
-    pp.query("regrid_int", m_regrid_int);
+        ParmParse pp("amr");
+        pp.query("regrid_int", m_regrid_int);
 #ifdef AMREX_USE_EB
         pp.query("refine_cutcells", m_refine_cutcells);
 #endif
-
         pp.query("KE_int", m_KE_int);
 
     } // end prefix amr
@@ -37,22 +32,22 @@ void incflo::ReadParameters ()
 
         pp.query("verbose", m_verbose);
 
-    pp.query("steady_state_tol", m_steady_state_tol);
+        pp.query("steady_state_tol", m_steady_state_tol);
         pp.query("initial_iterations", m_initial_iterations);
         pp.query("do_initial_proj", m_do_initial_proj);
 
-    pp.query("fixed_dt", m_fixed_dt);
-    pp.query("cfl", m_cfl);
+        pp.query("fixed_dt", m_fixed_dt);
+        pp.query("cfl", m_cfl);
 
         // This will multiply the time-step in the very first step only
-    pp.query("init_shrink", m_init_shrink);
+        pp.query("init_shrink", m_init_shrink);
         if (m_init_shrink > 1.0) {
             amrex::Abort("We require m_init_shrink <= 1.0");
         }
 
         // Physics
-    pp.queryarr("delp", m_delp, 0, AMREX_SPACEDIM);
-    pp.queryarr("gravity", m_gravity, 0, AMREX_SPACEDIM);
+        pp.queryarr("delp", m_delp, 0, AMREX_SPACEDIM);
+        pp.queryarr("gravity", m_gravity, 0, AMREX_SPACEDIM);
 
         pp.query("constant_density"         , m_constant_density);
         pp.query("advect_tracer"            , m_advect_tracer);
@@ -147,6 +142,9 @@ void incflo::ReadParameters ()
             amrex::Print() << "Tracer diffusion coeff: " << i << ":" << m_mu_s[i] << std::endl;
         }
     } // end prefix incflo
+
+    ReadIOParameters();
+    ReadRheologyParameters();
 
     { // Prefix mac
         ParmParse pp_mac("mac_proj");
