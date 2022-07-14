@@ -108,15 +108,8 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 
 #ifdef AMREX_USE_EB
 #ifdef INCFLO_USE_MOVING_EB
-// Remake an existing level with a new geometry but nothing else changed
-void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
+void incflo::MakeNewGeometry (int lev, Real time)
 {
-    BL_PROFILE("incflo::RemakeLevelWithNewGeometry()");
-
-    if (m_verbose > 0) {
-        amrex::Print() << "Remaking level " << lev << " with new geometry" << std::endl;
-    }
-
     // Erase old EB
     EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(eb_old));
 
@@ -132,6 +125,19 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
                                            nghost_eb_volume(),
                                            nghost_eb_full()},
                                           EBSupport::full);
+}
+
+// Remake an existing level with a new geometry but nothing else changed
+void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
+{
+    BL_PROFILE("incflo::RemakeLevelWithNewGeometry()");
+
+    if (m_verbose > 0) {
+        amrex::Print() << "Remaking level " << lev << " with new geometry" << std::endl;
+    }
+
+    // This has been called at the beginning of the timestep
+    // MakeNewGeometry(lev,time);
 
     std::unique_ptr<LevelData> new_leveldata
         (new LevelData(grids[lev], dmap[lev], *m_new_factory[lev], m_ntrac, nghost_state(),

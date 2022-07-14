@@ -37,9 +37,9 @@ incflo::compute_MAC_projected_velocities (
 
     for (int lev = 0; lev <= finest_level; ++lev) {
         AMREX_D_TERM(
-           inv_rho[lev][0].define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
-           inv_rho[lev][1].define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev));,
-           inv_rho[lev][2].define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),Factory(lev)));
+           inv_rho[lev][0].define(u_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),u_mac[lev]->Factory());,
+           inv_rho[lev][1].define(v_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),v_mac[lev]->Factory());,
+           inv_rho[lev][2].define(w_mac[lev]->boxArray(),dmap[lev],1,0,MFInfo(),w_mac[lev]->Factory()));
     }
 
     for (int lev=0; lev <= finest_level; ++lev)

@@ -191,6 +191,22 @@ void incflo::ApplyPredictor (bool incremental_projection)
                             GetVecOfPtrs(w_mac)),
                             GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
                             m_cur_time);
+
+#ifdef INCFLO_USE_MOVING_EB
+    // **********************************************************************************************
+    //
+    // Update the moving geometry and arrays
+    //
+    // **********************************************************************************************
+
+    if (!incremental_projection) {
+        for (int lev = 0; lev <= finest_level; lev++)
+        {
+            MakeNewGeometry(lev,new_time);
+            // RemakeLevelWithNewGeometry(lev, new_time);
+        }
+    }
+#endif
     
     // *************************************************************************************
     // Define local variables for lambda to capture.
@@ -433,9 +449,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Update the moving geometry and arrays
     //
     // **********************************************************************************************
+
     if (!incremental_projection) {
         for (int lev = 0; lev <= finest_level; lev++)
         {
+            // MakeNewGeometry(lev,new_time);
             RemakeLevelWithNewGeometry(lev, new_time);
         }
     }
