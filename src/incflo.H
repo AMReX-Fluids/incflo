@@ -439,6 +439,8 @@ private:
        {}
     };
     EBFlow_t m_eb_flow;
+
+    bool m_write_geom_chk = false;
 #else
     // If using Godunov with no EB, default to PPM
     bool m_godunov_ppm         = true;
@@ -816,6 +818,7 @@ private:
     void make_eb_spherecube ();
     void make_eb_cyl_tuscan ();
     void make_eb_tuscan ();
+    void make_eb_chkptfile ();
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
