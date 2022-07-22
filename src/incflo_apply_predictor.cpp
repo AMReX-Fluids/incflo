@@ -178,20 +178,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
 
-    // *************************************************************************************
-    // if (advection_type == "Godunov")
-    //      Compute the explicit advective terms R_u^(n+1/2), R_s^(n+1/2) and R_t^(n+1/2)
-    // if (advection_type == "MOL"                )
-    //      Compute the explicit advective terms R_u^n      , R_s^n       and R_t^n
-    // Note that "get_conv_tracer_old" returns div(rho u tracer)
-    // *************************************************************************************
-    compute_convective_term(get_conv_velocity_old(), get_conv_density_old(), get_conv_tracer_old(),
-                            get_velocity_old_const(), get_density_old_const(), get_tracer_old_const(),
-                            AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                            GetVecOfPtrs(w_mac)),
-                            GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
-                            m_cur_time);
-
 #ifdef INCFLO_USE_MOVING_EB
     // **********************************************************************************************
     //
@@ -207,7 +193,21 @@ void incflo::ApplyPredictor (bool incremental_projection)
         }
     }
 #endif
-    
+
+// *************************************************************************************
+    // if (advection_type == "Godunov")
+    //      Compute the explicit advective terms R_u^(n+1/2), R_s^(n+1/2) and R_t^(n+1/2)
+    // if (advection_type == "MOL"                )
+    //      Compute the explicit advective terms R_u^n      , R_s^n       and R_t^n
+    // Note that "get_conv_tracer_old" returns div(rho u tracer)
+    // *************************************************************************************
+    compute_convective_term(get_conv_velocity_old(), get_conv_density_old(), get_conv_tracer_old(),
+                            get_velocity_old_const(), get_density_old_const(), get_tracer_old_const(),
+                            AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
+                            GetVecOfPtrs(w_mac)),
+                            GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
+                            m_cur_time);
+   
     // *************************************************************************************
     // Define local variables for lambda to capture.
     // *************************************************************************************
