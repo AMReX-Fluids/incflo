@@ -15,7 +15,8 @@ void
 Redistribution::MakeITracker ( Box const& bx,
                                Array4<Real const> const& apx,
                                Array4<Real const> const& apy,
-                               Array4<Real const> const& vfrac,
+                               Array4<Real const> const& vfrac_old,
+                               Array4<Real const> const& vfrac_new,
                                Array4<int> const& itracker,
                                Geometry const& lev_geom,
                                Real target_volfrac)
@@ -63,7 +64,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-       if (vfrac(i,j,k) > 0.0 && vfrac(i,j,k) < target_volfrac)
+       if (vfrac_old(i,j,k) > 0.0 && vfrac_old(i,j,k) < target_volfrac)
        {
            Real apnorm, apnorm_inv;
            const Real dapx = apx(i+1,j  ,k  ) - apx(i,j,k);
@@ -116,16 +117,16 @@ Redistribution::MakeITracker ( Box const& bx,
            int joff = jmap[itracker(i,j,k,1)];
 
            // Sanity check
-           if (vfrac(i+ioff,j+joff,k) == 0.)
+           if (vfrac_old(i+ioff,j+joff,k) == 0.)
                amrex::Abort(" Trying to merge with covered cell");
 
-           Real sum_vol = vfrac(i,j,k) + vfrac(i+ioff,j+joff,k);
+           Real sum_vol = vfrac_old(i,j,k) + vfrac_old(i+ioff,j+joff,k);
 
 #if 0
            if (debug_verbose > 0)
-               amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) <<
+               amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_old(i,j,k) <<
                                  " trying to merge with " << IntVect(i+ioff,j+joff) <<
-                                 " with volfrac " << vfrac(i+ioff,j+joff,k) <<
+                                 " with volfrac " << vfrac_old(i+ioff,j+joff,k) <<
                                  " to get new sum_vol " <<  sum_vol << std::endl;
 #endif
 
@@ -167,12 +168,12 @@ Redistribution::MakeITracker ( Box const& bx,
                    int ioff2 = imap[itracker(i,j,k,2)];
                    int joff2 = jmap[itracker(i,j,k,2)];
 
-                   sum_vol += vfrac(i+ioff2,j+joff2,k);
+                   sum_vol += vfrac_old(i+ioff2,j+joff2,k);
 #if 0
                    if (debug_verbose > 0)
-                       amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) <<
+                       amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_old(i,j,k) <<
                                          " trying to ALSO merge with " << IntVect(i+ioff2,j+joff2) <<
-                                         " with volfrac " << vfrac(i+ioff2,j+joff2,k) <<
+                                         " with volfrac " << vfrac_old(i+ioff2,j+joff2,k) <<
                                           " to get new sum_vol " <<  sum_vol << std::endl;
 #endif
                }
@@ -197,12 +198,12 @@ Redistribution::MakeITracker ( Box const& bx,
                // (i,j) merges with at least three cells now
                itracker(i,j,k,0) += 1;
 
-               sum_vol += vfrac(i+ioff,j+joff,k);
+               sum_vol += vfrac_old(i+ioff,j+joff,k);
 #if 0
                if (debug_verbose > 0)
-                   amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) <<
+                   amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_old(i,j,k) <<
                                      " trying to ALSO merge with " << IntVect(i+ioff,j+joff) <<
-                                     " with volfrac " << vfrac(i+ioff,j+joff,k) <<
+                                     " with volfrac " << vfrac_old(i+ioff,j+joff,k) <<
                                      " to get new sum_vol " <<  sum_vol << std::endl;
 #endif
            }

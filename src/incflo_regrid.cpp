@@ -115,6 +115,7 @@ void incflo::MakeNewGeometry (int lev, Real time)
 
     // Build a new EB
     MakeEBGeometry(time);
+
     eb_old = eb_new;
     eb_new = &(EB2::IndexSpace::top());
 
@@ -125,6 +126,8 @@ void incflo::MakeNewGeometry (int lev, Real time)
                                            nghost_eb_volume(),
                                            nghost_eb_full()},
                                           EBSupport::full);
+
+    EB2::IndexSpace::push(const_cast<EB2::IndexSpace*>(eb_new));
 }
 
 // Remake an existing level with a new geometry but nothing else changed

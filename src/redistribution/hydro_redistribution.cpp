@@ -19,7 +19,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              AMREX_D_DECL(Array4<Real const> const& apx,
                                           Array4<Real const> const& apy,
                                           Array4<Real const> const& apz),
-                             Array4<amrex::Real const> const& vfrac,
+                             Array4<amrex::Real const> const& vfrac_old,
+                             Array4<amrex::Real const> const& vfrac_new,
                              AMREX_D_DECL(Array4<Real const> const& fcx,
                                           Array4<Real const> const& fcy,
                                           Array4<Real const> const& fcz),
@@ -41,12 +42,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             dUdt_out(i,j,k,n) = 0.;
         });
 
-    if (redistribution_type == "FluxRedist")
-    {
-        int icomp = 0;
-        apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp, flag, vfrac, lev_geom);
-
-    } else if (redistribution_type == "StateRedist") {
+    if (redistribution_type == "StateRedist") {
 
         Box const& bxg1 = grow(bx,1);
         Box const& bxg2 = grow(bx,2);
@@ -117,12 +113,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             }
         );
 
-        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, target_volfrac);
+        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac_old, vfrac_new, itr, lev_geom, target_volfrac);
 
-        MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+        MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                              lev_geom, target_volfrac);
 
-        StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
+        StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac_old, vfrac_new,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
                           itr_const, nrs_const, alpha_const, nbhd_vol_const,
                           cent_hat_const, lev_geom, srd_max_order);
@@ -174,7 +170,8 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                      AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
                                                   amrex::Array4<amrex::Real const> const& apy,
                                                   amrex::Array4<amrex::Real const> const& apz),
-                                     amrex::Array4<amrex::Real const> const& vfrac,
+                                     amrex::Array4<amrex::Real const> const& vfrac_old,
+                                     amrex::Array4<amrex::Real const> const& vfrac_new,
                                      AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
                                                   amrex::Array4<amrex::Real const> const& fcy,
                                                   amrex::Array4<amrex::Real const> const& fcz),
@@ -237,12 +234,12 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
         U_out(i,j,k,n) = 0.;
     });
 
-    MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, target_volfrac);
+    MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac_old, vfrac_new, itr, lev_geom, target_volfrac);
 
-    MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+    MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                             lev_geom, target_volfrac);
 
-    StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
+    StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac_old, vfrac_new,
                          AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
                       itr_const, nrs_const, alpha_const, nbhd_vol_const,
                       cent_hat_const, lev_geom, srd_max_order);

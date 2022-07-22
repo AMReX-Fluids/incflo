@@ -211,9 +211,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                      u[2] = w_mac[lev];);
 
 #ifdef AMREX_USE_EB
-        const auto& ebfact = EBFactory(lev);
+        const auto& ebfact_old = OldEBFactory(lev);
+        const auto& ebfact_new =    EBFactory(lev);
 
-        if (!ebfact.isAllRegular()) {
+        if (!ebfact_old.isAllRegular()) {
             if (m_eb_flow.enabled) {
                amrex::EB_computeDivergence(divu[lev],u,geom[lev],true,*get_velocity_eb()[lev]);
             } else {
@@ -265,7 +266,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                      get_velocity_bcrec_device_ptr(),
                                      get_velocity_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                                     ebfact,
+                                     ebfact_old,
                                      m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
 #endif
                                      m_godunov_ppm, m_godunov_use_forces_in_trans,
@@ -299,7 +300,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           get_density_bcrec_device_ptr(),
                                           get_density_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                                          ebfact,
+                                          ebfact_old,
                                           m_eb_flow.enabled ? get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
 #endif
                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
@@ -353,7 +354,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           get_tracer_bcrec_device_ptr(),
                                           get_tracer_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                                          ebfact,
+                                          ebfact_old,
                                           m_eb_flow.enabled ? get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
 #endif
                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
@@ -390,8 +391,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         drdt_tmp.setVal(0.);
         dtdt_tmp.setVal(0.);
 
-        const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
-        auto const& vfrac = ebfact->getVolFrac();
+        const EBFArrayBoxFactory* ebfact_new = &EBFactory(lev);
+        auto const& vfrac_new = ebfact_new->getVolFrac();
+
+        const EBFArrayBoxFactory* ebfact_old = &OldEBFactory(lev);
+        auto const& vfrac_old = ebfact_old->getVolFrac();
 #endif
 
         Real mult = -1.0;
@@ -406,14 +410,14 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int flux_comp = 0;
             int  num_comp = AMREX_SPACEDIM;
 #ifdef AMREX_USE_EB
-            EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
+            EBCellFlagFab const& flagfab = ebfact_old->getMultiEBCellFlagFab()[mfi];
             auto const& update_arr  = dvdt_tmp.array(mfi);
             if (flagfab.getType(bx) != FabType::covered)
                 HydroUtils::EB_ComputeDivergence(bx, update_arr,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
-                                                 vfrac.const_array(mfi), num_comp, geom[lev],
+                                                 vfrac_old.const_array(mfi), num_comp, geom[lev],
                                                  mult, fluxes_are_area_weighted,
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -421,9 +425,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
-                                                    ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
+                                                    ebfact_old->getBndryArea().const_array(mfi) : Array4<Real const>{},
                                                  (flagfab.getType(bx) != FabType::regular) ?
-                                                    ebfact->getBndryNormal().const_array(mfi) : Array4<Real const>{});
+                                                    ebfact_old->getBndryNormal().const_array(mfi) : Array4<Real const>{});
 #else
             auto const& update_arr  = conv_u[lev]->array(mfi);
             HydroUtils::ComputeDivergence(bx, update_arr,
@@ -484,10 +488,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_EB
                 else {
                     if (flagfab.getType(bx) != FabType::covered) {
-                        AMREX_D_TERM(auto const& apx_arr      = ebfact->getAreaFrac()[0]->const_array(mfi);,
-                                     auto const& apy_arr      = ebfact->getAreaFrac()[1]->const_array(mfi);,
-                                     auto const& apz_arr      = ebfact->getAreaFrac()[2]->const_array(mfi););
-                        auto const& vfrac_arr                 = ebfact->getVolFrac().const_array(mfi);
+                        AMREX_D_TERM(auto const& apx_arr      = ebfact_old->getAreaFrac()[0]->const_array(mfi);,
+                                     auto const& apy_arr      = ebfact_old->getAreaFrac()[1]->const_array(mfi);,
+                                     auto const& apz_arr      = ebfact_old->getAreaFrac()[2]->const_array(mfi););
+                        auto const& vfrac_arr                 = ebfact_old->getVolFrac().const_array(mfi);
 
                         amrex::ParallelFor(bx, num_comp, [=]
                         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -530,13 +534,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             Box const& bx = mfi.tilebox();
 
 #ifdef AMREX_USE_EB
-            EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
+            EBCellFlagFab const& flagfab = ebfact_old->getMultiEBCellFlagFab()[mfi];
             if (flagfab.getType(bx) != FabType::covered)
                 HydroUtils::EB_ComputeDivergence(bx, drdt_tmp.array(mfi),
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
-                                                 vfrac.const_array(mfi), 1, geom[lev], mult,
+                                                 vfrac_old.const_array(mfi), 1, geom[lev], mult,
                                                  fluxes_are_area_weighted,
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -544,9 +548,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                     get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
-                                                    ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
+                                                    ebfact_old->getBndryArea().const_array(mfi) : Array4<Real const>{},
                                                  (flagfab.getType(bx) != FabType::regular) ?
-                                                    ebfact->getBndryNormal().const_array(mfi) : Array4<Real const>{});
+                                                    ebfact_old->getBndryNormal().const_array(mfi) : Array4<Real const>{});
 #else
             HydroUtils::ComputeDivergence(bx, conv_r[lev]->array(mfi),
                                           AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
@@ -569,14 +573,14 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             Box const& bx = mfi.tilebox();
 
 #ifdef AMREX_USE_EB
-            EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
+            EBCellFlagFab const& flagfab = ebfact_old->getMultiEBCellFlagFab()[mfi];
             auto const& update_arr  = dtdt_tmp.array(mfi);
             if (flagfab.getType(bx) != FabType::covered)
                 HydroUtils::EB_ComputeDivergence(bx, update_arr,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
-                                                 vfrac.const_array(mfi), m_ntrac, geom[lev], mult,
+                                                 vfrac_old.const_array(mfi), m_ntrac, geom[lev], mult,
                                                  fluxes_are_area_weighted,
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -584,9 +588,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                     get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
-                                                    ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
+                                                    ebfact_old->getBndryArea().const_array(mfi) : Array4<Real const>{},
                                                  (flagfab.getType(bx) != FabType::regular) ?
-                                                    ebfact->getBndryNormal().const_array(mfi) : Array4<Real const>{});
+                                                    ebfact_old->getBndryNormal().const_array(mfi) : Array4<Real const>{});
 #else
                 auto const& update_arr  = conv_t[lev]->array(mfi);
                 HydroUtils::ComputeDivergence(bx, update_arr,
@@ -621,7 +625,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           conv_r[lev]->array(mfi),
                                           (m_advect_tracer && (m_ntrac>0)) ? conv_t[lev]->array(mfi) : Array4<Real>{},
                                           m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
-                                          ebfact, geom[lev], m_dt);
+                                          ebfact_old, ebfact_new, geom[lev], m_dt);
        } // mfi
 #endif
     } // lev

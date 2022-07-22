@@ -189,7 +189,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
         for (int lev = 0; lev <= finest_level; lev++)
         {
             MakeNewGeometry(lev,new_time);
-            // RemakeLevelWithNewGeometry(lev, new_time);
         }
     }
 #endif
@@ -453,7 +452,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
     if (!incremental_projection) {
         for (int lev = 0; lev <= finest_level; lev++)
         {
-            // MakeNewGeometry(lev,new_time);
             RemakeLevelWithNewGeometry(lev, new_time);
         }
     }
@@ -501,8 +499,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
-                    //if (rho_nph(i,j,k) < 0.0){
-                    if (i == 34 && j == 46 || i == 29 && j == 17){
+                    if (rho_nph(i,j,k) < 0.0){
+                    // if (i == 34 && j == 46 || i == 29 && j == 17){
                         amrex::Print() << "Negative Density rho_nph(" << i << ", " << j << "): " << rho_nph(i,j,0) << std::endl;
                         amrex::Print() << "rho_old(" << i << ", " << j << "): " << rho_old(i,j,0) << std::endl;
                         amrex::Print() << "rho_new(" << i << ", " << j << "): " << rho_new(i,j,0) << std::endl;

@@ -21,7 +21,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                                     Array4<Real> const& U_out,
                                     Array4<Real> const& U_in,
                                     Array4<EBCellFlag const> const& flag,
-                                    Array4<Real const> const& vfrac,
+                                    Array4<Real const> const& vfrac_old,
+                                    Array4<Real const> const& vfrac_new,
                                     AMREX_D_DECL(Array4<Real const> const& fcx,
                                                  Array4<Real const> const& fcy,
                                                  Array4<Real const> const& fcz),
@@ -112,12 +113,12 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         for (int n = 0; n < ncomp; n++)
             soln_hat(i,j,k,n) = U_in(i,j,k,n);
 
-        if (vfrac(i,j,k) > 0.0 && bxg2.contains(IntVect(AMREX_D_DECL(i,j,k)))
-                               && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
+        if (vfrac_old(i,j,k) > 0.0 && bxg2.contains(IntVect(AMREX_D_DECL(i,j,k)))
+                                   && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
 
             // Start with U_in(i,j,k) itself
             for (int n = 0; n < ncomp; n++)
-                soln_hat(i,j,k,n) = U_in(i,j,k,n) * alpha(i,j,k,0) * vfrac(i,j,k);
+                soln_hat(i,j,k,n) = U_in(i,j,k,n) * alpha(i,j,k,0) * vfrac_old(i,j,k);
 
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
@@ -129,7 +130,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                 if (domain_per_grown.contains(IntVect(AMREX_D_DECL(r,s,t))))
                 {
                     for (int n = 0; n < ncomp; n++)
-                        soln_hat(i,j,k,n) += U_in(r,s,t,n) * alpha(i,j,k,1) * vfrac(r,s,t) / nrs(r,s,t);
+                        soln_hat(i,j,k,n) += U_in(r,s,t,n) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t);
                 }
             }
             for (int n = 0; n < ncomp; n++)
@@ -140,7 +141,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     amrex::ParallelFor(bxg1,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (vfrac(i,j,k) > 0.0)
+        if (vfrac_old(i,j,k) > 0.0)
         {
             int num_nbors = itracker(i,j,k,0);
 
@@ -214,7 +215,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     if (nx*ny*nz == 1)
                         // Compute slope using 3x3x3 stencil
                         slopes_eb = amrex_calc_slopes_extdir_eb(
-                                                    i,j,k,n,soln_hat,cent_hat,vfrac,
+                                                    i,j,k,n,soln_hat,cent_hat,vfrac_old,
                                                     AMREX_D_DECL(fcx,fcy,fcz),flag,
                                                     AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
                                                     AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
@@ -226,7 +227,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         // Compute slope using grown stencil (no larger than 5x5x5)
                         slopes_eb = amrex_calc_slopes_extdir_eb_grown(
                                                     i,j,k,n,AMREX_D_DECL(nx,ny,nz),
-                                                    soln_hat,cent_hat,vfrac,
+                                                    soln_hat,cent_hat,vfrac_old,
                                                     AMREX_D_DECL(fcx,fcy,fcz),flag,
                                                     AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
                                                     AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
@@ -309,8 +310,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         for (int j = bx.smallEnd(1); j <= domain.bigEnd(1); j++)
         for (int i = bx.smallEnd(0); i <= domain.bigEnd(0); i++)
         {
-            sum1 += vfrac(i,j,k)*U_in(i,j,k,n);
-            sum2 += vfrac(i,j,k)*U_out(i,j,k,n);
+            sum1 += vfrac_old(i,j,k)*U_in(i,j,k,n);
+            sum2 += vfrac_old(i,j,k)*U_out(i,j,k,n);
         }
         if (std::abs(sum1-sum2) > 1.e-8 * sum1 && std::abs(sum1-sum2) > 1.e-8)
         {

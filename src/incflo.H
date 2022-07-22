@@ -154,7 +154,8 @@ public: // for cuda
                                        amrex::Array4<amrex::Real> const& dtdt,      // final tracer update
                                        std::string l_redistribution_type,
                                        bool l_constant_density, bool l_advect_tracer, int l_ntrac,
-                                       amrex::EBFArrayBoxFactory const* ebfact,
+                                       amrex::EBFArrayBoxFactory const* ebfact_old,
+                                       amrex::EBFArrayBoxFactory const* ebfact_new,
                                        amrex::Geometry& geom, amrex::Real l_dt);
 #endif
 
