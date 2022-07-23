@@ -105,7 +105,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
         if (!flag(i,j,k).isCovered())
         {
             // Start with the vfrac_old of (i,j,k)
-            nbhd_vol(i,j,k) = vfrac_old(i,j,k) / nrs(i,j,k);
+            nbhd_vol(i,j,k) = vfrac_new(i,j,k) / nrs(i,j,k);
             Real vol_of_nbors = 0.;
 
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
@@ -114,12 +114,12 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
                 int r = i+imap[itracker(i,j,k,i_nbor)];
                 int s = j+jmap[itracker(i,j,k,i_nbor)];
                 int t = k+kmap[itracker(i,j,k,i_nbor)];
-                amrex::Gpu::Atomic::Add(&nbhd_vol(i,j,k),vfrac_old(r,s,t) / nrs(r,s,t));
-                vol_of_nbors += vfrac_old(r,s,t);
+                amrex::Gpu::Atomic::Add(&nbhd_vol(i,j,k),vfrac_new(r,s,t) / nrs(r,s,t));
+                vol_of_nbors += vfrac_new(r,s,t);
             }
 
             if (itracker(i,j,k,0) > 0)
-                alpha(i,j,k,1) = (target_vol - vfrac_old(i,j,k)) / vol_of_nbors;
+                alpha(i,j,k,1) = (target_vol - vfrac_new(i,j,k)) / vol_of_nbors;
 
         } else {
             nbhd_vol(i,j,k) = 0.;
@@ -151,7 +151,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     {
         if (!flag(i,j,k).isCovered())
         {
-            nbhd_vol(i,j,k)  = alpha(i,j,k,0) * vfrac_old(i,j,k);
+            nbhd_vol(i,j,k)  = alpha(i,j,k,0) * vfrac_new(i,j,k);
 
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
@@ -159,7 +159,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
                 int r = i+imap[itracker(i,j,k,i_nbor)];
                 int s = j+jmap[itracker(i,j,k,i_nbor)];
                 int t = k+kmap[itracker(i,j,k,i_nbor)];
-                amrex::Gpu::Atomic::Add(&nbhd_vol(i,j,k),alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t));
+                amrex::Gpu::Atomic::Add(&nbhd_vol(i,j,k),alpha(i,j,k,1) * vfrac_new(r,s,t) / nrs(r,s,t));
             }
         }
     });
@@ -178,9 +178,9 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
                  domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))) &&
                              bxg2.contains(IntVect(AMREX_D_DECL(i,j,k))) ) {
 
-                AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0) * alpha(i,j,k,0) *vfrac_old(i,j,k);,
-                             cent_hat(i,j,k,1) = ccent(i,j,k,1) * alpha(i,j,k,0) *vfrac_old(i,j,k);,
-                             cent_hat(i,j,k,2) = ccent(i,j,k,2) * alpha(i,j,k,0) *vfrac_old(i,j,k););
+                AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0) * alpha(i,j,k,0) *vfrac_new(i,j,k);,
+                             cent_hat(i,j,k,1) = ccent(i,j,k,1) * alpha(i,j,k,0) *vfrac_new(i,j,k);,
+                             cent_hat(i,j,k,2) = ccent(i,j,k,2) * alpha(i,j,k,0) *vfrac_new(i,j,k););
 
                 // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
                 for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
@@ -189,9 +189,9 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
                     int jj = jmap[itracker(i,j,k,i_nbor)]; int s = j+jj;
                     int kk = kmap[itracker(i,j,k,i_nbor)]; int t = k+kk;
 
-                    AMREX_D_TERM(cent_hat(i,j,k,0) += (ccent(r,s,t,0) + ii) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t);,
-                                 cent_hat(i,j,k,1) += (ccent(r,s,t,1) + jj) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t);,
-                                 cent_hat(i,j,k,2) += (ccent(r,s,t,2) + kk) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t););
+                    AMREX_D_TERM(cent_hat(i,j,k,0) += (ccent(r,s,t,0) + ii) * alpha(i,j,k,1) * vfrac_new(r,s,t) / nrs(r,s,t);,
+                                 cent_hat(i,j,k,1) += (ccent(r,s,t,1) + jj) * alpha(i,j,k,1) * vfrac_new(r,s,t) / nrs(r,s,t);,
+                                 cent_hat(i,j,k,2) += (ccent(r,s,t,2) + kk) * alpha(i,j,k,1) * vfrac_new(r,s,t) / nrs(r,s,t););
                 }
 
                 AMREX_D_TERM(cent_hat(i,j,k,0) /= nbhd_vol(i,j,k);,

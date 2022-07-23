@@ -64,7 +64,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-       if (vfrac_old(i,j,k) > 0.0 && vfrac_old(i,j,k) < target_volfrac)
+       if (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < target_volfrac)
        {
            Real apnorm, apnorm_inv;
            const Real dapx = apx(i+1,j  ,k  ) - apx(i,j,k);

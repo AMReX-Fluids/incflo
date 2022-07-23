@@ -113,7 +113,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         for (int n = 0; n < ncomp; n++)
             soln_hat(i,j,k,n) = U_in(i,j,k,n);
 
-        if (vfrac_old(i,j,k) > 0.0 && bxg2.contains(IntVect(AMREX_D_DECL(i,j,k)))
+        if (vfrac_new(i,j,k) > 0.0 && bxg2.contains(IntVect(AMREX_D_DECL(i,j,k)))
                                    && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
 
             // Start with U_in(i,j,k) itself
