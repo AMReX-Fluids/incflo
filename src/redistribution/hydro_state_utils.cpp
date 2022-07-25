@@ -102,9 +102,9 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (!flag(i,j,k).isCovered())
+        if (vfrac_old(i,j,k) > 0.0 || vfrac_new(i,j,k) > 0.0)
         {
-            // Start with the vfrac_old of (i,j,k)
+            // Start with the vfrac_new of (i,j,k)
             nbhd_vol(i,j,k) = vfrac_new(i,j,k) / nrs(i,j,k);
             Real vol_of_nbors = 0.;
 

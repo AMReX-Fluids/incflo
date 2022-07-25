@@ -101,6 +101,10 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     FArrayBox    soln_hat_fab (bxg3,ncomp);
     Array4<Real> soln_hat = soln_hat_fab.array();
     Elixir   eli_soln_hat = soln_hat_fab.elixir();
+ 
+    for (int i = 8; i < 14; i++)
+       amrex::Print() << "VOLD / VIN / UIN " << i << " " << 
+          vfrac_old(i,9,0) << " " << vfrac_new(i,9,0) << " " << U_in(i,9,0,0) << std::endl;;
 
     // Define Qhat (from Berger and Guliani)
     // Here we initialize soln_hat to equal U_in on all cells in bxg3 so that
@@ -113,7 +117,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         for (int n = 0; n < ncomp; n++)
             soln_hat(i,j,k,n) = U_in(i,j,k,n);
 
-        if (vfrac_new(i,j,k) > 0.0 && bxg2.contains(IntVect(AMREX_D_DECL(i,j,k)))
+        if ( ( (vfrac_new(i,j,k) > 0.0) || (vfrac_old(i,j,k) > 0.0) )
+                                   && bxg2.contains(IntVect(AMREX_D_DECL(i,j,k)))
                                    && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
 
             // Start with U_in(i,j,k) itself
@@ -133,15 +138,18 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         soln_hat(i,j,k,n) += U_in(r,s,t,n) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t);
                 }
             }
-            for (int n = 0; n < ncomp; n++)
+            for (int n = 0; n < ncomp; n++)  
                 soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
+
+            if (j == 9 and i < 15)
+                amrex::Print() << "QHAT NBVOL " << i << " " << soln_hat(i,j,0,0) << " " <<  nbhd_vol(i,j,k) << std::endl;;
         }
     });
 
     amrex::ParallelFor(bxg1,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (vfrac_old(i,j,k) > 0.0)
+        if (vfrac_old(i,j,k) > 0.0 || vfrac_new(i,j,k) > 0.0)
         {
             int num_nbors = itracker(i,j,k,0);
 
@@ -211,6 +219,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     if ( (z_max-z_min) < slope_stencil_min_width ) nz = 2;
 #endif
 
+#if 0
                     amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> slopes_eb;
                     if (nx*ny*nz == 1)
                         // Compute slope using 3x3x3 stencil
@@ -245,14 +254,15 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     AMREX_D_TERM(lim_slope[0] *= slopes_eb[0];,
                                  lim_slope[1] *= slopes_eb[1];,
                                  lim_slope[2] *= slopes_eb[2];);
+#endif
 
                     // Add to the cell itself
                     if (bx.contains(IntVect(AMREX_D_DECL(i,j,k))))
                     {
                         Real update = soln_hat(i,j,k,n);
-                        AMREX_D_TERM(update += lim_slope[0] * (ccent(i,j,k,0)-cent_hat(i,j,k,0));,
-                                     update += lim_slope[1] * (ccent(i,j,k,1)-cent_hat(i,j,k,1));,
-                                     update += lim_slope[2] * (ccent(i,j,k,2)-cent_hat(i,j,k,2)););
+                        // AMREX_D_TERM(update += lim_slope[0] * (ccent(i,j,k,0)-cent_hat(i,j,k,0));,
+                        //              update += lim_slope[1] * (ccent(i,j,k,1)-cent_hat(i,j,k,1));,
+                        //              update += lim_slope[2] * (ccent(i,j,k,2)-cent_hat(i,j,k,2)););
                         amrex::Gpu::Atomic::Add(&U_out(i,j,k,n),alpha(i,j,k,0)*nrs(i,j,k)*update);
                     } // if bx contains
 
@@ -266,9 +276,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         if (bx.contains(IntVect(AMREX_D_DECL(r,s,t))))
                         {
                             Real update = soln_hat(i,j,k,n);
-                            AMREX_D_TERM(update += lim_slope[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0) + static_cast<Real>(r-i));,
-                                         update += lim_slope[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1) + static_cast<Real>(s-j));,
-                                         update += lim_slope[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2) + static_cast<Real>(t-k)););
+                            // AMREX_D_TERM(update += lim_slope[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0) + static_cast<Real>(r-i));,
+                            //              update += lim_slope[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1) + static_cast<Real>(s-j));,
+                            //              update += lim_slope[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2) + static_cast<Real>(t-k)););
                             amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),alpha(i,j,k,1)*update);
                         } // if bx contains
                     } // i_nbor
@@ -280,11 +290,13 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (!flag(i,j,k).isCovered())
+        if (vfrac_new(i,j,k) > 0.)
         {
             // This seems to help with a compiler issue ...
             Real denom = 1. / (nrs(i,j,k) + 1.e-40);
             U_out(i,j,k,n) *= denom;
+            if (j == 9 and i < 15 and n == 0) amrex::Print() << "VFRAC/UOUT " << i << " " << 
+                vfrac_new(i,j,k) << " " << U_out(i,j,k,n) << std::endl;
         }
         else
         {

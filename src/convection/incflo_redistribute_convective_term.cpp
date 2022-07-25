@@ -32,7 +32,9 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
 
     bool regular = (flagfab.getType(amrex::grow(bx,4)) == FabType::regular);
 
-    Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), AMREX_D_DECL(apx, apy, apz);
+    Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz);
+    Array4<Real const> AMREX_D_DECL(apx_old, apy_old, apz_old);
+    Array4<Real const> AMREX_D_DECL(apx_new, apy_new, apz_new);
     Array4<Real const> ccc, vfrac_old, vfrac_new;
 
     if (!regular)
@@ -41,9 +43,12 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                      fcy = ebfact_old->getFaceCent()[1]->const_array(mfi);,
                      fcz = ebfact_old->getFaceCent()[2]->const_array(mfi););
         ccc   = ebfact_old->getCentroid().const_array(mfi);
-        AMREX_D_TERM(apx = ebfact_old->getAreaFrac()[0]->const_array(mfi);,
-                     apy = ebfact_old->getAreaFrac()[1]->const_array(mfi);,
-                     apz = ebfact_old->getAreaFrac()[2]->const_array(mfi););
+        AMREX_D_TERM(apx_old = ebfact_old->getAreaFrac()[0]->const_array(mfi);,
+                     apy_old = ebfact_old->getAreaFrac()[1]->const_array(mfi);,
+                     apz_old = ebfact_old->getAreaFrac()[2]->const_array(mfi););
+        AMREX_D_TERM(apx_new = ebfact_new->getAreaFrac()[0]->const_array(mfi);,
+                     apy_new = ebfact_new->getAreaFrac()[1]->const_array(mfi);,
+                     apz_new = ebfact_new->getAreaFrac()[2]->const_array(mfi););
         vfrac_old = ebfact_old->getVolFrac().const_array(mfi);
         vfrac_new = ebfact_new->getVolFrac().const_array(mfi);
 
@@ -74,16 +79,22 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
 
         // velocity
         auto const& bc_vel = get_velocity_bcrec_device_ptr();
+        amrex::Print() << "Redist for velocity " << std::endl;
+        // std::string vel_redistribution_type = "NoRedist";
+
         Redistribution::Apply(bx, AMREX_SPACEDIM, dvdt, dvdt_tmp, vel, scratch, flag,
-                              AMREX_D_DECL(apx, apy, apz), vfrac_old, vfrac_new,
+                              AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+                              AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
                               bc_vel, lev_geom, l_dt, l_redistribution_type);
 
         // density
         if (!l_constant_density) {
             auto const& bc_den = get_density_bcrec_device_ptr();
+            amrex::Print() << "Redist for density " << std::endl;
             Redistribution::Apply(bx, 1, drdt, drdt_tmp, rho, scratch, flag,
-                                  AMREX_D_DECL(apx, apy, apz), vfrac_old, vfrac_new,
+                                  AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+                                  AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_den, lev_geom, l_dt, l_redistribution_type);
         } else {
@@ -96,8 +107,10 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
 
         if (l_advect_tracer) {
             auto const& bc_tra = get_tracer_bcrec_device_ptr();
+            amrex::Print() << "Redist for tracer " << std::endl;
             Redistribution::Apply(bx, l_ntrac, dtdt, dtdt_tmp, rhotrac, scratch, flag,
-                                  AMREX_D_DECL(apx, apy, apz), vfrac_old, vfrac_new,
+                                  AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+                                  AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_tra, lev_geom, l_dt, l_redistribution_type);
         }

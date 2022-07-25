@@ -16,10 +16,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              Array4<Real const> const& U_in,
                              Array4<Real> const& scratch,
                              Array4<EBCellFlag const> const& flag,
-                             AMREX_D_DECL(Array4<Real const> const& apx,
-                                          Array4<Real const> const& apy,
-                                          Array4<Real const> const& apz),
+                             AMREX_D_DECL(Array4<Real const> const& apx_old,
+                                          Array4<Real const> const& apy_old,
+                                          Array4<Real const> const& apz_old),
                              Array4<amrex::Real const> const& vfrac_old,
+                             AMREX_D_DECL(Array4<Real const> const& apx_new,
+                                          Array4<Real const> const& apy_new,
+                                          Array4<Real const> const& apz_new),
                              Array4<amrex::Real const> const& vfrac_new,
                              AMREX_D_DECL(Array4<Real const> const& fcx,
                                           Array4<Real const> const& fcy,
@@ -113,7 +116,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             }
         );
 
-        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac_old, vfrac_new, itr, lev_geom, target_volfrac);
+        MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+                         AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new, 
+                     itr, lev_geom, target_volfrac);
 
         MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                              lev_geom, target_volfrac);
@@ -234,7 +239,8 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
         U_out(i,j,k,n) = 0.;
     });
 
-    MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac_old, vfrac_new, itr, lev_geom, target_volfrac);
+    MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), AMREX_D_DECL(apx, apy, apz), 
+                 vfrac_old, vfrac_new, itr, lev_geom, target_volfrac);
 
     MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                             lev_geom, target_volfrac);

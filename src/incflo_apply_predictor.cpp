@@ -250,11 +250,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
                      rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
-                     if (rho_nph(i,j,0) < 0.0){
-                         amrex::Print() << "Negative Density rho_nph(" << i << ", " << j << "): " << rho_nph(i,j,0) << std::endl;
-                         amrex::Print() << "rho_old(" << i << ", " << j << "): " << rho_old(i,j,0) << std::endl;
-                         amrex::Print() << "rho_new(" << i << ", " << j << "): " << rho_new(i,j,0) << std::endl;
-                     }
+                     // if (rho_new(i,j,0) < 0.0){
+                     //     amrex::Print() << "Negative Density rho_new " << IntVect(i,j) << " old: " << rho_old(i,j,0) 
+                     //         << " new: "  << rho_new(i,j,0) << std::endl;
+                     // }
                  });
             } // mfi
         } // lev
