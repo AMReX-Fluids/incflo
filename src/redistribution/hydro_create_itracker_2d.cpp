@@ -68,21 +68,25 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-       // THIS WORKS FOR INPUTS_MOVING_RIGHT WHERE ONLY COVER CELLS
-       // if ( (vfrac_old(i,j,k)  > 0.0 && vfrac_old(i,j,k) < 1.0)  ||
+       // Justification: We create neighborhoods based on new geometry
+       // so we look for cut cells on new geometry
+       if ( (vfrac_new(i,j,k)  > 0.0 && vfrac_new(i,j,k) < 1.0) )
+
+            //(vfrac_new(i,j,k)  > 0.0 && vfrac_new(i,j,k) < 1.0) )
        //      (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k) > 0.0) )
 
        // THIS WORKS FOR INPUTS_MOVING_LEFT WHERE ONLY UNCOVER CELLS
-       if (vfrac_old(i,j,k)  != vfrac_new(i,j,k))
+       //if (vfrac_old(i,j,k)  != vfrac_new(i,j,k))
        {
            Real apnorm, apnorm_inv, dapx, dapy;
-           if (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k) > 0.0)
+           // Need to come up with a better way to detect normal direction.
+           if ( (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k) > 0.0) )
            {
-               dapx = apx_new(i+1,j  ,k  ) - apx_new(i,j,k);
-               dapy = apy_new(i  ,j+1,k  ) - apy_new(i,j,k);
+               dapx = apx_new(i,j,k) - apx_new(i+1,j  ,k);
+               dapy = apy_new(i,j,k) - apy_new(i  ,j+1,k);
            } else {
-               dapx = apx_old(i+1,j  ,k  ) - apx_old(i,j,k);
-               dapy = apy_old(i  ,j+1,k  ) - apy_old(i,j,k);
+               dapx = apx_new(i+1,j,k) - apx_new(i,j  ,k);
+               dapy = apy_new(i,j+1,k) - apy_new(i  ,j,k);
            }
            apnorm = std::sqrt(dapx*dapx+dapy*dapy);
            apnorm_inv = 1.0/apnorm;
@@ -92,13 +96,26 @@ Redistribution::MakeITracker ( Box const& bx,
            bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
                              (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
 
+           if (j == 9)
+           {
+               amrex::Print() << "\ndapx, nx, apx_new, apx_new: " << dapx << ", " << nx << ", " << apx_new(i,j,k) << ", " << apx_new(i+1,j,k) << std::endl;
+               amrex::Print() << "ny: " << ny << std::endl;
+           }
            // As a first pass, choose just based on the normal
            if (std::abs(nx) > std::abs(ny))
            {
                if (nx > 0)
-                   itracker(i,j,k,1) = 5;
-               else
+               {
                    itracker(i,j,k,1) = 4;
+                   itracker(i-1,j,k,0) += 1;
+                   itracker(i-1,j,k,1) = 5;
+               }
+               else 
+               {
+                   itracker(i,j,k,1) = 5;
+                   itracker(i+1,j,k,0) += 1;
+                   itracker(i+1,j,k,1) = 4;
+               }
 
            } else {
                if (ny > 0)
@@ -133,16 +150,16 @@ Redistribution::MakeITracker ( Box const& bx,
            int joff = jmap[itracker(i,j,k,1)];
 
            // Sanity check
-           if (vfrac_new(i+ioff,j+joff,k) == 0.)
-               amrex::Abort(" Trying to merge with cell covered in new geometry");
+           //if (vfrac_new(i+ioff,j+joff,k) == 0.)
+           //    amrex::Abort(" Trying to merge with cell covered in new geometry");
 
-           Real sum_vol = vfrac_old(i,j,k) + vfrac_old(i+ioff,j+joff,k);
+           Real sum_vol = vfrac_new(i,j,k) + vfrac_new(i+ioff,j+joff,k);
 
 #if 1
            if (debug_verbose > 0 && j == 9 )
-               amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_old(i,j,k) <<
+               amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_new(i,j,k) <<
                                  " trying to merge with " << IntVect(i+ioff,j+joff) <<
-                                 " with volfrac " << vfrac_old(i+ioff,j+joff,k) <<
+                                 " with volfrac " << vfrac_new(i+ioff,j+joff,k) <<
                                  " to get new sum_vol " <<  sum_vol << std::endl;
 #endif
 

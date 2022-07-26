@@ -103,7 +103,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     Elixir   eli_soln_hat = soln_hat_fab.elixir();
  
     for (int i = 8; i < 14; i++)
-       amrex::Print() << "VOLD / VIN / UIN " << i << " " << 
+       amrex::Print() << "VOLD / VNEW / UIN " << i << " " << 
           vfrac_old(i,9,0) << " " << vfrac_new(i,9,0) << " " << U_in(i,9,0,0) << std::endl;;
 
     // Define Qhat (from Berger and Guliani)
