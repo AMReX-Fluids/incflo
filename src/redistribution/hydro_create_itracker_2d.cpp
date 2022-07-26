@@ -106,15 +106,32 @@ Redistribution::MakeITracker ( Box const& bx,
            {
                if (nx > 0)
                {
-                   itracker(i,j,k,1) = 4;
-                   itracker(i-1,j,k,0) += 1;
-                   itracker(i-1,j,k,1) = 5;
+                   if (vfrac_old(i-1,j,k) == 0.0)
+                   {
+                        itracker(i,j,k,1) = 5;    
+                        itracker(i+1,j,k,0) += 1;
+                        itracker(i+1,j,k,1) = 4;
+                   } else
+                   {
+                        itracker(i,j,k,1) = 4; 
+                        itracker(i-1,j,k,0) += 1;
+                        itracker(i-1,j,k,1) = 5;
+                   }
                }
                else 
                {
-                   itracker(i,j,k,1) = 5;
-                   itracker(i+1,j,k,0) += 1;
-                   itracker(i+1,j,k,1) = 4;
+                   if (vfrac_old(i+1,j,k) == 0.0)
+                   {
+                        itracker(i,j,k,1) = 4;
+                        itracker(i-1,j,k,0) += 1;
+                        itracker(i-1,j,k,1) = 5;
+                   }
+                   else
+                   {
+                        itracker(i,j,k,1) = 5;
+                        itracker(i+1,j,k,0) += 1;
+                        itracker(i+1,j,k,1) = 4;
+                   }
                }
 
            } else {
