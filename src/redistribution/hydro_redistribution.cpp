@@ -116,6 +116,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             }
         );
 
+        amrex::Print() << "Start itracker" << std::endl;
+        
         MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                          AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new, 
                      itr, lev_geom, target_volfrac);
@@ -244,9 +246,11 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
     MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac_old, 
                      AMREX_D_DECL(apx, apy, apz), vfrac_new,
                  itr, lev_geom, target_volfrac);
+    
 
     MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                             lev_geom, target_volfrac);
+    
 
     StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac_old, vfrac_new,
                          AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,

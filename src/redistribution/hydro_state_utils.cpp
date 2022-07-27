@@ -108,9 +108,6 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
             nbhd_vol(i,j,k) = vfrac_new(i,j,k) / nrs(i,j,k);
             Real vol_of_nbors = 0.;
 
-
-            if ( ( i == 9 || i == 10) && (j == 9))
-                amrex::Print() << "i, j, nrs: " << i << ", " << j << ", " << nrs(i,j,k) << std::endl;
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
             {
@@ -165,18 +162,8 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
                 int r = i+imap[itracker(i,j,k,i_nbor)];
                 int s = j+jmap[itracker(i,j,k,i_nbor)];
                 int t = k+kmap[itracker(i,j,k,i_nbor)];
-             
-                if ( ((i == 9) || (i == 10) ) && (j == 9))
-                    amrex::Print() << "vfrac / nrs / alpha:" << vfrac_new(r,s,t) << ", " << nrs(r,s,t) << ", " << alpha(i,j,k,1) << std::endl;
-                
                 amrex::Gpu::Atomic::Add(&nbhd_vol(i,j,k),alpha(i,j,k,1) * vfrac_new(r,s,t) / nrs(r,s,t));
             }
-            if ( ((i == 9) || (i == 10) ) && (j == 9))
-            {
-                amrex::Print() << "nbdh_vol(" << i << ", " << j << "): " << nbhd_vol(i,j,k) << std::endl;
-            }
-
-
         }
     });
 

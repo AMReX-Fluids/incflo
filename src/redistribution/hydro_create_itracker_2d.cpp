@@ -63,14 +63,9 @@ Redistribution::MakeITracker ( Box const& bx,
     Box const& bxg4 = amrex::grow(bx,4);
     Box bx_per_g4= domain_per_grown & bxg4;
 
-    amrex::Print() << "TARGET " << target_volfrac << std::endl;
-
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-       
-       amrex::Print() << "(" << i << ", " << j << ")" << std::endl;
-
        // Justification: We create neighborhoods based on new geometry
        // so we look for cut cells on new geometry
        if ( (vfrac_new(i,j,k)  > 0.0 && vfrac_new(i,j,k) < 1.0) )
@@ -110,13 +105,13 @@ Redistribution::MakeITracker ( Box const& bx,
                    if (vfrac_old(i-1,j,k) == 0.0)
                    {
                         itracker(i,j,k,1) = 5;    
+                        itracker(i+1,j,k,itracker(i+1,j,k,0)+1) = 4;
                         itracker(i+1,j,k,0) += 1;
-                        itracker(i+1,j,k,1) = 4;
                    } else
                    {
                         itracker(i,j,k,1) = 4; 
+                        itracker(i-1,j,k,itracker(i-1,j,k,0)+1) = 5;
                         itracker(i-1,j,k,0) += 1;
-                        itracker(i-1,j,k,1) = 5;
                    }
                }
                else 
@@ -124,14 +119,14 @@ Redistribution::MakeITracker ( Box const& bx,
                    if (vfrac_old(i+1,j,k) == 0.0)
                    {
                         itracker(i,j,k,1) = 4;
+                        itracker(i-1,j,k,itracker(i-1,j,k,0)+1) = 5;
                         itracker(i-1,j,k,0) += 1;
-                        itracker(i-1,j,k,1) = 5;
                    }
                    else
                    {
                         itracker(i,j,k,1) = 5;
+                        itracker(i+1,j,k,itracker(i+1,j,k,0)+1) = 4;
                         itracker(i+1,j,k,0) += 1;
-                        itracker(i+1,j,k,1) = 4;
                    }
                }
 
@@ -139,26 +134,26 @@ Redistribution::MakeITracker ( Box const& bx,
                if (ny > 0) {
                    if (vfrac_old(i,j-1,k) == 0.0) {
                         itracker(i,j,k,1) = 7;    
+                        itracker(i,j+1,k,itracker(i,j+1,k,0)+1) = 2;
                         itracker(i,j+1,k,0) += 1;
-                        itracker(i,j+1,k,1) = 2;
                    } else {
                         itracker(i,j,k,1) = 2; 
+                        itracker(i,j-1,k,itracker(i,j-1,k,0)+1) = 7;
                         itracker(i,j-1,k,0) += 1;
-                        itracker(i,j-1,k,1) = 7;
                    }
                } else {
                    if (vfrac_old(i,j+1,k) == 0.0) {
                         itracker(i,j,k,1) = 2;
+                        itracker(i,j-1,k,itracker(i,j-1,k,0)+1) = 7;
                         itracker(i,j-1,k,0) += 1;
-                        itracker(i,j-1,k,1) = 7;
                    } else {
                         itracker(i,j,k,1) = 7;
+                        itracker(i,j+1,k,itracker(i,j+1,k,0)+1) = 2;
                         itracker(i,j+1,k,0) += 1;
-                        itracker(i,j+1,k,1) = 2;
                    }
                }
            }
-           }
+           
 
            bool xdir_mns_ok = (is_periodic_x || (i > domain.smallEnd(0)));
            bool xdir_pls_ok = (is_periodic_x || (i < domain.bigEnd(0)  ));
@@ -179,7 +174,7 @@ Redistribution::MakeITracker ( Box const& bx,
 
            // (i,j) merges with at least one cell now
            itracker(i,j,k,0) += 1;
-           if (i == 10 and j == 5) amrex::Print() << "ITRACKER " << itracker(i,j,k,0) << std::endl;
+           if (i == 4 || i == 5 && j == 5) amrex::Print() << "ITRACKER " << itracker(i,j,k,0) << std::endl;
 
            // (i+ioff,j+joff) is in the nbhd of (i,j)
            int ioff = imap[itracker(i,j,k,1)];
@@ -192,13 +187,13 @@ Redistribution::MakeITracker ( Box const& bx,
            Real sum_vol = vfrac_new(i,j,k) + vfrac_new(i+ioff,j+joff,k);
 
 #if 1
-           if (debug_verbose > 0 )
+           if (debug_verbose > 0 && (i > 3 && i < 6))
                amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_new(i,j,k) <<
                                  " trying to merge with " << IntVect(i+ioff,j+joff) <<
                                  " with volfrac " << vfrac_new(i+ioff,j+joff,k) <<
                                  " to get new sum_vol " <<  sum_vol << std::endl;
 #endif
-
+           }
 #if 0
            // If the merged cell isn't large enough, we try to merge in the other direction
            if (sum_vol < target_volfrac || nx_eq_ny)
