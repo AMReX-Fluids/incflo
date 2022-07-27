@@ -239,8 +239,9 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
         U_out(i,j,k,n) = 0.;
     });
 
-    MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), AMREX_D_DECL(apx, apy, apz), 
-                 vfrac_old, vfrac_new, itr, lev_geom, target_volfrac);
+    MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac_old, 
+                     AMREX_D_DECL(apx, apy, apz), vfrac_new,
+                 itr, lev_geom, target_volfrac);
 
     MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                             lev_geom, target_volfrac);
