@@ -119,10 +119,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                          AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new, 
                      itr, lev_geom, target_volfrac);
+       
+        amrex::Print() << "Start State Redistribution" << std::endl;
 
         MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                              lev_geom, target_volfrac);
-
+        
         StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac_old, vfrac_new,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
                           itr_const, nrs_const, alpha_const, nbhd_vol_const,

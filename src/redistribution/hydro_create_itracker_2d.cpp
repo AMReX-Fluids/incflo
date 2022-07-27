@@ -68,6 +68,9 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+       
+       amrex::Print() << "(" << i << ", " << j << ")" << std::endl;
+
        // Justification: We create neighborhoods based on new geometry
        // so we look for cut cells on new geometry
        if ( (vfrac_new(i,j,k)  > 0.0 && vfrac_new(i,j,k) < 1.0) )
@@ -96,11 +99,9 @@ Redistribution::MakeITracker ( Box const& bx,
            bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
                              (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
 
-           if (j == 9)
-           {
-               amrex::Print() << "\ndapx, nx, apx_new, apx_new: " << dapx << ", " << nx << ", " << apx_new(i,j,k) << ", " << apx_new(i+1,j,k) << std::endl;
-               amrex::Print() << "ny: " << ny << std::endl;
-           }
+           // if two adjacent cells are cut, we could potentially remove the link between them
+           // probably want to find a different method for this. 
+           if (itracker(i,j,k,0) == 0){
            // As a first pass, choose just based on the normal
            if (std::abs(nx) > std::abs(ny))
            {
@@ -157,6 +158,7 @@ Redistribution::MakeITracker ( Box const& bx,
                    }
                }
            }
+           }
 
            bool xdir_mns_ok = (is_periodic_x || (i > domain.smallEnd(0)));
            bool xdir_pls_ok = (is_periodic_x || (i < domain.bigEnd(0)  ));
@@ -177,7 +179,7 @@ Redistribution::MakeITracker ( Box const& bx,
 
            // (i,j) merges with at least one cell now
            itracker(i,j,k,0) += 1;
-           if (i == 9 and j == 9) amrex::Print() << "ITRACKER " << itracker(i,j,k,0) << std::endl;
+           if (i == 10 and j == 5) amrex::Print() << "ITRACKER " << itracker(i,j,k,0) << std::endl;
 
            // (i+ioff,j+joff) is in the nbhd of (i,j)
            int ioff = imap[itracker(i,j,k,1)];
@@ -190,7 +192,7 @@ Redistribution::MakeITracker ( Box const& bx,
            Real sum_vol = vfrac_new(i,j,k) + vfrac_new(i+ioff,j+joff,k);
 
 #if 1
-           if (debug_verbose > 0 && j == 9 )
+           if (debug_verbose > 0 )
                amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_new(i,j,k) <<
                                  " trying to merge with " << IntVect(i+ioff,j+joff) <<
                                  " with volfrac " << vfrac_new(i+ioff,j+joff,k) <<
@@ -247,14 +249,20 @@ Redistribution::MakeITracker ( Box const& bx,
                }
            }
 #endif
+           /*
+           amrex::Print() << "we got here." << std::endl;
 
            // Now we merge in the corner direction if we have already claimed two
            if (itracker(i,j,k,0) == 2)
            {
+               amrex::Print() << "we got here 3." << std::endl;
+               
                // We already have two offsets, and we know they are in different directions
                ioff = imap[itracker(i,j,k,1)] + imap[itracker(i,j,k,2)];
                joff = jmap[itracker(i,j,k,1)] + jmap[itracker(i,j,k,2)];
 
+               amrex::Print() << "we got here 4." << std::endl;
+               
                if (ioff > 0 && joff > 0)
                    itracker(i,j,k,3) = 8;
                else if (ioff < 0 && joff > 0)
@@ -264,18 +272,19 @@ Redistribution::MakeITracker ( Box const& bx,
                else
                    itracker(i,j,k,3) = 1;
 
+               amrex::Print() << "we got here 2." << std::endl;
                // (i,j) merges with at least three cells now
                itracker(i,j,k,0) += 1;
 
                sum_vol += vfrac_old(i+ioff,j+joff,k);
 #if 1
-               if (debug_verbose > 0 && j == 9 )
+               if (debug_verbose > 0 )
                    amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_old(i,j,k) <<
                                      " trying to ALSO merge with " << IntVect(i+ioff,j+joff) <<
                                      " with volfrac " << vfrac_old(i+ioff,j+joff,k) <<
                                      " to get new sum_vol " <<  sum_vol << std::endl;
 #endif
-           }
+           }*/
 #if 0
            if (sum_vol < target_volfrac)
            {

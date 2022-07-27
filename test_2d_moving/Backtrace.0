@@ -8,40 +8,40 @@
             readelf -wl my_exefile | grep my_line_address'
     to find out the offset for that line.
 
- 0: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x9ce1d0) [0x55687631d1d0]
+ 0: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x9ccfa0) [0x55bd080cefa0]
     amrex::BLBackTrace::print_backtrace_info(_IO_FILE*) at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../../amrex/Src/Base/AMReX_BLBackTrace.cpp:175
 
- 1: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x9cdcb5) [0x55687631ccb5]
+ 1: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x9cca85) [0x55bd080cea85]
     amrex::BLBackTrace::handler(int) at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../../amrex/Src/Base/AMReX_BLBackTrace.cpp:85
 
- 2: /lib/x86_64-linux-gnu/libc.so.6(+0x43090) [0x7f2227812090]
+ 2: /lib/x86_64-linux-gnu/libc.so.6(+0x43090) [0x7f270c9b1090]
 
- 3: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1e0dbd) [0x556875b2fdbd]
-    Redistribution::MakeITracker(amrex::Box const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int> const&, amrex::Geometry const&, double)::{lambda(int, int, int)#2}::operator()(int, int, int) const at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../src/redistribution/hydro_create_itracker_2d.cpp:255
+ 3: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1f2187) [0x55bd078f4187]
+    Redistribution::MakeStateRedistUtils(amrex::Box const&, amrex::Array4<amrex::EBCellFlag const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int const> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Geometry const&, double)::{lambda(int, int, int)#2}::operator()(int, int, int) const at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../src/redistribution/hydro_state_utils.cpp:91
 
- 4: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1e2a45) [0x556875b31a45]
-    decltype ({parm#1}(0, 0, 0)) amrex::detail::call_f<Redistribution::MakeITracker(amrex::Box const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int> const&, amrex::Geometry const&, double)::{lambda(int, int, int)#2}>(Redistribution::MakeITracker(amrex::Box const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int> const&, amrex::Geometry const&, double)::{lambda(int, int, int)#2} const&, int, int, int) at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../../amrex/Src/Base/AMReX_GpuLaunchFunctsC.H:30
+ 4: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1fafe7) [0x55bd078fcfe7]
+    decltype ({parm#1}(0, 0, 0)) amrex::detail::call_f<Redistribution::MakeStateRedistUtils(amrex::Box const&, amrex::Array4<amrex::EBCellFlag const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int const> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Geometry const&, double)::{lambda(int, int, int)#2}>(Redistribution::MakeStateRedistUtils(amrex::Box const&, amrex::Array4<amrex::EBCellFlag const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int const> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Geometry const&, double)::{lambda(int, int, int)#2} const&, int, int, int) at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../../amrex/Src/Base/AMReX_GpuLaunchFunctsC.H:30
 
- 5: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1e2998) [0x556875b31998]
-    void amrex::ParallelFor<Redistribution::MakeITracker(amrex::Box const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int> const&, amrex::Geometry const&, double)::{lambda(int, int, int)#2}>(amrex::Box const&, Redistribution::MakeITracker(amrex::Box const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int> const&, amrex::Geometry const&, double)::{lambda(int, int, int)#2}&&) at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../../amrex/Src/Base/AMReX_GpuLaunchFunctsC.H:118 (discriminator 2)
+ 5: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1fa1ee) [0x55bd078fc1ee]
+    void amrex::ParallelFor<Redistribution::MakeStateRedistUtils(amrex::Box const&, amrex::Array4<amrex::EBCellFlag const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int const> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Geometry const&, double)::{lambda(int, int, int)#2}>(amrex::Box const&, Redistribution::MakeStateRedistUtils(amrex::Box const&, amrex::Array4<amrex::EBCellFlag const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int const> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Geometry const&, double)::{lambda(int, int, int)#2}&&) at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../../amrex/Src/Base/AMReX_GpuLaunchFunctsC.H:118 (discriminator 2)
 
- 6: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1e22dd) [0x556875b312dd]
-    Redistribution::MakeITracker(amrex::Box const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int> const&, amrex::Geometry const&, double) at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../src/redistribution/hydro_create_itracker_2d.cpp:291 (discriminator 8)
+ 6: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1f8eed) [0x55bd078faeed]
+    Redistribution::MakeStateRedistUtils(amrex::Box const&, amrex::Array4<amrex::EBCellFlag const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<int const> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Geometry const&, double) at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../src/redistribution/hydro_state_utils.cpp:102
 
- 7: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1e9b4e) [0x556875b38b4e]
-    Redistribution::ApplyToInitialData(amrex::Box const&, int, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<amrex::EBCellFlag const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::BCRec const*, amrex::Geometry&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int, double) at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../src/redistribution/hydro_redistribution.cpp:242
+ 7: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1e89aa) [0x55bd078ea9aa]
+    Redistribution::ApplyToInitialData(amrex::Box const&, int, amrex::Array4<double> const&, amrex::Array4<double> const&, amrex::Array4<amrex::EBCellFlag const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::Array4<double const> const&, amrex::BCRec const*, amrex::Geometry&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, int, double) at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../src/redistribution/hydro_redistribution.cpp:248
 
- 8: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1d2a1d) [0x556875b21a1d]
+ 8: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1d2a1d) [0x55bd078d4a1d]
     incflo::InitialRedistribution() at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../src/setup/init.cpp:439 (discriminator 1)
 
- 9: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x200ed) [0x55687596f0ed]
+ 9: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x200ed) [0x55bd077220ed]
     incflo::InitData() at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../src/incflo.cpp:63
 
-10: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x58cb7) [0x5568759a7cb7]
+10: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x58cb7) [0x55bd0775acb7]
     main at /home/mblomquist/LBL/AMReX-Codes/incflo/test_2d_moving/../src/main.cpp:51
 
-11: /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xf3) [0x7f22277f3083]
+11: /lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0xf3) [0x7f270c992083]
 
-12: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1ec5e) [0x55687596dc5e]
+12: ./incflo2d.gnu.DEBUG.MPI.EB.ex(+0x1ec5e) [0x55bd07720c5e]
     ?? ??:0
 
