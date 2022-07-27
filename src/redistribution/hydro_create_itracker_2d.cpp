@@ -80,7 +80,7 @@ Redistribution::MakeITracker ( Box const& bx,
        {
            Real apnorm, apnorm_inv, dapx, dapy;
            // Need to come up with a better way to detect normal direction.
-           if ( (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k) > 0.0) )
+           if ( (vfrac_old(i,j,k) - vfrac_new(i,j,k) < 0.0) )
            {
                dapx = apx_new(i,j,k) - apx_new(i+1,j  ,k);
                dapy = apy_new(i,j,k) - apy_new(i  ,j+1,k);
@@ -135,10 +135,27 @@ Redistribution::MakeITracker ( Box const& bx,
                }
 
            } else {
-               if (ny > 0)
-                   itracker(i,j,k,1) = 7;
-               else
-                   itracker(i,j,k,1) = 2;
+               if (ny > 0) {
+                   if (vfrac_old(i,j-1,k) == 0.0) {
+                        itracker(i,j,k,1) = 7;    
+                        itracker(i,j+1,k,0) += 1;
+                        itracker(i,j+1,k,1) = 2;
+                   } else {
+                        itracker(i,j,k,1) = 2; 
+                        itracker(i,j-1,k,0) += 1;
+                        itracker(i,j-1,k,1) = 7;
+                   }
+               } else {
+                   if (vfrac_old(i,j+1,k) == 0.0) {
+                        itracker(i,j,k,1) = 2;
+                        itracker(i,j-1,k,0) += 1;
+                        itracker(i,j-1,k,1) = 7;
+                   } else {
+                        itracker(i,j,k,1) = 7;
+                        itracker(i,j+1,k,0) += 1;
+                        itracker(i,j+1,k,1) = 2;
+                   }
+               }
            }
 
            bool xdir_mns_ok = (is_periodic_x || (i > domain.smallEnd(0)));
