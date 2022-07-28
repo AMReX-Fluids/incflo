@@ -295,7 +295,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             // This seems to help with a compiler issue ...
             Real denom = 1. / (nrs(i,j,k) + 1.e-40);
             U_out(i,j,k,n) *= denom;
-            if (j == 9 and i < 15 and n == 0) amrex::Print() << "VFRAC/UOUT " << i << " " << 
+            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) 
+                amrex::Print() << "VFRAC / UOUT " << IntVect(i,j) << " " << 
                 vfrac_new(i,j,k) << " " << U_out(i,j,k,n) << std::endl;
         }
         else

@@ -183,6 +183,7 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     }
     EB_set_covered( new_leveldata->gp , 1.e45);
 
+#if 1
     // Now let's make sure to fill cells that were previously covered but are now cut cell
     //amrex::Print() << "Fill Velocity" << std::endl;
     EB_fill_uncovered(lev,new_leveldata->velocity  , m_leveldata[lev]->velocity  );
@@ -202,6 +203,7 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
 
     //amrex::Print() << "\nFill p_nd" << std::endl;
     EB_fill_uncovered(lev,new_leveldata->p_nd    , m_leveldata[lev]->p_nd    );
+#endif
 
     m_leveldata[lev] = std::move(new_leveldata);
 }

@@ -3,7 +3,7 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  2000         # Max number of time steps
+max_step                =  40         # Max number of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -11,7 +11,7 @@ steady_state            =  0            # Steady-state solver?
 #.......................................#
 incflo.fixed_dt             =   1.e-3     # Use this constant dt if > 0
 incflo.do_initial_proj      =   1
-incflo.initial_iterations   =   2
+incflo.initial_iterations   =   0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
@@ -28,6 +28,7 @@ incflo.ro_0             =   1.          # Reference density
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.1         # Dynamic viscosity coefficient
 incflo.constant_density =   true        #
+incflo.constant_density =   false        #
 
 incflo.advection_type        =  "Godunov" 
 incflo.diffusion_type        =  0
