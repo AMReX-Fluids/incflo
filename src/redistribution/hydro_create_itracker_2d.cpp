@@ -94,33 +94,18 @@ Redistribution::MakeITracker ( Box const& bx,
            // but don't merge with previously covered cells.
            if (std::abs(nx) > std::abs(ny)) {
                if (nx > 0) {
-                   if (vfrac_old(i-1,j,k) == 0. && vfrac_new(i,j,k) == 0.) {
-                        itracker(i,j,k,1) = 5;    
-                   } else {
-                        itracker(i,j,k,1) = 4; 
-                   }
-               } else {
-                   if (vfrac_old(i+1,j,k) == 0. && vfrac_new(i,j,k) == 0.) {
                         itracker(i,j,k,1) = 4;
                    } else {
                         itracker(i,j,k,1) = 5;
                    }
-               }
-           } else {
-               if (ny > 0) {
-                   if (vfrac_old(i,j-1,k) == 0. && vfrac_new(i,j,k) == 0.) {
-                        itracker(i,j,k,1) = 7;    
-                   } else {
-                        itracker(i,j,k,1) = 2; 
-                   }
                } else {
-                   if (vfrac_old(i,j+1,k) == 0. && vfrac_new(i,j,k) == 0.) {
+               if (ny > 0) {
                         itracker(i,j,k,1) = 2;
                    } else {
                         itracker(i,j,k,1) = 7;
                    }
                }
-           }
+           
 
            bool xdir_mns_ok = (is_periodic_x || (i > domain.smallEnd(0)));
            bool xdir_pls_ok = (is_periodic_x || (i < domain.bigEnd(0)  ));
@@ -283,15 +268,16 @@ Redistribution::MakeITracker ( Box const& bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         // Check Only Cut Cells
-        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.){
-            if (vfrac_old(i,j,k) == 0. || vfrac_new(i,j,k) == 0.) // Uncovered Cells
+        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
+        {
+            int ioff = imap[itracker(i,j,k,1)];
+            int joff = jmap[itracker(i,j,k,1)];
+            
+            if (vfrac_new(i+ioff,j+joff,k) == 0. || vfrac_old(i+ioff,j+joff,k) == 0.)
             {
-                amrex::Print() << "Covered/Uncovered Cell " << IntVect(i,j) << std::endl;
-                int ioff = imap[itracker(i,j,k,1)];
-                int joff = jmap[itracker(i,j,k,1)];
-
+                amrex::Print() << "Covered/Uncovered Cell at " << IntVect(i,j) << std::endl;
                 itracker(i+ioff, j+joff,k,0) += 1;               
-                itracker(i+ioff, j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];               
+                itracker(i+ioff, j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
             }
         }
     });

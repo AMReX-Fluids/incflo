@@ -101,10 +101,17 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     FArrayBox    soln_hat_fab (bxg3,ncomp);
     Array4<Real> soln_hat = soln_hat_fab.array();
     Elixir   eli_soln_hat = soln_hat_fab.elixir();
- 
-    for (int i = 8; i < 14; i++)
-       amrex::Print() << "VOLD / VNEW / UIN " << i << " " << 
-          vfrac_old(i,9,0) << " " << vfrac_new(i,9,0) << " " << U_in(i,9,0,0) << std::endl;;
+
+    // Show "VOLD / VNEW / UIN
+    amrex::ParallelFor(bxg3,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        if (j == 4 || j == 5)
+            amrex::Print() << "VOLD / VNEW / UIN " << IntVect(i,j) << " " << 
+                    vfrac_old(i,j,0) << " " << vfrac_new(i,j,0) << " " << U_in(i,j,0,0) << std::endl;
+
+
+    });
 
     // Define Qhat (from Berger and Guliani)
     // Here we initialize soln_hat to equal U_in on all cells in bxg3 so that
@@ -141,7 +148,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             for (int n = 0; n < ncomp; n++)  
                 soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
 
-            if (j == 9 and i < 15)
+            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0)
                 amrex::Print() << "QHAT NBVOL " << i << " " << soln_hat(i,j,0,0) << " " <<  nbhd_vol(i,j,k) << std::endl;;
         }
     });
