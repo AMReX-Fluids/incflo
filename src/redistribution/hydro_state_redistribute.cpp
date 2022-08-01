@@ -106,7 +106,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     amrex::ParallelFor(bxg3,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (j == 4 || j == 5)
+        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
             amrex::Print() << "VOLD / VNEW / UIN " << IntVect(i,j) << " " << 
                     vfrac_old(i,j,0) << " " << vfrac_new(i,j,0) << " " << U_in(i,j,0,0) << std::endl;
 
@@ -149,7 +149,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                 soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
 
             if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0)
-                amrex::Print() << "QHAT NBVOL " << i << " " << soln_hat(i,j,0,0) << " " <<  nbhd_vol(i,j,k) << std::endl;;
+                amrex::Print() << "QHAT NBVOL " << IntVect(i,j) << " " << soln_hat(i,j,0,0) << " " <<  nbhd_vol(i,j,k) << std::endl;;
         }
     });
 

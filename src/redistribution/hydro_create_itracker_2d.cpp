@@ -267,17 +267,32 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        // Check Only Cut Cells
-        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
+        // Check Uncovered Cells
+        if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
         {
             int ioff = imap[itracker(i,j,k,1)];
             int joff = jmap[itracker(i,j,k,1)];
             
-            if (vfrac_new(i+ioff,j+joff,k) == 0. || vfrac_old(i+ioff,j+joff,k) == 0.)
+            amrex::Print() << "Uncovered Cell at " << IntVect(i,j) << std::endl;
+            
+            itracker(i+ioff, j+joff,k,0) += 1;               
+            itracker(i+ioff, j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
+        }
+
+        // Check if Neighbors are Covered Cells
+        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
+        {
+            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
             {
-                amrex::Print() << "Covered/Uncovered Cell at " << IntVect(i,j) << std::endl;
-                itracker(i+ioff, j+joff,k,0) += 1;               
-                itracker(i+ioff, j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
+                int ioff = imap[itracker(i,j,k,1)];
+                int joff = jmap[itracker(i,j,k,1)];   
+           
+                if (vfrac_new(i+ioff,j+joff,k) == 0.)
+                {
+                    amrex::Print() << "Covered Neighbor Cell at " << IntVect(i,j) << std::endl;
+                    itracker(i+ioff,j+joff,k,0) += 1;
+                    itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
+                }
             }
         }
     });
