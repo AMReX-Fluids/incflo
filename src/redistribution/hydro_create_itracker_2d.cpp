@@ -94,19 +94,34 @@ Redistribution::MakeITracker ( Box const& bx,
            // but don't merge with previously covered cells.
            if (std::abs(nx) > std::abs(ny)) {
                if (nx > 0) {
-                        itracker(i,j,k,1) = 4;
+                        if (vfrac_new(i-1,j,k) == 0. && vfrac_old(i-1,j,k) == 0.){
+                            itracker(i,j,k,1) = 5;
+                        } else {
+                            itracker(i,j,k,1) = 4;
+                        }
                    } else {
-                        itracker(i,j,k,1) = 5;
+                        if (vfrac_new(i+1,j,k) == 0. && vfrac_old(i+1,j,k) == 0.){
+                            itracker(i,j,k,1) = 4;
+                        } else {
+                            itracker(i,j,k,1) = 5;
+                        }
                    }
                } else {
                if (ny > 0) {
-                        itracker(i,j,k,1) = 2;
+                        if (vfrac_new(i,j-1,k) == 0. && vfrac_old(i,j-1,k) == 0.){
+                            itracker(i,j,k,1) = 7;
+                        } else {
+                            itracker(i,j,k,1) = 2;
+                        }
                    } else {
-                        itracker(i,j,k,1) = 7;
+                        if (vfrac_new(i,j+1,k) == 0. && vfrac_old(i,j+1,k) == 0.){
+                            itracker(i,j,k,1) = 2; 
+                        } else {
+                            itracker(i,j,k,1) = 7;
+                        }
                    }
                }
            
-
            bool xdir_mns_ok = (is_periodic_x || (i > domain.smallEnd(0)));
            bool xdir_pls_ok = (is_periodic_x || (i < domain.bigEnd(0)  ));
            bool ydir_mns_ok = (is_periodic_y || (j > domain.smallEnd(1)));
@@ -134,7 +149,7 @@ Redistribution::MakeITracker ( Box const& bx,
 #if 1
            Real sum_vol = vfrac_new(i,j,k) + vfrac_new(i+ioff,j+joff,k);
            
-           if ( debug_verbose > 0 && (i > 1 && i < 13) && (j > 5 && j < 15) )
+           if ( debug_verbose > 0 )
                amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac_new(i,j,k) <<
                                  " merge " << IntVect(i+ioff,j+joff) <<
                                  " with vfrac " << vfrac_new(i+ioff,j+joff,k) <<
@@ -287,7 +302,7 @@ Redistribution::MakeITracker ( Box const& bx,
                 int ioff = imap[itracker(i,j,k,1)];
                 int joff = jmap[itracker(i,j,k,1)];   
            
-                if (vfrac_new(i+ioff,j+joff,k) == 0.)
+                if (vfrac_new(i+ioff,j+joff,k) == 0. )
                 {
                     amrex::Print() << "Covered Neighbor Cell at " << IntVect(i,j) << std::endl;
                     itracker(i+ioff,j+joff,k,0) += 1;
