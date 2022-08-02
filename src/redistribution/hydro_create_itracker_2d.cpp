@@ -156,8 +156,8 @@ Redistribution::MakeITracker ( Box const& bx,
                                  " to get new vfrac " <<  sum_vol << std::endl;
 #endif
 
-       }          
-#if 0
+                 
+#if 1
            // If the merged cell isn't large enough, we try to merge in the other direction
            if (sum_vol < target_volfrac || nx_eq_ny)
            {
@@ -196,9 +196,9 @@ Redistribution::MakeITracker ( Box const& bx,
                    int ioff2 = imap[itracker(i,j,k,2)];
                    int joff2 = jmap[itracker(i,j,k,2)];
 
-                   sum_vol += vfrac_old(i+ioff2,j+joff2,k);
+                   sum_vol += vfrac_new(i+ioff2,j+joff2,k);
 #if 1
-                   if (debug_verbose > 0 && j == 9 )
+                   if (debug_verbose > 0 )
                        amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_old(i,j,k) <<
                                          " trying to ALSO merge with " << IntVect(i+ioff2,j+joff2) <<
                                          " with volfrac " << vfrac_old(i+ioff2,j+joff2,k) <<
@@ -207,7 +207,7 @@ Redistribution::MakeITracker ( Box const& bx,
                }
            }
 #endif
-          /* 
+ 
            // Now we merge in the corner direction if we have already claimed two
            if (itracker(i,j,k,0) == 2)
            {
@@ -227,15 +227,15 @@ Redistribution::MakeITracker ( Box const& bx,
                // (i,j) merges with at least three cells now
                itracker(i,j,k,0) += 1;
 
-               //sum_vol += vfrac_old(i+ioff,j+joff,k);
-#if 0
+               sum_vol += vfrac_new(i+ioff,j+joff,k);
+#if 1
                if (debug_verbose > 0 )
                    amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_old(i,j,k) <<
                                      " trying to ALSO merge with " << IntVect(i+ioff,j+joff) <<
                                      " with volfrac " << vfrac_old(i+ioff,j+joff,k) <<
                                      " to get new sum_vol " <<  sum_vol << std::endl;
 #endif
-           }*/
+           }
 #if 0
            if (sum_vol < target_volfrac)
            {
@@ -246,7 +246,7 @@ Redistribution::MakeITracker ( Box const& bx,
              amrex::Abort("Couldnt merge with enough cells to raise volume greater than target_volfrac");
            }
 #endif
-       
+       }
     });
 #if 1
     amrex::Print() << "\nInitial Cell Merging" << std::endl;
@@ -287,9 +287,7 @@ Redistribution::MakeITracker ( Box const& bx,
         {
             int ioff = imap[itracker(i,j,k,1)];
             int joff = jmap[itracker(i,j,k,1)];
-            
-            amrex::Print() << "Uncovered Cell at " << IntVect(i,j) << std::endl;
-            
+           
             itracker(i+ioff, j+joff,k,0) += 1;               
             itracker(i+ioff, j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
         }
@@ -304,13 +302,28 @@ Redistribution::MakeITracker ( Box const& bx,
            
                 if (vfrac_new(i+ioff,j+joff,k) == 0. )
                 {
-                    amrex::Print() << "Covered Neighbor Cell at " << IntVect(i,j) << std::endl;
+                    amrex::Print() << "Cell  " << IntVect(i,j) << " is merged with a covered neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
                     itracker(i+ioff,j+joff,k,0) += 1;
                     itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
                 }
             }
         }
     });
+
+#if 0
+    amrex::Print() << "Check for all covered cells." << std::endl;
+
+    amrex::ParallelFor(Box(itracker),
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        if (vfrac_new(i,j,k) == 0. && vfrac_old(i,j,k) > 0.)
+        {
+            amrex::Print() << "Covered Cell " << IntVect(i,j) << std::endl;   
+        }
+    });    
+    amrex::Print() << std::endl;
+#endif
+
 
 #if 1
     amrex::Print() << "Post Update to Cell Merging" << std::endl;
