@@ -174,11 +174,26 @@ void incflo::ApplyPredictor (bool incremental_projection)
                        get_density_old_const(), get_tracer_old_const(), get_tracer_new_const(),
                        include_pressure_gradient);
 
+#ifdef INCFLO_USE_MOVING_EB
+    // **********************************************************************************************
+    //
+    // Update the moving geometry and arrays
+    //
+    // **********************************************************************************************
+
+    if (!incremental_projection) {
+        for (int lev = 0; lev <= finest_level; lev++)
+        {
+            MakeNewGeometry(lev,new_time);
+        }
+    }
+#endif
+
     compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
 
-#ifdef INCFLO_USE_MOVING_EB
+#if 0
     // **********************************************************************************************
     //
     // Update the moving geometry and arrays
