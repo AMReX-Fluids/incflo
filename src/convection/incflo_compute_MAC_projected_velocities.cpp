@@ -122,10 +122,65 @@ incflo::compute_MAC_projected_velocities (
     macproj->setUMAC(mac_vec);
 
 #ifdef AMREX_USE_EB
+    Vector<MultiFab*> eb_vel_mod;
+
     if (m_eb_flow.enabled) {
        for (int lev=0; lev <= finest_level; ++lev)
        {
-          macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
+          MultiFab* new_mf = new MultiFab(grids[lev],dmap[lev],AMREX_SPACEDIM,0);
+          eb_vel_mod.push_back(new_mf);
+          MultiFab::Copy(*eb_vel_mod[lev], *get_velocity_eb()[lev], 0, 0, AMREX_SPACEDIM, 0);
+
+          auto const& vfrac_old  = OldEBFactory(lev).getVolFrac();
+          auto const& vfrac_new  =    EBFactory(lev).getVolFrac();
+          auto const& bndry_area =    EBFactory(lev).getBndryArea();
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+          for (MFIter mfi(*eb_vel_mod[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+          {
+              Box const& bx = mfi.tilebox();
+
+              // Face-centered areas
+              AMREX_D_TERM(const auto& apx = OldEBFactory(lev).getAreaFrac()[0]->const_array(mfi);,
+                           const auto& apy = OldEBFactory(lev).getAreaFrac()[1]->const_array(mfi);,
+                           const auto& apz = OldEBFactory(lev).getAreaFrac()[2]->const_array(mfi););
+ 
+              Array4<Real      > const&   vel_arr  = eb_vel_mod[lev]->array(mfi);
+              Array4<Real const> const& vfold_arr  =  vfrac_old.const_array(mfi);
+              Array4<Real const> const& vfnew_arr  =  vfrac_new.const_array(mfi);
+              Array4<Real const> const& ebarea_arr =  bndry_area.const_array(mfi);
+
+              amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+              {
+                  if (vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0) { 
+
+                      AMREX_D_TERM(const Real dapx = apx(i+1,j  ,k  ) - apx(i,j,k);,
+                                   const Real dapy = apy(i  ,j+1,k  ) - apy(i,j,k);,
+                                   const Real dapz = apz(i  ,j  ,k+1) - apz(i,j,k););
+#if (AMREX_SPACEDIM == 2)
+                      Real apnorm = std::sqrt(dapx*dapx+dapy*dapy);
+#elif (AMREX_SPACEDIM == 3)
+                      Real apnorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
+#endif
+                      Real apnorm_inv = 1.0/apnorm;
+
+                      AMREX_D_TERM(Real nx = dapx * apnorm_inv;,
+                                   Real ny = dapy * apnorm_inv;,
+                                   Real nz = dapz * apnorm_inv;);
+
+                      Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
+
+                      AMREX_D_TERM(vel_arr(i,j,k,0) = delta_vol / l_dt / ebarea_arr(i,j,k) * nx;,
+                                   vel_arr(i,j,k,1) = delta_vol / l_dt / ebarea_arr(i,j,k) * ny;,
+                                   vel_arr(i,j,k,2) = delta_vol / l_dt / ebarea_arr(i,j,k) * nz;);
+                  }
+              });
+          }
+
+          // macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
+          macproj->setEBInflowVelocity(lev, *eb_vel_mod[lev]);
        }
     }
 #endif
