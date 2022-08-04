@@ -317,7 +317,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         }
     });
 
-#if 0
+#if 0 
     //
     // This tests whether the redistribution procedure was conservative --
     //      only use if bx is the whole domain

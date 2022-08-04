@@ -173,10 +173,13 @@ incflo::compute_MAC_projected_velocities (
                                    Real nz = dapz * apnorm_inv;);
 
                       Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-                      
+                     
+                      if (i == 5 && j == 4)
+                          amrex::Print() << dapx << ", " << dapy << ", " << delta_vol << ", " << ebarea_arr(i,j,k) << nx << ny << std::endl;
+
                       AMREX_D_TERM(vel_arr(i,j,k,0) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * nx;,
                                    vel_arr(i,j,k,1) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * ny;,
-                                   vel_arr(i,j,k,2) = delta_vol / l_dt / ebarea_arr(i,j,k) * nz;);
+                                   vel_arr(i,j,k,2) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * nz;);
                   }
               });
           }
