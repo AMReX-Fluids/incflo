@@ -152,6 +152,8 @@ incflo::compute_MAC_projected_velocities (
               Array4<Real const> const& vfnew_arr  =  vfrac_new.const_array(mfi);
               Array4<Real const> const& ebarea_arr =  bndry_area.const_array(mfi);
 
+              Real dx = geom[lev].CellSize()[0]; 
+
               amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
               {
                   if (vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0) { 
@@ -171,15 +173,15 @@ incflo::compute_MAC_projected_velocities (
                                    Real nz = dapz * apnorm_inv;);
 
                       Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-
-                      AMREX_D_TERM(vel_arr(i,j,k,0) = delta_vol / l_dt / ebarea_arr(i,j,k) * nx;,
-                                   vel_arr(i,j,k,1) = delta_vol / l_dt / ebarea_arr(i,j,k) * ny;,
+                      
+                      AMREX_D_TERM(vel_arr(i,j,k,0) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * nx;,
+                                   vel_arr(i,j,k,1) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * ny;,
                                    vel_arr(i,j,k,2) = delta_vol / l_dt / ebarea_arr(i,j,k) * nz;);
                   }
               });
           }
 
-          // macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
+          //macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
           macproj->setEBInflowVelocity(lev, *eb_vel_mod[lev]);
        }
     }
