@@ -259,6 +259,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
                     if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
                         rho_new(i,j,k) = rho_new(i,j,k) * vfrac_old(i,j,k) / vfrac_new(i,j,k);
+                    
+                    if (i == 5 && j == 4){
+                        amrex::Print() << "dV" << IntVect(i,j) << ": " << vfrac_new(i,j,k) - vfrac_old(i,j,k) << std::endl;
+                        amrex::Print() << "dt*v^n*div_ru" << IntVect(i,j) << ": " << l_dt * vfrac_old(i,j,k) * drdt(i,j,k) << std::endl;
+                        amrex::Print() << "div_ru" << IntVect(i,j) << ": " << drdt(i,j,k) << std::endl;
+                        amrex::Print() << "Needed div_ru" << IntVect(i,j) << ": " << (vfrac_new(i,j,k) - vfrac_old(i,j,k)) / vfrac_old(i,j,k) / l_dt << std::endl;
+                        amrex::Print() << "rho_old" << IntVect(i,j) << ": " << rho_o(i,j,k) << std::endl;
+                        amrex::Print() << "rho_new" << IntVect(i,j) << ": " << rho_new(i,j,k) << std::endl;
+                    }
+
+
                 });
              } // mfi
 

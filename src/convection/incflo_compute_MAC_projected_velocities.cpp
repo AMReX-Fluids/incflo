@@ -133,7 +133,7 @@ incflo::compute_MAC_projected_velocities (
 
           auto const& vfrac_old  = OldEBFactory(lev).getVolFrac();
           auto const& vfrac_new  =    EBFactory(lev).getVolFrac();
-          auto const& bndry_area =    EBFactory(lev).getBndryArea();
+          auto const& bndry_area = OldEBFactory(lev).getBndryArea();
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -174,12 +174,25 @@ incflo::compute_MAC_projected_velocities (
 
                       Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
                      
-                      if (i == 5 && j == 4)
-                          amrex::Print() << dapx << ", " << dapy << ", " << delta_vol << ", " << ebarea_arr(i,j,k) << nx << ny << std::endl;
-
                       AMREX_D_TERM(vel_arr(i,j,k,0) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * nx;,
                                    vel_arr(i,j,k,1) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * ny;,
                                    vel_arr(i,j,k,2) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * nz;);
+                      
+
+                      if (i == 5 && j == 4){
+                          amrex::Print() << "eb_vel_modx: " << vel_arr(i,j,k,0) << " eb_vel_mody: " << vel_arr(i,j,k,1) << std::endl;
+                          amrex::Print() << "ebarea: " << ebarea_arr(i,j,k) << std::endl;
+                          amrex::Print() << "delta_vol: " << delta_vol << std::endl;
+                          amrex::Print() << "nx: " << nx << std::endl;
+                          amrex::Print() << "ny: " << ny << std::endl;
+                          amrex::Print() << "dapx: " << dapx << std::endl;
+                          amrex::Print() << "dapy: " << dapy << std::endl;
+                          amrex::Print() << "apx: " << apx(i+1,j,k) << std::endl;
+                          amrex::Print() << "apx: " << apx(i,j,k) << std::endl;
+                          amrex::Print() << "apy: " << apy(i,j+1,k) << std::endl;
+                          amrex::Print() << "apy: " << apy(i,j,k) << std::endl;
+                      }
+
                   }
               });
           }
