@@ -249,9 +249,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real> const& rho_new       = ld.density.array(mfi);
                 Array4<Real const> const& drdt    = ld.conv_density_o.const_array(mfi);
 
+                auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+
+
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    rho_new(i,j,k) = rho_o(i,j,k) + l_dt * drdt(i,j,k);
+                    rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
+
+                    if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
+                        rho_new(i,j,k) = rho_new(i,j,k) * vfrac_old(i,j,k) / vfrac_new(i,j,k);
                 });
              } // mfi
 
@@ -261,14 +268,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  Array4<Real  const> const& rho_old  = ld.density_o.const_array(mfi);
                  Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                  Array4<Real>        const& rho_nph  = density_nph_oldeb[lev].array(mfi);
- 
+
+                 auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+                 auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+
                  amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
                      rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
-                     // if (rho_new(i,j,0) < 0.0){
-                     //     amrex::Print() << "Negative Density rho_new " << IntVect(i,j) << " old: " << rho_old(i,j,0) 
-                     //         << " new: "  << rho_new(i,j,0) << std::endl;
-                     // }
+                     
+                     if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) 
+                     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl; 
                  });
             } // mfi
         } // lev
