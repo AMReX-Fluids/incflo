@@ -257,8 +257,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 {
                     rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
 
-                    if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
-                        rho_new(i,j,k) = rho_new(i,j,k) * vfrac_old(i,j,k) / vfrac_new(i,j,k);
+                    //if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
+                    //    rho_new(i,j,k) = rho_new(i,j,k) * vfrac_old(i,j,k) / vfrac_new(i,j,k);
                     
                     if (i == 5 && j == 4){
                         amrex::Print() << "dV" << IntVect(i,j) << ": " << vfrac_new(i,j,k) - vfrac_old(i,j,k) << std::endl;
