@@ -159,7 +159,7 @@ Redistribution::MakeITracker ( Box const& bx,
                  
 #if 1
            // If the merged cell isn't large enough, we try to merge in the other direction
-           if (sum_vol < target_volfrac || nx_eq_ny)
+           if ((sum_vol < target_volfrac || nx_eq_ny) && 0)
            {
                // Original offset was in y-direction, so we will add to the x-direction
                // Note that if we can't because it would go outside the domain, we don't

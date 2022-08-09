@@ -143,6 +143,11 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 // has at least one neighbor and/or whether (i,j,k) is in the
                 // neighborhood of another cell -- if either of those is true the
                 // value may have changed
+                
+                if (i == 12 && j == 6){
+                    amrex::Print() << "Pre dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
+                    amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
+                }
 
                 if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)
                 {
@@ -155,6 +160,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 {
                    dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
                 }
+
+                if (i == 12 && j == 6)
+                    amrex::Print() << "Post dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
             }
         );
 
