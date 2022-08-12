@@ -89,12 +89,22 @@ incflo::compute_MAC_projected_velocities (
         }
     }
 
+    // try to print out inv_rho
+    auto const& irhox = inv_rho[0][0].const_array(0);
+    auto const& irhoy = inv_rho[0][1].const_array(0);
+   
+    for (int i = 4; i < 13; i++){
+        for (int j = 4; j < 13; j++){
+            amrex::Print() << "irho" << IntVect(i,j) << ": " << irhox(i,j,0) << ", " << irhoy(i,j,0) << std::endl;
+        }
+        }
+
     for (int lev = 0; lev <= finest_level; ++lev)
     {
         mac_phi[lev]->FillBoundary(geom[lev].periodicity());
 
 #ifdef AMREX_USE_EB
-        const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
+        const EBFArrayBoxFactory* ebfact = &OldEBFactory(lev);
 #endif
 
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}

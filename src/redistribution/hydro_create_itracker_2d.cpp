@@ -89,11 +89,14 @@ Redistribution::MakeITracker ( Box const& bx,
 
            bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
                              (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
+            
+           if ( (i == 4 || i == 5) && j == 6)
+               amrex::Print() << IntVect(i,j) << " nx: " << nx << " ny: " << ny << std::endl;  
 
            // As a first pass, choose just based on the normal,
            // but don't merge with previously covered cells.
            if (std::abs(nx) > std::abs(ny)) {
-               if (nx > 0) {
+               if (nx < 0) {
                         if (vfrac_new(i-1,j,k) == 0. && vfrac_old(i-1,j,k) == 0.){
                             itracker(i,j,k,1) = 5;
                         } else {
@@ -283,14 +286,16 @@ Redistribution::MakeITracker ( Box const& bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         // Check Uncovered Cells
-        if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+        /*if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
         {
+            amrex::Print() << "Uncovered cell at " << IntVect(i,j) << std::endl;
+
             int ioff = imap[itracker(i,j,k,1)];
             int joff = jmap[itracker(i,j,k,1)];
            
             itracker(i+ioff, j+joff,k,0) += 1;               
             itracker(i+ioff, j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
-        }
+        }*/
 
         // Check if Neighbors are Covered Cells
         if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
