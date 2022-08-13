@@ -532,7 +532,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
          
           auto const& vfrac_old = ebfact_old->getVolFrac();
           auto const& vfrac_new = ebfact_new->getVolFrac();
-          auto const& bdy_area_new = ebfact_new->getBndryArea();
           
           for (MFIter mfi(*conv_r[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
@@ -567,51 +566,20 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
           
 
             auto const& div_ru = drdt_tmp.array(mfi);
-             
-            AMREX_D_TERM(const auto& apx = ebfact_new->getAreaFrac()[0]->const_array(mfi);,
-                         const auto& apy = ebfact_new->getAreaFrac()[1]->const_array(mfi);,
-                         const auto& apz = ebfact_new->getAreaFrac()[2]->const_array(mfi););
  
             Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
             Array4<Real const> const& vfold_arr = vfrac_old.const_array(mfi);
-            Array4<Real const> const& ebarea_arr = bdy_area_new.const_array(mfi);
             
             Real dx = geom[lev].CellSize()[0];
 
             amrex::ParallelFor(bx, 1, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-
-                      if (vfnew_arr(i,j,k) > 0. && vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.){
-
-                      AMREX_D_TERM(const Real dapx = apx(i+1,j  ,k  ) - apx(i,j,k);,
-                                   const Real dapy = apy(i  ,j+1,k  ) - apy(i,j,k);,
-                                   const Real dapz = apz(i  ,j  ,k+1) - apz(i,j,k););
-#if (AMREX_SPACEDIM == 2)
-                      Real apnorm = std::sqrt(dapx*dapx+dapy*dapy);
-#elif (AMREX_SPACEDIM == 3)
-                      Real apnorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
-#endif
-                      Real apnorm_inv = 1.0/apnorm;
-
-                      AMREX_D_TERM(Real nx = dapx * apnorm_inv;,
-                                   Real ny = dapy * apnorm_inv;,
-                                   Real nz = dapz * apnorm_inv;);
-
+                  if (vfnew_arr(i,j,k) > 0. && vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.)
+                  {
                       Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-                        
-                      div_ru(i,j,k,n) += (nx*nx + ny*ny)*delta_vol/m_dt/vfold_arr(i,j,k);
-
-                /*if (i == 12 && j == 6){
-                    amrex::Print() << "\n\n\ndiv_ru" << IntVect(i,j) << ": " << div_ru(i,j,k) << std::endl; 
-                    amrex::Print() << "nx: " << nx <<
-                                      "\nny: " << ny <<
-                                      "\nebarea: " << ebarea_arr(i,j,k) << 
-                                      "\nvfrac_o: " << vfold_arr(i,j,k) <<
-                                      "\nvfrac_n: " << vfnew_arr(i,j,k) <<
-                                      "\ndelta_vol: " << delta_vol << std::endl;
-                }*/
-                      }
+                      div_ru(i,j,k,n) += delta_vol/m_dt/vfold_arr(i,j,k);
+                 }
             });
 
           } // mfi
@@ -681,19 +649,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           (m_advect_tracer && (m_ntrac>0)) ? conv_t[lev]->array(mfi) : Array4<Real>{},
                                           m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
                                           ebfact_old, ebfact_new, geom[lev], m_dt);
-       
-            auto const& div_ru = drdt_tmp.array(mfi);
-            auto const& convr = conv_r[lev]->array(mfi); 
-
-            amrex::ParallelFor(bx, 1, [=]
-            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                if (i == 12 && j == 6)
-                    amrex::Print() << "\n\n\nPost Redistribution div_ru" << IntVect(i,j) << ": " << div_ru(i,j,k) 
-                    << "\nconv_r" << convr(i,j,k) <<  "\n\n\n" << std::endl;
-            });
-
-
        } // mfi
 #endif
     } // lev

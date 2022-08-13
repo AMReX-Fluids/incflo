@@ -89,16 +89,6 @@ incflo::compute_MAC_projected_velocities (
         }
     }
 
-    // try to print out inv_rho
-    auto const& irhox = inv_rho[0][0].const_array(0);
-    auto const& irhoy = inv_rho[0][1].const_array(0);
-   
-    for (int i = 4; i < 13; i++){
-        for (int j = 4; j < 13; j++){
-            amrex::Print() << "irho" << IntVect(i,j) << ": " << irhox(i,j,0) << ", " << irhoy(i,j,0) << std::endl;
-        }
-        }
-
     for (int lev = 0; lev <= finest_level; ++lev)
     {
         mac_phi[lev]->FillBoundary(geom[lev].periodicity());
@@ -131,68 +121,47 @@ incflo::compute_MAC_projected_velocities (
 
     macproj->setUMAC(mac_vec);
 
-#ifdef AMREX_USE_EB
-    Vector<MultiFab*> eb_vel_mod;
+    // Right now we're just doing this for single-level
+    AMREX_ALWAYS_ASSERT(finest_level == 0);
+    MultiFab* mac_rhs;
 
+#ifdef AMREX_USE_EB
     if (m_eb_flow.enabled) {
        for (int lev=0; lev <= finest_level; ++lev)
        {
-          MultiFab* new_mf = new MultiFab(grids[lev],dmap[lev],AMREX_SPACEDIM,0);
-          eb_vel_mod.push_back(new_mf);
-          MultiFab::Copy(*eb_vel_mod[lev], *get_velocity_eb()[lev], 0, 0, AMREX_SPACEDIM, 0);
+          mac_rhs = new MultiFab(grids[lev],dmap[lev],1,0);
 
           auto const& vfrac_old  = OldEBFactory(lev).getVolFrac();
           auto const& vfrac_new  =    EBFactory(lev).getVolFrac();
-          auto const& bndry_area = OldEBFactory(lev).getBndryArea();
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-          for (MFIter mfi(*eb_vel_mod[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+          for (MFIter mfi(*mac_rhs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
               Box const& bx = mfi.tilebox();
 
-              // Face-centered areas
-              AMREX_D_TERM(const auto& apx = OldEBFactory(lev).getAreaFrac()[0]->const_array(mfi);,
-                           const auto& apy = OldEBFactory(lev).getAreaFrac()[1]->const_array(mfi);,
-                           const auto& apz = OldEBFactory(lev).getAreaFrac()[2]->const_array(mfi););
- 
-              Array4<Real      > const&   vel_arr  = eb_vel_mod[lev]->array(mfi);
               Array4<Real const> const& vfold_arr  =  vfrac_old.const_array(mfi);
               Array4<Real const> const& vfnew_arr  =  vfrac_new.const_array(mfi);
-              Array4<Real const> const& ebarea_arr =  bndry_area.const_array(mfi);
-
-              Real dx = geom[lev].CellSize()[0]; 
+              Array4<Real      > const&   divu_arr = mac_rhs->array(mfi);
 
               amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
               {
-                  if (vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0) { 
-
-                      AMREX_D_TERM(const Real dapx = apx(i+1,j  ,k  ) - apx(i,j,k);,
-                                   const Real dapy = apy(i  ,j+1,k  ) - apy(i,j,k);,
-                                   const Real dapz = apz(i  ,j  ,k+1) - apz(i,j,k););
-#if (AMREX_SPACEDIM == 2)
-                      Real apnorm = std::sqrt(dapx*dapx+dapy*dapy);
-#elif (AMREX_SPACEDIM == 3)
-                      Real apnorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
-#endif
-                      Real apnorm_inv = 1.0/apnorm;
-
-                      AMREX_D_TERM(Real nx = dapx * apnorm_inv;,
-                                   Real ny = dapy * apnorm_inv;,
-                                   Real nz = dapz * apnorm_inv;);
-
-                      Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-                     
-                      AMREX_D_TERM(vel_arr(i,j,k,0) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * nx;,
-                                   vel_arr(i,j,k,1) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * ny;,
-                                   vel_arr(i,j,k,2) = -dx * delta_vol / l_dt / ebarea_arr(i,j,k) * nz;);
+                  if (vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0)
+                  {
+                      Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
+                      divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
+                      if (i == 11 and j == 9) amrex::Print() << "DIVU(11,9) " << divu_arr(i,j,k) << std::endl; 
+                  } else {
+                      divu_arr(i,j,k) = 0.;
                   }
               });
           }
 
-          //macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
-          macproj->setEBInflowVelocity(lev, *eb_vel_mod[lev]);
+          // Pass no-flow EB into MAC
+          // macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
+
+          macproj->setDivU({mac_rhs});
        }
     }
 #endif
@@ -216,6 +185,8 @@ incflo::compute_MAC_projected_velocities (
     } else {
         macproj->project(m_mac_mg_rtol,m_mac_mg_atol);
     }
+
+    delete mac_rhs;
 
     // Note that the macproj->project call above ensures that the MAC velocities are averaged down --
     //      we don't need to do that again here
