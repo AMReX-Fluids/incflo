@@ -254,7 +254,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
+                    if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+                    {
+                        rho_new(i,j,k) = drdt(i,j,k);
+                    } else {
+                        rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
+                    }
 
                     if (m_redistribution_type == "NoRedist") {
                         if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) {
