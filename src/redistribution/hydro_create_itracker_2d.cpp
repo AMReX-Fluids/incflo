@@ -69,18 +69,12 @@ Redistribution::MakeITracker ( Box const& bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
        // We check for cut-cells in the new geometry 
-       if ( (vfrac_new(i,j,k)  > 0.0 && vfrac_new(i,j,k) < 1.0))
+       if ((vfrac_new(i,j,k)  > 0.0 && vfrac_new(i,j,k) < 1.0))
        {
            Real apnorm, apnorm_inv, dapx, dapy;
            
-           if ( (vfrac_old(i,j,k) - vfrac_new(i,j,k) < 0.0) )
-           {
-               dapx = apx_new(i,j,k) - apx_new(i+1,j  ,k);
-               dapy = apy_new(i,j,k) - apy_new(i  ,j+1,k);
-           } else {
-               dapx = apx_new(i+1,j,k) - apx_new(i,j  ,k);
-               dapy = apy_new(i,j+1,k) - apy_new(i  ,j,k);
-           }
+           dapx = apx_new(i+1,j,k) - apx_new(i,j,k);
+           dapy = apy_new(i,j+1,k) - apy_new(i,j,k);
            
            apnorm = std::sqrt(dapx*dapx+dapy*dapy);
            apnorm_inv = 1.0/apnorm;
@@ -90,8 +84,8 @@ Redistribution::MakeITracker ( Box const& bx,
            bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
                              (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
             
-           if ( (i == 4 || i == 5) && j == 6)
-               amrex::Print() << IntVect(i,j) << " nx: " << nx << " ny: " << ny << std::endl;  
+           //if ( i == 6 && (j == 4 || j == 5))
+           amrex::Print() << IntVect(i,j) << " nx: " << nx << " ny: " << ny << std::endl;  
 
            // As a first pass, choose just based on the normal,
            // but don't merge with previously covered cells.
@@ -152,11 +146,11 @@ Redistribution::MakeITracker ( Box const& bx,
 #if 1
            Real sum_vol = vfrac_new(i,j,k) + vfrac_new(i+ioff,j+joff,k);
            
-           if ( debug_verbose > 0 )
-               amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac_new(i,j,k) <<
-                                 " merge " << IntVect(i+ioff,j+joff) <<
-                                 " with vfrac " << vfrac_new(i+ioff,j+joff,k) <<
-                                 " to get new vfrac " <<  sum_vol << std::endl;
+           //if ( debug_verbose > 0 )
+           //    amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac_new(i,j,k) <<
+           //                      " merge " << IntVect(i+ioff,j+joff) <<
+           //                      " with vfrac " << vfrac_new(i+ioff,j+joff,k) <<
+           //                      " to get new vfrac " <<  sum_vol << std::endl;
 #endif
 
                  
@@ -285,17 +279,6 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        // Check Uncovered Cells
-        /*if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-        {
-            amrex::Print() << "Uncovered cell at " << IntVect(i,j) << std::endl;
-
-            int ioff = imap[itracker(i,j,k,1)];
-            int joff = jmap[itracker(i,j,k,1)];
-           
-            itracker(i+ioff, j+joff,k,0) += 1;               
-            itracker(i+ioff, j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
-        }*/
 
         // Check if Neighbors are Covered Cells
         if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
@@ -329,6 +312,33 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
+#if 1
+    amrex::Print() << "Check for all uncovered cells." << std::endl;
+
+    amrex::ParallelFor(Box(itracker),
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
+        {
+            amrex::Print() << "Uncovered Cell " << IntVect(i,j) << std::endl;   
+        }
+    });    
+    amrex::Print() << std::endl;
+#endif
+
+#if 1
+    amrex::Print() << "Check for all cell that become regular." << std::endl;
+
+    amrex::ParallelFor(Box(itracker),
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.)
+        {
+            amrex::Print() << "New Regular Cell " << IntVect(i,j) << std::endl;   
+        }
+    });    
+    amrex::Print() << std::endl;
+#endif
 
 #if 1
     amrex::Print() << "Post Update to Cell Merging" << std::endl;

@@ -151,7 +151,7 @@ incflo::compute_MAC_projected_velocities (
                   {
                       Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
                       divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
-                      if (i == 11 and j == 9) amrex::Print() << "DIVU(11,9) " << divu_arr(i,j,k) << std::endl; 
+                      if (i == 5 and j == 4) amrex::Print() << "DIVU(11,9) " << divu_arr(i,j,k) << std::endl; 
                   } else {
                       divu_arr(i,j,k) = 0.;
                   }

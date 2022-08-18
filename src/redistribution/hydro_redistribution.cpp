@@ -144,12 +144,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 // neighborhood of another cell -- if either of those is true the
                 // value may have changed
                 
-                if (i == 5 && j == 6){
+                if (i == 5 && j == 4){
                     amrex::Print() << "Pre dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
                     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
                 }
 
-                if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)
+                if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.))
                 {
                    const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
 
@@ -164,7 +164,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                    dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
                 }
 
-                if (i == 5 && j == 6)
+                if (i == 5 && j == 4)
                     amrex::Print() << "Post dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
             }
         );

@@ -106,7 +106,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     amrex::ParallelFor(bxg3,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.){
+        if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) || i == 5 && j == 4){
             amrex::Print() << "VOLD / VNEW / UIN " << IntVect(i,j) << " " << 
                 vfrac_old(i,j,0) << " " << vfrac_new(i,j,0) << " " << U_in(i,j,0,0);
                 
@@ -313,6 +313,11 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             // This seems to help with a compiler issue ...
             Real denom = 1. / (nrs(i,j,k) + 1.e-40);
             U_out(i,j,k,n) *= denom;
+            
+            if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1. && nrs(i,j,k) == 1){
+                U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
+                amrex::Print() << "Adding new fix here: U_out" << IntVect(i,j) << ": " << U_out(i,j,k,n) << std::endl;
+            }
             if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) 
                 amrex::Print() << "VFRAC / UOUT " << IntVect(i,j) << " " << 
                 vfrac_new(i,j,k) << " " << U_out(i,j,k,n) << std::endl;
