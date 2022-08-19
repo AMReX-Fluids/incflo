@@ -81,6 +81,6 @@ void incflo::MakeEBGeometry()
     if (m_write_geom_chk) {
        const auto& is = amrex::EB2::IndexSpace::top();
        const auto& eb_level = is.getLevel(geom.back());
-       eb_level.write_to_chkpt_file("geom_chk");
+       eb_level.write_to_chkpt_file("geom_chk", amrex::EB2::ExtendDomainFace(), amrex::EB2::max_grid_size);
     }
 }
