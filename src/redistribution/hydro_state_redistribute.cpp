@@ -106,16 +106,12 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     amrex::ParallelFor(bxg3,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) || i == 5 && j == 4){
+        for (int n = 0; n < ncomp; n++){
+    	if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) || j == 12){
             amrex::Print() << "VOLD / VNEW / UIN " << IntVect(i,j) << " " << 
-                vfrac_old(i,j,0) << " " << vfrac_new(i,j,0) << " " << U_in(i,j,0,0);
-                
-            if (vfrac_old(i,j,k) > 0.)
-                amrex::Print() << " " << U_in(i,j,0,0) * vfrac_new(i,j,k) / vfrac_old(i,j,k); 
-               // U_in(i,j,0,0) = vfrac_new(i,j,k) / vfrac_old(i,j,k);
-
-            amrex::Print() << std::endl;
-        }
+                vfrac_old(i,j,k) << " " << vfrac_new(i,j,k) << " " << U_in(i,j,k,n) << std::endl;
+		}
+	}
     });
 
     // Define Qhat (from Berger and Guliani)
@@ -158,10 +154,13 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             }
             for (int n = 0; n < ncomp; n++)  
                 soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
-
-            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0)
-                amrex::Print() << "QHAT NBVOL " << IntVect(i,j) << " " << soln_hat(i,j,0,0) << " " <<  nbhd_vol(i,j,k) << std::endl;;
-        }
+	    
+	    for (int n = 0; n < ncomp; n++){
+            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0 || j == 12)
+                amrex::Print() << "QHAT NBVOL " << IntVect(i,j) << " " << soln_hat(i,j,k,n) << " " <<  nbhd_vol(i,j,k) << std::endl;;
+        	
+	    }
+	}
     });
 
     amrex::ParallelFor(bxg1,
@@ -318,7 +317,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                 U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
                 amrex::Print() << "Adding new fix here: U_out" << IntVect(i,j) << ": " << U_out(i,j,k,n) << std::endl;
             }
-            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) 
+            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. || j == 12) 
                 amrex::Print() << "VFRAC / UOUT " << IntVect(i,j) << " " << 
                 vfrac_new(i,j,k) << " " << U_out(i,j,k,n) << std::endl;
         }

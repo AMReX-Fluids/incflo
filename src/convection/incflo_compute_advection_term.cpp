@@ -581,7 +581,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                       div_ru(i,j,k,n) += delta_vol/m_dt/vfold_arr(i,j,k);
                   }
 
-                  if (i == 5 && j == 4)
+                  if (j == 10)
                       amrex::Print() << "div_u" << IntVect(i,j) << ": " << div_ru(i,j,k,n) << std::endl;
             });
 

@@ -147,7 +147,7 @@ incflo::compute_MAC_projected_velocities (
 
               amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
               {
-                  if (vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0)
+                  if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0))
                   {
                       Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
                       divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);

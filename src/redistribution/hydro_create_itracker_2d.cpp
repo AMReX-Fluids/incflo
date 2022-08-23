@@ -73,9 +73,21 @@ Redistribution::MakeITracker ( Box const& bx,
        {
            Real apnorm, apnorm_inv, dapx, dapy;
            
-           dapx = apx_new(i+1,j,k) - apx_new(i,j,k);
-           dapy = apy_new(i,j+1,k) - apy_new(i,j,k);
-           
+           //dapx = apx_new(i+1,j,k) - apx_new(i,j,k);
+           //dapy = apy_new(i,j+1,k) - apy_new(i,j,k);
+          
+
+	   // Old way
+ 	   if ( (vfrac_old(i,j,k) - vfrac_new(i,j,k) < 0.0) )
+	   {
+	   	dapx = apx_new(i,j,k) - apx_new(i+1, j, k);
+		dapy = apy_new(i,j,k) - apy_new(i,j+1, k);
+	   } else {
+	   	dapx = apx_new(i+1,j,k) - apx_new(i,j,k);
+		dapy = apy_new(i,j+1,k) - apy_new(i,j,k);
+	   }
+
+	   
            apnorm = std::sqrt(dapx*dapx+dapy*dapy);
            apnorm_inv = 1.0/apnorm;
            Real nx = dapx * apnorm_inv;
@@ -83,14 +95,11 @@ Redistribution::MakeITracker ( Box const& bx,
 
            bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
                              (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
-            
-           //if ( i == 6 && (j == 4 || j == 5))
-           amrex::Print() << IntVect(i,j) << " nx: " << nx << " ny: " << ny << std::endl;  
 
            // As a first pass, choose just based on the normal,
            // but don't merge with previously covered cells.
            if (std::abs(nx) > std::abs(ny)) {
-               if (nx < 0) {
+               if (nx > 0) {
                         if (vfrac_new(i-1,j,k) == 0. && vfrac_old(i-1,j,k) == 0.){
                             itracker(i,j,k,1) = 5;
                         } else {
@@ -279,7 +288,6 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-
         // Check if Neighbors are Covered Cells
         if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
         {

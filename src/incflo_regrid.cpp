@@ -249,7 +249,7 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
             // If new cell is uncovered... avg from neighbors that are cut or regular
             if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
             {
-                amrex::Print() << "Need to fill cell " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
+                //amrex::Print() << "Need to fill cell " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
                 for (int n = 0; n < ncomp; n++)
                 {
                     fab_new(i,j,k,n) = 0.;
@@ -258,25 +258,25 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
                     if (vf_old(i+1,j,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i+1,j,k,n);
-                        amrex::Print() << "right fill: " << fab_old(i+1,j,k,n) << std::endl;
+                        //amrex::Print() << "right fill: " << fab_old(i+1,j,k,n) << std::endl;
                         den += 1.;
                     }
                     if (vf_old(i-1,j,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i-1,j,k,n);
-                        amrex::Print() << "left fill: " << fab_old(i-1,j,k,n) << std::endl;
+                        //amrex::Print() << "left fill: " << fab_old(i-1,j,k,n) << std::endl;
                         den += 1.;
                     }
                     if (vf_old(i,j+1,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i,j+1,k,n);
-                        amrex::Print() << "top fill: " << fab_old(i,j+1,k,n) << std::endl;
+                        //amrex::Print() << "top fill: " << fab_old(i,j+1,k,n) << std::endl;
                         den += 1.;
                     }
                     if (vf_old(i,j-1,k) > 0.0)
                     {
                         fab_new(i,j,k,n) += fab_old(i,j-1,k,n);
-                        amrex::Print() << "bottom fill: " << fab_old(i,j-1,k,n) << std::endl;
+                        //amrex::Print() << "bottom fill: " << fab_old(i,j-1,k,n) << std::endl;
                         den += 1.;
                     }
 #if (AMREX_SPACEDIM == 3)
