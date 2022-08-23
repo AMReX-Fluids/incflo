@@ -11,7 +11,7 @@ steady_state            =  0            # Steady-state solver?
 #.......................................#
 incflo.fixed_dt             =   3.e-3       # Use this constant dt if > 0
 incflo.do_initial_proj      =   1
-incflo.initial_iterations   =   2
+incflo.initial_iterations   =   0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
