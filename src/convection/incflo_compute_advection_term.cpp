@@ -537,6 +537,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
           {
             Box const& bx = mfi.tilebox();
 
+            auto const& div_ru = drdt_tmp.array(mfi);
+	    
 #ifdef AMREX_USE_EB
             EBCellFlagFab const& flagfab = ebfact_old->getMultiEBCellFlagFab()[mfi];
             if (flagfab.getType(bx) != FabType::covered)
@@ -565,7 +567,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
           
 
-            auto const& div_ru = drdt_tmp.array(mfi);
  
             Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
             Array4<Real const> const& vfold_arr = vfrac_old.const_array(mfi);
@@ -575,7 +576,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             amrex::ParallelFor(bx, 1, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-                  if (vfnew_arr(i,j,k) > 0. && vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.)
+	    	  if (vfnew_arr(i,j,k) > 0. && vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.)
                   {
                       Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
                       div_ru(i,j,k,n) += delta_vol/m_dt/vfold_arr(i,j,k);

@@ -304,6 +304,21 @@ Redistribution::MakeITracker ( Box const& bx,
                 }
             }
         }
+	// Add neighboors to uncovered cells
+        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
+        {
+            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
+            
+    	    amrex::Print() << "Uncovered Cell " << IntVect(i,j) << std::endl;   
+            {
+                int ioff = imap[itracker(i,j,k,1)];
+                int joff = jmap[itracker(i,j,k,1)];   
+           
+                    itracker(i+ioff,j+joff,k,0) += 1;
+                    itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
+            }
+        }
+
     });
 
 #if 0

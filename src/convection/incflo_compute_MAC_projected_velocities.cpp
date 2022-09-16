@@ -149,12 +149,22 @@ incflo::compute_MAC_projected_velocities (
               {
                   if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0))
                   {
-                      Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-                      divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
-                      if (i == 5 and j == 4) amrex::Print() << "DIVU(11,9) " << divu_arr(i,j,k) << std::endl; 
-                  } else {
+                      if (vfnew_arr(i,j,k) == 1.){
+		        // Matt: add in the hack to account for the condition where a new cell becomes uncovered.
+			Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k) + vfnew_arr(i-1,j,k) - vfold_arr(i-1,j,k);
+		        divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
+		      } else {
+		      	Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
+                      	divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
+		      }
+		      //amrex::Print() << "inside divu " << IntVect(i,j) << divu_arr(i,j,k) << std::endl; 
+          
+		  } else {
                       divu_arr(i,j,k) = 0.;
                   }
+
+                  if (j == 10)
+		    amrex::Print() << "inside divu " << IntVect(i,j) << divu_arr(i,j,k) << std::endl; 
               });
           }
 
