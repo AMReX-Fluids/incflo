@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Constructing Embedded Boundaries in incflo &mdash; incflo 22.08-dev documentation</title>
+  <title>Constructing Embedded Boundaries in incflo &mdash; incflo 22.10-dev documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
@@ -17,6 +17,7 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -32,7 +33,7 @@
             <a href="index.html" class="icon icon-home"> incflo
           </a>
               <div class="version">
-                22.08-dev
+                22.10-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -90,49 +91,49 @@
   <section id="constructing-embedded-boundaries-in-incflo">
 <span id="sec-eb-basics"></span><h1>Constructing Embedded Boundaries in incflo<a class="headerlink" href="#constructing-embedded-boundaries-in-incflo" title="Permalink to this heading"></a></h1>
 <p>MincfloFiX uses AMReX’s constructive solid geometry framework defined in the namespace
-<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">amrex</span><span class="o">::</span><span class="n">EB2</span></code>. See the <a href="#id5"><span class="problematic" id="id6">`AMReX EB documentation`_</span></a> for more details. These are
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">amrex</span><span class="o">::</span><span class="n">EB2</span><span class="w"></span></code>. See the <a href="#id5"><span class="problematic" id="id6">`AMReX EB documentation`_</span></a> for more details. These are
 defined in <a href="#id1"><span class="problematic" id="id2">``</span></a>incflo/src/embedded_boundaries <a href="#id3"><span class="problematic" id="id4">``</span></a>.</p>
 <section id="how-incflo-constructs-the-eb-geometry">
 <h2>How incflo Constructs the EB Geometry<a class="headerlink" href="#how-incflo-constructs-the-eb-geometry" title="Permalink to this heading"></a></h2>
-<p>Once a geometry is selected by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">make_eb_geometry</span></code>, the procedure is
+<p>Once a geometry is selected by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">make_eb_geometry</span><span class="w"></span></code>, the procedure is
 the same for (almost) all geometries. Also see the <a href="#id7"><span class="problematic" id="id8">`AMReX geometry
 documentation`_</span></a> for information on how to construct new geometries:</p>
 <ol class="arabic simple">
 <li><p>Construct an implicit function representing the geometry (using the language
 of constructive solid geometry). For example</p></li>
 </ol>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">EB2</span><span class="o">::</span><span class="n">CylinderIF</span> <span class="n">my_cyl</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span> <span class="n">height</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">inside</span><span class="p">);</span>
-<span class="k">auto</span> <span class="n">gshop_cyl</span> <span class="o">=</span> <span class="n">EB2</span><span class="o">::</span><span class="n">makeShop</span><span class="p">(</span><span class="n">my_cyl</span><span class="p">);</span>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">EB2</span><span class="o">::</span><span class="n">CylinderIF</span><span class="w"> </span><span class="nf">my_cyl</span><span class="p">(</span><span class="n">radius</span><span class="p">,</span><span class="w"> </span><span class="n">height</span><span class="p">,</span><span class="w"> </span><span class="n">direction</span><span class="p">,</span><span class="w"> </span><span class="n">center</span><span class="p">,</span><span class="w"> </span><span class="n">inside</span><span class="p">);</span><span class="w"></span>
+<span class="k">auto</span><span class="w"> </span><span class="n">gshop_cyl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EB2</span><span class="o">::</span><span class="n">makeShop</span><span class="p">(</span><span class="n">my_cyl</span><span class="p">);</span><span class="w"></span>
 </pre></div>
 </div>
 <ol class="arabic simple" start="2">
-<li><p>Call <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">build_eb_levels</span><span class="p">(</span><span class="n">gshop</span><span class="p">)</span></code> this function builds the EB levels
-and fills the implicit function <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">MultiFab</span></code> (the later being used to
+<li><p>Call <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">build_eb_levels</span><span class="p">(</span><span class="n">gshop</span><span class="p">)</span><span class="w"></span></code> this function builds the EB levels
+and fills the implicit function <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">MultiFab</span><span class="w"></span></code> (the later being used to
 construct the level-set function).</p></li>
 </ol>
 </section>
 <section id="incflo-s-eb-data-structures">
 <h2>incflo’s EB Data Structures<a class="headerlink" href="#incflo-s-eb-data-structures" title="Permalink to this heading"></a></h2>
-<p>The <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span></code> class stores the following EB data:</p>
+<p>The <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="w"></span></code> class stores the following EB data:</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">//! EB levels representing fluid boundary conditions</span>
-<span class="n">Vector</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">EB2</span><span class="o">::</span><span class="n">Level</span> <span class="o">*&gt;</span> <span class="n">eb_levels</span><span class="p">;</span>
+<span class="n">Vector</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">EB2</span><span class="o">::</span><span class="n">Level</span><span class="w"> </span><span class="o">*&gt;</span><span class="w"> </span><span class="n">eb_levels</span><span class="p">;</span><span class="w"></span>
 
 <span class="c1">//! EB factory that lives on the fluid grids</span>
-<span class="n">Vector</span><span class="o">&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">amrex</span><span class="o">::</span><span class="n">EBFArrayBoxFactory</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">ebfactory</span><span class="p">;</span>
+<span class="n">Vector</span><span class="o">&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">amrex</span><span class="o">::</span><span class="n">EBFArrayBoxFactory</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">ebfactory</span><span class="p">;</span><span class="w"></span>
 </pre></div>
 </div>
 </section>
 <section id="a-note-about-constructing-eb-levels">
 <h2>A note about constructing EB Levels<a class="headerlink" href="#a-note-about-constructing-eb-levels" title="Permalink to this heading"></a></h2>
-<p>incflo builds EB levels in <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">build_eb_levels</span></code> (via
-<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">LSCore</span><span class="o">&lt;</span><span class="n">F</span><span class="o">&gt;::</span><span class="n">BuildEBLevel</span></code>)</p>
-<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">EB2</span><span class="o">::</span><span class="n">Build</span><span class="p">(</span><span class="n">gshop</span><span class="p">,</span> <span class="n">geom</span><span class="p">[</span><span class="n">lev</span><span class="p">],</span> <span class="n">required_crse_lev</span><span class="p">,</span> <span class="n">max_crse_level</span><span class="p">);</span>
-<span class="k">const</span> <span class="n">EB2</span><span class="o">::</span><span class="n">IndexSpace</span> <span class="o">&amp;</span> <span class="n">ebis</span> <span class="o">=</span> <span class="n">EB2</span><span class="o">::</span><span class="n">IndexSpace</span><span class="o">::</span><span class="n">top</span><span class="p">();</span>
+<p>incflo builds EB levels in <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">build_eb_levels</span><span class="w"></span></code> (via
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">LSCore</span><span class="o">&lt;</span><span class="n">F</span><span class="o">&gt;::</span><span class="n">BuildEBLevel</span><span class="w"></span></code>)</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">EB2</span><span class="o">::</span><span class="n">Build</span><span class="p">(</span><span class="n">gshop</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">[</span><span class="n">lev</span><span class="p">],</span><span class="w"> </span><span class="n">required_crse_lev</span><span class="p">,</span><span class="w"> </span><span class="n">max_crse_level</span><span class="p">);</span><span class="w"></span>
+<span class="k">const</span><span class="w"> </span><span class="n">EB2</span><span class="o">::</span><span class="n">IndexSpace</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">ebis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EB2</span><span class="o">::</span><span class="n">IndexSpace</span><span class="o">::</span><span class="n">top</span><span class="p">();</span><span class="w"></span>
 </pre></div>
 </div>
-<p>When building an EB level, the maximum coarsening level (<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="kt">int</span>
-<span class="n">max_crse_level</span></code>) and the required coarsening level (<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="kt">int</span>
-<span class="n">required_crse_lev</span></code>) need to be specified. The reason for this is that we need to
+<p>When building an EB level, the maximum coarsening level (<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="kt">int</span><span class="w"></span>
+<span class="n">max_crse_level</span><span class="w"></span></code>) and the required coarsening level (<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="kt">int</span><span class="w"></span>
+<span class="n">required_crse_lev</span><span class="w"></span></code>) need to be specified. The reason for this is that we need to
 specify to which level of coarseness the EB is still defined. It might not be
 immediately obvious, but the Poisson solver (used in the fluid solve) also
 depends indirectly on these parameters. Thus changing these during EB level
@@ -142,45 +143,45 @@ give slightly different answers in the fluid solve.</p>
 <section id="incflo-initialization-process">
 <h2>incflo Initialization Process<a class="headerlink" href="#incflo-initialization-process" title="Permalink to this heading"></a></h2>
 <p>Since incflo requires the volume fraction when building grids (because this is
-needed by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">ErrorEst</span></code>), the EB geometries need to be built before
-calling <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">Init</span></code>. The recommended procedure therefore is</p>
+needed by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">ErrorEst</span><span class="w"></span></code>), the EB geometries need to be built before
+calling <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">Init</span><span class="w"></span></code>. The recommended procedure therefore is</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Default constructor (geom[lev] is defined here)</span>
-<span class="n">incflo</span> <span class="n">my_incflo</span><span class="p">;</span>
+<span class="n">incflo</span><span class="w"> </span><span class="n">my_incflo</span><span class="p">;</span><span class="w"></span>
 
 <span class="c1">// Initialize internals from ParamParse database</span>
-<span class="n">my_incflo</span><span class="p">.</span><span class="n">InitParams</span><span class="p">(</span><span class="n">solve_fluid</span><span class="p">,</span> <span class="n">solve_dem</span><span class="p">,</span> <span class="n">call_udf</span><span class="p">);</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">InitParams</span><span class="p">(</span><span class="n">solve_fluid</span><span class="p">,</span><span class="w"> </span><span class="n">solve_dem</span><span class="p">,</span><span class="w"> </span><span class="n">call_udf</span><span class="p">);</span><span class="w"></span>
 
 <span class="c1">// Initialize memory for data-array internals</span>
-<span class="n">my_incflo</span><span class="p">.</span><span class="n">ResizeArrays</span><span class="p">();</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">ResizeArrays</span><span class="p">();</span><span class="w"></span>
 
 <span class="c1">// Construct EB (must be done _before_ incflo::Init)</span>
-<span class="n">my_incflo</span><span class="p">.</span><span class="n">make_eb_geometry</span><span class="p">();</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">make_eb_geometry</span><span class="p">();</span><span class="w"></span>
 
 <span class="c1">// Initialize derived internals. Grids are create here.</span>
-<span class="n">my_incflo</span><span class="p">.</span><span class="n">Init</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span> <span class="n">time</span><span class="p">);</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">Init</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="p">);</span><span class="w"></span>
 
 <span class="c1">// Create EB factories on new grids</span>
-<span class="n">my_incflo</span><span class="p">.</span><span class="n">make_eb_factories</span><span class="p">();</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">make_eb_factories</span><span class="p">();</span><span class="w"></span>
 
 <span class="c1">// Finish constructing levels</span>
-<span class="n">my_incflo</span><span class="p">.</span><span class="n">InitLevelData</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="n">time</span><span class="p">);</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">InitLevelData</span><span class="p">(</span><span class="n">dt</span><span class="p">,</span><span class="n">time</span><span class="p">);</span><span class="w"></span>
 
 <span class="c1">// Regrid (ensure all MultiFabs are on their correct grids)</span>
-<span class="n">my_incflo</span><span class="p">.</span><span class="n">Regrid</span><span class="p">();</span>
+<span class="n">my_incflo</span><span class="p">.</span><span class="n">Regrid</span><span class="p">();</span><span class="w"></span>
 </pre></div>
 </div>
-<p>The grids for each level are build in the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">Init</span></code> by invoking the
-initialization functions inherited from <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">amrex</span><span class="o">::</span><span class="n">AmrCore</span></code>.</p>
+<p>The grids for each level are build in the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">Init</span><span class="w"></span></code> by invoking the
+initialization functions inherited from <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">amrex</span><span class="o">::</span><span class="n">AmrCore</span><span class="w"></span></code>.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// This tells the AmrMesh class not to iterate when creating the initial</span>
 <span class="c1">// grid hierarchy</span>
-<span class="n">SetIterateToFalse</span><span class="p">();</span>
+<span class="n">SetIterateToFalse</span><span class="p">();</span><span class="w"></span>
 
 <span class="c1">// This tells the Cluster routine to use the new chopping routine which</span>
 <span class="c1">// rejects cuts if they don&#39;t improve the efficiency</span>
-<span class="n">SetUseNewChop</span><span class="p">();</span>
+<span class="n">SetUseNewChop</span><span class="p">();</span><span class="w"></span>
 
 <span class="c1">// This Builds the new Grids</span>
-<span class="n">InitFromScratch</span><span class="p">(</span><span class="mf">0.</span><span class="p">);</span>
+<span class="n">InitFromScratch</span><span class="p">(</span><span class="mf">0.</span><span class="p">);</span><span class="w"></span>
 </pre></div>
 </div>
 </section>

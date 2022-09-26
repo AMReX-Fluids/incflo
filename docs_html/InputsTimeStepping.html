@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Time Stepping &mdash; incflo 22.08-dev documentation</title>
+  <title>Time Stepping &mdash; incflo 22.10-dev documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
@@ -17,6 +17,7 @@
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -32,7 +33,7 @@
             <a href="index.html" class="icon icon-home"> incflo
           </a>
               <div class="version">
-                22.08-dev
+                22.10-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -150,15 +151,15 @@ subsequent steps) is reached or the number of iterations reaches the maximum num
 <h2>Setting the Time Step<a class="headerlink" href="#setting-the-time-step" title="Permalink to this heading"></a></h2>
 <blockquote>
 <div><ul class="simple">
-<li><p>If you want to fix the dt, simply set <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">fixed_dt</span> <span class="o">=</span> <span class="n">XXX</span></code> and the fluid time
+<li><p>If you want to fix the dt, simply set <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">fixed_dt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">XXX</span><span class="w"></span></code> and the fluid time
 step will always be that number.</p></li>
 <li><p>If you want to let the code determine the appropriate time step using the advective CFL
-condition, then set <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span> <span class="o">=</span> <span class="mf">0.7</span></code> for example, and the fluid time step will
+condition, then set <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.7</span><span class="w"></span></code> for example, and the fluid time step will
 be computed to be dt = 0.7 * dx / max(vel).</p></li>
 <li><p>Note that the cfl defaults to 0.5 so it does not have to be set in the inputs file. If neither
-<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span></code> nor <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">fixed_dt</span></code> is set, then default value of cfl will be used.
-If <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">fixed_dt</span></code> is set, then it will override the cfl option whether
-<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span></code> is set or not.</p></li>
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span><span class="w"></span></code> nor <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">fixed_dt</span><span class="w"></span></code> is set, then default value of cfl will be used.
+If <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">fixed_dt</span><span class="w"></span></code> is set, then it will override the cfl option whether
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span><span class="w"></span></code> is set or not.</p></li>
 </ul>
 </div></blockquote>
 </section>
