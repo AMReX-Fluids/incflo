@@ -71,6 +71,7 @@ void incflo::ReadParameters ()
             amrex::Abort("redistribution type must be NoRedist, FluxRedist, or StateRedist");
 
         if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
+        pp.query("write_geom_chk", m_write_geom_chk);
 #endif
 
         if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;

@@ -1,4 +1,5 @@
 #include <AMReX_ParmParse.H>
+#include <AMReX_EB2.H>
 
 #include <algorithm>
 #include <incflo.H>
@@ -65,6 +66,10 @@ void incflo::MakeEBGeometry()
     amrex::Print() << "\n Building JCAP geometry." << std::endl;
         make_eb_cyl_tuscan();
     }
+    else if(geom_type == "chkptfile")
+    {
+       make_eb_chkptfile();
+    }
     else
     {
     amrex::Print() << "\n No EB geometry declared in inputs => "
@@ -72,4 +77,10 @@ void incflo::MakeEBGeometry()
         make_eb_regular();
     }
     amrex::Print() << "Done making the geometry ebfactory.\n" << std::endl;
+
+    if (m_write_geom_chk) {
+       const auto& is = amrex::EB2::IndexSpace::top();
+       const auto& eb_level = is.getLevel(geom.back());
+       eb_level.write_to_chkpt_file("geom_chk", amrex::EB2::ExtendDomainFace(), amrex::EB2::max_grid_size);
+    }
 }
