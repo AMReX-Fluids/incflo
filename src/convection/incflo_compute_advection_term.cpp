@@ -465,86 +465,19 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
 
             // If convective, we define u dot grad u = div (u u) - u div(u)
-            auto const& q           =  vel[lev]->array(mfi,0);
-            auto const& divu_arr    = divu[lev].array(mfi);
-            AMREX_D_TERM(auto const& q_on_face_x  = face_x[lev].const_array(mfi);,
-                         auto const& q_on_face_y  = face_y[lev].const_array(mfi);,
-                         auto const& q_on_face_z  = face_z[lev].const_array(mfi););
-
-            int const* iconserv_ptr = get_velocity_iconserv_device_ptr();
-            if (m_advection_type == "MOL")
-            {
-                // Here we use q at the same time as the velocity
-                amrex::ParallelFor(bx, num_comp, [=]
-                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                {
-                    if (!iconserv_ptr[n])
-                        update_arr(i,j,k,n) += q(i,j,k,n)*divu_arr(i,j,k);
-                });
-            }
-            else if (m_advection_type == "Godunov" || m_advection_type == "BDS")
-            {
-
-                bool regular = true;
+            HydroUtils::ComputeConvectiveTerm(bx, num_comp, mfi,
+                                              vel[lev]->array(mfi,0),
+                                              AMREX_D_DECL(face_x[lev].array(mfi),
+                                                           face_y[lev].array(mfi),
+                                                           face_z[lev].array(mfi)),
+                                              divu[lev].array(mfi),
+                                              update_arr,
+                                              get_velocity_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                regular = (flagfab.getType(bx) == FabType::regular);
+                                              *ebfact,
 #endif
-                // Here we want to use q predicted to t^{n+1/2}
-                if (regular)
-                {
-                    amrex::ParallelFor(bx, num_comp, [=]
-                    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                    {
-                        if (!iconserv_ptr[n])
-                        {
-                            Real qavg  = q_on_face_x(i,j,k,n) + q_on_face_x(i+1,j,k,n);
-                                 qavg += q_on_face_y(i,j,k,n) + q_on_face_y(i,j+1,k,n);
-#if (AMREX_SPACEDIM == 2)
-                                 qavg *= 0.25;
-#else
-                                 qavg += q_on_face_z(i,j,k,n) + q_on_face_z(i,j,k+1,n);
-                                 qavg /= 6.0;
-#endif
-                            // Note that because we define update_arr as MINUS div(u u), here we add u div (u)
-                            update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
-                        }
-                    });
-                }
-#ifdef AMREX_USE_EB
-                else {
-                    if (flagfab.getType(bx) != FabType::covered) {
-                        AMREX_D_TERM(auto const& apx_arr      = ebfact->getAreaFrac()[0]->const_array(mfi);,
-                                     auto const& apy_arr      = ebfact->getAreaFrac()[1]->const_array(mfi);,
-                                     auto const& apz_arr      = ebfact->getAreaFrac()[2]->const_array(mfi););
-                        auto const& vfrac_arr                 = ebfact->getVolFrac().const_array(mfi);
-
-                        amrex::ParallelFor(bx, num_comp, [=]
-                        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                        {
-                            if (!iconserv_ptr[n] && vfrac_arr(i,j,k) > 0.)
-                            {
-                                Real qavg  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
-                                     qavg += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j+1,k)*q_on_face_y(i,j+1,k,n);
-#if (AMREX_SPACEDIM == 2)
-                                     qavg *= 1.0 / (apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k));
-#else
-                                     qavg += apz_arr(i,j,k)*q_on_face_z(i,j,k,n) + apz_arr(i,j,k+1)*q_on_face_z(i,j,k+1,n);
-                                     qavg *= 1.0 / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
-                                                    +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
-#endif
-
-                                // Note that because we define update_arr as MINUS div(u u), here we add u div (u)
-                                update_arr(i,j,k,n) += qavg*divu_arr(i,j,k);
-                            }
-                        });
-                    }
-                }
-#endif
-            }
-            else {
-                amrex::Abort("incflo::compute_convective_term: unknown advection_type ");
-            }
-        } // mfi
+                                              m_advection_type);
+        } // end mfi
 
         // Note: density is always updated conservatively -- we do not provide an option for
         //       updating density convectively
