@@ -58,7 +58,11 @@ void incflo::compute_viscosity (Vector<MultiFab*> const& vel_eta,
     }
 }
 
+#ifdef AMREX_USE_EB
 void incflo::compute_viscosity_at_level (int lev,
+#else
+void incflo::compute_viscosity_at_level (int /*lev*/,
+#endif
                                          MultiFab* vel_eta,
                                          MultiFab* /*rho*/,
                                          MultiFab* vel,

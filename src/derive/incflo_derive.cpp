@@ -40,7 +40,11 @@ void incflo::ComputeDivU(Real /*time_in*/)
 #endif
 }
 
+#ifdef AMREX_USE_EB
 void incflo::compute_strainrate_at_level (int lev,
+#else
+void incflo::compute_strainrate_at_level (int /*lev*/,
+#endif
                                           MultiFab* strainrate,
                                           MultiFab* vel,
                                           Geometry& lev_geom,

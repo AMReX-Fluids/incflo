@@ -67,12 +67,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // We use the new time value for things computed on the "*" state
     Real new_time = m_cur_time + m_dt;
 
-    if (m_verbose > 2)
-    {
-        amrex::Print() << "Before predictor step:" << std::endl;
-        PrintMaxValues(new_time);
-    }
-
     // *************************************************************************************
     // Allocate space for the MAC velocities
     // *************************************************************************************
@@ -211,7 +205,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
             } // mfi
 
             // Fill ghost cells of the new density field so that we can define density_nph
-            //      on the valid region grown by 1 (we will need this for ccproj)
+            //      on the valid region grown by 1
             int ng = 1;
             fillpatch_density(lev, m_t_new[lev], ld.density, ng);
 
@@ -418,9 +412,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Project velocity field, update pressure
     //
     // **********************************************************************************************
-    ApplyProjection(GetVecOfConstPtrs(density_nph),
-                    AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                    GetVecOfPtrs(w_mac)),new_time,m_dt,incremental_projection);
+    ApplyProjection(GetVecOfConstPtrs(density_nph),new_time,m_dt,incremental_projection);
 
 #ifdef AMREX_USE_EB
     // **********************************************************************************************

@@ -66,20 +66,6 @@ void incflo::Advance()
         ApplyCorrector();
     }
 
-    if (m_verbose > 2)
-    {
-        amrex::Print() << "End of time step: " << std::endl;
-#if 0
-        // xxxxx
-        PrintMaxValues(m_cur_time + dt);
-        if(m_probtype%10 == 3 || m_probtype == 5)
-        {
-            ComputeDrag();
-            amrex::Print() << "Drag force = " << (*drag[0]).sum(0, false) << std::endl;
-        }
-#endif
-    }
-
 #if 0
     // This sums over all levels
     if (m_test_tracer_conservation) {

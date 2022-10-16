@@ -71,7 +71,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                               Vector<MultiFab*> const& w_mac),
                                  Vector<MultiFab*      > const& vel_forces,
                                  Vector<MultiFab*      > const& tra_forces,
-                                 Real time)
+                                 Real /*time*/)
 {
     bool fluxes_are_area_weighted = false;
     bool knownFaceStates          = false; // HydroUtils always recompute face states

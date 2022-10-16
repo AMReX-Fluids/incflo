@@ -69,12 +69,6 @@ void incflo::ApplyCorrector()
     // We use the new time value for things computed on the "*" state
     Real new_time = m_cur_time + m_dt;
 
-    if (m_verbose > 2)
-    {
-        amrex::Print() << "Before corrector step:" << std::endl;
-        PrintMaxValues(new_time);
-    }
-
     // *************************************************************************************
     // Allocate space for the MAC velocities
     // *************************************************************************************
@@ -414,9 +408,7 @@ void incflo::ApplyCorrector()
     //
     // Project velocity field, update pressure
     bool incremental_projection = false;
-    ApplyProjection(GetVecOfConstPtrs(density_nph),
-                    AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                    GetVecOfPtrs(w_mac)),new_time,m_dt,incremental_projection);
+    ApplyProjection(GetVecOfConstPtrs(density_nph), new_time,m_dt,incremental_projection);
 
 #ifdef AMREX_USE_EB
     // **********************************************************************************************
