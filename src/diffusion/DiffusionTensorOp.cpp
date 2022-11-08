@@ -297,7 +297,7 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
             amrex::ParallelFor(bx,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                Real rhoinv = 1.0/rho_arr(i,j,k);
+                Real rhoinv = Real(1.0)/rho_arr(i,j,k);
                 AMREX_D_TERM(divtau_arr(i,j,k,0) *= rhoinv;,
                              divtau_arr(i,j,k,1) *= rhoinv;,
                              divtau_arr(i,j,k,2) *= rhoinv;);

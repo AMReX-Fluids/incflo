@@ -8,7 +8,7 @@ namespace {
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real expterm (amrex::Real nu) noexcept
 {
-    return (nu < 1.e-9) ? (1.0-0.5*nu+nu*nu*(1.0/6.0)-(nu*nu*nu)*(1./24.))
+    return (nu < Real(1.e-9)) ? (Real(1.0)-Real(0.5)*nu+nu*nu*Real(1.0/6.0)-(nu*nu*nu)*Real(1./24.))
                         : -std::expm1(-nu)/nu;
 }
 
@@ -23,7 +23,7 @@ struct NonNewtonianViscosity
         {
         case incflo::FluidModel::powerlaw:
         {
-            return mu * std::pow(sr,n_flow-1.0);
+            return mu * std::pow(sr,n_flow-Real(1.0));
         }
         case incflo::FluidModel::Bingham:
         {
@@ -88,10 +88,10 @@ void incflo::compute_viscosity_at_level (int /*lev*/,
         auto const& flags = fact.getMultiEBCellFlagFab();
 #endif
 
-        Real idx = 1.0 / lev_geom.CellSize(0);
-        Real idy = 1.0 / lev_geom.CellSize(1);
+        Real idx = Real(1.0) / lev_geom.CellSize(0);
+        Real idy = Real(1.0) / lev_geom.CellSize(1);
 #if (AMREX_SPACEDIM == 3)
-        Real idz = 1.0 / lev_geom.CellSize(2);
+        Real idz = Real(1.0) / lev_geom.CellSize(2);
 #endif
 
 #ifdef _OPENMP
@@ -109,7 +109,7 @@ void incflo::compute_viscosity_at_level (int /*lev*/,
                 {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        eta_arr(i,j,k) = 0.0;
+                        eta_arr(i,j,k) = Real(0.0);
                     });
                 }
                 else if (typ == FabType::singlevalued)

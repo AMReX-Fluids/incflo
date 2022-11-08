@@ -191,8 +191,8 @@ void incflo::ApplyCorrector()
                 {
                     const Real rho_old = rho_o(i,j,k);
 
-                    Real rho_new = rho_old + l_dt * 0.5*(drdt(i,j,k)+drdt_o(i,j,k));
-                    rho_nph(i,j,k) = 0.5 * (rho_old + rho_new);
+                    Real rho_new = rho_old + l_dt * Real(0.5)*(drdt(i,j,k)+drdt_o(i,j,k));
+                    rho_nph(i,j,k) = Real(0.5) * (rho_old + rho_new);
 
                     rho_n  (i,j,k) = rho_new;
                 });
@@ -242,8 +242,8 @@ void incflo::ApplyCorrector()
                         for (int n = 0; n < l_ntrac; ++n)
                         {
                             Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
-                                  0.5*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
-                                 +0.5*(laps_o(i,j,k,n) +   laps(i,j,k,n))
+                                  Real(0.5)*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
+                                 +Real(0.5)*(laps_o(i,j,k,n) +   laps(i,j,k,n))
                                    +    tra_f(i,j,k,n) );
 
                             tra_new /= rho(i,j,k);
@@ -260,8 +260,8 @@ void incflo::ApplyCorrector()
                         for (int n = 0; n < l_ntrac; ++n)
                         {
                             Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
-                                  0.5*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
-                                 +0.5*(laps_o(i,j,k,n)                  )
+                                  Real(0.5)*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
+                                 +Real(0.5)*(laps_o(i,j,k,n)                  )
                                    +    tra_f(i,j,k,n) );
 
                             tra_new /= rho(i,j,k);
@@ -276,7 +276,7 @@ void incflo::ApplyCorrector()
                         for (int n = 0; n < l_ntrac; ++n)
                         {
                             Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
-                                  0.5*(  dtdt(i,j,k,n)+dtdt_o(i,j,k,n))
+                                  Real(0.5)*(  dtdt(i,j,k,n)+dtdt_o(i,j,k,n))
                                  +      tra_f(i,j,k,n) );
 
                             tra_new /= rho(i,j,k);
@@ -298,7 +298,7 @@ void incflo::ApplyCorrector()
         for (int lev = 0; lev <= finest_level; ++lev)
             fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
 
-        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : Real(0.5)*m_dt;
         diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
     }
 
@@ -336,8 +336,8 @@ void incflo::ApplyCorrector()
                 {
                     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
                         vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
-                             0.5*(  dvdt_o(i,j,k,idim)+  dvdt(i,j,k,idim))
-                            +0.5*(divtau_o(i,j,k,idim)+divtau(i,j,k,idim))
+                             Real(0.5)*(  dvdt_o(i,j,k,idim)+  dvdt(i,j,k,idim))
+                            +Real(0.5)*(divtau_o(i,j,k,idim)+divtau(i,j,k,idim))
                             +        vel_f(i,j,k,idim) );
                     }
                 });
@@ -349,8 +349,8 @@ void incflo::ApplyCorrector()
                 {
                     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
                         vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
-                            0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
-                           +0.5*(divtau_o(i,j,k,idim)                 )
+                            Real(0.5)*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
+                           +Real(0.5)*(divtau_o(i,j,k,idim)                 )
                            +        vel_f(i,j,k,idim) );
                     }
                 });
@@ -366,7 +366,7 @@ void incflo::ApplyCorrector()
                         {
                             // Here divtau is the difference of tensor and scalar divtau!
                             vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
-                                 0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
+                                 Real(0.5)*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
                                 +        vel_f(i,j,k,idim) + divtau(i,j,k,idim));
                         }
                     });
@@ -376,7 +376,7 @@ void incflo::ApplyCorrector()
                         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
                         {
                             vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
-                                 0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
+                                 Real(0.5)*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
                                 +        vel_f(i,j,k,idim) );
                         }
                     });
@@ -400,7 +400,7 @@ void incflo::ApplyCorrector()
             fillphysbc_density (lev, new_time, m_leveldata[lev]->density , ng_diffusion);
         }
 
-        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : Real(0.5)*m_dt;
         diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
 

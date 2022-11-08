@@ -271,35 +271,35 @@ private:
 
     // Member variables for initial conditions
     int m_probtype = 0;
-    amrex::Real m_ic_u = 0.0;
-    amrex::Real m_ic_v = 0.0;
-    amrex::Real m_ic_w = 0.0;
-    amrex::Real m_ic_p = 0.0;
-    amrex::Real m_ic_t = 0.0;
+    amrex::Real m_ic_u = amrex::Real(0.0);
+    amrex::Real m_ic_v = amrex::Real(0.0);
+    amrex::Real m_ic_w = amrex::Real(0.0);
+    amrex::Real m_ic_p = amrex::Real(0.0);
+    amrex::Real m_ic_t = amrex::Real(0.0);
 
     amrex::Vector<amrex::Real> m_t_old;
     amrex::Vector<amrex::Real> m_t_new;
 
     // Times
-    amrex::Real m_cur_time     = 0.0;
-    amrex::Real m_dt           = -1.0;
-    amrex::Real m_prev_dt      = -1.0;
-    amrex::Real m_prev_prev_dt = -1.0;
+    amrex::Real m_cur_time     = amrex::Real( 0.0);
+    amrex::Real m_dt           = amrex::Real(-1.0);
+    amrex::Real m_prev_dt      = amrex::Real(-1.0);
+    amrex::Real m_prev_prev_dt = amrex::Real(-1.0);
 
     // Time step counter
     int m_nstep         = -1;
 
     // Stop simulation if cur_time reaches stop_time OR nstep reaches max_step
     // OR steady_state = true AND steady_state_tol is reached
-    amrex::Real m_stop_time = -1.0;
+    amrex::Real m_stop_time = amrex::Real(-1.0);
     int m_max_step = -1;
     bool m_steady_state = false;
-    amrex::Real m_steady_state_tol = 1.0e-5;
+    amrex::Real m_steady_state_tol = amrex::Real(1.0e-5);
 
     // Options to control time stepping
-    amrex::Real m_cfl = 0.5;
-    amrex::Real m_fixed_dt = -1.;
-    amrex::Real m_init_shrink = 0.1;
+    amrex::Real m_cfl = amrex::Real(0.5);
+    amrex::Real m_fixed_dt = amrex::Real(-1.);
+    amrex::Real m_init_shrink = amrex::Real(0.1);
 
     // Initial projection / iterations
     bool m_do_initial_proj    = true;
@@ -341,11 +341,11 @@ private:
     int m_mac_mg_max_coarsening_level = 100;
 
 #ifdef AMREX_USE_FLOAT
-    amrex::Real m_mac_mg_rtol = 1.0e-4;
-    amrex::Real m_mac_mg_atol = 1.0e-7;
+    amrex::Real m_mac_mg_rtol = amrex::Real(1.0e-4);
+    amrex::Real m_mac_mg_atol = amrex::Real(1.0e-7);
 #else
-    amrex::Real m_mac_mg_rtol = 1.0e-11;
-    amrex::Real m_mac_mg_atol = 1.0e-14;
+    amrex::Real m_mac_mg_rtol = amrex::Real(1.0e-11);
+    amrex::Real m_mac_mg_atol = amrex::Real(1.0e-14);
 #endif
 
     // ***************************************************************
@@ -366,11 +366,11 @@ private:
 
     // Control MLMG behavior
 #ifdef AMREX_USE_FLOAT
-    amrex::Real m_nodal_mg_rtol = 1.0e-4;
-    amrex::Real m_nodal_mg_atol = 1.0e-7;
+    amrex::Real m_nodal_mg_rtol = amrex::Real(1.0e-4);
+    amrex::Real m_nodal_mg_atol = amrex::Real(1.0e-7);
 #else
-    amrex::Real m_nodal_mg_rtol = 1.0e-11;
-    amrex::Real m_nodal_mg_atol = 1.0e-14;
+    amrex::Real m_nodal_mg_rtol = amrex::Real(1.0e-11);
+    amrex::Real m_nodal_mg_atol = amrex::Real(1.0e-14);
 #endif
 
     // Max coarsening level

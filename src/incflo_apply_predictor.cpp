@@ -218,7 +218,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
+                    rho_nph(i,j,k) = Real(0.5) * (rho_old(i,j,k) + rho_new(i,j,k));
                 });
             } // mfi
 
@@ -282,7 +282,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                         for (int n = 0; n < l_ntrac; ++n)
                         {
                             Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + 0.5 * laps_o(i,j,k,n) );
+                                ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + Real(0.5) * laps_o(i,j,k,n) );
 
                             tra_new /= rho(i,j,k);
                             tra(i,j,k,n) = tra_new;
@@ -317,7 +317,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
         for (int lev = 0; lev <= finest_level; ++lev)
             fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
 
-        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : Real(0.5)*m_dt;
         diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
 
     } // if (m_advect_tracer)
@@ -374,9 +374,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+0.5*divtau_o(i,j,k,0));,
-                                 vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+0.5*divtau_o(i,j,k,1));,
-                                 vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+0.5*divtau_o(i,j,k,2)););
+                    AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+Real(0.5)*divtau_o(i,j,k,0));,
+                                 vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+Real(0.5)*divtau_o(i,j,k,1));,
+                                 vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+vel_f(i,j,k,2)+Real(0.5)*divtau_o(i,j,k,2)););
                 });
             }
             else if (m_diff_type == DiffusionType::Explicit)
@@ -403,7 +403,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
             fillphysbc_density (lev, new_time, m_leveldata[lev]->density , ng_diffusion);
         }
 
-        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : Real(0.5)*m_dt;
         diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
 

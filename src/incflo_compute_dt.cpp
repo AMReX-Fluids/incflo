@@ -30,9 +30,9 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     m_prev_prev_dt = m_prev_dt;
     m_prev_dt = m_dt;
 
-    Real conv_cfl = 0.0;
-    Real diff_cfl = 0.0;
-    Real forc_cfl = 0.0;
+    Real conv_cfl = Real(0.0);
+    Real diff_cfl = Real(0.0);
+    Real forc_cfl = Real(0.0);
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
@@ -42,9 +42,9 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
         MultiFab const& tra   = m_leveldata[lev]->tracer;
         MultiFab const& tra_o = m_leveldata[lev]->tracer_o;
 
-        Real conv_lev = 0.0;
-        Real diff_lev = 0.0;
-        Real forc_lev = 0.0;
+        Real conv_lev = Real(0.0);
+        Real diff_lev = Real(0.0);
+        Real forc_lev = Real(0.0);
 
        // Make a temporary here to hold vel_forces
        MultiFab vel_forces(grids[lev], dmap[lev], AMREX_SPACEDIM, 0);
@@ -76,11 +76,11 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                                                       Array4<Real const> const& r,
                                                       Array4<EBCellFlag const> const& f) -> Real
                           {
-                              Real mx = -1.0;
+                              Real mx = Real(-1.0);
                               amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                               {
                                   if (!f(i,j,k).isCovered()) {
-                                      Real rho_inv = 1.0/r(i,j,k);
+                                      Real rho_inv = Real(1.0)/r(i,j,k);
                                       mx = amrex::max(rho_inv, mx);
                                   }
                               });
@@ -101,7 +101,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                                              Array4<Real const> const& vf,
                                              Array4<EBCellFlag const> const& f) -> Real
                   {
-                      Real mx = -1.0;
+                      Real mx = Real(-1.0);
                       amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                       {
                           if (!f(i,j,k).isCovered()) {
@@ -119,7 +119,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                        [=] AMREX_GPU_HOST_DEVICE (Box const& b,
                                                   Array4<Real const> const& v) -> Real
                        {
-                           Real mx = -1.0;
+                           Real mx = Real(-1.0);
                            amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                            {
                                mx = amrex::max(AMREX_D_DECL(amrex::Math::abs(v(i,j,k,0))*dxinv[0],
@@ -134,10 +134,10 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                            [=] AMREX_GPU_HOST_DEVICE (Box const& b,
                                                       Array4<Real const> const& r) -> Real
                            {
-                               Real mx = -1.0;
+                               Real mx = Real(-1.0);
                                amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                                {
-                                   Real rho_inv = 1.0/r(i,j,k);
+                                   Real rho_inv = Real(1.0)/r(i,j,k);
                                    mx = amrex::max(rho_inv, mx);
                                });
                                return mx;
@@ -156,7 +156,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                   [=] AMREX_GPU_HOST_DEVICE (Box const& b,
                                              Array4<Real const> const& vf) -> Real
                   {
-                      Real mx = -1.0;
+                      Real mx = Real(-1.0);
                       amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
                       {
                           mx = amrex::max(AMREX_D_DECL(amrex::Math::abs(vf(i,j,k,0))*dxinv[0],
@@ -169,7 +169,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
 
         forc_cfl = std::max(forc_cfl, forc_lev);
         conv_cfl = std::max(conv_cfl, conv_lev);
-        diff_cfl = std::max(diff_cfl, diff_lev*2.0_rt*(dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1]+
+        diff_cfl = std::max(diff_cfl, diff_lev*Real(2.0)*(dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1]+
                                                        dxinv[2]*dxinv[2]));
     }
 
@@ -188,13 +188,13 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                                  ParallelContext::CommunicatorSub());
 
     // Combined CFL conditioner
-    Real comb_cfl = cd_cfl + std::sqrt(cd_cfl*cd_cfl + 4.0 * forc_cfl);
+    Real comb_cfl = cd_cfl + std::sqrt(cd_cfl*cd_cfl + Real(4.0) * forc_cfl);
 
     // Update dt
     Real dt_new;
     if (comb_cfl > 0.)
     {
-        dt_new = 2.0 * m_cfl / comb_cfl;
+        dt_new = Real(2.0) * m_cfl / comb_cfl;
 
     } else {
 
@@ -220,30 +220,30 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     Real eps = std::numeric_limits<Real>::epsilon();
     if(! initialization && comb_cfl <= eps)
     {
-        dt_new = 0.5 * m_dt;
+        dt_new = Real(0.5) * m_dt;
     }
 
     // Don't let the timestep grow by more than 10% per step
     // unless the previous time step was unduly shrunk to match m_plot_per_exact
-    Real allowed_change_factor = 1.1;
-    if( (m_dt > 0.0) && !(m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
+    Real allowed_change_factor = Real(1.1);
+    if( (m_dt > Real(0.0)) && !(m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
     {
         dt_new = amrex::min(dt_new, allowed_change_factor * m_prev_dt);
     }
-    else if ( (m_dt > 0.0) && (m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
+    else if ( (m_dt > Real(0.0)) && (m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
     {
         dt_new = amrex::min( dt_new, allowed_change_factor * amrex::max(m_prev_dt, m_prev_prev_dt) );
     }
 
     // Don't overshoot specified plot times
-    if(m_plot_per_exact > 0.0 &&
+    if(m_plot_per_exact > Real(0.0) &&
             (std::trunc((m_cur_time + dt_new + eps) / m_plot_per_exact) > std::trunc((m_cur_time + eps) / m_plot_per_exact)))
     {
         dt_new = std::trunc((m_cur_time + dt_new) / m_plot_per_exact) * m_plot_per_exact - m_cur_time;
     }
 
     // Don't overshoot the final time if not running to steady state
-    if(!m_steady_state && m_stop_time > 0.0)
+    if(!m_steady_state && m_stop_time > Real(0.0))
     {
         if(m_cur_time + dt_new > m_stop_time)
         {
@@ -254,11 +254,11 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     // Make sure the timestep is not set to zero after a m_plot_per_exact stop
     if (dt_new < eps)
     {
-        dt_new = 0.5 * m_dt;
+        dt_new = Real(0.5) * m_dt;
     }
 
     // If using fixed time step, check CFL condition and give warning if not satisfied
-    if (m_fixed_dt > 0.0)
+    if (m_fixed_dt > Real(0.0))
     {
     if(dt_new < m_fixed_dt)
     {

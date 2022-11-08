@@ -7,7 +7,7 @@ void incflo::Advance()
     BL_PROFILE("incflo::Advance");
 
     // Start timing current time step
-    Real strt_step = ParallelDescriptor::second();
+    Real strt_step = static_cast<Real>(ParallelDescriptor::second());
 
     // Compute time step size
     int initialisation = 0;
@@ -76,7 +76,7 @@ void incflo::Advance()
 #endif
 
     // Stop timing current time step
-    Real end_step = ParallelDescriptor::second() - strt_step;
+    Real end_step = static_cast<Real>(ParallelDescriptor::second()) - strt_step;
     ParallelDescriptor::ReduceRealMax(end_step, ParallelDescriptor::IOProcessorNumber());
     if (m_verbose > 0)
     {

@@ -12,28 +12,28 @@ amrex::Real incflo_strainrate (int i, int j, int k,
     using namespace amrex;
 
 #if (AMREX_SPACEDIM == 3)
-    Real ux = 0.5 * (vel(i+1,j,k,0) - vel(i-1,j,k,0)) * idx;
-    Real vx = 0.5 * (vel(i+1,j,k,1) - vel(i-1,j,k,1)) * idx;
-    Real wx = 0.5 * (vel(i+1,j,k,2) - vel(i-1,j,k,2)) * idx;
+    Real ux = amrex::Real(0.5) * (vel(i+1,j,k,0) - vel(i-1,j,k,0)) * idx;
+    Real vx = amrex::Real(0.5) * (vel(i+1,j,k,1) - vel(i-1,j,k,1)) * idx;
+    Real wx = amrex::Real(0.5) * (vel(i+1,j,k,2) - vel(i-1,j,k,2)) * idx;
 
-    Real uy = 0.5 * (vel(i,j+1,k,0) - vel(i,j-1,k,0)) * idy;
-    Real vy = 0.5 * (vel(i,j+1,k,1) - vel(i,j-1,k,1)) * idy;
-    Real wy = 0.5 * (vel(i,j+1,k,2) - vel(i,j-1,k,2)) * idy;
+    Real uy = amrex::Real(0.5) * (vel(i,j+1,k,0) - vel(i,j-1,k,0)) * idy;
+    Real vy = amrex::Real(0.5) * (vel(i,j+1,k,1) - vel(i,j-1,k,1)) * idy;
+    Real wy = amrex::Real(0.5) * (vel(i,j+1,k,2) - vel(i,j-1,k,2)) * idy;
 
-    Real uz = 0.5 * (vel(i,j,k+1,0) - vel(i,j,k-1,0)) * idz;
-    Real vz = 0.5 * (vel(i,j,k+1,1) - vel(i,j,k-1,1)) * idz;
-    Real wz = 0.5 * (vel(i,j,k+1,2) - vel(i,j,k-1,2)) * idz;
+    Real uz = amrex::Real(0.5) * (vel(i,j,k+1,0) - vel(i,j,k-1,0)) * idz;
+    Real vz = amrex::Real(0.5) * (vel(i,j,k+1,1) - vel(i,j,k-1,1)) * idz;
+    Real wz = amrex::Real(0.5) * (vel(i,j,k+1,2) - vel(i,j,k-1,2)) * idz;
 
-    return std::sqrt(2.0 * ux*ux + 2.0 * vy*vy + 2.0 * wz*wz
+    return std::sqrt(amrex::Real(2.0) * ux*ux + amrex::Real(2.0) * vy*vy + amrex::Real(2.0) * wz*wz
                      + (uy+vx)*(uy+vx) + (vz+wy)*(vz+wy) + (wx+uz)*(wx+uz));
 #else
-    Real ux = 0.5 * (vel(i+1,j,k,0) - vel(i-1,j,k,0)) * idx;
-    Real vx = 0.5 * (vel(i+1,j,k,1) - vel(i-1,j,k,1)) * idx;
+    Real ux = amrex::Real(0.5) * (vel(i+1,j,k,0) - vel(i-1,j,k,0)) * idx;
+    Real vx = amrex::Real(0.5) * (vel(i+1,j,k,1) - vel(i-1,j,k,1)) * idx;
 
-    Real uy = 0.5 * (vel(i,j+1,k,0) - vel(i,j-1,k,0)) * idy;
-    Real vy = 0.5 * (vel(i,j+1,k,1) - vel(i,j-1,k,1)) * idy;
+    Real uy = amrex::Real(0.5) * (vel(i,j+1,k,0) - vel(i,j-1,k,0)) * idy;
+    Real vy = amrex::Real(0.5) * (vel(i,j+1,k,1) - vel(i,j-1,k,1)) * idy;
 
-    return std::sqrt(2.0 * ux*ux + 2.0 * vy*vy
+    return std::sqrt(amrex::Real(2.0) * ux*ux + amrex::Real(2.0) * vy*vy
                      + (uy+vx)*(uy+vx));
 #endif
 }
@@ -51,8 +51,8 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
         return incflo_strainrate(i,j,k,AMREX_D_DECL(idx,idy,idz),vel);
     } else if (flag.isSingleValued()) {
         constexpr Real c0 = -1.5;
-        constexpr Real c1 =  2.0;
-        constexpr Real c2 = -0.5;
+        constexpr Real c1 =  amrex::Real(2.0);
+        constexpr Real c2 = -amrex::Real(0.5);
         Real ux, vx, uy, vy;
 #if (AMREX_SPACEDIM == 3)
         Real wx, wy, uz, vz, wz;
@@ -90,10 +90,10 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
         else
         {
             // No covered cells right or left, use standard stencil
-            ux = 0.5 * (vel(i+1,j,k,0) - vel(i-1,j,k,0)) * idx;
-            vx = 0.5 * (vel(i+1,j,k,1) - vel(i-1,j,k,1)) * idx;
+            ux = amrex::Real(0.5) * (vel(i+1,j,k,0) - vel(i-1,j,k,0)) * idx;
+            vx = amrex::Real(0.5) * (vel(i+1,j,k,1) - vel(i-1,j,k,1)) * idx;
 #if (AMREX_SPACEDIM == 3)
-            wx = 0.5 * (vel(i+1,j,k,2) - vel(i-1,j,k,2)) * idx;
+            wx = amrex::Real(0.5) * (vel(i+1,j,k,2) - vel(i-1,j,k,2)) * idx;
 #endif
         }
 
@@ -128,10 +128,10 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
         }
         else
         {
-            uy = 0.5 * (vel(i,j+1,k,0) - vel(i,j-1,k,0)) * idy;
-            vy = 0.5 * (vel(i,j+1,k,1) - vel(i,j-1,k,1)) * idy;
+            uy = amrex::Real(0.5) * (vel(i,j+1,k,0) - vel(i,j-1,k,0)) * idy;
+            vy = amrex::Real(0.5) * (vel(i,j+1,k,1) - vel(i,j-1,k,1)) * idy;
 #if (AMREX_SPACEDIM == 3)
-            wy = 0.5 * (vel(i,j+1,k,2) - vel(i,j-1,k,2)) * idy;
+            wy = amrex::Real(0.5) * (vel(i,j+1,k,2) - vel(i,j-1,k,2)) * idy;
 #endif
         }
 #if (AMREX_SPACEDIM == 3)
@@ -162,15 +162,15 @@ amrex::Real incflo_strainrate_eb (int i, int j, int k,
         }
         else
         {
-            uz = 0.5 * (vel(i,j,k+1,0) - vel(i,j,k-1,0)) * idz;
-            vz = 0.5 * (vel(i,j,k+1,1) - vel(i,j,k-1,1)) * idz;
-            wz = 0.5 * (vel(i,j,k+1,2) - vel(i,j,k-1,2)) * idz;
+            uz = amrex::Real(0.5) * (vel(i,j,k+1,0) - vel(i,j,k-1,0)) * idz;
+            vz = amrex::Real(0.5) * (vel(i,j,k+1,1) - vel(i,j,k-1,1)) * idz;
+            wz = amrex::Real(0.5) * (vel(i,j,k+1,2) - vel(i,j,k-1,2)) * idz;
         }
 
-        return std::sqrt(2.0 * ux*ux + 2.0 * vy*vy + 2.0 * wz*wz
+        return std::sqrt(amrex::Real(2.0) * ux*ux + amrex::Real(2.0) * vy*vy + amrex::Real(2.0) * wz*wz
                          + (uy+vx)*(uy+vx) + (vz+wy)*(vz+wy) + (wx+uz)*(wx+uz));
 #else
-        return std::sqrt(2.0 * ux*ux + 2.0 * vy*vy
+        return std::sqrt(amrex::Real(2.0) * ux*ux + amrex::Real(2.0) * vy*vy
                          + (uy+vx)*(uy+vx));
 #endif
     } else {
