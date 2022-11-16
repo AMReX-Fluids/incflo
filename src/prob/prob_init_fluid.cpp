@@ -134,6 +134,22 @@ void incflo::prob_init_fluid (int lev)
                                   ld.tracer.array(mfi),
                                   domain, dx, problo, probhi);
         }
+        else if (51 == m_probtype)
+        {
+            init_rayleigh_taylor_vof(vbx, gbx,
+                                     ld.velocity.array(mfi),
+                                     ld.density.array(mfi),
+                                     ld.tracer.array(mfi),
+                                     domain, dx, problo, probhi);
+        }
+        else if (52 == m_probtype)
+        {
+            inclined_channel_vof(vbx, gbx,
+                                     ld.velocity.array(mfi),
+                                     ld.density.array(mfi),
+                                     ld.tracer.array(mfi),
+                                     domain, dx, problo, probhi);
+        }
 #if 0
         else if (500 == m_probtype)
         {
@@ -461,6 +477,110 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& /*gbx*/,
         tracer(i,j,k)  = tra_1 + ((tra_2-tra_1)/2.0)*(1.0+std::tanh((z-pertheight)/width));
     });
 #endif
+}
+
+void incflo::init_rayleigh_taylor_vof (Box const& vbx, Box const& /*gbx*/,
+                                       Array4<Real> const& vel,
+                                       Array4<Real> const& density,
+                                       Array4<Real> const& tracer,
+                                       Box const& /*domain*/,
+                                       GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                                       GpuArray<Real, AMREX_SPACEDIM> const& problo,
+                                       GpuArray<Real, AMREX_SPACEDIM> const& probhi)
+{
+    static constexpr Real pi   = 3.1415926535897932;
+    Real rho_1 = m_fluid_vof[0].rho;
+    Real rho_2 = m_fluid_vof[1].rho;
+    amrex::Print() << "rho1 and rho2 during RT setup: " << rho_1 << " " << rho_2 << std::endl;
+    static constexpr Real tra_1 = 1.0;
+    static constexpr Real tra_2 = 0.0;
+
+    static constexpr Real width = 0.005;
+
+    const Real splitx = 0.5*(problo[0] + probhi[0]);
+    const Real L_x    = probhi[0] - problo[0];
+
+#if (AMREX_SPACEDIM == 2)
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        vel(i,j,k,0) = 0.0;
+        vel(i,j,k,1) = 0.0;
+
+        Real x = problo[0] + (i+Real(0.5))*dx[0];
+        Real y = problo[1] + (j+Real(0.5))*dx[1];
+
+        const Real r2d = amrex::min(std::abs(x-splitx), Real(0.5)*L_x);
+        const Real pertheight = 0.5 - 0.01*std::cos(2.0*pi*r2d/L_x);
+
+        Real conc = tra_1 + ((tra_2-tra_1)/2.0)*(1.0+std::tanh((y-pertheight)/width));
+        density(i,j,k) = (rho_1*rho_2)/(conc*rho_2 + (1.0-conc)*rho_1);
+//        density(i,j,k) = rho_1 + ((rho_2-rho_1)/2.0)*(1.0+std::tanh((y-pertheight)/width));
+        tracer(i,j,k)  = conc;
+    });
+
+#elif (AMREX_SPACEDIM == 3)
+
+    const Real splity = Real(0.5)*(problo[1] + probhi[1]);
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        vel(i,j,k,0) = 0.0;
+        vel(i,j,k,1) = 0.0;
+        vel(i,j,k,2) = 0.0;
+
+        Real x = problo[0] + (i+0.5)*dx[0];
+        Real y = problo[1] + (j+0.5)*dx[1];
+        Real z = problo[2] + (k+0.5)*dx[2];
+
+        const Real r2d = amrex::min(std::hypot((x-splitx),(y-splity)), Real(0.5)*L_x);
+        const Real pertheight = Real(0.5) - 0.01*std::cos(Real(2.0)*pi*r2d/L_x);
+
+        Real conc = tra_1 + ((tra_2-tra_1)/2.0)*(1.0+std::tanh((z-pertheight)/width));
+        density(i,j,k) = (rho_1*rho_2)/(conc*rho_2 + (1.0-conc)*rho_1);
+        tracer(i,j,k)  = conc;
+
+        // density(i,j,k) = rho_1 + ((rho_2-rho_1)/2.0)*(1.0+std::tanh((z-pertheight)/width));
+        // tracer(i,j,k)  = tra_1 + ((tra_2-tra_1)/2.0)*(1.0+std::tanh((z-pertheight)/width));
+    });
+#endif
+}
+
+void incflo::inclined_channel_vof (Box const& vbx, Box const& /*gbx*/,
+                                   Array4<Real> const& vel,
+                                   Array4<Real> const& density,
+                                   Array4<Real> const& tracer,
+                                   Box const& /*domain*/,
+                                   GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                                   GpuArray<Real, AMREX_SPACEDIM> const& problo,
+                                   GpuArray<Real, AMREX_SPACEDIM> const& probhi)
+{
+    Real rho_1 = m_fluid_vof[0].rho;
+    Real rho_2 = m_fluid_vof[1].rho;
+    amrex::Print() << "rho1 and rho2 during incline channel setup: " << rho_1 << " " << rho_2 << std::endl;
+    static constexpr Real tra_1 = 1.0;
+    static constexpr Real tra_2 = 0.0;
+
+    const Real splitz = 0.5*(problo[2] + probhi[2]);
+    const Real L_z    = probhi[2] - problo[2];
+
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        vel(i,j,k,0) = 0.0;
+        vel(i,j,k,1) = 0.0;
+        vel(i,j,k,2) = 0.0;
+
+        Real x = problo[0] + (i+0.5)*dx[0];
+        Real y = problo[1] + (j+0.5)*dx[1];
+        Real z = problo[2] + (k+0.5)*dx[2];
+        
+        if (z > splitz) {
+            density(i,j,k) = rho_1;
+            tracer(i,j,k) = 0.0;
+        }
+        else {
+            density(i,j,k) = rho_2;
+            tracer(i,j,k) = 1.0;
+        }
+    });
 }
 
 void incflo::init_tuscan (Box const& vbx, Box const& /*gbx*/,

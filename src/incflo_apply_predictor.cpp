@@ -330,6 +330,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
                        GetVecOfConstPtrs(density_nph),
                        get_tracer_old_const(), get_tracer_new_const());
 
+    // *********************************************************************************************
+    // Recompute viscosity based on new density (for VoF): required for Implicit and Crank-Nicholson
+    // *********************************************************************************************
+    if (m_do_vof) {
+        compute_viscosity(GetVecOfPtrs(vel_eta),
+                          get_density_new(), get_velocity_old(),
+                          m_cur_time, 1);
+    }
 
     // *************************************************************************************
     // Update the velocity

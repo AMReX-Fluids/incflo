@@ -45,16 +45,16 @@ void incflo::set_background_pressure ()
             }
         }
         // (3) gravity
-        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-            Real dpdx = m_gravity[dir] * m_ro_0;
-            if (std::abs(dpdx) > std::numeric_limits<Real>::epsilon()) {
-                if (delp_dir == -1) {
-                    delp_dir = dir;
-                    m_gp0[dir] = dpdx;
-                } else {
-                    amrex::Abort("set_background_pressure: how did this happen?");
-                }
-            }
-        }
+        //for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        //    Real dpdx = m_gravity[dir] * m_ro_0;
+        //    if (std::abs(dpdx) > std::numeric_limits<Real>::epsilon()) {
+        //        if (delp_dir == -1) {
+        //            delp_dir = dir;
+        //            m_gp0[dir] = dpdx;
+        //        } else {
+        //            amrex::Abort("set_background_pressure: how did this happen?");
+        //        }
+        //    }
+        //}
     }
 }
