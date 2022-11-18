@@ -70,7 +70,7 @@ void incflo::Advance()
     // This sums over all levels
     if (m_test_tracer_conservation) {
         Real sum = volumeWeightedSum(get_tracer_new_const(),0,geom,ref_ratio);
-        amrex::Print() << "Sum tracer volume wgt2 = " << m_cur_time+m_dt << " " << 
+        amrex::Print() << "Sum tracer volume wgt2 = " << m_cur_time+m_dt << " " <<
                            sum << std::endl;
     }
 #endif

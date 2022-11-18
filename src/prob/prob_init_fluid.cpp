@@ -538,7 +538,7 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
             Real y = Real(j+0.5)*dx[1];
             Real z = Real(k+0.5)*dx[2];
 
-            Real r = std::sqrt( (x-m_fourth)*(x-m_fourth) + (y-m_half )*(y-m_half) 
+            Real r = std::sqrt( (x-m_fourth)*(x-m_fourth) + (y-m_half )*(y-m_half)
                                +(z-m_fourth)*(z-m_fourth));
 
             if(r < Real(0.1))

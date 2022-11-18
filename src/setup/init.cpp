@@ -53,6 +53,9 @@ void incflo::ReadParameters ()
         pp.query("advect_tracer"            , m_advect_tracer);
         pp.query("test_tracer_conservation" , m_test_tracer_conservation);
 
+        // Are we advecting velocity or momentum (default is velocity)
+        pp.query("advect_momentum"                  , m_advect_momentum);
+
         // Are we using MOL or Godunov?
         pp.query("advection_type"                   , m_advection_type);
         pp.query("use_ppm"                          , m_godunov_ppm);
@@ -361,7 +364,7 @@ incflo::InitialRedistribution ()
 {
     // Next we must redistribute the initial solution if we are going to use
     // StateRedist redistribution scheme
-    if (m_redistribution_type == "StateRedist") 
+    if (m_redistribution_type == "StateRedist")
     {
       for (int lev = 0; lev <= finest_level; lev++)
       {

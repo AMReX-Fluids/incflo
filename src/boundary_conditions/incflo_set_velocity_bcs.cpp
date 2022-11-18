@@ -35,8 +35,8 @@ incflo::set_inflow_velocity (int lev, amrex::Real time, MultiFab& vel, int nghos
             }
         }
     }
-    // We make sure to only fill "nghost" ghost cells so we don't accidentally 
-    // over-write good ghost cell values with unfilled ghost cell values 
+    // We make sure to only fill "nghost" ghost cells so we don't accidentally
+    // over-write good ghost cell values with unfilled ghost cell values
     IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
     vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }
@@ -128,8 +128,8 @@ incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int ng
        }
      }
 
-     // We make sure to only fill "nghost" ghost cells so we don't accidentally 
-     // over-write good ghost cell values with unfilled ghost cell values 
+     // We make sure to only fill "nghost" ghost cells so we don't accidentally
+     // over-write good ghost cell values with unfilled ghost cell values
      IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
      eb_vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }
@@ -197,8 +197,8 @@ incflo::set_eb_density (int lev, amrex::Real /*time*/, MultiFab& eb_density, int
        }
      }
 
-     // We make sure to only fill "nghost" ghost cells so we don't accidentally 
-     // over-write good ghost cell values with unfilled ghost cell values 
+     // We make sure to only fill "nghost" ghost cells so we don't accidentally
+     // over-write good ghost cell values with unfilled ghost cell values
      IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
      eb_density.EnforcePeriodicity(0,1,ng_vect,gm.periodicity());
 }
@@ -274,8 +274,8 @@ incflo::set_eb_tracer (int lev, amrex::Real /*time*/, MultiFab& eb_tracer, int n
        }
      }
 
-     // We make sure to only fill "nghost" ghost cells so we don't accidentally 
-     // over-write good ghost cell values with unfilled ghost cell values 
+     // We make sure to only fill "nghost" ghost cells so we don't accidentally
+     // over-write good ghost cell values with unfilled ghost cell values
      IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
      eb_tracer.EnforcePeriodicity(0,m_ntrac,ng_vect,gm.periodicity());
 }

@@ -394,6 +394,10 @@ private:
     bool m_advect_tracer    = false;
     bool m_test_tracer_conservation = false;
 
+    // If false then we update velocity using the convective   form, u dot grad u
+    // If  true then we update velocity using the conservative form, del dot (u u)
+    bool m_advect_momentum = false;
+
     std::string m_advection_type = "Godunov";
 
 #ifdef AMREX_USE_EB
@@ -649,6 +653,10 @@ private:
 
     bool need_divtau () const {
         return ( m_godunov_include_diff_in_forcing || DiffusionType::Implicit != m_diff_type );
+    }
+
+    bool AdvectMomentum () const {
+        return m_advect_momentum;
     }
 
     bool useTensorSolve () const {

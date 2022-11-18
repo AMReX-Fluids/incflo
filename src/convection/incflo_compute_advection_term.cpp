@@ -47,8 +47,13 @@ struct umacFill
 void incflo::init_advection ()
 {
     // Use convective differencing for velocity
-    m_iconserv_velocity.resize(AMREX_SPACEDIM, 0);
-    m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 0);
+    if (m_advect_momentum) {
+        m_iconserv_velocity.resize(  AMREX_SPACEDIM, 1);
+        m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 1);
+    } else {
+        m_iconserv_velocity.resize(  AMREX_SPACEDIM, 0);
+        m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 0);
+    }
 
     // Density is always updated conservatively
     m_iconserv_density.resize(1, 1);
