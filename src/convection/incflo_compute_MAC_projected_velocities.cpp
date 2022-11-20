@@ -77,7 +77,7 @@ incflo::compute_MAC_projected_velocities (
         {
             macproj->initProjector(lp_info, GetVecOfArrOfConstPtrs(inv_rho));
         }
-        macproj->setDomainBC(get_projection_bc(Orientation::low), get_projection_bc(Orientation::high));
+        macproj->setDomainBC(get_mac_projection_bc(Orientation::low), get_mac_projection_bc(Orientation::high));
     } else {
 #ifndef AMREX_USE_EB
         if (m_constant_density) {
@@ -97,6 +97,15 @@ incflo::compute_MAC_projected_velocities (
         const EBFArrayBoxFactory* ebfact = &OldEBFactory(lev);
 #endif
 
+        //
+        // For now, BDS is only for edge state prediction given a known advective velocity,
+        // not this velocity extrapolation. So we'll use Godunov here instead.
+        //
+        std::string l_advection_type = m_advection_type;
+        if ( l_advection_type == "BDS" ) {
+            l_advection_type = "Godunov";
+        }
+
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
         HydroUtils::ExtrapVelToFaces(*vel[lev], *vel_forces[lev],
@@ -108,7 +117,7 @@ incflo::compute_MAC_projected_velocities (
                                       m_eb_flow.enabled ? get_velocity_eb()[lev] : nullptr,
 #endif
                                       m_godunov_ppm, m_godunov_use_forces_in_trans,
-                                      m_advection_type);
+                                      l_advection_type);
     }
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);

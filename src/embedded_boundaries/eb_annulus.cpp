@@ -17,8 +17,8 @@ void incflo::make_eb_annulus()
 {
     // Initialise annulus parameters
     int direction = 0;
-    Real outer_radius = 0.0002;
-    Real inner_radius = 0.0001;
+    Real outer_radius = Real(0.0002);
+    Real inner_radius = Real(0.0001);
     Vector<Real> outer_centervec(3);
     Vector<Real> inner_centervec(3);
 
@@ -39,8 +39,8 @@ void incflo::make_eb_annulus()
     // Compute distance between cylinder centres
     Real offset = 0.0;
     for(int i = 0; i < AMREX_SPACEDIM; i++)
-        offset += pow(outer_center[i] - inner_center[i], 2);
-    offset = sqrt(offset);
+        offset += std::pow(outer_center[i] - inner_center[i], 2);
+    offset = std::sqrt(offset);
 
     // Check that the inner cylinder is fully contained in the outer one
     Real smallest_gap_width = outer_radius - inner_radius - offset;

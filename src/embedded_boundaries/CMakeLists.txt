@@ -12,6 +12,7 @@ target_sources(incflo
    eb_spherecube.cpp
    eb_tuscan.cpp
    eb_twocylinders.cpp
+   eb_chkptfile.cpp
    writeEBsurface.cpp
    eb_if.H
    )

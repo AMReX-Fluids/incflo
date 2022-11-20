@@ -11,7 +11,6 @@ For an AMReX-based incompressible flow code with subcycling in time, please go t
 https://amrex-codes.github.io/IAMR/
 
 Active development in incflo is ongoing in the development branch.
-Changes are merged into the master branch at the beginning of each month.
 
 .. toctree::
    :maxdepth: 1

@@ -17,17 +17,12 @@ void incflo::ReadParameters ()
     pp.query("steady_state", m_steady_state);
     }
 
-    ReadIOParameters();
-    ReadRheologyParameters();
-
     { // Prefix amr
-     ParmParse pp("amr");
-
-    pp.query("regrid_int", m_regrid_int);
+        ParmParse pp("amr");
+        pp.query("regrid_int", m_regrid_int);
 #ifdef AMREX_USE_EB
         pp.query("refine_cutcells", m_refine_cutcells);
 #endif
-
         pp.query("KE_int", m_KE_int);
 
     } // end prefix amr
@@ -37,26 +32,29 @@ void incflo::ReadParameters ()
 
         pp.query("verbose", m_verbose);
 
-    pp.query("steady_state_tol", m_steady_state_tol);
+        pp.query("steady_state_tol", m_steady_state_tol);
         pp.query("initial_iterations", m_initial_iterations);
         pp.query("do_initial_proj", m_do_initial_proj);
 
-    pp.query("fixed_dt", m_fixed_dt);
-    pp.query("cfl", m_cfl);
+        pp.query("fixed_dt", m_fixed_dt);
+        pp.query("cfl", m_cfl);
 
         // This will multiply the time-step in the very first step only
-    pp.query("init_shrink", m_init_shrink);
+        pp.query("init_shrink", m_init_shrink);
         if (m_init_shrink > 1.0) {
             amrex::Abort("We require m_init_shrink <= 1.0");
         }
 
         // Physics
-    pp.queryarr("delp", m_delp, 0, AMREX_SPACEDIM);
-    pp.queryarr("gravity", m_gravity, 0, AMREX_SPACEDIM);
+        pp.queryarr("delp", m_delp, 0, AMREX_SPACEDIM);
+        pp.queryarr("gravity", m_gravity, 0, AMREX_SPACEDIM);
 
         pp.query("constant_density"         , m_constant_density);
         pp.query("advect_tracer"            , m_advect_tracer);
         pp.query("test_tracer_conservation" , m_test_tracer_conservation);
+
+        // Are we advecting velocity or momentum (default is velocity)
+        pp.query("advect_momentum"                  , m_advect_momentum);
 
         // Are we using MOL or Godunov?
         pp.query("advection_type"                   , m_advection_type);
@@ -74,13 +72,14 @@ void incflo::ReadParameters ()
             m_redistribution_type != "StateRedist")
             amrex::Abort("redistribution type must be NoRedist, FluxRedist, or StateRedist");
 
-    if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
+        if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
+        pp.query("write_geom_chk", m_write_geom_chk);
 #endif
 
         if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;
 
-        if (m_advection_type != "MOL" and m_advection_type != "Godunov")
-            amrex::Abort("advection type must be MOL or Godunov");
+        if (m_advection_type != "MOL" && m_advection_type != "Godunov" && m_advection_type != "BDS")
+            amrex::Abort("advection type must be MOL, Godunov, or BDS");
 
         // The default for diffusion_type is 2, i.e. the default m_diff_type is DiffusionType::Implicit
         int diffusion_type = 2;
@@ -111,7 +110,7 @@ void incflo::ReadParameters ()
             amrex::Abort("We currently require cfl <= 0.5 when using the MOL advection scheme");
         }
         if (m_advection_type != "MOL" && m_cfl > 1.0) {
-            amrex::Abort("We currently require cfl <= 1.0 when using the Godunov advection scheme");
+            amrex::Abort("We currently require cfl <= 1.0 when using this advection scheme");
         }
 
         // Initial conditions
@@ -146,6 +145,9 @@ void incflo::ReadParameters ()
             amrex::Print() << "Tracer diffusion coeff: " << i << ":" << m_mu_s[i] << std::endl;
         }
     } // end prefix incflo
+
+    ReadIOParameters();
+    ReadRheologyParameters();
 
     { // Prefix mac
         ParmParse pp_mac("mac_proj");
@@ -325,14 +327,6 @@ void incflo::InitialProjection()
 {
     BL_PROFILE("incflo::InitialProjection()");
 
-    Real time = 0.0;
-
-    if (m_verbose)
-    {
-        amrex::Print() << "Initial projection:" << std::endl;
-        PrintMaxValues(time);
-    }
-
     // *************************************************************************************
     // Allocate space for the temporary MAC velocities
     // *************************************************************************************
@@ -359,20 +353,13 @@ void incflo::InitialProjection()
     {
         m_leveldata[lev]->density.FillBoundary(geom[lev].periodicity());
     }
-    ApplyProjection(get_density_new_const(),
-                    m_cur_time,dummy_dt,incremental);
+    ApplyProjection(get_density_new_const(),m_cur_time,dummy_dt,incremental);
 
     // We set p and gp back to zero (p0 may still be still non-zero)
     for (int lev = 0; lev <= finest_level; lev++)
     {
         m_leveldata[lev]->p_nd.setVal(0.0);
         m_leveldata[lev]->gp.setVal(0.0);
-    }
-
-    if (m_verbose)
-    {
-        amrex::Print() << "After initial projection:" << std::endl;
-        PrintMaxValues(time);
     }
 }
 

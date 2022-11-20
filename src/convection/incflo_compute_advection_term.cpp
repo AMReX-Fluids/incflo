@@ -1,4 +1,5 @@
 #include <incflo.H>
+#include <prob_bc.H>
 #include <hydro_godunov.H>
 #include <hydro_mol.H>
 #include <hydro_utils.H>
@@ -46,8 +47,13 @@ struct umacFill
 void incflo::init_advection ()
 {
     // Use convective differencing for velocity
-    m_iconserv_velocity.resize(AMREX_SPACEDIM, 0);
-    m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 0);
+    if (m_advect_momentum) {
+        m_iconserv_velocity.resize(  AMREX_SPACEDIM, 1);
+        m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 1);
+    } else {
+        m_iconserv_velocity.resize(  AMREX_SPACEDIM, 0);
+        m_iconserv_velocity_d.resize(AMREX_SPACEDIM, 0);
+    }
 
     // Density is always updated conservatively
     m_iconserv_density.resize(1, 1);
@@ -70,7 +76,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                               Vector<MultiFab*> const& w_mac),
                                  Vector<MultiFab*      > const& vel_forces,
                                  Vector<MultiFab*      > const& tra_forces,
-                                 Real time)
+                                 Real /*time*/)
 {
     bool fluxes_are_area_weighted = false;
     bool knownFaceStates          = false; // HydroUtils always recompute face states
@@ -155,54 +161,83 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
-        if (lev > 0)
+        if (nghost_mac() > 0)
         {
-            // We need to fill the MAC velocities outside the fine region so we can use them in the Godunov method
-            IntVect rr  = geom[lev].Domain().size() / geom[lev-1].Domain().size();
-            Array<MultiFab*, AMREX_SPACEDIM> u_crse;
+            // FillPatch umac.
             Array<MultiFab*, AMREX_SPACEDIM> u_fine;
-            AMREX_D_TERM(u_crse[0] = u_mac[lev-1];, u_crse[1] = v_mac[lev-1];, u_crse[2] = w_mac[lev-1];);
-            AMREX_D_TERM(u_fine[0] = u_mac[lev  ];, u_fine[1] = v_mac[lev  ];, u_fine[2] = w_mac[lev  ];);
-            int nGrow = nghost_mac();
+            AMREX_D_TERM(u_fine[0] = u_mac[lev  ];,
+                         u_fine[1] = v_mac[lev  ];,
+                         u_fine[2] = w_mac[lev  ];);
 
-            // Divergence preserving interp
-            //Interpolater* mapper = &face_divfree_interp;
-            // This one matches up with old create umac grown
-            Interpolater* mapper = &face_linear_interp;
+            PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>
+                fine_bndry_func_x(geom[lev],
+                                  m_bcrec_velocity,
+                                  IncfloVelFill{m_probtype, m_bc_velocity});
+            PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>
+                fine_bndry_func_y(geom[lev],
+                                  m_bcrec_velocity,
+                                  IncfloVelFill{m_probtype, m_bc_velocity});
+#if (AMREX_SPACEDIM == 3)
+            PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>
+                fine_bndry_func_z(geom[lev],
+                                  m_bcrec_velocity,
+                                  IncfloVelFill{m_probtype, m_bc_velocity});
+#endif
+            Array<PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>,AMREX_SPACEDIM>
+                fbndyFuncArr = {AMREX_D_DECL(fine_bndry_func_x,fine_bndry_func_y,fine_bndry_func_z)};
 
-            // Set BCRec for Umac
-            Vector<BCRec> bcrec(1);
-            for (int idim = 0; idim < AMREX_SPACEDIM; idim++) {
-                if (geom[lev-1].isPeriodic(idim)) {
-                    bcrec[0].setLo(idim,BCType::int_dir);
-                    bcrec[0].setHi(idim,BCType::int_dir);
-                } else {
-                    bcrec[0].setLo(idim,BCType::foextrap);
-                    bcrec[0].setHi(idim,BCType::foextrap);
+            if (lev == 0)
+            {
+                //
+                // BDS needs umac on physical boundaries.
+                // Godunov handles physical boundaries interally, but needs periodic ghosts filled.
+                // MOL doesn't need any umac ghost cells, so it doesn't get here.
+                //
+                Real fake_time = 0.;
+
+                for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
+                {
+                    amrex::FillPatchSingleLevel(*u_fine[idim], IntVect(nghost_mac()), fake_time,
+                                                {u_fine[idim]}, {fake_time},
+                                                0, 0, 1, geom[lev],
+                                                fbndyFuncArr[idim], idim);
                 }
             }
-            Array<Vector<BCRec>,AMREX_SPACEDIM> bcrecArr = {AMREX_D_DECL(bcrec,bcrec,bcrec)};
+            else // lev > 0
+            {
+                IntVect rr  = geom[lev].Domain().size() / geom[lev-1].Domain().size();
+                Array<MultiFab*, AMREX_SPACEDIM> u_crse;
+                AMREX_D_TERM(u_crse[0] = u_mac[lev-1];,
+                             u_crse[1] = v_mac[lev-1];,
+                             u_crse[2] = w_mac[lev-1];);
 
-            PhysBCFunct<GpuBndryFuncFab<umacFill>> crse_bndry_func(geom[lev-1], bcrec, umacFill{});
-            Array<PhysBCFunct<GpuBndryFuncFab<umacFill>>,AMREX_SPACEDIM> cbndyFuncArr = {AMREX_D_DECL(crse_bndry_func,crse_bndry_func,crse_bndry_func)};
 
-            PhysBCFunct<GpuBndryFuncFab<umacFill>> fine_bndry_func(geom[lev], bcrec, umacFill{});
-            Array<PhysBCFunct<GpuBndryFuncFab<umacFill>>,AMREX_SPACEDIM> fbndyFuncArr = {AMREX_D_DECL(fine_bndry_func,fine_bndry_func,fine_bndry_func)};
+                // Divergence preserving interp
+                Interpolater* mapper = &face_divfree_interp;
 
-            // Use piecewise constant interpolation in time, so create dummy variable for time
-            Real dummy = 0.;
-            FillPatchTwoLevels(u_fine, IntVect(nGrow), dummy,
-                               {u_crse}, {dummy},
-                               {u_fine}, {dummy},
-                               0, 0, 1,
-                               geom[lev-1], geom[lev],
-                               cbndyFuncArr, 0, fbndyFuncArr, 0,
-                               rr, mapper, bcrecArr, 0);
-        } else {
-            AMREX_D_TERM(u_mac[lev]->FillBoundary(geom[lev].periodicity());,
-                         v_mac[lev]->FillBoundary(geom[lev].periodicity());,
-                         w_mac[lev]->FillBoundary(geom[lev].periodicity()););
-        }
+                const Array<Vector<BCRec>,AMREX_SPACEDIM> bcrecArr = {AMREX_D_DECL(m_bcrec_velocity,
+                                                                                   m_bcrec_velocity,
+                                                                                   m_bcrec_velocity)};
+
+                PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>
+                    crse_bndry_func(geom[lev-1],
+                                    m_bcrec_velocity,
+                                    IncfloVelFill{m_probtype, m_bc_velocity});
+                Array<PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>,AMREX_SPACEDIM>
+                    cbndyFuncArr = {AMREX_D_DECL(crse_bndry_func,crse_bndry_func,crse_bndry_func)};
+
+                // Use piecewise constant interpolation in time, so create dummy variable for time
+                Real fake_time = 0.;
+                Array<int, AMREX_SPACEDIM> idx = {AMREX_D_DECL(0,1,2)};
+                FillPatchTwoLevels(u_fine, IntVect(nghost_mac()), fake_time,
+                                   {u_crse}, {fake_time},
+                                   {u_fine}, {fake_time},
+                                   0, 0, 1,
+                                   geom[lev-1], geom[lev],
+                                   cbndyFuncArr, idx, fbndyFuncArr, idx,
+                                   rr, mapper, bcrecArr, idx);
+            }
+        } // end umac fill
 
         divu[lev].setVal(0.);
         Array<MultiFab const*, AMREX_SPACEDIM> u;
@@ -216,9 +251,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         if (!ebfact_old.isAllRegular()) {
             if (m_eb_flow.enabled) {
-               amrex::EB_computeDivergence(divu[lev],u,geom[lev],true,*get_velocity_eb()[lev]);
+                amrex::EB_computeDivergence(divu[lev],u,geom[lev],true,*get_velocity_eb()[lev]);
             } else {
-               amrex::EB_computeDivergence(divu[lev],u,geom[lev],true);
+                amrex::EB_computeDivergence(divu[lev],u,geom[lev],true);
             }
         }
         else
@@ -248,30 +283,30 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int ncomp = AMREX_SPACEDIM;
             bool is_velocity = true;
             HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
-                                                  vel[lev]->const_array(mfi),
-                                     AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
-                                                  flux_y[lev].array(mfi,face_comp),
-                                                  flux_z[lev].array(mfi,face_comp)),
-                                     AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
-                                                  face_y[lev].array(mfi,face_comp),
-                                                  face_z[lev].array(mfi,face_comp)),
-                                     knownFaceStates,
-                                     AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                  v_mac[lev]->const_array(mfi),
-                                                  w_mac[lev]->const_array(mfi)),
-                                     divu_arr,
-                                     (!vel_forces.empty()) ? vel_forces[lev]->const_array(mfi) : Array4<Real const>{},
-                                     geom[lev], m_dt,
-                                     get_velocity_bcrec(),
-                                     get_velocity_bcrec_device_ptr(),
-                                     get_velocity_iconserv_device_ptr(),
+                                                     vel[lev]->const_array(mfi),
+                                                     AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
+                                                                  flux_y[lev].array(mfi,face_comp),
+                                                                  flux_z[lev].array(mfi,face_comp)),
+                                                     AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
+                                                                  face_y[lev].array(mfi,face_comp),
+                                                                  face_z[lev].array(mfi,face_comp)),
+                                                     knownFaceStates,
+                                                     AMREX_D_DECL(u_mac[lev]->const_array(mfi),
+                                                                  v_mac[lev]->const_array(mfi),
+                                                                  w_mac[lev]->const_array(mfi)),
+                                                     divu_arr,
+                                                     (!vel_forces.empty()) ? vel_forces[lev]->const_array(mfi) : Array4<Real const>{},
+                                                     geom[lev], m_dt,
+                                                     get_velocity_bcrec(),
+                                                     get_velocity_bcrec_device_ptr(),
+                                                     get_velocity_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
                                      ebfact_old,
                                      m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
 #endif
-                                     m_godunov_ppm, m_godunov_use_forces_in_trans,
-                                     is_velocity, fluxes_are_area_weighted,
-                                     m_advection_type);
+                                                     m_godunov_ppm, m_godunov_use_forces_in_trans,
+                                                     is_velocity, fluxes_are_area_weighted,
+                                                     m_advection_type);
 
 
             // ************************************************************************
@@ -283,29 +318,29 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 ncomp = 1;
                 is_velocity = false;
                 HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
-                                                       density[lev]->const_array(mfi),
-                                          AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
-                                                       flux_y[lev].array(mfi,face_comp),
-                                                       flux_z[lev].array(mfi,face_comp)),
-                                          AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
-                                                       face_y[lev].array(mfi,face_comp),
-                                                       face_z[lev].array(mfi,face_comp)),
-                                          knownFaceStates,
-                                          AMREX_D_DECL(u_mac[lev]->const_array(mfi),
-                                                       v_mac[lev]->const_array(mfi),
-                                                       w_mac[lev]->const_array(mfi)),
-                                          divu_arr, Array4<Real const>{},
-                                          geom[lev], m_dt,
-                                          get_density_bcrec(),
-                                          get_density_bcrec_device_ptr(),
-                                          get_density_iconserv_device_ptr(),
+                                                         density[lev]->const_array(mfi),
+                                                         AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
+                                                                      flux_y[lev].array(mfi,face_comp),
+                                                                      flux_z[lev].array(mfi,face_comp)),
+                                                         AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
+                                                                      face_y[lev].array(mfi,face_comp),
+                                                                      face_z[lev].array(mfi,face_comp)),
+                                                         knownFaceStates,
+                                                         AMREX_D_DECL(u_mac[lev]->const_array(mfi),
+                                                                      v_mac[lev]->const_array(mfi),
+                                                                      w_mac[lev]->const_array(mfi)),
+                                                         divu_arr, Array4<Real const>{},
+                                                         geom[lev], m_dt,
+                                                         get_density_bcrec(),
+                                                         get_density_bcrec_device_ptr(),
+                                                         get_density_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
                                           ebfact_old,
                                           m_eb_flow.enabled ? get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
 #endif
-                                          m_godunov_ppm, m_godunov_use_forces_in_trans,
-                                          is_velocity, fluxes_are_area_weighted,
-                                          m_advection_type);
+                                                         m_godunov_ppm, m_godunov_use_forces_in_trans,
+                                                         is_velocity, fluxes_are_area_weighted,
+                                                         m_advection_type);
             }
 
             // ************************************************************************

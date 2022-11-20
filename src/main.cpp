@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
         amrex::Print() << "incflo git hash: " << githash_incflo << "\n";
 
         // Start timing the program
-        Real start_time = ParallelDescriptor::second();
+        Real start_time = Real(ParallelDescriptor::second());
 
         // Default constructor. Note inheritance: incflo : AmrCore : AmrMesh.
         incflo my_incflo;
@@ -48,13 +48,13 @@ int main(int argc, char* argv[])
         my_incflo.InitData();
 
         // Time spent on initialization
-        Real init_time = ParallelDescriptor::second() - start_time;
+        Real init_time = Real(ParallelDescriptor::second()) - start_time;
 
         // Evolve system to final time
         my_incflo.Evolve();
 
         // Time spent in total
-        Real end_time = ParallelDescriptor::second() - start_time;
+        Real end_time = Real(ParallelDescriptor::second()) - start_time;
 
         ParallelDescriptor::ReduceRealMax(init_time, ParallelDescriptor::IOProcessorNumber());
         ParallelDescriptor::ReduceRealMax(end_time, ParallelDescriptor::IOProcessorNumber());
