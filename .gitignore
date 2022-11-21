@@ -64,4 +64,6 @@ test_2d_moving/tmp_build_dir/
 test_2d_moving/Backtrace.0
 
 # ignore other test dirs
-test_2d/*
+#test_2d/
+#test_3d/
+#test_no_eb_3d/
