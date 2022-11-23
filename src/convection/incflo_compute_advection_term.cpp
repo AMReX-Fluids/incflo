@@ -105,6 +105,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
 
     Vector<MultiFab> divu(finest_level+1);
+    Vector<MultiFab> rhovel(finest_level+1);
     Vector<MultiFab> rhotrac(finest_level+1);
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > fluxes(finest_level+1);
@@ -121,6 +122,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
            flux_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev)););
 
         divu[lev].define(vel[lev]->boxArray(),dmap[lev],1,4,MFInfo(),Factory(lev));
+        if (m_advect_momentum)
+            rhovel[lev].define(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,
+			       vel[lev]->nGrow(),MFInfo(),Factory(lev));
         if (m_advect_tracer && m_ntrac > 0)
             rhotrac[lev].define(vel[lev]->boxArray(),dmap[lev],tracer[lev]->nComp(),
                                 tracer[lev]->nGrow(),MFInfo(),Factory(lev));
@@ -264,7 +268,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         divu[lev].FillBoundary(geom[lev].periodicity());
 
         // ************************************************************************
-        // Define (rho*trac)
+        // Compute advective fluxes
         // ************************************************************************
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -278,11 +282,47 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             // ************************************************************************
             // Velocity
             // ************************************************************************
+            // Not sure if this temporary for rho*forces is the best option...
+            FArrayBox rhovel_f;
+            if ( m_advect_momentum )
+            {
+                // create rho*U
+
+                // Note we must actually grow the tilebox, not use growntilebox, because
+                // we want to use this immediately below and we need all the "ghost cells" of
+                // the tiled region
+                Box const& bxg = amrex::grow(bx,vel[lev]->nGrow());
+
+                Array4<Real const> U       =     vel[lev]->const_array(mfi);
+                Array4<Real const> rho     = density[lev]->const_array(mfi);
+                Array4<Real      > rho_vel =  rhovel[lev].array(mfi);
+
+                amrex::ParallelFor(bxg, AMREX_SPACEDIM,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    rho_vel(i,j,k,n) = rho(i,j,k) * U(i,j,k,n);
+                });
+
+                if (!vel_forces.empty())
+                {
+                    Box const& fbx = amrex::grow(bx,nghost_force());
+                    rhovel_f.resize(fbx, AMREX_SPACEDIM, The_Async_Arena());
+                    Array4<Real const> vf        = vel_forces[lev]->const_array(mfi);
+                    Array4<Real      > rho_vel_f =  rhovel_f.array();
+
+                    amrex::ParallelFor(fbx, AMREX_SPACEDIM,
+                    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                    {
+                        rho_vel_f(i,j,k,n) = rho(i,j,k) * vf(i,j,k,n);
+                    });
+                }
+            }
+
             int face_comp = 0;
             int ncomp = AMREX_SPACEDIM;
             bool is_velocity = true;
             HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
-                                                     vel[lev]->const_array(mfi),
+                                                     (m_advect_momentum) ? rhovel[lev].array(mfi) : vel[lev]->const_array(mfi),
                                                      AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
                                                                   flux_y[lev].array(mfi,face_comp),
                                                                   flux_z[lev].array(mfi,face_comp)),
@@ -294,7 +334,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                                   v_mac[lev]->const_array(mfi),
                                                                   w_mac[lev]->const_array(mfi)),
                                                      divu_arr,
-                                                     (!vel_forces.empty()) ? vel_forces[lev]->const_array(mfi) : Array4<Real const>{},
+                                                     (vel_forces.empty())
+                                                         ? Array4<Real const>{}
+                                                         : m_advect_momentum
+                                                             ? rhovel_f.const_array()
+                                                             : vel_forces[lev]->const_array(mfi),
                                                      geom[lev], m_dt,
                                                      get_velocity_bcrec(),
                                                      get_velocity_bcrec_device_ptr(),
@@ -469,19 +513,22 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           mult, fluxes_are_area_weighted);
 #endif
 
-            // If convective, we define u dot grad u = div (u u) - u div(u)
-            HydroUtils::ComputeConvectiveTerm(bx, num_comp, mfi,
-                                              vel[lev]->array(mfi,0),
-                                              AMREX_D_DECL(face_x[lev].array(mfi),
-                                                           face_y[lev].array(mfi),
-                                                           face_z[lev].array(mfi)),
-                                              divu[lev].array(mfi),
-                                              update_arr,
-                                              get_velocity_iconserv_device_ptr(),
+            if (!m_advect_momentum)
+            {
+                // For convective, we define u dot grad u = div (u u) - u div(u)
+                HydroUtils::ComputeConvectiveTerm(bx, num_comp, mfi,
+                                                  vel[lev]->array(mfi,0),
+                                                  AMREX_D_DECL(face_x[lev].array(mfi),
+                                                               face_y[lev].array(mfi),
+                                                               face_z[lev].array(mfi)),
+                                                  divu[lev].array(mfi),
+                                                  update_arr,
+                                                  get_velocity_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                                              *ebfact,
+                                                  *ebfact,
 #endif
-                                              m_advection_type);
+                                                  m_advection_type);
+            }
         } // end mfi
 
         // Note: density is always updated conservatively -- we do not provide an option for
@@ -575,7 +622,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
             Box const& bx = mfi.tilebox();
             redistribute_convective_term (bx, mfi,
-                                          vel[lev]->const_array(mfi),
+                                          (m_advect_momentum) ? rhovel[lev].const_array(mfi) : vel[lev]->const_array(mfi),
                                           density[lev]->const_array(mfi),
                                           (m_advect_tracer && (m_ntrac>0)) ? rhotrac[lev].const_array(mfi) : Array4<Real const>{},
                                           dvdt_tmp.array(mfi),
