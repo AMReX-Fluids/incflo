@@ -6,7 +6,7 @@ using namespace amrex;
 //
 //  1. Use u = vel_old to compute
 //
-//      if (advect_momentum) then
+//      if (!advect_momentum) then
 //          conv_u  = - u grad u
 //      else
 //          conv_u  = - del dot (rho u u)
@@ -104,6 +104,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                           1, ngmac, MFInfo(), Factory(lev));,
                      w_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
                           1, ngmac, MFInfo(), Factory(lev)););
+        // do we still want to do this now that we always call a FillPatch (and all ghost cells get filled)?
         if (ngmac > 0) {
             AMREX_D_TERM(u_mac[lev].setBndry(0.0);,
                          v_mac[lev].setBndry(0.0);,

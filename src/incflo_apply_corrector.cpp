@@ -8,7 +8,7 @@ using namespace amrex;
 //
 //  1. Use u = vel_pred to compute
 //
-//      if (advect_momentum) then
+//      if (!advect_momentum) then
 //          conv_u  = - u grad u
 //      else
 //          conv_u  = - del dot (rho u u)
