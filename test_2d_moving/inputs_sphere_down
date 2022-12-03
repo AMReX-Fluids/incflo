@@ -27,7 +27,6 @@ incflo.ro_0             =   1.          # Reference density
 
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
-incflo.constant_density =   true        #
 incflo.constant_density =   false        #
 
 incflo.advection_type        =  "Godunov" 
