@@ -10,6 +10,10 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
 {
     auto const& dx = lev_geom.CellSizeArray();
 
+    ParmParse pp("incflo");
+    Real visc_coef=0.001;
+    pp.query("mu",visc_coef);
+
     // Taylor-Green vortices
     if (1 == m_probtype)
     {
@@ -70,8 +74,6 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
 
             constexpr Real u0 = Real(1.0);
             constexpr Real v0 = Real(1.0);
-
-            constexpr Real visc_coef = Real(0.001);
 
             Real omega = pi * pi * visc_coef;
 
