@@ -26,7 +26,6 @@ incflo.gravity          =   0.  0.      # Gravitational force (3D)
 incflo.ro_0             =   1.          # Reference density 
 
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
-incflo.mu               =   0.001       # Dynamic viscosity coefficient
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
@@ -70,7 +69,7 @@ box.Hi =  3.80   1.80
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.ic_u             =   0.0         #
+incflo.ic_u             =  -2.0         #
 incflo.ic_v             =   0.0         #
 incflo.ic_p             =   0.0         #
 
