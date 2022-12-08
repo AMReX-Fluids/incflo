@@ -40,10 +40,10 @@ Redistribution::MakeITracker ( Box const& bx,
     // |  4   5
     // j  1 2 3
     //   i --->
-
+    // Note the first component should never get used (it refers to the cell itself, the blank in the center above)
     Array<int,9> imap{0,-1,0,1,-1,1,-1,0,1};
     Array<int,9> jmap{0,-1,-1,-1,0,0,1,1,1};
-
+    // CEG for reciprocity with newly uncovered cells
     Array<int,9> nmap{0,0,7,0,5,4,0,2,0};
 
     const auto& is_periodic_x = lev_geom.isPeriodic(0);
@@ -69,7 +69,7 @@ Redistribution::MakeITracker ( Box const& bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
        // We check for cut-cells in the new geometry 
-       if ((vfrac_new(i,j,k)  > 0.0 && vfrac_new(i,j,k) < 1.0))
+       if ((vfrac_new(i,j,k)  > 0.0 && vfrac_new(i,j,k) < target_volfrac))
        {
            Real apnorm, apnorm_inv, dapx, dapy;
            
@@ -77,17 +77,19 @@ Redistribution::MakeITracker ( Box const& bx,
            //dapy = apy_new(i,j+1,k) - apy_new(i,j,k);
           
 
-	   // Old way
- 	   if ( (vfrac_old(i,j,k) - vfrac_new(i,j,k) < 0.0) )
-	   {
-	   	dapx = apx_new(i,j,k) - apx_new(i+1, j, k);
-		dapy = apy_new(i,j,k) - apy_new(i,j+1, k);
-	   } else {
-	   	dapx = apx_new(i+1,j,k) - apx_new(i,j,k);
-		dapy = apy_new(i,j+1,k) - apy_new(i,j,k);
-	   }
+           // CEG: Matthew's first pass at trying to select for cut cells behind the flow
+           // of the EB, specifically covered-to-cut cells
+	   // Start with normal and flip sign to select movement of EB
+           if ( (vfrac_new(i,j,k) - vfrac_old(i,j,k) > 0.0) )
+           {
+                dapx = apx_new(i,j,k) - apx_new(i+1, j, k);
+                dapy = apy_new(i,j,k) - apy_new(i,j+1, k);
+           } else {
+                dapx = apx_new(i+1,j,k) - apx_new(i,j,k);
+                dapy = apy_new(i,j+1,k) - apy_new(i,j,k);
+           }
 
-	   
+           
            apnorm = std::sqrt(dapx*dapx+dapy*dapy);
            apnorm_inv = 1.0/apnorm;
            Real nx = dapx * apnorm_inv;
@@ -96,38 +98,37 @@ Redistribution::MakeITracker ( Box const& bx,
            bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
                              (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
 
-           // As a first pass, choose just based on the normal,
-           // but don't merge with previously covered cells.
+	   // need a tolerance/eps here...
            if (std::abs(nx) > std::abs(ny)) {
                if (nx > 0) {
-                        if (vfrac_new(i-1,j,k) == 0. && vfrac_old(i-1,j,k) == 0.){
-                            itracker(i,j,k,1) = 5;
-                        } else {
-                            itracker(i,j,k,1) = 4;
-                        }
+                   if (vfrac_new(i-1,j,k) == 0. && vfrac_old(i-1,j,k) == 0.){
+                       itracker(i,j,k,1) = 5;
                    } else {
-                        if (vfrac_new(i+1,j,k) == 0. && vfrac_old(i+1,j,k) == 0.){
-                            itracker(i,j,k,1) = 4;
-                        } else {
-                            itracker(i,j,k,1) = 5;
-                        }
+                       itracker(i,j,k,1) = 4;
                    }
                } else {
-               if (ny > 0) {
-                        if (vfrac_new(i,j-1,k) == 0. && vfrac_old(i,j-1,k) == 0.){
-                            itracker(i,j,k,1) = 7;
-                        } else {
-                            itracker(i,j,k,1) = 2;
-                        }
+                   if (vfrac_new(i+1,j,k) == 0. && vfrac_old(i+1,j,k) == 0.){
+                       itracker(i,j,k,1) = 4;
                    } else {
-                        if (vfrac_new(i,j+1,k) == 0. && vfrac_old(i,j+1,k) == 0.){
-                            itracker(i,j,k,1) = 2; 
-                        } else {
-                            itracker(i,j,k,1) = 7;
-                        }
+                       itracker(i,j,k,1) = 5;
                    }
                }
-           
+           } else {
+               if (ny > 0) {
+                   if (vfrac_new(i,j-1,k) == 0. && vfrac_old(i,j-1,k) == 0.){
+                       itracker(i,j,k,1) = 7;
+                   } else {
+                       itracker(i,j,k,1) = 2;
+                   }
+               } else {
+                   if (vfrac_new(i,j+1,k) == 0. && vfrac_old(i,j+1,k) == 0.){
+                       itracker(i,j,k,1) = 2; 
+                   } else {
+                       itracker(i,j,k,1) = 7;
+                   }
+               }
+           }
+
            bool xdir_mns_ok = (is_periodic_x || (i > domain.smallEnd(0)));
            bool xdir_pls_ok = (is_periodic_x || (i < domain.bigEnd(0)  ));
            bool ydir_mns_ok = (is_periodic_y || (j > domain.smallEnd(1)));
@@ -165,6 +166,7 @@ Redistribution::MakeITracker ( Box const& bx,
                  
 #if 1
            // If the merged cell isn't large enough, we try to merge in the other direction
+           // CEG: above, hard-coded target_vol_frac==1, but here we're perhaps not consistent....
            if ((sum_vol < target_volfrac || nx_eq_ny) && 0)
            {
                // Original offset was in y-direction, so we will add to the x-direction
@@ -254,7 +256,7 @@ Redistribution::MakeITracker ( Box const& bx,
 #endif
        }
     });
-#if 1
+#if 0
     amrex::Print() << "\nInitial Cell Merging" << std::endl;
 
     amrex::ParallelFor(Box(itracker),
@@ -363,7 +365,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
-#if 1
+#if 0
     amrex::Print() << "Post Update to Cell Merging" << std::endl;
 
     amrex::ParallelFor(Box(itracker),

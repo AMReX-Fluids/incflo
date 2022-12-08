@@ -121,6 +121,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
             if (itracker(i,j,k,0) > 0)
                 //alpha(i,j,k,1) = (target_vol - vfrac_new(i,j,k)) / vol_of_nbors;
                 alpha(i,j,k,1) = 1.;
+// CEG why would we do this? alpha = 1 is the no-merge case, right? target vfrac ==1 may be causing inconsistency here....
 
         } else {
             nbhd_vol(i,j,k) = 0.;

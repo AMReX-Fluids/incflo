@@ -102,6 +102,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     Array4<Real> soln_hat = soln_hat_fab.array();
     Elixir   eli_soln_hat = soln_hat_fab.elixir();
 
+#if 0
     // Show "VOLD / VNEW / UIN
     amrex::ParallelFor(bxg3,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -113,7 +114,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 		}
 	}
     });
-
+#endif
+    
     // Define Qhat (from Berger and Guliani)
     // Here we initialize soln_hat to equal U_in on all cells in bxg3 so that
     //      in the event we need to use soln_hat 3 cells out from the bx limits
@@ -155,11 +157,11 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             for (int n = 0; n < ncomp; n++)  
                 soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
 	    
-	    for (int n = 0; n < ncomp; n++){
-            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0)
-                amrex::Print() << "QHAT NBVOL " << IntVect(i,j) << " " << soln_hat(i,j,k,n) << " " <<  nbhd_vol(i,j,k) << std::endl;;
+	    // for (int n = 0; n < ncomp; n++){
+            // if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0)
+            //     amrex::Print() << "QHAT NBVOL " << IntVect(i,j) << " " << soln_hat(i,j,k,n) << " " <<  nbhd_vol(i,j,k) << std::endl;;
         	
-	    }
+	    // }
 	}
     });
 
@@ -317,9 +319,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                 U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
                 amrex::Print() << "Adding new fix here: U_out" << IntVect(i,j) << ": " << U_out(i,j,k,n) << std::endl;
             }
-            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) 
-                amrex::Print() << "VFRAC / UOUT " << IntVect(i,j) << " " << 
-                vfrac_new(i,j,k) << " " << U_out(i,j,k,n) << std::endl;
+            // if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) 
+            //     amrex::Print() << "VFRAC / UOUT " << IntVect(i,j) << " " << 
+            //     vfrac_new(i,j,k) << " " << U_out(i,j,k,n) << std::endl;
         }
         else
         {
@@ -327,7 +329,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         }
     });
 
-#if 0 
+#if 0
     //
     // This tests whether the redistribution procedure was conservative --
     //      only use if bx is the whole domain

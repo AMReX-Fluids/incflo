@@ -82,9 +82,12 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         amrex::Print() << "Redist for velocity " << std::endl;
         // std::string vel_redistribution_type = "NoRedist";
 
+	// FIXME - do we want to have moving SRD here or regular? Don't need both
+	// moving SRD and nodal with flow through? How would it hurt to do both?
         Redistribution::Apply(bx, AMREX_SPACEDIM, dvdt, dvdt_tmp, vel, scratch, flag,
                               AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                               AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+			      //AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
                               bc_vel, lev_geom, l_dt, l_redistribution_type);
 

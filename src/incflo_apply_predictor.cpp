@@ -262,6 +262,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 {
                     if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
                     {
+			// FIXME? Seems inconsistent that there's no dt here, but then it exists below....
                         rho_new(i,j,k) = drdt(i,j,k);
                     } else {
                         rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
@@ -296,8 +297,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  {
                      rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
                      
-                     if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)) 
-                         amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl; 
+                     // if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)) 
+                     //     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl; 
                  });
             } // mfi
         } // lev
@@ -554,7 +555,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Update the moving geometry and arrays
     //
     // **********************************************************************************************
-    ApplyProjection(GetVecOfConstPtrs(density_nph_oldeb),new_time,m_dt,incremental_projection);
+// CEG not sure why we would apply projection here. unless this intermediate is needed to get final proj to converge...
+//    ApplyProjection(GetVecOfConstPtrs(density_nph_oldeb),new_time,m_dt,incremental_projection);
 
     if (!incremental_projection) {
         for (int lev = 0; lev <= finest_level; lev++)
@@ -573,7 +575,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
     
     // *************************************************************************************
-    // Update density first
+    // Update density^n+1/2 first
     // *************************************************************************************
     if (l_constant_density)
     {
@@ -605,10 +607,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
+                    // FIXME? what happens with newly uncovered cells here? how have covered cells in rho_old been set?
                     rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
                     if (rho_nph(i,j,k) < 0.0){
                     // if (i == 34 && j == 46 || i == 29 && j == 17){
-                        amrex::Print() << "Negative Density rho_nph(" << i << ", " << j << "): " << rho_nph(i,j,0) << std::endl;
+                        amrex::Print() << "Negative Density rho_nph(" << i << ", " << j << "): "
+				       << rho_nph(i,j,0) << std::endl;
                         amrex::Print() << "rho_old(" << i << ", " << j << "): " << rho_old(i,j,0) << std::endl;
                         amrex::Print() << "rho_new(" << i << ", " << j << "): " << rho_new(i,j,0) << std::endl;
                     }

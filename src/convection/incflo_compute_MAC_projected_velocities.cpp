@@ -130,7 +130,7 @@ incflo::compute_MAC_projected_velocities (
 
     macproj->setUMAC(mac_vec);
 
-    // Right now we're just doing this for single-level
+    // FIXME Right now we're just doing this for single-level
     AMREX_ALWAYS_ASSERT(finest_level == 0);
     MultiFab* mac_rhs;
 
@@ -138,49 +138,53 @@ incflo::compute_MAC_projected_velocities (
     if (m_eb_flow.enabled) {
        for (int lev=0; lev <= finest_level; ++lev)
        {
-          mac_rhs = new MultiFab(grids[lev],dmap[lev],1,0);
+	   //
+	   // Use delta-V correction instead of flow through EB
+	   //
+//           mac_rhs = new MultiFab(grids[lev],dmap[lev],1,0); //Use unique pointer here, remove delete
 
-          auto const& vfrac_old  = OldEBFactory(lev).getVolFrac();
-          auto const& vfrac_new  =    EBFactory(lev).getVolFrac();
+//           auto const& vfrac_old  = OldEBFactory(lev).getVolFrac();
+//           auto const& vfrac_new  =    EBFactory(lev).getVolFrac();
 
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-          for (MFIter mfi(*mac_rhs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
-          {
-              Box const& bx = mfi.tilebox();
+// #ifdef _OPENMP
+// #pragma omp parallel if (Gpu::notInLaunchRegion())
+// #endif
+//           for (MFIter mfi(*mac_rhs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+//           {
+//               Box const& bx = mfi.tilebox();
 
-              Array4<Real const> const& vfold_arr  =  vfrac_old.const_array(mfi);
-              Array4<Real const> const& vfnew_arr  =  vfrac_new.const_array(mfi);
-              Array4<Real      > const&   divu_arr = mac_rhs->array(mfi);
+//               Array4<Real const> const& vfold_arr  =  vfrac_old.const_array(mfi);
+//               Array4<Real const> const& vfnew_arr  =  vfrac_new.const_array(mfi);
+//               Array4<Real      > const&   divu_arr = mac_rhs->array(mfi);
 
-              amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-              {
-                  if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0))
-                  {
-                      if (vfnew_arr(i,j,k) == 1.){
-		        // Matt: add in the hack to account for the condition where a new cell becomes uncovered.
-			Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k) + vfnew_arr(i-1,j,k) - vfold_arr(i-1,j,k);
-		        divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
-		      } else {
-		      	Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-                      	divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
-		      }
-		      //amrex::Print() << "inside divu " << IntVect(i,j) << divu_arr(i,j,k) << std::endl; 
+//               amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//               {
+//                   if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0))
+//                   {
+//                       if (vfnew_arr(i,j,k) == 1.){
+// 			  //CEG -- are we missing a factor of half here?
+// 			Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k) + vfnew_arr(i-1,j,k) - vfold_arr(i-1,j,k);
+// 		        divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
+// 		      } else {
+// 		      	Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
+//                       	divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
+// 		      }
+// 		      //amrex::Print() << "inside divu " << IntVect(i,j) << divu_arr(i,j,k) << std::endl; 
           
-		  } else {
-                      divu_arr(i,j,k) = 0.;
-                  }
+// 		  } else {
+//                       divu_arr(i,j,k) = 0.;
+//                   }
 
-                  if (j == 10)
-		    amrex::Print() << "inside divu " << IntVect(i,j) << divu_arr(i,j,k) << std::endl; 
-              });
-          }
+//                   if (j == 10)
+// 		    amrex::Print() << "inside divu " << IntVect(i,j) << divu_arr(i,j,k) << std::endl; 
+//               });
+//           }
+	   // macproj->setDivU({mac_rhs});
 
-          // Pass no-flow EB into MAC
-          // macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
-
-          macproj->setDivU({mac_rhs});
+	   //
+	   // Pass EB flow BC into MAC, no RHS correction
+	   //
+           macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
        }
     }
 #endif
@@ -205,7 +209,7 @@ incflo::compute_MAC_projected_velocities (
         macproj->project(m_mac_mg_rtol,m_mac_mg_atol);
     }
 
-    delete mac_rhs;
+    //delete mac_rhs;
 
     // Note that the macproj->project call above ensures that the MAC velocities are averaged down --
     //      we don't need to do that again here

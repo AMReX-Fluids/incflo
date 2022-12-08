@@ -124,7 +124,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         divu[lev].define(vel[lev]->boxArray(),dmap[lev],1,4,MFInfo(),Factory(lev));
         if (m_advect_momentum)
             rhovel[lev].define(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,
-			       vel[lev]->nGrow(),MFInfo(),Factory(lev));
+                               vel[lev]->nGrow(),MFInfo(),Factory(lev));
         if (m_advect_tracer && m_ntrac > 0)
             rhotrac[lev].define(vel[lev]->boxArray(),dmap[lev],tracer[lev]->nComp(),
                                 tracer[lev]->nGrow(),MFInfo(),Factory(lev));
@@ -345,8 +345,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                      get_velocity_bcrec_device_ptr(),
                                                      get_velocity_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                                     ebfact_old,
-                                     m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                     ebfact_old,
+                                                     m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
 #endif
                                                      m_godunov_ppm, m_godunov_use_forces_in_trans,
                                                      is_velocity, fluxes_are_area_weighted,
@@ -379,8 +379,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                          get_density_bcrec_device_ptr(),
                                                          get_density_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                                          ebfact_old,
-                                          m_eb_flow.enabled ? get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                         ebfact_old,
+                                                         m_eb_flow.enabled ? get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
 #endif
                                                          m_godunov_ppm, m_godunov_use_forces_in_trans,
                                                          is_velocity, fluxes_are_area_weighted,
@@ -471,7 +471,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         dtdt_tmp.setVal(0.);
 
         const EBFArrayBoxFactory* ebfact_new = &EBFactory(lev);
-        auto const& vfrac_new = ebfact_new->getVolFrac();
+        // auto const& vfrac_new = ebfact_new->getVolFrac();
 
         const EBFArrayBoxFactory* ebfact_old = &OldEBFactory(lev);
         auto const& vfrac_old = ebfact_old->getVolFrac();
@@ -486,6 +486,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
             Box const& bx = mfi.tilebox();
 
+	    Print()<<"Vel advection term..."<<std::endl;
+	    
             int flux_comp = 0;
             int  num_comp = AMREX_SPACEDIM;
 #ifdef AMREX_USE_EB
@@ -540,17 +542,21 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         if (!m_constant_density)
         {
           int flux_comp = AMREX_SPACEDIM;
-         
+
           auto const& vfrac_old = ebfact_old->getVolFrac();
-          auto const& vfrac_new = ebfact_new->getVolFrac();
-          
+          // auto const& vfrac_new = ebfact_new->getVolFrac();
+
           for (MFIter mfi(*conv_r[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
 
-            auto const& div_ru = drdt_tmp.array(mfi);
-	    
 #ifdef AMREX_USE_EB
+            //
+            // FIXME - need to create a get_density_eb() function for this. Try using
+            // the average cell value first...
+            //
+	    Print()<<"Density advection term..."<<std::endl;
+	    
             EBCellFlagFab const& flagfab = ebfact_old->getMultiEBCellFlagFab()[mfi];
             if (flagfab.getType(bx) != FabType::covered)
                 HydroUtils::EB_ComputeDivergence(bx, drdt_tmp.array(mfi),
@@ -576,26 +582,30 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           1, geom[lev], mult,
                                           fluxes_are_area_weighted);
 #endif
-          
 
- 
-            Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
-            Array4<Real const> const& vfold_arr = vfrac_old.const_array(mfi);
-            
-            Real dx = geom[lev].CellSize()[0];
 
-            amrex::ParallelFor(bx, 1, [=]
-            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-	    	  if (vfnew_arr(i,j,k) > 0. && vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.)
-                  {
-                      Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-                      div_ru(i,j,k,n) += delta_vol/m_dt/vfold_arr(i,j,k);
-                  }
+            // //
+            // // Compute a delta-V correction instead of using flow through EB
+            // // Make sure get_XXX_eb() returns zero. How is this computed, do both need to be zero?
+            // // no, we always compute conservative first
+            // //
+            // Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
 
-                  if (j == 10)
-                      amrex::Print() << "div_u" << IntVect(i,j) << ": " << div_ru(i,j,k,n) << std::endl;
-            });
+            // Real dx = geom[lev].CellSize()[0];
+            // auto const& div_ru = drdt_tmp.array(mfi);
+
+            // amrex::ParallelFor(bx, 1, [=]
+            // AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            // {
+            //    if (vfnew_arr(i,j,k) > 0. && vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.)
+            //       {
+            //           Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
+            //           div_ru(i,j,k,n) += delta_vol/m_dt/vfold_arr(i,j,k);
+            //       }
+
+            //       if (j == 10)
+            //           amrex::Print() << "div_u" << IntVect(i,j) << ": " << div_ru(i,j,k,n) << std::endl;
+            // });
 
           } // mfi
         } // not constant density
