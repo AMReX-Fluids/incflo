@@ -65,6 +65,7 @@ Redistribution::MakeITracker ( Box const& bx,
     Box const& bxg4 = amrex::grow(bx,4);
     Box bx_per_g4= domain_per_grown & bxg4;
 
+    // FIXME So we treat period dirs as if there are 5 grow cells? No, just nodal?
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
@@ -166,7 +167,6 @@ Redistribution::MakeITracker ( Box const& bx,
                  
 #if 1
            // If the merged cell isn't large enough, we try to merge in the other direction
-           // CEG: above, hard-coded target_vol_frac==1, but here we're perhaps not consistent....
            if ((sum_vol < target_volfrac || nx_eq_ny) && 0)
            {
                // Original offset was in y-direction, so we will add to the x-direction
@@ -285,7 +285,8 @@ Redistribution::MakeITracker ( Box const& bx,
     });    
     amrex::Print() << std::endl;
 #endif   
-    
+
+    // FIXME - need to make sure we don't reach outside domain here... Maybe need to change diag plane to wall BCs...
     // Check uncovered and covered cells. Make sure the neighbors also include them.
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -309,15 +310,14 @@ Redistribution::MakeITracker ( Box const& bx,
 	// Add neighboors to uncovered cells
         if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
         {
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-            
-    	    amrex::Print() << "Uncovered Cell " << IntVect(i,j) << std::endl;   
+            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)            
             {
+		amrex::Print() << "Uncovered Cell " << IntVect(i,j) << std::endl;   
                 int ioff = imap[itracker(i,j,k,1)];
                 int joff = jmap[itracker(i,j,k,1)];   
            
-                    itracker(i+ioff,j+joff,k,0) += 1;
-                    itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
+		itracker(i+ioff,j+joff,k,0) += 1;
+		itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
             }
         }
 
