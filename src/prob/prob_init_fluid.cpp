@@ -108,6 +108,14 @@ void incflo::prob_init_fluid (int lev)
                              ld.tracer.array(mfi),
                              domain, dx, problo, probhi);
         }
+        else if (14 == m_probtype)
+        {
+            init_circ_traceradvect(vbx, gbx,
+                                   ld.velocity.array(mfi),
+                                   ld.density.array(mfi),
+                                   ld.tracer.array(mfi),
+                                   domain, dx, problo, probhi);
+        }
         else if (66 == m_probtype)
         {
             init_vortex_in_sphere(vbx, gbx,
@@ -341,6 +349,56 @@ void incflo::init_flow_in_box (Box const& vbx, Box const& /*gbx*/,
        amrex::Error("flow_in_box assumes a periodic direction");
 #endif
     }
+}
+
+void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
+                                     Array4<Real> const& vel,
+                                     Array4<Real> const& density,
+                                     Array4<Real> const& tracer,
+                                     Box const& /*domain*/,
+                                     GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                                     GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
+                                     GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+{
+
+#if (AMREX_SPACEDIM == 3)
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        Real x = (i+0.5)*dx[0];
+        Real y = (j+0.5)*dx[1];
+        Real z = (k+0.5)*dx[2];
+        
+        vel(i,j,k,0) = 1.;
+        vel(i,j,k,1) = 0.5;
+        vel(i,j,k,2) = 0.25;
+
+        density(i,j,k) = 1.;
+
+        Real sum = 0.;
+        for (int kk=0; kk<10; ++kk) {
+            Real zz = (k + (kk+0.5)/10.) * dx[2];
+            for (int jj=0; jj<10; ++jj) {
+                Real yy = (j + (jj+0.5)/10.) * dx[1];
+                for (int ii=0; ii<10; ++ii) {
+                    Real xx = (i + (ii+0.5)/10.) * dx[0];
+        
+                    Real r = std::sqrt( (xx-0.5)*(xx-0.5) + (yy-0.5)*(yy-0.5) + (zz-0.5)*(zz-0.5) );
+
+                    if (r < 0.1) {
+                        sum += 1.;
+                    } else if (r == 0.1) {
+                        sum += 0.5;
+                    }
+
+                }
+            }
+        }
+        
+        tracer(i,j,k) = sum / 1000.;
+
+    });
+#endif
+    
 }
 
 void incflo::init_couette (Box const& vbx, Box const& /*gbx*/,
