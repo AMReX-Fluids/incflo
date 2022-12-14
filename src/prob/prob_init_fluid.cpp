@@ -116,6 +116,14 @@ void incflo::prob_init_fluid (int lev)
                                    ld.tracer.array(mfi),
                                    domain, dx, problo, probhi);
         }
+        else if (15 == m_probtype)
+        {
+            init_gaussian_traceradvect(vbx, gbx,
+                                       ld.velocity.array(mfi),
+                                       ld.density.array(mfi),
+                                       ld.tracer.array(mfi),
+                                       domain, dx, problo, probhi);
+        }
         else if (66 == m_probtype)
         {
             init_vortex_in_sphere(vbx, gbx,
@@ -430,6 +438,39 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
 
     });
 #endif
+    
+}void incflo::init_gaussian_traceradvect (Box const& vbx, Box const& /*gbx*/,
+                                          Array4<Real> const& vel,
+                                          Array4<Real> const& density,
+                                          Array4<Real> const& tracer,
+                                          Box const& /*domain*/,
+                                          GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                                          GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
+                                          GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+{
+    
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        Real x = (i+0.5)*dx[0];
+        Real y = (j+0.5)*dx[1];
+
+        
+        vel(i,j,k,0) = 1.;
+        vel(i,j,k,1) = 1.;
+
+        density(i,j,k) = 1.;
+
+#if (AMREX_SPACEDIM == 2)
+        Real r = std::sqrt( (x-0.5)*(x-0.5) + (y-0.5)*(y-0.5) );
+#elif (AMREX_SPACEDIM == 3)
+        Real z = (k+0.5)*dx[2];
+        vel(i,j,k,2) = 1.;
+        
+        Real r = std::sqrt( (x-0.5)*(x-0.5) + (y-0.5)*(y-0.5) + (z-0.5)*(z-0.5) );
+#endif
+
+        tracer(i,j,k) = exp(-300.*r*r);
+    });
     
 }
 
