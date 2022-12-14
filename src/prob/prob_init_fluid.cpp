@@ -361,7 +361,39 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
                                      GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
 
-#if (AMREX_SPACEDIM == 3)
+#if (AMREX_SPACEDIM == 2)
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        Real x = (i+0.5)*dx[0];
+        Real y = (j+0.5)*dx[1];
+        
+        vel(i,j,k,0) = 1.;
+        vel(i,j,k,1) = 0.5;
+
+        density(i,j,k) = 1.;
+
+        Real sum = 0.;
+        for (int jj=0; jj<10; ++jj) {
+            Real yy = (j + (jj+0.5)/10.) * dx[1];
+            for (int ii=0; ii<10; ++ii) {
+                Real xx = (i + (ii+0.5)/10.) * dx[0];
+
+                Real r = std::sqrt( (xx-0.5)*(xx-0.5) + (yy-0.5)*(yy-0.5) );
+
+                if (r < 0.1) {
+                    sum += 1.;
+                } else if (r == 0.1) {
+                    sum += 0.5;
+                }
+
+            }
+        }
+        
+        tracer(i,j,k) = sum / 100.;
+
+    });   
+    
+#elif (AMREX_SPACEDIM == 3)
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real x = (i+0.5)*dx[0];
