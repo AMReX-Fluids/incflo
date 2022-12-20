@@ -249,6 +249,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                      u[1] = v_mac[lev];,
                      u[2] = w_mac[lev];);
 
+
+	// FIXME -- divu is only used in EBGod in 3D for corner-coupling, and non-conservative adjustment
+	// I *think* transverse and CC are turned off for flow through EB, so don't need to worry about it
 #ifdef AMREX_USE_EB
         const auto& ebfact_old = OldEBFactory(lev);
         const auto& ebfact_new =    EBFactory(lev);
@@ -346,7 +349,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                      get_velocity_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
                                                      ebfact_old,
+#if 0 //def AMREX_USE_MOVING_EB
+						     //FIXME -- here, having EB flow only changes whether  d/dt (e.g. transverse) terms are used or not...
+						     // Moving EB does not let material flux in/out domain through EB
+						     Array4<Real const>{},
+#else
                                                      m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
 #endif
                                                      m_godunov_ppm, m_godunov_use_forces_in_trans,
                                                      is_velocity, fluxes_are_area_weighted,
@@ -380,7 +389,12 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                          get_density_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
                                                          ebfact_old,
+#if 0 //def AMREX_USE_MOVING_EB
+	   					         // Moving EB does not let material flux in/out domain through EB
+							 Array4<Real const>{},
+#else
                                                          m_eb_flow.enabled ? get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
 #endif
                                                          m_godunov_ppm, m_godunov_use_forces_in_trans,
                                                          is_velocity, fluxes_are_area_weighted,
@@ -434,7 +448,12 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           get_tracer_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
                                           ebfact_old,
+#if 0 //def AMREX_USE_MOVING_EB
+					  // Moving EB does not let material flux in/out domain through EB
+					  Array4<Real const>{},
+#else
                                           m_eb_flow.enabled ? get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
 #endif
                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
                                           is_velocity, fluxes_are_area_weighted,
@@ -500,10 +519,15 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac_old.const_array(mfi), num_comp, geom[lev],
                                                  mult, fluxes_are_area_weighted,
+#ifdef AMREX_USE_MOVING_EB
+						 Array4<Real const>{},
+						 Array4<Real const>{},
+#else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact_old->getBndryArea().const_array(mfi) : Array4<Real const>{},
@@ -565,10 +589,15 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac_old.const_array(mfi), 1, geom[lev], mult,
                                                  fluxes_are_area_weighted,
+#ifdef AMREX_USE_MOVING_EB
+						 Array4<Real const>{},
+						 Array4<Real const>{},
+#else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
                                                     get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact_old->getBndryArea().const_array(mfi) : Array4<Real const>{},

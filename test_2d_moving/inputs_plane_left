@@ -9,7 +9,7 @@ steady_state            =  0            # Steady-state solver?
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-incflo.fixed_dt             =   1.e-2       # Use this constant dt if > 0
+incflo.fixed_dt             =   1.25e-3       # Use this constant dt if > 0
 incflo.do_initial_proj      =   0
 incflo.initial_iterations   =   0
 
@@ -59,14 +59,13 @@ xlo.velocity            =   0.0  0.0  0.0
 xhi.type                =   "mi"
 xhi.velocity            =  -2.0 0.0
 
-ylo.type                =   "nsw"
-ylo.velocity            =   0.0  0.0  0.0
+ylo.type                =   "sw"
 
-yhi.type                =   "nsw"
-yhi.velocity            =  0.0 0.0 0.0
+yhi.type                =   "sw"
 
 # Add box
 incflo.geometry = "plane"
+plane.point = -0.05 0.0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #

@@ -15,14 +15,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              Array4<Real      > const& dUdt_in,
                              Array4<Real const> const& U_in,
                              Array4<Real> const& scratch,
-                             Array4<EBCellFlag const> const& flag,
-                             AMREX_D_DECL(Array4<Real const> const& apx_old,
-                                          Array4<Real const> const& apy_old,
-                                          Array4<Real const> const& apz_old),
-                             Array4<amrex::Real const> const& vfrac_old,
+                             Array4<EBCellFlag const> const& flag_old,
+			     Array4<EBCellFlag const> const& flag_new,
                              AMREX_D_DECL(Array4<Real const> const& apx_new,
                                           Array4<Real const> const& apy_new,
                                           Array4<Real const> const& apz_new),
+			     Array4<amrex::Real const> const& vfrac_old,
                              Array4<amrex::Real const> const& vfrac_new,
                              AMREX_D_DECL(Array4<Real const> const& fcx,
                                           Array4<Real const> const& fcy,
@@ -41,12 +39,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            dUdt_out(i,j,k,n) = 0.;
-        });
+    {
+	dUdt_out(i,j,k,n) = 0.;
+    });
 
-    if (redistribution_type == "StateRedist") {
-
+    if (redistribution_type == "StateRedist")
+    {
         Box const& bxg1 = grow(bx,1);
         Box const& bxg2 = grow(bx,2);
         Box const& bxg3 = grow(bx,3);
@@ -54,8 +52,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
 #if (AMREX_SPACEDIM == 2)
         // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
-        //    use the first component of this for the number of neighbors
-        IArrayBox itracker(bxg4,4);
+        //    use the first component of this for the number of neighbors, so 4 comps
+	// For Central Merging we include all surrounding cells, so 9 in 2D
+        IArrayBox itracker(bxg4,9);
         // How many nbhds is a cell in
 #else
         // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
@@ -113,21 +112,27 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             {
                 const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
                 scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n) / scale;
+
+		if (i==9 && j == 8 ){
+		    printf("scratch in: %e \n", scratch(i,j,k,n));
+		}
+
             }
         );
 
         amrex::Print() << "Start itracker" << std::endl;
         
-        MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
-                         AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new, 
+        MakeITracker(bx, flag_old, flag_new,
+		     AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new, 
                      itr, lev_geom, target_volfrac);
        
         amrex::Print() << "Start State Redistribution" << std::endl;
 
-        MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+        MakeStateRedistUtils(bx, flag_old, flag_new, vfrac_new,
+			     ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                              lev_geom, target_volfrac);
         
-        StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac_old, vfrac_new,
+        StateRedistribute(bx, ncomp, dUdt_out, scratch, flag_old, flag_new, vfrac_old, vfrac_new,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
                           itr_const, nrs_const, alpha_const, nbhd_vol_const,
                           cent_hat_const, lev_geom, srd_max_order);
@@ -144,18 +149,17 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 // neighborhood of another cell -- if either of those is true the
                 // value may have changed
                 
-                if (i == 15 && j == 11){
+                if (i == 9 && j == 8){
                     amrex::Print() << "Pre dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
                     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
                 }
 
-                if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.))
+                if ( itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.
+		     || (!flag_old(i,j,k).isRegular() && flag_new(i,j,k).isRegular()) )
                 {
                    const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
 
-                   if (vfrac_old(i,j,k) == 0.){
-                       dUdt_out(i,j,k,n) = dUdt_out(i,j,k,n);
-                   } else {
+                   if (!flag_old(i,j,k).isCovered()){
                        dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
                    }
                 }
@@ -164,7 +168,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                    dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
                 }
 
-                if (i == 15 && j == 11)
+                if (i == 9 && j == 8)
                     amrex::Print() << "Post dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
             }
         );
@@ -190,8 +194,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                      AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
                                                   amrex::Array4<amrex::Real const> const& apy,
                                                   amrex::Array4<amrex::Real const> const& apz),
-                                     amrex::Array4<amrex::Real const> const& vfrac_old,
-                                     amrex::Array4<amrex::Real const> const& vfrac_new,
+                                     amrex::Array4<amrex::Real const> const& vfrac,
                                      AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
                                                   amrex::Array4<amrex::Real const> const& fcy,
                                                   amrex::Array4<amrex::Real const> const& fcz),
@@ -213,7 +216,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,4);
+    IArrayBox itracker(bxg4,9);
 #else
     // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
@@ -254,17 +257,17 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
         U_out(i,j,k,n) = 0.;
     });
 
-    MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac_old, 
-                     AMREX_D_DECL(apx, apy, apz), vfrac_new,
+    MakeITracker(bx, flag, flag,
+		 AMREX_D_DECL(apx, apy, apz), vfrac,
                  itr, lev_geom, target_volfrac);
     
 
-    MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
-                            lev_geom, target_volfrac);
+    MakeStateRedistUtils(bx, flag, flag, vfrac, ccc, itr, nrs,
+			 alpha, nbhd_vol, cent_hat, lev_geom, target_volfrac);
     
 
-    StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac_old, vfrac_new,
-                         AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
+    StateRedistribute(bx, ncomp, U_out, U_in, flag, flag, vfrac, vfrac,
+		      AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
                       itr_const, nrs_const, alpha_const, nbhd_vol_const,
                       cent_hat_const, lev_geom, srd_max_order);
 }
