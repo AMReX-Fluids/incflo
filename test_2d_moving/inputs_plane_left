@@ -9,7 +9,7 @@ steady_state            =  0            # Steady-state solver?
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-incflo.fixed_dt             =   1.25e-3       # Use this constant dt if > 0
+incflo.fixed_dt             =   1.e-2       # Use this constant dt if > 0
 incflo.do_initial_proj      =   0
 incflo.initial_iterations   =   0
 
@@ -29,6 +29,7 @@ incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
+incflo.advect_momentum = 1 
 incflo.advection_type        =  "Godunov" 
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
@@ -59,13 +60,26 @@ xlo.velocity            =   0.0  0.0  0.0
 xhi.type                =   "mi"
 xhi.velocity            =  -2.0 0.0
 
-ylo.type                =   "sw"
+# would need FOEXTRAP here to avoid using EB covered
+# bc amrex fill routines aren't EB aware
+#ylo.type                =   "nsw"
+#yhi.type                =   "nsw"
 
-yhi.type                =   "sw"
+# Hack Dirchlet BCs with mass inflow BC
+ylo.type                =   "mi"
+ylo.velocity            =   -2.0  0.0  0.0
+
+yhi.type                =   "mi"
+yhi.velocity            =   -2.0  0.0  0.0
+
 
 # Add box
 incflo.geometry = "plane"
 plane.point = -0.05 0.0
+#plane.point = -0.04 0.0
+#plane.normal = -1.0 -0.05
+
+
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
@@ -85,4 +99,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #               EB FLOW                 #
 #.......................................#
 eb_flow.velocity        = -2.0 0.0 0.0
-eb_flow.density         = 0.0
+eb_flow.density         = 1.0
