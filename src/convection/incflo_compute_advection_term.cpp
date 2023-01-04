@@ -250,16 +250,20 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                      u[2] = w_mac[lev];);
 
 
-	// FIXME -- divu is only used in EBGod in 3D for corner-coupling, and non-conservative adjustment
-	// I *think* transverse and CC are turned off for flow through EB, so don't need to worry about it
 #ifdef AMREX_USE_EB
         const auto& ebfact_old = OldEBFactory(lev);
         const auto& ebfact_new =    EBFactory(lev);
 
         if (!ebfact_old.isAllRegular()) {
+	    // FIXME -- divu is only used in EBGod in 3D for corner-coupling, and non-conservative adjustment
+	    // I *think* transverse and CC are turned off for flow through EB, so don't need to worry about it
+// For now we don't use flow through EB for advection.
+#ifndef AMREX_MOVING_EB
             if (m_eb_flow.enabled) {
                 amrex::EB_computeDivergence(divu[lev],u,geom[lev],true,*get_velocity_eb()[lev]);
-            } else {
+            } else
+#endif
+	    {
                 amrex::EB_computeDivergence(divu[lev],u,geom[lev],true);
             }
         }
@@ -351,7 +355,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                      ebfact_old,
 #if 0 //def AMREX_USE_MOVING_EB
 						     //FIXME -- here, having EB flow only changes whether  d/dt (e.g. transverse) terms are used or not...
-						     // Moving EB does not let material flux in/out domain through EB
 						     Array4<Real const>{},
 #else
                                                      m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -390,7 +393,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_EB
                                                          ebfact_old,
 #if 0 //def AMREX_USE_MOVING_EB
-	   					         // Moving EB does not let material flux in/out domain through EB
+							 // Here, having flow only mean we don't use any d/dt terms
 							 Array4<Real const>{},
 #else
                                                          m_eb_flow.enabled ? get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -449,7 +452,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_EB
                                           ebfact_old,
 #if 0 //def AMREX_USE_MOVING_EB
-					  // Moving EB does not let material flux in/out domain through EB
+					  // Having flow only means do no use any d/dt terms
 					  Array4<Real const>{},
 #else
                                           m_eb_flow.enabled ? get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -519,6 +522,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac_old.const_array(mfi), num_comp, geom[lev],
                                                  mult, fluxes_are_area_weighted,
+// Don't flux through moving EB, otherwise how do we get conservation?
 #ifdef AMREX_USE_MOVING_EB
 						 Array4<Real const>{},
 						 Array4<Real const>{},
@@ -589,6 +593,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac_old.const_array(mfi), 1, geom[lev], mult,
                                                  fluxes_are_area_weighted,
+// Don't flux through moving EB, otherwise how do we get conservation?
 #ifdef AMREX_USE_MOVING_EB
 						 Array4<Real const>{},
 						 Array4<Real const>{},
@@ -613,10 +618,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
 
 
+	    // Let SRD handle this case of cells going regular to cut.
             // //
             // // Compute a delta-V correction instead of using flow through EB
-            // // Make sure get_XXX_eb() returns zero. How is this computed, do both need to be zero?
-            // // no, we always compute conservative first
             // //
             // Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
 
@@ -659,10 +663,16 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac_old.const_array(mfi), m_ntrac, geom[lev], mult,
                                                  fluxes_are_area_weighted,
+// Don't flux through moving EB, otherwise how do we get conservation?
+#ifdef AMREX_USE_MOVING_EB
+						 Array4<Real const>{},
+						 Array4<Real const>{},
+#else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
                                                     get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact_old->getBndryArea().const_array(mfi) : Array4<Real const>{},

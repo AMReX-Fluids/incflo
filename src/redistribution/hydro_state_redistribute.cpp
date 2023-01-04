@@ -110,7 +110,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         for (int n = 0; n < ncomp; n++){
-	    if (i==9 && j == 8 ){
+	    if (i==16 && j == 8 ){
 	// 	 printf("%e \n", div(i,j,k,n));
 	//      }
 	// if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) || (vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.)){
@@ -142,7 +142,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             for (int n = 0; n < ncomp; n++) {
                 soln_hat(i,j,k,n) = U_in(i,j,k,n) * alpha(i,j,k,0) * vfrac_old(i,j,k);
 	    
-		if (i==9 && j == 8 )
+		if (i==16 && j == 8 )
 		printf("alpha soln_hat: %e %e \n", alpha(i,j,k,0), soln_hat(i,j,k,n));
 	     }
 
@@ -164,7 +164,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     for (int n = 0; n < ncomp; n++){
                         soln_hat(i,j,k,n) += U_in(r,s,t,n) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t);
 
-			if (i==9 && j == 8 )
+			if (i==16 && j == 8 )
 			printf("beta soln_hat: %e %e \n", alpha(i,j,k,1), soln_hat(i,j,k,n));
 		    }
 
@@ -175,7 +175,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 	    
 	    for (int n = 0; n < ncomp; n++){
 //            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0)
-		if (i==9 && j == 8 ){
+		if (i==16 && j == 8 ){
 		    amrex::Print() << "QHAT NBVOL " << IntVect(i,j) << " " << soln_hat(i,j,k,n) << " " <<  nbhd_vol(i,j,k) << std::endl;;
         	
 		}
@@ -225,6 +225,18 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                                  Real y_max = -1.e30; Real y_min = 1.e30;,
                                  Real z_max = -1.e30; Real z_min = 1.e30;);
 
+		    //fixme
+		    // Matthew used old EB for creating this neighborhood polynomial,
+		    // but I don't know that that makes sense, because we want a solution
+		    // at the new time, with the new EB. Plus the weighted nbhd volume was
+		    // created using the new EB, so centroids and such should be at new time, right???
+		    //Print()<<"Making slopes for cell "<<i<<", "<<j<<std::endl;
+		    Array4<EBCellFlag const> const& flag = flag_new;
+			//(flag_old(i,j,k).isCovered()) ? flag_new : flag_old;
+		    // vfrac is only used in slopes to test if ==1, etc. Needs to match flag?
+		    Array4<Real const> const& vfrac = vfrac_new;
+			//(flag_old(i,j,k).isCovered()) ? vfrac_new : vfrac_old;
+					
                     Real slope_stencil_min_width = 0.5;
 #if (AMREX_SPACEDIM == 2)
                     int kk = 0;
@@ -234,7 +246,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     {
                      for(int jj(-1); jj<=1; jj++)
                       for(int ii(-1); ii<=1; ii++)
-                        if (flag_old(i,j,k).isConnected(ii,jj,kk))
+                        if (flag(i,j,k).isConnected(ii,jj,kk))
                         {
                             int r = i+ii; int s = j+jj; int t = k+kk;
 
@@ -262,13 +274,15 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 			// Print()<<"Computing slope for cell "
 			//        <<i<<", "<<j<<": params "<<soln_hat<<", "<<cent_hat
 			//        <<std::endl;
-			//FIXME - the vfrac here is only used for determining regular cells,
-			// Need to use old time data so we don't attempt to use any newly uncovered cells;
+			//FIXME - the vfrac here is only used to check if ==1,
+			// would argue that if vfold ==0, then vfnew should be <1, so don't worry
+			// about using vfrac_new here.
+			// How to ensure we don't attempt to use any newly uncovered cells?
 			// they have no data...
                         // Compute slope using 3x3x3 stencil
                         slopes_eb = amrex_calc_slopes_extdir_eb(
-                                                    i,j,k,n,soln_hat,cent_hat,vfrac_old,
-                                                    AMREX_D_DECL(fcx,fcy,fcz),flag_old,
+                                                    i,j,k,n,soln_hat,cent_hat,vfrac,
+                                                    AMREX_D_DECL(fcx,fcy,fcz),flag,
                                                     AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
                                                     AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
                                                     AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -279,8 +293,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         // Compute slope using grown stencil (no larger than 5x5x5)
                         slopes_eb = amrex_calc_slopes_extdir_eb_grown(
                                                     i,j,k,n,AMREX_D_DECL(nx,ny,nz),
-                                                    soln_hat,cent_hat,vfrac_old,
-                                                    AMREX_D_DECL(fcx,fcy,fcz),flag_old,
+                                                    soln_hat,cent_hat,vfrac,
+                                                    AMREX_D_DECL(fcx,fcy,fcz),flag,
                                                     AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
                                                     AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
                                                     AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
@@ -293,16 +307,18 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     //    which bases the limiting on values extrapolated to the face centroids.
 		    //FIXME - think about which flag we want here
                     amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> lim_slope =
-                        amrex_calc_centroid_limiter(i,j,k,n,soln_hat,flag_old,slopes_eb,cent_hat);
+                        amrex_calc_centroid_limiter(i,j,k,n,soln_hat,flag,slopes_eb,cent_hat);
 
                     AMREX_D_TERM(lim_slope[0] *= slopes_eb[0];,
                                  lim_slope[1] *= slopes_eb[1];,
                                  lim_slope[2] *= slopes_eb[2];);
 
-		    // FIXME! zero the slopes for now. Using slopes loses conservation.
-		    AMREX_D_TERM(lim_slope[0] = 0.;,
-                                 lim_slope[1] = 0.;,
-                                 lim_slope[2] = 0.;);
+		    // FIXME! zero the slopes for now. Using slopes lost conservation for matthew.
+		    // How to create good slopes for newly covered/uncovered cells?
+		    // w/ slopes & WSRD alpha, beta for uncovering cells SRD not conservative
+		    // AMREX_D_TERM(lim_slope[0] = 0.;,
+                    //              lim_slope[1] = 0.;,
+                    //              lim_slope[2] = 0.;);
 					
                     // Add to the cell itself
                     if (bx.contains(IntVect(AMREX_D_DECL(i,j,k))))
@@ -329,7 +345,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                                          update += lim_slope[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2) + static_cast<Real>(t-k)););
                             amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),alpha(i,j,k,1)*update);
 
-			    if (r==9 && s == 8 ){
+			    if (r==16 && s == 8 ){
 				printf("slopes update, U_out: %e %e \n", update, U_out(r,s,t,n));
 			    }
 
@@ -349,15 +365,13 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             Real denom = 1. / (nrs(i,j,k) + 1.e-40);
             U_out(i,j,k,n) *= denom;
 
-	    // FIXME - Is this really what's desired if covered at old time?
-	    // Might argue that timestepping shouldn't allow a cell to go from covered to regular in
-	    // one timestep...
-            if (!flag_old(i,j,k).isRegular() && flag_new(i,j,k).isRegular() && nrs(i,j,k) == 1){
-                U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
-                amrex::Print() << "Adding new fix here: U_out" << IntVect(i,j) << ": " << U_out(i,j,k,n) << std::endl;
-            }
+// U_out = vf_old*U_in is what happens if we just send these newly covered cells through SRD...
+            // if (!flag_old(i,j,k).isRegular() && flag_new(i,j,k).isRegular() && nrs(i,j,k) == 1){
+            //     U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
+            //     amrex::Print() << "Adding new fix here: U_out" << IntVect(i,j) << ": " << U_out(i,j,k,n) << std::endl;
+            // }
 
-	    if (i==9 && j == 8 ){
+	    if (i==8 && j == 8 ){
 		printf("denom, U_out: %e %e \n", denom, U_out(i,j,k,n));
 	    }
 

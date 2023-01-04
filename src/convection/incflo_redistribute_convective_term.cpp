@@ -44,7 +44,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         AMREX_D_TERM(fcx = ebfact_new->getFaceCent()[0]->const_array(mfi);,
                      fcy = ebfact_new->getFaceCent()[1]->const_array(mfi);,
                      fcz = ebfact_new->getFaceCent()[2]->const_array(mfi););
-        ccc   = ebfact_old->getCentroid().const_array(mfi);
+        ccc   = ebfact_new->getCentroid().const_array(mfi);
         AMREX_D_TERM(apx_old = ebfact_old->getAreaFrac()[0]->const_array(mfi);,
                      apy_old = ebfact_old->getAreaFrac()[1]->const_array(mfi);,
                      apz_old = ebfact_old->getAreaFrac()[2]->const_array(mfi););

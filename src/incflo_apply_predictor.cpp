@@ -199,22 +199,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
 
-#if 0
-    // **********************************************************************************************
-    //
-    // Update the moving geometry and arrays
-    //
-    // **********************************************************************************************
 
-    if (!incremental_projection) {
-        for (int lev = 0; lev <= finest_level; lev++)
-        {
-            MakeNewGeometry(lev,new_time);
-        }
-    }
-#endif
-
-// *************************************************************************************
+    // *************************************************************************************
     // if (advection_type == "Godunov")
     //      Compute the explicit advective terms R_u^(n+1/2), R_s^(n+1/2) and R_t^(n+1/2)
     // if (advection_type == "MOL"                )
@@ -263,12 +249,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
                     if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
                     {
 			// FIXME? Seems inconsistent that there's no dt here, but then it exists below....
+			// Apply() at the end, divides out dt but only for !covered at time n
+                        // This just ensures we don't try to use garbage stored in the covered cell.
                         rho_new(i,j,k) = drdt(i,j,k);
                     } else {
                         rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
                     }
 
-                    if (i == 5 && j == 4)
+                    if ((i==8 || i == 9) && j == 8)
                         amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_new(i,j,k) << " / " << drdt(i,j,k) << std::endl;
 
                     if (m_redistribution_type == "NoRedist") {
@@ -594,16 +582,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real  const> const& rho_old  = ld.density_o.const_array(mfi);
                 Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                 Array4<Real>        const& rho_nph  = density_nph_neweb[lev].array(mfi);
-
-                /*amrex::Print() << "rho_old: " << rho_old << std::endl;
-                amrex::Print() << "rho_new: " << rho_new << std::endl;
-
-                for (int i = -4; i < 37; i++){
-                    for (int j = -4; j < 19; j++){
-                        amrex::Print() << "rho_old(" << i << ", " << j << "): " << rho_old(i,j,0,0) << std::endl;
-                        amrex::Print() << "rho_new(" << i << ", " << j << "): " << rho_new(i,j,0,0) << std::endl;
-                    }
-                }*/
 
                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {

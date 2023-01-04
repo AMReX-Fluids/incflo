@@ -113,7 +113,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
                 scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n) / scale;
 
-		if (i==9 && j == 8 ){
+		if (i==16 && j == 8 ){
 		    printf("scratch in: %e \n", scratch(i,j,k,n));
 		}
 
@@ -123,7 +123,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         amrex::Print() << "Start itracker" << std::endl;
         
         MakeITracker(bx, flag_old, flag_new,
-		     AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new, 
+		     AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_old, vfrac_new,
                      itr, lev_geom, target_volfrac);
        
         amrex::Print() << "Start State Redistribution" << std::endl;
@@ -149,13 +149,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 // neighborhood of another cell -- if either of those is true the
                 // value may have changed
                 
-                if (i == 9 && j == 8){
+                if ((i ==8 || i==9) && j == 8){
                     amrex::Print() << "Pre dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
                     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
                 }
 
-                if ( itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.
-		     || (!flag_old(i,j,k).isRegular() && flag_new(i,j,k).isRegular()) )
+                if ( itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)
+		    //|| (!flag_old(i,j,k).isRegular() && flag_new(i,j,k).isRegular()) )
                 {
                    const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
 
@@ -168,7 +168,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                    dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
                 }
 
-                if (i == 9 && j == 8)
+                if ((i ==8 || i==9) && j == 8)
                     amrex::Print() << "Post dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
             }
         );
@@ -258,7 +258,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
     });
 
     MakeITracker(bx, flag, flag,
-		 AMREX_D_DECL(apx, apy, apz), vfrac,
+		 AMREX_D_DECL(apx, apy, apz), vfrac, vfrac,
                  itr, lev_geom, target_volfrac);
     
 

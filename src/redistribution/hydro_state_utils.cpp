@@ -122,8 +122,8 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
             }
 
             if (itracker(i,j,k,0) > 0)
-                alpha(i,j,k,1) = (target_vol - vfrac_new(i,j,k)) / vol_of_nbors;
-                //alpha(i,j,k,1) = 1.;
+                //alpha(i,j,k,1) = (target_vol - vfrac_new(i,j,k)) / vol_of_nbors;
+                alpha(i,j,k,1) = 1.;
         } else {
             nbhd_vol(i,j,k) = 0.;
             alpha(i,j,k,0) = 0.;
@@ -172,7 +172,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg3,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-	if (!flag_old(i,j,k).isCovered())
+	if (!flag_new(i,j,k).isCovered())
         {
             AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0);,
                          cent_hat(i,j,k,1) = ccent(i,j,k,1);,

@@ -17,7 +17,8 @@ Redistribution::MakeITracker ( Box const& bx,
 			       Array4<EBCellFlag const> const& flag_new,
                                Array4<Real const> const& apx_new,
                                Array4<Real const> const& apy_new,
-                               Array4<Real const> const& vfrac_new,
+                               Array4<Real const> const& vfrac_old,
+			       Array4<Real const> const& vfrac_new,
                                Array4<int> const& itracker,
                                Geometry const& lev_geom,
                                Real target_volfrac)
@@ -69,7 +70,7 @@ Redistribution::MakeITracker ( Box const& bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
 	// We check for cut-cells in the new geometry 
-	if (!flag_new(i,j,k).isCovered()  && vfrac_new(i,j,k) < target_volfrac)
+	if (!flag_new(i,j,k).isCovered()  && (vfrac_new(i,j,k) < target_volfrac || vfrac_old(i,j,k) < target_volfrac) )
 	{
 // 	   //
 // 	   // Choose based on EB normal.
@@ -82,7 +83,7 @@ Redistribution::MakeITracker ( Box const& bx,
 // 	   //Real deltaV = vfrac_new(i,j,k) - vfrac_old(i,j,k);
 	   
 //            // // CEG: Matthew's first pass at trying to select for cut cells behind the flow
-//            // // of the EB, specifically covered-to-cut cells that require reciprocity
+//            // // of the EB, particularly relevant to covered-to-cut cells that require reciprocity
 // 	   // // Start with normal and flip sign to select movement of EB
 //            // if ( (vfrac_new(i,j,k) - vfrac_old(i,j,k) > 0.0) )
 //            // {
@@ -175,7 +176,7 @@ Redistribution::MakeITracker ( Box const& bx,
 // #if 1
 //            Real sum_vol = vfrac_new(i,j,k) + vfrac_new(i+ioff,j+joff,k);
            
-//            if ( i==9 && j==8 )//( debug_verbose > 0 )
+//            if ( i==16 && j==8 )//( debug_verbose > 0 )
 //               amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac_new(i,j,k) <<
 //                                 " merge " << IntVect(i+ioff,j+joff) <<
 //                                 " with vfrac " << vfrac_new(i+ioff,j+joff,k) <<
@@ -224,7 +225,7 @@ Redistribution::MakeITracker ( Box const& bx,
 
 //                    sum_vol += vfrac_new(i+ioff2,j+joff2,k);
 // #if 1
-//                    if ( i==9 && j==8 ) // (debug_verbose > 0 )
+//                    if ( i==16 && j==8 ) // (debug_verbose > 0 )
 //                        amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_new(i,j,k) <<
 //                                          " trying to ALSO merge with " << IntVect(i+ioff2,j+joff2) <<
 //                                          " with volfrac " << vfrac_new(i+ioff2,j+joff2,k) <<
@@ -256,7 +257,7 @@ Redistribution::MakeITracker ( Box const& bx,
 
 //                sum_vol += vfrac_new(i+ioff,j+joff,k);
 // #if 1
-//                if ( i==9 && j==8 ) // (debug_verbose > 0 )
+//                if ( i==16 && j==8 ) // (debug_verbose > 0 )
 //                    amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac_new(i,j,k) <<
 //                                      " trying to ALSO merge with " << IntVect(i+ioff,j+joff) <<
 //                                      " with volfrac " << vfrac_new(i+ioff,j+joff,k) <<
@@ -289,12 +290,14 @@ Redistribution::MakeITracker ( Box const& bx,
 
 			   //FIXME -- still need to enfore reciprocity for newly uncovered cells
 //fixme
-			   if ( i==9 && j==8 ){
+			   if ( i==16 && j==8 ){
 			       Print()<<"Including cell ("<<ii<<","<<jj<<"). label: "
 				      <<label[ii+1][jj+1]<<std::endl;
 			   }
 		       }
 		   }
+		   //FIXME - do we really want to try to include newly covered cells here?
+		   // they can't fully participate in SRD because we don't give them a nbhd...
 		   else if (flag_old(i,j,k).isConnected(ii,jj,kk))
 		   {
                        // Add newly covered cells to the neighborhood
@@ -304,7 +307,7 @@ Redistribution::MakeITracker ( Box const& bx,
 			   itracker(i,j,k,0) += 1;
 			   itracker(i,j,k,itracker(i,j,k,0)) = label[ii+1][jj+1];
 //fixme
-			   if ( i==9 && j==8 ){
+			   if ( i==16 && j==8 ){
 			       Print()<<"Including newly covered cell ("<<ii<<","<<jj<<"). label: "
 				      <<label[ii+1][jj+1]<<std::endl;
 			   }
@@ -317,7 +320,11 @@ Redistribution::MakeITracker ( Box const& bx,
            {
              amrex::Print() << "Couldnt merge with enough cells to raise volume at " <<
                                IntVect(i,j) << " so stuck with sum_vol " << sum_vol << std::endl;
-             amrex::Abort("Couldnt merge with enough cells to raise volume greater than target_volfrac");
+             amrex::Warning("Couldnt merge with enough cells to raise volume greater than target_volfrac");
+	     if (sum_vol < Real(0.5))
+	     {
+		 amrex::Abort("Couldnt merge with enough cells to raise volume greater than 0.5");
+	     }
            }
 #endif
        }
@@ -331,7 +338,7 @@ Redistribution::MakeITracker ( Box const& bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
 //fixme
-	if ( i==9 && j==8 )
+	if ( i==16 && j==8 )
         //if (itracker(i,j,k) > 0)
         {
             amrex::Print() << "Cell " << IntVect(i,j) << " is merged with "
@@ -358,21 +365,21 @@ Redistribution::MakeITracker ( Box const& bx,
 #endif
 
     // //
-    // // Implement neighborhood reciprocity.
+    // // Is this meant to implement neighborhood reciprocity??? 
+    // // Central merging takes care of some reciprocity by virture of included all uncovered cells
     // //
     // // FIXME - need to make sure we don't reach outside domain here...
     // // I think this should happen before including the middle cell...
     // amrex::ParallelFor(Box(itracker),
     // [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     // {
-    //     // Only looking at cells that have participated so far. Not sure this is 100% consistent
-    // 	// with paper here because cells that are regular at n+1 could particpate if cut at time n...
-
-    // 	// If my neighborhood includes a newly covered cell, 
+    // 	// Check if my neighborhood includes any covered cells. If yes, add this
+    //  // cell to the covered cells nbhd. 
     //     if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < target_volfrac)
     //     {
     //         for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
     //         {
+    // FIXME, doesn't this need i_nbor instead of hard-coded 1???
     //             int ioff = imap[itracker(i,j,k,1)];
     //             int joff = jmap[itracker(i,j,k,1)];   
            
@@ -389,6 +396,7 @@ Redistribution::MakeITracker ( Box const& bx,
     //     {
     //         for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)            
     //         {
+        // FIXME, doesn't this need i_nbor instead of hard-coded 1???
     // 		amrex::Print() << "Uncovered Cell " << IntVect(i,j) << std::endl;   
     //             int ioff = imap[itracker(i,j,k,1)];
     //             int joff = jmap[itracker(i,j,k,1)];   

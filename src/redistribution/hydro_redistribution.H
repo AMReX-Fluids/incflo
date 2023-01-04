@@ -86,7 +86,8 @@ namespace Redistribution {
 			AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx_new,
                                      amrex::Array4<amrex::Real const> const& apy_new,
                                      amrex::Array4<amrex::Real const> const& apz_new),
-                        amrex::Array4<amrex::Real const> const& vfrac_new,
+                        amrex::Array4<amrex::Real const> const& vfrac_old,
+			amrex::Array4<amrex::Real const> const& vfrac_new,
                         amrex::Array4<int> const& itracker,
                         amrex::Geometry const& geom,
                         amrex::Real target_volfrac);
