@@ -69,8 +69,9 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-	// We check for cut-cells in the new geometry 
-	if (!flag_new(i,j,k).isCovered()  && (vfrac_new(i,j,k) < target_volfrac || vfrac_old(i,j,k) < target_volfrac) )
+	// We check for cut-cells in the new geometry
+	// For cells that become covered, we will add it to a nbhd later.
+	if (!flag_new(i,j,k).isCovered()  && vfrac_new(i,j,k) < target_volfrac )
 	{
 // 	   //
 // 	   // Choose based on EB normal.
@@ -268,10 +269,10 @@ Redistribution::MakeITracker ( Box const& bx,
            //
 	   // Central Merging
 	   //
-	    Real sum_vol = vfrac_new(i,j,k);
+           Real sum_vol = vfrac_new(i,j,k);
 	    
-	    //int label[3][3] = {{1,2,3}, {4,0,5}, {6,7,8}};
-	    int label[3][3] = {{1,4,6}, {2,0,7}, {3,5,8}};	   
+           //int label[3][3] = {{1,2,3}, {4,0,5}, {6,7,8}};
+	   int label[3][3] = {{1,4,6}, {2,0,7}, {3,5,8}};	   
 	   int kk=0;
 	   for(int jj(-1); jj<=1; jj++) {
 	       for(int ii(-1); ii<=1; ii++) {
