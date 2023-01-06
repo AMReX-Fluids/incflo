@@ -30,6 +30,7 @@ incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
 incflo.advection_type        =  "Godunov" 
+incflo.advect_momentum       = true
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
 
