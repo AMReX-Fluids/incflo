@@ -27,12 +27,10 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                        EBFArrayBoxFactory const* ebfact_new,
                                        Geometry& lev_geom, Real l_dt)
 {
-    EBCellFlagFab const& flagfab_new = ebfact_new->getMultiEBCellFlagFab()[mfi];
-    Array4<EBCellFlag const> const& flag_new = flagfab_new.const_array();
-    EBCellFlagFab const& flagfab_old = ebfact_old->getMultiEBCellFlagFab()[mfi];
-    Array4<EBCellFlag const> const& flag_old = flagfab_old.const_array();
+    EBCellFlagFab const& flagfab = ebfact_old->getMultiEBCellFlagFab()[mfi];
+    Array4<EBCellFlag const> const& flag = flagfab.const_array();
 
-    bool regular = (flagfab_old.getType(amrex::grow(bx,4)) == FabType::regular);
+    bool regular = (flagfab.getType(amrex::grow(bx,4)) == FabType::regular);
 
     Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz);
     Array4<Real const> AMREX_D_DECL(apx_old, apy_old, apz_old);
@@ -41,10 +39,10 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
 
     if (!regular)
     {
-        AMREX_D_TERM(fcx = ebfact_new->getFaceCent()[0]->const_array(mfi);,
-                     fcy = ebfact_new->getFaceCent()[1]->const_array(mfi);,
-                     fcz = ebfact_new->getFaceCent()[2]->const_array(mfi););
-        ccc   = ebfact_new->getCentroid().const_array(mfi);
+        AMREX_D_TERM(fcx = ebfact_old->getFaceCent()[0]->const_array(mfi);,
+                     fcy = ebfact_old->getFaceCent()[1]->const_array(mfi);,
+                     fcz = ebfact_old->getFaceCent()[2]->const_array(mfi););
+        ccc   = ebfact_old->getCentroid().const_array(mfi);
         AMREX_D_TERM(apx_old = ebfact_old->getAreaFrac()[0]->const_array(mfi);,
                      apy_old = ebfact_old->getAreaFrac()[1]->const_array(mfi);,
                      apz_old = ebfact_old->getAreaFrac()[2]->const_array(mfi););
@@ -75,21 +73,18 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         //  FluxRedistribute
         amrex::ParallelFor(Box(scratch),
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {
+            {
                 scratch(i,j,k) = 1.;
-        });
+            });
 
         // velocity
         auto const& bc_vel = get_velocity_bcrec_device_ptr();
         amrex::Print() << "Redist for velocity " << std::endl;
         // std::string vel_redistribution_type = "NoRedist";
 
-	// FIXME - do we want to have moving SRD here or regular? Don't need both
-	// moving SRD and nodal with flow through? How would it hurt to do both?
-        Redistribution::Apply(bx, AMREX_SPACEDIM, dvdt, dvdt_tmp, vel, scratch,
-			      flag_old, flag_new,
-			      AMREX_D_DECL(apx_new, apy_new, apz_new),
-			      vfrac_old, vfrac_new,
+        Redistribution::Apply(bx, AMREX_SPACEDIM, dvdt, dvdt_tmp, vel, scratch, flag,
+                              AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+                              AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
                               bc_vel, lev_geom, l_dt, l_redistribution_type);
 
@@ -97,10 +92,9 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         if (!l_constant_density) {
             auto const& bc_den = get_density_bcrec_device_ptr();
             amrex::Print() << "Redist for density " << std::endl;
-            Redistribution::Apply(bx, 1, drdt, drdt_tmp, rho, scratch,
-				  flag_old, flag_new,
-                                  AMREX_D_DECL(apx_new, apy_new, apz_new),
-				  vfrac_old, vfrac_new,
+            Redistribution::Apply(bx, 1, drdt, drdt_tmp, rho, scratch, flag,
+                                  AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+                                  AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_den, lev_geom, l_dt, l_redistribution_type);
         } else {
@@ -114,10 +108,9 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         if (l_advect_tracer) {
             auto const& bc_tra = get_tracer_bcrec_device_ptr();
             amrex::Print() << "Redist for tracer " << std::endl;
-            Redistribution::Apply(bx, l_ntrac, dtdt, dtdt_tmp, rhotrac, scratch,
-				  flag_old, flag_new,
-                                  AMREX_D_DECL(apx_new, apy_new, apz_new),
-				  vfrac_old, vfrac_new,
+            Redistribution::Apply(bx, l_ntrac, dtdt, dtdt_tmp, rhotrac, scratch, flag,
+                                  AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+                                  AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_tra, lev_geom, l_dt, l_redistribution_type);
         }

@@ -11,12 +11,10 @@
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_MultiCutFab.H>
 
-/**new
+/**
  * Placeholder description of Redistribution namespace.
  *
  */
-
-constexpr amrex::Real target_vf = 1.0;
 
 namespace Redistribution {
 
@@ -25,12 +23,14 @@ namespace Redistribution {
                  amrex::Array4<amrex::Real>       const& dUdt_in,
                  amrex::Array4<amrex::Real const> const& U_in,
                  amrex::Array4<amrex::Real> const& scratch,
-                 amrex::Array4<amrex::EBCellFlag const> const& flag_old,
-		 amrex::Array4<amrex::EBCellFlag const> const& flag_new,
+                 amrex::Array4<amrex::EBCellFlag const> const& flag,
+                 AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx_old,
+                              amrex::Array4<amrex::Real const> const& apy_old,
+                              amrex::Array4<amrex::Real const> const& apz_old),
+                 amrex::Array4<amrex::Real const> const& vfrac_old,
                  AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx_new,
                               amrex::Array4<amrex::Real const> const& apy_new,
                               amrex::Array4<amrex::Real const> const& apz_new),
-		 amrex::Array4<amrex::Real const> const& vfrac_old,
                  amrex::Array4<amrex::Real const> const& vfrac_new,
                  AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
                               amrex::Array4<amrex::Real const> const& fcy,
@@ -40,7 +40,7 @@ namespace Redistribution {
                  amrex::Geometry const& geom,
                  amrex::Real dt, std::string redistribution_type,
                  const int srd_max_order = 2,
-                 amrex::Real target_volfrac = target_vf,
+                 amrex::Real target_volfrac = 1.0,
                  amrex::Array4<amrex::Real const> const& update_scale={});
 
     void ApplyToInitialData ( amrex::Box const& bx, int ncomp,
@@ -50,7 +50,8 @@ namespace Redistribution {
                               AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
                                            amrex::Array4<amrex::Real const> const& apy,
                                            amrex::Array4<amrex::Real const> const& apz),
-                              amrex::Array4<amrex::Real const> const& vfrac,
+                              amrex::Array4<amrex::Real const> const& vfrac_old,
+                              amrex::Array4<amrex::Real const> const& vfrac_new,
                               AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
                                            amrex::Array4<amrex::Real const> const& fcy,
                                            amrex::Array4<amrex::Real const> const& fcz),
@@ -58,13 +59,12 @@ namespace Redistribution {
                               amrex::BCRec  const* d_bcrec_ptr,
                               amrex::Geometry& geom, std::string redistribution_type,
                               const int srd_max_order = 2,
-                              amrex::Real target_volfrac = target_vf);
+                              amrex::Real target_volfrac = 0.5);
 
     void StateRedistribute ( amrex::Box const& bx, int ncomp,
                              amrex::Array4<amrex::Real> const& dUdt_out,
                              amrex::Array4<amrex::Real> const& dUdt_in,
-                             amrex::Array4<amrex::EBCellFlag const> const& flag_old,
-			     amrex::Array4<amrex::EBCellFlag const> const& flag_new,
+                             amrex::Array4<amrex::EBCellFlag const> const& flag,
                              amrex::Array4<amrex::Real const> const& vfrac_old,
                              amrex::Array4<amrex::Real const> const& vfrac_new,
                              AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
@@ -81,20 +81,21 @@ namespace Redistribution {
                              const int max_order = 2);
 
     void MakeITracker ( amrex::Box const& bx,
-			amrex::Array4<amrex::EBCellFlag const> const& flag_old,
-			amrex::Array4<amrex::EBCellFlag const> const& flag_new,
-			AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx_new,
+                        AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx_old,
+                                     amrex::Array4<amrex::Real const> const& apy_old,
+                                     amrex::Array4<amrex::Real const> const& apz_old),
+                        amrex::Array4<amrex::Real const> const& vfrac_old,
+                        AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx_new,
                                      amrex::Array4<amrex::Real const> const& apy_new,
                                      amrex::Array4<amrex::Real const> const& apz_new),
-                        amrex::Array4<amrex::Real const> const& vfrac_old,
-			amrex::Array4<amrex::Real const> const& vfrac_new,
+                        amrex::Array4<amrex::Real const> const& vfrac_new,
                         amrex::Array4<int> const& itracker,
                         amrex::Geometry const& geom,
                         amrex::Real target_volfrac);
 
     void MakeStateRedistUtils ( amrex::Box const& bx,
-                                amrex::Array4<amrex::EBCellFlag const> const& flag_old,
-				amrex::Array4<amrex::EBCellFlag const> const& flag_new,
+                                amrex::Array4<amrex::EBCellFlag const> const& flag,
+                                amrex::Array4<amrex::Real const> const& vfrac_old,
                                 amrex::Array4<amrex::Real const> const& vfrac_new,
                                 amrex::Array4<amrex::Real const> const& ccent,
                                 amrex::Array4<        int const> const& itracker,

@@ -9,11 +9,10 @@
 
 using namespace amrex;
 
-//FIXME -- remember when merging to preserve backward compatibility. Will probably need to overload
 void
 Redistribution::MakeStateRedistUtils ( Box const& bx,
-                                       Array4<EBCellFlag const> const& flag_old,
-				       Array4<EBCellFlag const> const& flag_new,
+                                       Array4<EBCellFlag const> const& flag,
+                                       Array4<Real const> const& vfrac_old,
                                        Array4<Real const> const& vfrac_new,
                                        Array4<Real const> const& ccent,
                                        Array4<int  const> const& itracker,
@@ -82,7 +81,6 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
         alpha(i,j,k,1) = 1.;
     });
 
-    // Make N_(r,s)
     // nrs captures how many neighborhoods (r,s) is in
     amrex::ParallelFor(bxg4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -101,11 +99,10 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
         }
     });
 
-    // Making beta weight (paper eq 8), store in alpha(i,j,k,1)
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-	if (!flag_old(i,j,k).isCovered() || !flag_new(i,j,k).isCovered())
+        if (vfrac_old(i,j,k) > 0.0 || vfrac_new(i,j,k) > 0.0)
         {
             // Start with the vfrac_new of (i,j,k)
             nbhd_vol(i,j,k) = vfrac_new(i,j,k) / nrs(i,j,k);
@@ -124,6 +121,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
             if (itracker(i,j,k,0) > 0)
                 //alpha(i,j,k,1) = (target_vol - vfrac_new(i,j,k)) / vol_of_nbors;
                 alpha(i,j,k,1) = 1.;
+
         } else {
             nbhd_vol(i,j,k) = 0.;
             alpha(i,j,k,0) = 0.;
@@ -131,12 +129,12 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
         }
     });
 
-    // Make alpha weight (paper eq 9), store in alpha(i,j,k,0)
     // Define how much each cell keeps
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (!flag_old(i,j,k).isCovered() || !flag_new(i,j,k).isCovered())
+        //if (!flag(i,j,k).isCovered())
+        if (vfrac_new(i,j,k) > 0.0 || vfrac_old(i,j,k) > 0.0)
         {
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
@@ -153,7 +151,8 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (!flag_new(i,j,k).isCovered())
+        //if (!flag(i,j,k).isCovered())
+        if (vfrac_new(i,j,k) > 0.0)
         {
             nbhd_vol(i,j,k)  = alpha(i,j,k,0) * vfrac_new(i,j,k);
 
@@ -172,7 +171,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg3,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-	if (!flag_new(i,j,k).isCovered())
+        if (vfrac_old(i,j,k) > 0.0)
         {
             AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0);,
                          cent_hat(i,j,k,1) = ccent(i,j,k,1);,
