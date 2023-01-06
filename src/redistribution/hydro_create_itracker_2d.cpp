@@ -155,11 +155,11 @@ Redistribution::MakeITracker ( Box const& bx,
 #if 1
            Real sum_vol = vfrac_new(i,j,k) + vfrac_new(i+ioff,j+joff,k);
            
-           //if ( debug_verbose > 0 )
-           //    amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac_new(i,j,k) <<
-           //                      " merge " << IntVect(i+ioff,j+joff) <<
-           //                      " with vfrac " << vfrac_new(i+ioff,j+joff,k) <<
-           //                      " to get new vfrac " <<  sum_vol << std::endl;
+           if ( i==9 && j==8 ) //( debug_verbose > 0 )
+              amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac_new(i,j,k) <<
+                                " merge " << IntVect(i+ioff,j+joff) <<
+                                " with vfrac " << vfrac_new(i+ioff,j+joff,k) <<
+                                " to get new vfrac " <<  sum_vol << std::endl;
 #endif
 
                  
@@ -254,7 +254,7 @@ Redistribution::MakeITracker ( Box const& bx,
 #endif
        }
     });
-#if 1
+#if 0
     amrex::Print() << "\nInitial Cell Merging" << std::endl;
 
     amrex::ParallelFor(Box(itracker),
@@ -320,7 +320,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
-#if 1
+#if 0
     amrex::Print() << "Check for all uncovered cells." << std::endl;
 
     amrex::ParallelFor(Box(itracker),
@@ -334,7 +334,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
-#if 1
+#if 0
     amrex::Print() << "Check for all cell that become regular." << std::endl;
 
     amrex::ParallelFor(Box(itracker),
@@ -348,7 +348,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
-#if 1
+#if 0
     amrex::Print() << "Post Update to Cell Merging" << std::endl;
 
     amrex::ParallelFor(Box(itracker),
