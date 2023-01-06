@@ -566,29 +566,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
                                                   m_advection_type);
             }
-
-	    // //
-            // // Compute a delta-V correction instead of using flow through EB
-            // //
-            // Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
-	    // Array4<Real const> const& vfold_arr = vfrac_old.const_array(mfi);
-
-            // Real dx = geom[lev].CellSize()[0];
-
-            // amrex::ParallelFor(bx, 1, [=]
-            // AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            // {
-            //    if (vfnew_arr(i,j,k) > 0. && vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.)
-            //       {
-            //           Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-            //           update_arr(i,j,k,n) += delta_vol/m_dt/vfold_arr(i,j,k);
-            //       }
-
-	    //    if ( i==8 && (j==9 || j==10) )
-	    // 	   amrex::Print() << "advective update " << IntVect(i,j)
-	    // 			  << ": " << update_arr(i,j,k,n) << std::endl;
-            // });
-
         } // end mfi
 
         // Note: density is always updated conservatively -- we do not provide an option for
@@ -639,30 +616,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           1, geom[lev], mult,
                                           fluxes_are_area_weighted);
 #endif
-
-
-	    // Let SRD handle this case of cells going regular to cut. --- that didn't work...
-            //
-            // Compute a delta-V correction instead of using flow through EB
-            //
-            Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
-	    Array4<Real const> const& vfold_arr = vfrac_old.const_array(mfi);
-
-            Real dx = geom[lev].CellSize()[0];
-            auto const& div_ru = drdt_tmp.array(mfi);
-
-            amrex::ParallelFor(bx, 1, [=]
-            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-               if (vfnew_arr(i,j,k) > 0. && vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.)
-                  {
-                      Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-                      div_ru(i,j,k,n) += delta_vol/m_dt/vfold_arr(i,j,k);
-                  }
-
-                  if (j == 10)
-                      amrex::Print() << "div_u" << IntVect(i,j) << ": " << div_ru(i,j,k,n) << std::endl;
-            });
 
           } // mfi
         } // not constant density
