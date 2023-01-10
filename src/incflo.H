@@ -852,6 +852,7 @@ private:
     void MakeEBGeometry (amrex::Real time = 0.0);
     void make_eb_annulus ();
     void make_eb_box (amrex::Real time = 0.0);
+    void make_eb_plane (amrex::Real time = 0.0);
     void make_eb_cylinder ();
     void make_eb_twocylinders ();
     void make_eb_regular ();

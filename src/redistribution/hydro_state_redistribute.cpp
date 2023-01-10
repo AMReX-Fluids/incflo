@@ -103,16 +103,16 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     Elixir   eli_soln_hat = soln_hat_fab.elixir();
 
     // Show "VOLD / VNEW / UIN
-    amrex::ParallelFor(bxg3,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        for (int n = 0; n < ncomp; n++){
-    	if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) || (vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.)){
-            amrex::Print() << "VOLD / VNEW / UIN " << IntVect(i,j) << " " << 
-                vfrac_old(i,j,k) << " " << vfrac_new(i,j,k) << " " << U_in(i,j,k,n) << std::endl;
-		}
-	}
-    });
+    // amrex::ParallelFor(bxg3,
+    // [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    // {
+    //     for (int n = 0; n < ncomp; n++){
+    // 	if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) || j == 12){
+    //         amrex::Print() << "VOLD / VNEW / UIN " << IntVect(i,j) << " " << 
+    //             vfrac_old(i,j,k) << " " << vfrac_new(i,j,k) << " " << U_in(i,j,k,n) << std::endl;
+    // 		}
+    // 	}
+    // });
 
     // Define Qhat (from Berger and Guliani)
     // Here we initialize soln_hat to equal U_in on all cells in bxg3 so that
@@ -125,9 +125,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         for (int n = 0; n < ncomp; n++)
             soln_hat(i,j,k,n) = U_in(i,j,k,n);
 
-        if ( ( (vfrac_new(i,j,k) > 0.0) || (vfrac_old(i,j,k) > 0.0) )
-                                   && bxg2.contains(IntVect(AMREX_D_DECL(i,j,k)))
-                                   && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
+        if ( ( vfrac_new(i,j,k) > 0.0 || vfrac_old(i,j,k) > 0.0 )
+	     && bxg2.contains(IntVect(AMREX_D_DECL(i,j,k)))
+	     && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
 
             // Start with U_in(i,j,k) itself
             for (int n = 0; n < ncomp; n++)
@@ -135,8 +135,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             
             // Add correction for newly uncovered cells
             for (int n = 0; n < ncomp; n++){
-                //if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
-                    //soln_hat(i,j,k,n) = vfrac_new(i,j,k); 
+                if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
+                    soln_hat(i,j,k,n) = vfrac_new(i,j,k); 
             }
 
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
@@ -155,11 +155,11 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             for (int n = 0; n < ncomp; n++)  
                 soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
 	    
-	    for (int n = 0; n < ncomp; n++){
-            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0)
-                amrex::Print() << "QHAT NBVOL " << IntVect(i,j) << " " << soln_hat(i,j,k,n) << " " <<  nbhd_vol(i,j,k) << std::endl;;
+	    // for (int n = 0; n < ncomp; n++){
+            // if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0 || j == 12)
+            //     amrex::Print() << "QHAT NBVOL " << IntVect(i,j) << " " << soln_hat(i,j,k,n) << " " <<  nbhd_vol(i,j,k) << std::endl;;
         	
-	    }
+	    // }
 	}
     });
 
@@ -317,9 +317,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                 U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
                 amrex::Print() << "Adding new fix here: U_out" << IntVect(i,j) << ": " << U_out(i,j,k,n) << std::endl;
             }
-            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) 
-                amrex::Print() << "VFRAC / UOUT " << IntVect(i,j) << " " << 
-                vfrac_new(i,j,k) << " " << U_out(i,j,k,n) << std::endl;
+            // if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. ) 
+            //     amrex::Print() << "VFRAC / UOUT " << IntVect(i,j) << " " << 
+            //     vfrac_new(i,j,k) << " " << U_out(i,j,k,n) << std::endl;
         }
         else
         {

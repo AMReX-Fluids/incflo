@@ -124,7 +124,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         divu[lev].define(vel[lev]->boxArray(),dmap[lev],1,4,MFInfo(),Factory(lev));
         if (m_advect_momentum)
             rhovel[lev].define(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,
-			       vel[lev]->nGrow(),MFInfo(),Factory(lev));
+                               vel[lev]->nGrow(),MFInfo(),Factory(lev));
         if (m_advect_tracer && m_ntrac > 0)
             rhotrac[lev].define(vel[lev]->boxArray(),dmap[lev],tracer[lev]->nComp(),
                                 tracer[lev]->nGrow(),MFInfo(),Factory(lev));
@@ -249,14 +249,24 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                      u[1] = v_mac[lev];,
                      u[2] = w_mac[lev];);
 
+	// CEG fixme Umac is spot on
+	VisMF::Write(*u_mac[0],"umac");
+	VisMF::Write(*v_mac[0],"vmac");
+    
 #ifdef AMREX_USE_EB
         const auto& ebfact_old = OldEBFactory(lev);
         const auto& ebfact_new =    EBFactory(lev);
 
         if (!ebfact_old.isAllRegular()) {
+	    // FIXME -- divu is only used in EBGod in 3D for corner-coupling, and non-conservative adjustment
+	    // I *think* transverse and CC are turned off for flow through EB, so don't need to worry about it
+// For now we don't use flow through EB for advection.
+#ifndef AMREX_MOVING_EB
             if (m_eb_flow.enabled) {
                 amrex::EB_computeDivergence(divu[lev],u,geom[lev],true,*get_velocity_eb()[lev]);
-            } else {
+            } else
+#endif
+	    {
                 amrex::EB_computeDivergence(divu[lev],u,geom[lev],true);
             }
         }
@@ -345,8 +355,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                      get_velocity_bcrec_device_ptr(),
                                                      get_velocity_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                                     ebfact_old,
-                                     m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                     ebfact_old,
+#if 0 //def AMREX_USE_MOVING_EB
+						     //FIXME -- here, having EB flow only changes whether  d/dt (e.g. transverse) terms are used or not...
+						     Array4<Real const>{},
+#else
+                                                     m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
 #endif
                                                      m_godunov_ppm, m_godunov_use_forces_in_trans,
                                                      is_velocity, fluxes_are_area_weighted,
@@ -379,8 +394,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                          get_density_bcrec_device_ptr(),
                                                          get_density_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
-                                          ebfact_old,
-                                          m_eb_flow.enabled ? get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                         ebfact_old,
+#if 0 //def AMREX_USE_MOVING_EB
+							 // Here, having flow only mean we don't use any d/dt terms
+							 Array4<Real const>{},
+#else
+                                                         m_eb_flow.enabled ? get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
 #endif
                                                          m_godunov_ppm, m_godunov_use_forces_in_trans,
                                                          is_velocity, fluxes_are_area_weighted,
@@ -434,7 +454,12 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           get_tracer_iconserv_device_ptr(),
 #ifdef AMREX_USE_EB
                                           ebfact_old,
+#if 0 //def AMREX_USE_MOVING_EB
+					  // Having flow only means do no use any d/dt terms
+					  Array4<Real const>{},
+#else
                                           m_eb_flow.enabled ? get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
 #endif
                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
                                           is_velocity, fluxes_are_area_weighted,
@@ -486,6 +511,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
             Box const& bx = mfi.tilebox();
 
+	    Print()<<"Vel advection term..."<<std::endl;
+	    
             int flux_comp = 0;
             int  num_comp = AMREX_SPACEDIM;
 #ifdef AMREX_USE_EB
@@ -498,10 +525,16 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac_old.const_array(mfi), num_comp, geom[lev],
                                                  mult, fluxes_are_area_weighted,
+// Don't flux through moving EB, otherwise how do we get conservation?
+#ifdef AMREX_USE_MOVING_EB
+						 Array4<Real const>{},
+						 Array4<Real const>{},
+#else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact_old->getBndryArea().const_array(mfi) : Array4<Real const>{},
@@ -533,6 +566,37 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
                                                   m_advection_type);
             }
+
+	    //
+            // Compute a delta-divU correction instead of using flow through EB
+            //
+            Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
+	    Array4<Real const> const& vfold_arr = vfrac_old.const_array(mfi);
+
+            Real dx = geom[lev].CellSize()[0];
+
+	    // Compute duvU^n
+	    // Compute divU^(n+1)
+	    
+            amrex::ParallelFor(bx, 1, [=]
+            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+ 		  // Correct all cells that are cut at time n or n+1
+		// EB_ComputeDivergence should give zero in cells that stay regular, so
+		// don't need to check here.
+		// if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0) ||
+		//     (vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.0) )
+                  {
+		      // Correct with ( rho u delta(divu) )
+                      Real delta_divU = 
+                      update_arr(i,j,k,n) += 
+                  }
+
+	       if ( j==8 && (i==9 || i==10) )
+		   amrex::Print() << "advective update " << IntVect(i,j)
+				  << ": " << update_arr(i,j,k,n) << std::endl;
+            });
+
         } // end mfi
 
         // Note: density is always updated conservatively -- we do not provide an option for
@@ -540,17 +604,18 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         if (!m_constant_density)
         {
           int flux_comp = AMREX_SPACEDIM;
-         
-          auto const& vfrac_old = ebfact_old->getVolFrac();
-          auto const& vfrac_new = ebfact_new->getVolFrac();
-          
+
           for (MFIter mfi(*conv_r[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
 
-            auto const& div_ru = drdt_tmp.array(mfi);
-	    
 #ifdef AMREX_USE_EB
+            //
+            // FIXME - need to create a get_density_eb() function for this. Try using
+            // the average cell value first...
+            //
+	    Print()<<"Density advection term..."<<std::endl;
+	    
             EBCellFlagFab const& flagfab = ebfact_old->getMultiEBCellFlagFab()[mfi];
             if (flagfab.getType(bx) != FabType::covered)
                 HydroUtils::EB_ComputeDivergence(bx, drdt_tmp.array(mfi),
@@ -559,10 +624,16 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac_old.const_array(mfi), 1, geom[lev], mult,
                                                  fluxes_are_area_weighted,
+// Don't flux through moving EB, otherwise how do we get conservation?
+#ifdef AMREX_USE_MOVING_EB
+						 Array4<Real const>{},
+						 Array4<Real const>{},
+#else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
                                                     get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact_old->getBndryArea().const_array(mfi) : Array4<Real const>{},
@@ -576,25 +647,37 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           1, geom[lev], mult,
                                           fluxes_are_area_weighted);
 #endif
-          
 
- 
+
+	    //
+            // Compute a delta-divU correction instead of using flow through EB
+            //
             Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
-            Array4<Real const> const& vfold_arr = vfrac_old.const_array(mfi);
-            
-            Real dx = geom[lev].CellSize()[0];
+	    Array4<Real const> const& vfold_arr = vfrac_old.const_array(mfi);
 
+            Real dx = geom[lev].CellSize()[0];
+            auto const& div_ru = drdt_tmp.array(mfi);
+	    
+	    // Compute duvU^n
+	    // Compute divU^(n+1)
+	    
             amrex::ParallelFor(bx, 1, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-	    	  if (vfnew_arr(i,j,k) > 0. && vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.)
+ 		  // Correct all cells that are cut at time n or n+1
+		// EB_ComputeDivergence should give zero in cells that stay regular, so
+		// don't need to check here.
+		// if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0) ||
+		//     (vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.0) )
                   {
-                      Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-                      div_ru(i,j,k,n) += delta_vol/m_dt/vfold_arr(i,j,k);
+		      // Correct with ( rho u delta(divu) )
+                      Real delta_divU = 
+                      div_ru(i,j,k) += 
                   }
 
-                  if (j == 10)
-                      amrex::Print() << "div_u" << IntVect(i,j) << ": " << div_ru(i,j,k,n) << std::endl;
+	       if ( j==8 && (i==9 || i==10) )
+		   amrex::Print() << "advective update " << IntVect(i,j)
+				  << ": " << update_arr(i,j,k,n) << std::endl;
             });
 
           } // mfi
@@ -620,10 +703,16 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac_old.const_array(mfi), m_ntrac, geom[lev], mult,
                                                  fluxes_are_area_weighted,
+// Don't flux through moving EB, otherwise how do we get conservation?
+#ifdef AMREX_USE_MOVING_EB
+						 Array4<Real const>{},
+						 Array4<Real const>{},
+#else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
                                                     get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact_old->getBndryArea().const_array(mfi) : Array4<Real const>{},
