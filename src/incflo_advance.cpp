@@ -67,7 +67,7 @@ void incflo::Advance()
             }
         }
 
-        //ApplyCorrector(); // we are not using MOL with moving_eb
+        ApplyCorrector(); // we are not using MOL with moving_eb
     }
 
 #if 0
