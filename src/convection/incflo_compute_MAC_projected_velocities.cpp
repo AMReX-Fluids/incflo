@@ -132,12 +132,13 @@ incflo::compute_MAC_projected_velocities (
 
     // FIXME Right now we're just doing this for single-level
     AMREX_ALWAYS_ASSERT(finest_level == 0);
-    //MultiFab* mac_rhs;
+    // MultiFab* mac_rhs;
 
 #ifdef AMREX_USE_EB
     if (m_eb_flow.enabled) {
        for (int lev=0; lev <= finest_level; ++lev)
-       {	   
+       {
+	   
 // 	  // Use delta-V correction instead of flow through EB
 	   
 //           mac_rhs = new MultiFab(grids[lev],dmap[lev],1,0); //Use unique pointer here, remove delete
@@ -168,16 +169,16 @@ incflo::compute_MAC_projected_velocities (
 //                       divu_arr(i,j,k) = 0.;
 //                   }
 
-//                   if (j == 10)
-// 		    amrex::Print() << "inside divu " << IntVect(i,j) << divu_arr(i,j,k) << std::endl; 
+//                   if (i==9 && j == 8)
+// 		    amrex::Print() << "delta-vol: " << IntVect(i,j) << divu_arr(i,j,k) << std::endl; 
 //               });
 //           }
-// 	   macproj->setDivU({mac_rhs});
+// 	  macproj->setDivU({mac_rhs});
 
-	   //
-	   // Pass EB flow BC into MAC, no RHS correction
-	   //
-           macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
+	  //
+	  // Pass EB flow BC into MAC, no RHS correction
+	  //
+	  macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
        }
     }
 #endif

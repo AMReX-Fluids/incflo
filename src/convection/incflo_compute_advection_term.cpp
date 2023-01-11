@@ -9,6 +9,7 @@
 #include <AMReX_EBFabFactory.H>
 #include <hydro_ebgodunov.H>
 #include <hydro_ebmol.H>
+#include <AMReX_EBMultiFabUtil_2D_C.H>
 #endif
 
 using namespace amrex;
@@ -259,8 +260,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         if (!ebfact_old.isAllRegular()) {
 	    // FIXME -- divu is only used in EBGod in 3D for corner-coupling, and non-conservative adjustment
-	    // I *think* transverse and CC are turned off for flow through EB, so don't need to worry about it
-// For now we don't use flow through EB for advection.
+	    // transverse and CC terms are turned off for flow through EB
+// Use this for delta-divU correction, with the BC on the EB, so "flow through EB"
 #ifndef AMREX_MOVING_EB
             if (m_eb_flow.enabled) {
                 amrex::EB_computeDivergence(divu[lev],u,geom[lev],true,*get_velocity_eb()[lev]);
@@ -277,6 +278,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         }
 
         divu[lev].FillBoundary(geom[lev].periodicity());
+
+	// CEG fixme 
+	VisMF::Write(divu[0],"divu");
 
         // ************************************************************************
         // Compute advective fluxes
@@ -569,32 +573,45 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
 	    //
             // Compute a delta-divU correction instead of using flow through EB
-            //
+            // Here, delta-divU is the difference between reasonable divU values
+	    // that we could pass into the MAC
+	    //
             Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
 	    Array4<Real const> const& vfold_arr = vfrac_old.const_array(mfi);
-
-            Real dx = geom[lev].CellSize()[0];
-
-	    // Compute duvU^n
-	    // Compute divU^(n+1)
+	    Real l_dt = m_dt;
 	    
-            amrex::ParallelFor(bx, 1, [=]
+	    Array4<Real const> rho     = density[lev]->const_array(mfi);
+	    Array4<Real const> U       =     vel[lev]->const_array(mfi);
+
+            const GpuArray<Real,AMREX_SPACEDIM> dxinv = geom[lev].InvCellSizeArray();
+            // reuse memory -- this probably isn't a good idea...
+            Array4<Real> const& divuarr = divu[lev].array(mfi);
+            Array4<Real const> const& vel_eb_arr = get_velocity_eb()[lev]->const_array(mfi);
+            Array4<Real const> const& bnormarr = ebfact_old->getBndryNormal().const_array(mfi);
+            Array4<EBCellFlag const> const& flagarr = flagfab.const_array();
+            Array4<Real const> const& bareaarr = ebfact_old->getBndryArea().const_array(mfi);
+	    
+            amrex::ParallelFor(bx, AMREX_SPACEDIM, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
- 		  // Correct all cells that are cut at time n or n+1
-		// EB_ComputeDivergence should give zero in cells that stay regular, so
-		// don't need to check here.
-		// if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0) ||
-		//     (vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.0) )
-                  {
-		      // Correct with ( rho u delta(divu) )
-                      Real delta_divU = 
-                      update_arr(i,j,k,n) += 
-                  }
+		// Correct all cells that are cut at time n or n+1
+		if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0) ||
+		    (vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.0) )
+		{
+		    Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
+		    delta_vol /= ( l_dt * vfold_arr(i,j,k) );
+		    
+		    divuarr(i,j,k) = 0.0;
+		    eb_add_divergence_from_flow(i,j,k,0,divuarr,vel_eb_arr,
+						flagarr,vfold_arr,bnormarr,bareaarr,dxinv);
 
-	       if ( j==8 && (i==9 || i==10) )
-		   amrex::Print() << "advective update " << IntVect(i,j)
-				  << ": " << update_arr(i,j,k,n) << std::endl;
+		    Real delta_divU = delta_vol - divuarr(i,j,k); 
+		    update_arr(i,j,k,n) += rho(i,j,k) * U(i,j,k,n) * delta_divU;
+		}
+		
+		if ( j==8 && (i==9 || i==10) )
+		    amrex::Print() << "advective update " << IntVect(i,j)
+				   << ": " << update_arr(i,j,k,n) << std::endl;
             });
 
         } // end mfi
@@ -651,33 +668,47 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
 	    //
             // Compute a delta-divU correction instead of using flow through EB
-            //
+            // Here, delta-divU is the difference between reasonable divU values
+	    // that we could pass into the MAC
+	    //
             Array4<Real const> const& vfnew_arr = vfrac_new.const_array(mfi);
 	    Array4<Real const> const& vfold_arr = vfrac_old.const_array(mfi);
+	    Real l_dt = m_dt;
+    
+            Array4<Real const> const& divu_arr = divu[lev].const_array(mfi);
+	    Array4<Real const> const& rho      = density[lev]->const_array(mfi);
+	    Array4<Real      > const& drdt_arr = drdt_tmp.array(mfi);
 
-            Real dx = geom[lev].CellSize()[0];
-            auto const& div_ru = drdt_tmp.array(mfi);
+            const GpuArray<Real,AMREX_SPACEDIM> dxinv = geom[lev].InvCellSizeArray();
+            // reuse memory -- check me
+            Array4<Real> const& divuarr = divu[lev].array(mfi);
+            Array4<Real const> const& vel_eb_arr = get_velocity_eb()[lev]->const_array(mfi);
+            Array4<Real const> const& bnormarr = ebfact_old->getBndryNormal().const_array(mfi);
+            Array4<EBCellFlag const> const& flagarr = flagfab.const_array();
+            Array4<Real const> const& bareaarr = ebfact_old->getBndryArea().const_array(mfi);
 	    
-	    // Compute duvU^n
-	    // Compute divU^(n+1)
-	    
-            amrex::ParallelFor(bx, 1, [=]
-            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            amrex::ParallelFor(bx, [=]
+            AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
- 		  // Correct all cells that are cut at time n or n+1
-		// EB_ComputeDivergence should give zero in cells that stay regular, so
-		// don't need to check here.
-		// if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0) ||
-		//     (vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.0) )
-                  {
-		      // Correct with ( rho u delta(divu) )
-                      Real delta_divU = 
-                      div_ru(i,j,k) += 
-                  }
+		// Correct all cells that are cut at time n or n+1
+		if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0) ||
+		    (vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.0) )
+		{
+		    Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
+		    delta_vol /= ( l_dt * vfold_arr(i,j,k) );
+		    //divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
+		    
+		    divuarr(i,j,k) = 0.0;
+		    eb_add_divergence_from_flow(i,j,k,0,divuarr,vel_eb_arr,
+						flagarr,vfold_arr,bnormarr,bareaarr,dxinv);
 
-	       if ( j==8 && (i==9 || i==10) )
-		   amrex::Print() << "advective update " << IntVect(i,j)
-				  << ": " << update_arr(i,j,k,n) << std::endl;
+		    Real delta_divU = delta_vol - divuarr(i,j,k); 
+		    drdt_arr(i,j,k) += rho(i,j,k) * delta_divU;
+		}
+		
+		if ( j==8 && (i==9 || i==10) )
+		    amrex::Print() << "advective update " << IntVect(i,j)
+				   << ": " << drdt_arr(i,j,k) << std::endl;
             });
 
           } // mfi
