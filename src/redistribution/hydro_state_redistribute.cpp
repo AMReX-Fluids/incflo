@@ -122,9 +122,13 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     amrex::ParallelFor(bxg3,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        for (int n = 0; n < ncomp; n++)
+        for (int n = 0; n < ncomp; n++){
             soln_hat(i,j,k,n) = U_in(i,j,k,n);
 
+	    if ((i==8 || i==9) && j == 8)
+	    amrex::Print() << "U-star: " << IntVect(i,j) << soln_hat(i,j,k,n) << std::endl; 
+	}
+	
         if ( ( vfrac_new(i,j,k) > 0.0 || vfrac_old(i,j,k) > 0.0 )
 	     && bxg2.contains(IntVect(AMREX_D_DECL(i,j,k)))
 	     && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
@@ -133,12 +137,6 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             for (int n = 0; n < ncomp; n++)
                 soln_hat(i,j,k,n) = U_in(i,j,k,n) * alpha(i,j,k,0) * vfrac_old(i,j,k);
             
-            // Add correction for newly uncovered cells
-            for (int n = 0; n < ncomp; n++){
-                if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
-                    soln_hat(i,j,k,n) = vfrac_new(i,j,k); 
-            }
-
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
             {
@@ -152,9 +150,14 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         soln_hat(i,j,k,n) += U_in(r,s,t,n) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t);
                 }
             }
-            for (int n = 0; n < ncomp; n++)  
+            for (int n = 0; n < ncomp; n++)  {
                 soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
-	    
+
+	    //fixme
+		if ( (i==8 || i==9) && j == 8)
+		amrex::Print() << "U^(n+1): " << IntVect(i,j) << soln_hat(i,j,k,n)
+			       <<" nbhd vol "<<nbhd_vol(i,j,k)<< std::endl; 
+	    }
 	    // for (int n = 0; n < ncomp; n++){
             // if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0 || j == 12)
             //     amrex::Print() << "QHAT NBVOL " << IntVect(i,j) << " " << soln_hat(i,j,k,n) << " " <<  nbhd_vol(i,j,k) << std::endl;;
@@ -174,8 +177,12 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             {
                 if (bx.contains(IntVect(AMREX_D_DECL(i,j,k))))
                 {
-                    for (int n = 0; n < ncomp; n++)
+                    for (int n = 0; n < ncomp; n++) {
                         amrex::Gpu::Atomic::Add(&U_out(i,j,k,n),alpha(i,j,k,0)*nrs(i,j,k)*soln_hat(i,j,k,n));
+
+			if ( (i==8 || i==9) && j == 8)
+			amrex::Print() << "U_out (should equal U^(n+1)): " << IntVect(i,j) << U_out(i,j,k,n) << std::endl; 
+		    }
                 }
 
             } else {
@@ -312,7 +319,10 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             // This seems to help with a compiler issue ...
             Real denom = 1. / (nrs(i,j,k) + 1.e-40);
             U_out(i,j,k,n) *= denom;
-            
+
+	    if ( (i==8 || i==9) && j == 8)
+		amrex::Print() << "Final U: " << IntVect(i,j) << U_out(i,j,k,n) << std::endl; 
+	    
             if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1. && nrs(i,j,k) == 1){
                 U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
                 amrex::Print() << "Adding new fix here: U_out" << IntVect(i,j) << ": " << U_out(i,j,k,n) << std::endl;

@@ -695,6 +695,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 		    (vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.0) )
 		{
 		    Real delta_vol = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
+// hack to test idea...
+		    // Need a correction for cells that become uncovered; goes with adj newly regular cell
+		    if ( vfnew_arr(i,j,k)==1.0 )
+			delta_vol += vfnew_arr(i-1,j,k); // Create "super-cell" with newly uncovered nb
 		    delta_vol /= ( l_dt * vfold_arr(i,j,k) );
 		    //divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
 		    

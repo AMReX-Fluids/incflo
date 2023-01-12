@@ -155,7 +155,7 @@ Redistribution::MakeITracker ( Box const& bx,
 #if 1
            Real sum_vol = vfrac_new(i,j,k) + vfrac_new(i+ioff,j+joff,k);
            
-           if ( i==9 && j==8 ) //( debug_verbose > 0 )
+           if ( i==8 && j==8 ) //( debug_verbose > 0 )
               amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac_new(i,j,k) <<
                                 " merge " << IntVect(i+ioff,j+joff) <<
                                 " with vfrac " << vfrac_new(i+ioff,j+joff,k) <<
@@ -288,7 +288,6 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        // Check if Neighbors are Covered Cells
         if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
         {
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
@@ -296,12 +295,22 @@ Redistribution::MakeITracker ( Box const& bx,
                 int ioff = imap[itracker(i,j,k,i_nbor)];
                 int joff = jmap[itracker(i,j,k,i_nbor)];   
            
+		// Check if Neighbors are Covered Cells
                 if (vfrac_new(i+ioff,j+joff,k) == 0. )
                 {
                     amrex::Print() << "Cell  " << IntVect(i,j) << " is merged with a covered neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
                     itracker(i+ioff,j+joff,k,0) += 1;
                     itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,i_nbor)];
                 }
+
+		// Check if Neighbors are newly Regular Cells
+		if ( vfrac_new(i+ioff,j+joff,k) == 1. && vfrac_old(i+ioff,j+joff,k) < 1.  )
+                {
+                    amrex::Print() << "Cell  " << IntVect(i,j) << " is merged with a newly regular neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
+                    itracker(i+ioff,j+joff,k,0) += 1;
+                    itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,i_nbor)];
+                }
+
             }
         }
     });
