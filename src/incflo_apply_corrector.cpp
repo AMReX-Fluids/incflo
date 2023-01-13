@@ -9,9 +9,9 @@ using namespace amrex;
 //  1. Use u = vel_pred to compute
 //
 //      if (advect_momentum) then
-//          conv_u  = - u grad u
+//          conv_u  = - div(rho u u)
 //      else
-//          conv_u  = - del dot (rho u u)
+//          conv_u  = - u grad u
 //      conv_r  = - div( u rho  )
 //      conv_t  = - div( u trac )
 //      eta     = viscosity
@@ -140,6 +140,37 @@ void incflo::ApplyCorrector()
                             AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                             GetVecOfPtrs(w_mac)),
                             {}, {}, new_time);
+
+// MATT'S PRINT 
+    amrex::Print() << "\n\n ====== \n\nWE GOT HERE 2. \n\n ====== \n\n" << std::endl;
+
+    for (int lev = 0; lev <= finest_level; ++lev)
+    {
+        auto& ld = *m_leveldata[lev];
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            Box const& bx = mfi.tilebox();
+            Array4<Real const> const& dvdt = ld.conv_velocity.const_array(mfi);
+            Array4<Real const> const& dvdt_o = ld.conv_velocity_o.const_array(mfi);
+           
+            amrex::Print() << "dvdt size: " << dvdt.size() << std::endl;
+            amrex::Print() << "dvdt_o size: " << dvdt_o.size() << std::endl;
+
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                if (j == 9)
+                {    
+                    amrex::Print() << "dvdt " << IntVect(i,j) << ": " << dvdt(i,j,k,0) << std::endl;
+                    amrex::Print() << "dvdt_o" << IntVect(i,j) << ": " << dvdt_o(i,j,k,0) << std::endl;
+                }
+            });
+        }
+    }
+// MATT'S PRINT
 
     // *************************************************************************************
     // Compute viscosity / diffusive coefficients

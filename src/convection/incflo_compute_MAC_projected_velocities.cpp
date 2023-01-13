@@ -93,9 +93,10 @@ incflo::compute_MAC_projected_velocities (
     {
         mac_phi[lev]->FillBoundary(geom[lev].periodicity());
 
-#ifdef AMREX_USE_EB
-        const EBFArrayBoxFactory* ebfact = &OldEBFactory(lev);
-#endif
+// MATT -- We are computing the new geometry after the MAC projection.
+//#ifdef AMREX_USE_EB
+        const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
+//#endif
 
         //
         // For now, BDS is only for edge state prediction given a known advective velocity,
