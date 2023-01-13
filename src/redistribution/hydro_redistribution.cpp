@@ -54,8 +54,11 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
 #if (AMREX_SPACEDIM == 2)
         // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
-        //    use the first component of this for the number of neighbors
-        IArrayBox itracker(bxg4,4);
+        //    use the first component of this for the number of neighbors, so 4 comps
+	// For Central Merging we include all surrounding cells, so 9 in 2D
+	// For Moving EB, we have to allow for more then just normal merging (due to covering/
+	// uncovering), so just allow for the max.
+        IArrayBox itracker(bxg4,9);
         // How many nbhds is a cell in
 #else
         // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
@@ -108,24 +111,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         dUdt_in(i,j,k,n) = 0.;
                 });
 
-        amrex::ParallelFor(Box(scratch), ncomp,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
-                scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n) / scale;
-
-		// For newly uncovered cells, use U-star == 0. Don't want uninitialized value.
-		for (int n = 0; n < ncomp; n++){
-		    if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
-			scratch(i,j,k,n) = 0.; //vfrac_new(i,j,k); 
-		}
-
-		if (i==8 && j == 8){
-		    Print().SetPrecision(15);
-		    amrex::Print() << "adv: " << IntVect(i,j) << dUdt_in(i,j,k,n) << std::endl; 
-		}
-            }
-        );
 
         amrex::Print() << "Start itracker" << std::endl;
         
@@ -137,7 +122,78 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
         MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                              lev_geom, target_volfrac);
-        
+
+	//
+	// Moving SRD corrections
+	//
+	// Compute a delta-divU correction instead of using flow through EB
+	// Here, delta-divU is the difference between reasonable divU values
+	// that we could pass into the MAC
+	//
+	// const GpuArray<Real,AMREX_SPACEDIM> dxinv = lev_geom.InvCellSizeArray();
+	// FArrayBox tmp_fab(bxg4, 1, The_Async_Arena());
+	// Array4<Real> const& Ueb_divu = tmp_fab.array(mfi);
+	// // FIXME would need to pass these in to this fn. Also need header for EB div...
+	// Array4<Real const> const& vel_eb_arr = get_velocity_eb()[lev]->const_array(mfi);
+	// Array4<Real const> const& bnormarr = ebfact_old->getBndryNormal().const_array(mfi);
+	// Array4<Real const> const& bareaarr = ebfact_old->getBndryArea().const_array(mfi);
+	auto map = getCellMap();
+	Array<int,9> imap = map[0];
+	Array<int,9> jmap = map[1]; 
+	
+	amrex::ParallelFor(Box(scratch), ncomp,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+	{
+	    const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
+	    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n) / scale;
+	    
+	    // For newly uncovered cells, use U-star == 0. Don't want uninitialized value.
+	    if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
+		scratch(i,j,k,n) = 0.; //vfrac_new(i,j,k); 
+	    
+	    // Correct all cells that are cut at time n or become cut at time n+1
+	    if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
+		(vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 1.0) )
+	    {
+		Real delta_vol = vfrac_new(i,j,k) - vfrac_old(i,j,k);
+		delta_vol /= ( dt * vfrac_old(i,j,k) );
+		
+		// Ueb_div(i,j,k) = 0.0;
+		// eb_add_divergence_from_flow(i,j,k,0,Ueb_divu,vel_eb_arr,
+		// 				flagarr,vfrac_old,bnormarr,bareaarr,dxinv);
+                
+		// Real delta_divU = delta_vol - divuarr(i,j,k); 
+		// scratch(i,j,k,n) += dt * U_in(i,j,k) * delta_divU;
+		
+		// For case of const rho & U, U_in * Ueb_div = advective update = dUdt_in
+		// So this way will be easier for now, fewer code changes...
+		// FIXME Probably want to enforce scale == 1.0 for MEB for now
+		scratch(i,j,k,n) = U_in(i,j,k,n) + dt * U_in(i,j,k,n) * delta_vol;
+	    }
+	    
+	    // So check to see any if neighbors were covered at time n.
+	    // For cells in my nbhd that were covered, add it's vol correction to me
+	    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+	    {
+		    int ioff = imap[itr(i,j,k,i_nbor)];
+		    int joff = jmap[itr(i,j,k,i_nbor)];   
+
+		    if ( vfrac_old(i+ioff,j+joff,k) == 0.0 )
+		    {
+			amrex::Print() << "Cell  " << IntVect(i,j) << " gets correction from newly uncovered neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
+
+			Real delta_vol = vfrac_new(i+ioff,j+joff,k) / vfrac_old(i,j,k); 
+			scratch(i,j,k,n) += U_in(i,j,k,n) * delta_vol;
+		    }
+	    }
+
+	    //fixme
+	    // if (i==8 && j == 8){
+	    // 	Print().SetPrecision(15);
+	    // 	amrex::Print() << "adv: " << IntVect(i,j) << dUdt_in(i,j,k,n) << std::endl; 
+	    // }
+	});
+
         StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac_old, vfrac_new,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
                           itr_const, nrs_const, alpha_const, nbhd_vol_const,

@@ -150,7 +150,11 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         soln_hat(i,j,k,n) += U_in(r,s,t,n) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t);
                 }
             }
-            for (int n = 0; n < ncomp; n++)  {
+	    if (nbhd_vol(i,j,k) < 1e-14 ){
+		amrex::Print() << "NBVOL " << IntVect(i,j) << " " <<  nbhd_vol(i,j,k) << std::endl;
+		   Abort();
+	    }
+	    for (int n = 0; n < ncomp; n++)  {
                 soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
 
 	    //fixme
