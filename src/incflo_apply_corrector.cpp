@@ -346,17 +346,17 @@ void incflo::ApplyCorrector()
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
-                                                    m_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0))
-                                                  + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
-                                                  + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
+                                                    m_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0)) );,
+//                                                + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
+//                                                + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
                                      vel(i,j,k,1) =  rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
-                                                     m_half*(  dvdt_o(i,j,k,1)+  dvdt(i,j,k,1))
-                                                   + m_half*(divtau_o(i,j,k,1)+divtau(i,j,k,1))
-                                                   + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
+                                                     m_half*(  dvdt_o(i,j,k,1)+  dvdt(i,j,k,1)) );,
+//                                                 + m_half*(divtau_o(i,j,k,1)+divtau(i,j,k,1))
+//                                                 + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
                                      vel(i,j,k,2) =  rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
-                                                     m_half*(  dvdt_o(i,j,k,2)+  dvdt(i,j,k,2))
-                                                   + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
-                                                   + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
+                                                     m_half*(  dvdt_o(i,j,k,2)+  dvdt(i,j,k,2)) ););
+//                                                 + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
+//                                                 + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
 
                         AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
                                      vel(i,j,k,1) /= rho_new(i,j,k);,

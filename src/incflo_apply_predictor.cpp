@@ -221,12 +221,19 @@ void incflo::ApplyPredictor (bool incremental_projection)
     //      Compute the explicit advective terms R_u^n      , R_s^n       and R_t^n
     // Note that "get_conv_tracer_old" returns div(rho u tracer)
     // *************************************************************************************
+    
     compute_convective_term(get_conv_velocity_old(), get_conv_density_old(), get_conv_tracer_old(),
                             get_velocity_old_const(), get_density_old_const(), get_tracer_old_const(),
                             AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                             GetVecOfPtrs(w_mac)),
                             GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
                             m_cur_time);
+
+    {
+        amrex::Print() << "SETTING TO ZERO IN PREDICTOR " << std::endl;
+        auto& ld = *m_leveldata[0];
+        ld.conv_velocity_o.setVal(0.);
+    }
    
     // *************************************************************************************
     // Define local variables for lambda to capture.
@@ -563,6 +570,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
         }
     }
 #endif
+
+        amrex::Print() << "IN PREDICTOR " << std::endl;
+        auto& ld = *m_leveldata[0];
+        ld.conv_velocity_o.setVal(0.);
+        print_state(ld.conv_velocity_o, IntVect(0,0));
 
     // *************************************************************************************
     // Allocate space for half-time density after we have updated EB
