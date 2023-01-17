@@ -5,6 +5,7 @@ target_sources(incflo
    embedded_boundaries.cpp
    eb_annulus.cpp
    eb_box.cpp
+   eb_plane.cpp
    eb_cylinder.cpp
    eb_cyl_tuscan.cpp
    eb_regular.cpp

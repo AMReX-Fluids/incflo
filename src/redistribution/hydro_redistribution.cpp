@@ -113,6 +113,17 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             {
                 const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
                 scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n) / scale;
+
+		// For newly uncovered cells, use U-star == 0. Don't want uninitialized value.
+		for (int n = 0; n < ncomp; n++){
+		    if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
+			scratch(i,j,k,n) = 0.; //vfrac_new(i,j,k); 
+		}
+
+		if (i==8 && j == 8){
+		    Print().SetPrecision(15);
+		    amrex::Print() << "adv: " << IntVect(i,j) << dUdt_in(i,j,k,n) << std::endl; 
+		}
             }
         );
 
@@ -144,12 +155,14 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 // neighborhood of another cell -- if either of those is true the
                 // value may have changed
                 
-                if (i == 5 && j == 4){
+                if (i==8  && j==8){
                     amrex::Print() << "Pre dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
                     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
                 }
 
-                if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.))
+		// FIXME need to think more about this
+                //if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.))
+		if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.))
                 {
                    const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
 
@@ -164,7 +177,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                    dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
                 }
 
-                if (i == 5 && j == 4)
+                if (i==8 && j==8)
                     amrex::Print() << "Post dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
             }
         );

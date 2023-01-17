@@ -29,12 +29,13 @@ incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
+incflo.advect_momentum = 1
 incflo.advection_type        =  "Godunov" 
+incflo.advection_type        =  "MOL" 
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
 
 incflo.godunov_include_diff_in_forcing = false
-
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
@@ -70,7 +71,7 @@ box.Hi =  3.80   1.80
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.ic_u             =   0.0         #
+incflo.ic_u             =   2.0         #
 incflo.ic_v             =   0.0         #
 incflo.ic_p             =   0.0         #
 
@@ -85,4 +86,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #               EB FLOW                 #
 #.......................................#
 eb_flow.velocity        = 2.0 0.0 0.0
-eb_flow.density         = 0.0
+eb_flow.density         = 1.0 # this doesn't matter; won't be used for MEB

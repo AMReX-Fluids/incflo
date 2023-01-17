@@ -458,8 +458,8 @@ private:
 #endif
 
 #ifdef INCFLO_USE_MOVING_EB
-    amrex::EB2::IndexSpace const* eb_new = nullptr;
-    amrex::EB2::IndexSpace const* eb_old;
+    amrex::EB2::IndexSpace const* m_eb_new = nullptr;
+    amrex::EB2::IndexSpace const* m_eb_old = nullptr;
 #endif
 
     // If using Godunov, default to including viscous/diffusive
@@ -852,6 +852,7 @@ private:
     void MakeEBGeometry (amrex::Real time = 0.0);
     void make_eb_annulus ();
     void make_eb_box (amrex::Real time = 0.0);
+    void make_eb_plane (amrex::Real time = 0.0);
     void make_eb_cylinder ();
     void make_eb_twocylinders ();
     void make_eb_regular ();

@@ -180,6 +180,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
                        get_density_old_const(), get_tracer_old_const(), get_tracer_new_const(),
                        include_pressure_gradient);
 
+
+    compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
+                                     AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
+                                     GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
+
 #ifdef INCFLO_USE_MOVING_EB
     // **********************************************************************************************
     //
@@ -195,26 +200,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     }
 #endif
 
-    compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
-                                     AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                                     GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
-
-#if 0
-    // **********************************************************************************************
-    //
-    // Update the moving geometry and arrays
-    //
-    // **********************************************************************************************
-
-    if (!incremental_projection) {
-        for (int lev = 0; lev <= finest_level; lev++)
-        {
-            MakeNewGeometry(lev,new_time);
-        }
-    }
-#endif
-
-// *************************************************************************************
+    // *************************************************************************************
     // if (advection_type == "Godunov")
     //      Compute the explicit advective terms R_u^(n+1/2), R_s^(n+1/2) and R_t^(n+1/2)
     // if (advection_type == "MOL"                )
@@ -269,12 +255,15 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 {
                     if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
                     {
+			// FIXME? Seems inconsistent that there's no dt here, but then it exists below....
+			// Apply() at the end, divides out dt but only for !covered at time n
+                        // This just ensures we don't try to use garbage stored in the covered cell.
                         rho_new(i,j,k) = drdt(i,j,k);
                     } else {
                         rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
                     }
 
-                    if (i == 5 && j == 4)
+                    if (j == 8)
                         amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_new(i,j,k) << " / " << drdt(i,j,k) << std::endl;
 
                     if (m_redistribution_type == "NoRedist") {
@@ -303,8 +292,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  {
                      rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
                      
-                     if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)) 
-                         amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl; 
+                     // if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)) 
+                     //     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl; 
                  });
             } // mfi
         } // lev
@@ -561,7 +550,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Update the moving geometry and arrays
     //
     // **********************************************************************************************
-    ApplyProjection(GetVecOfConstPtrs(density_nph_oldeb),new_time,m_dt,incremental_projection);
+// CEG not sure why we would apply projection here. unless this intermediate is needed to get final proj to converge...
+//    ApplyProjection(GetVecOfConstPtrs(density_nph_oldeb),new_time,m_dt,incremental_projection);
 
     if (!incremental_projection) {
         for (int lev = 0; lev <= finest_level; lev++)
@@ -585,7 +575,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
     
     // *************************************************************************************
-    // Update density first
+    // Update density^n+1/2 first
     // *************************************************************************************
     if (l_constant_density)
     {
@@ -605,22 +595,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                 Array4<Real>        const& rho_nph  = density_nph_neweb[lev].array(mfi);
 
-                /*amrex::Print() << "rho_old: " << rho_old << std::endl;
-                amrex::Print() << "rho_new: " << rho_new << std::endl;
-
-                for (int i = -4; i < 37; i++){
-                    for (int j = -4; j < 19; j++){
-                        amrex::Print() << "rho_old(" << i << ", " << j << "): " << rho_old(i,j,0,0) << std::endl;
-                        amrex::Print() << "rho_new(" << i << ", " << j << "): " << rho_new(i,j,0,0) << std::endl;
-                    }
-                }*/
-
                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
+                    // FIXME? what happens with newly uncovered cells here? how have covered cells in rho_old been set?
                     rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
                     if (rho_nph(i,j,k) < 0.0){
                     // if (i == 34 && j == 46 || i == 29 && j == 17){
-                        amrex::Print() << "Negative Density rho_nph(" << i << ", " << j << "): " << rho_nph(i,j,0) << std::endl;
+                        amrex::Print() << "Negative Density rho_nph(" << i << ", " << j << "): "
+				       << rho_nph(i,j,0) << std::endl;
                         amrex::Print() << "rho_old(" << i << ", " << j << "): " << rho_old(i,j,0) << std::endl;
                         amrex::Print() << "rho_new(" << i << ", " << j << "): " << rho_new(i,j,0) << std::endl;
                     }

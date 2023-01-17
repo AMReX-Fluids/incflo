@@ -21,6 +21,11 @@ ifeq ($(USE_EB), TRUE)
   USERSuffix += .EB
 endif
 
+ifdef USE_MOVING_EB
+  USE_MOVING_EB := $(strip $(USE_MOVING_EB))
+else
+  USE_MOVING_EB := FALSE
+endif
 ifeq ($(USE_MOVING_EB), TRUE)
   DEFINES += -DINCFLO_USE_MOVING_EB
   DEFINES += -DAMREX_USE_MOVING_EB

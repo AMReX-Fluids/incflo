@@ -10,7 +10,7 @@ steady_state            =  0            # Steady-state solver?
 #         TIME STEP COMPUTATION         #
 #.......................................#
 incflo.fixed_dt             =   1.e-2       # Use this constant dt if > 0
-incflo.do_initial_proj      =   1
+incflo.do_initial_proj      =   0
 incflo.initial_iterations   =   0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -29,19 +29,17 @@ incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
-incflo.advect_momentum = true
+incflo.advect_momentum = 1 
 incflo.advection_type        =  "Godunov" 
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
-#incflo.redistribution_type   =  "NoRedist" 
 
 incflo.godunov_include_diff_in_forcing = false
-
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   16 34       # Grid cells at coarsest AMRlevel
+amr.n_cell              =   34 16       # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.max_grid_size_x     =   1024
 amr.max_grid_size_y     =   1024
@@ -51,29 +49,43 @@ amr.blocking_factor     =   2
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
-geometry.prob_lo        =   0.  0.      # Lo corner coordinates
-geometry.prob_hi        =   1.6 3.4     # Hi corner coordinates
-geometry.is_periodic    =   1   0       # Periodicity x y z (0/1)
+geometry.prob_lo        =  -1.7 -0.8    # Lo corner coordinates
+geometry.prob_hi        =   1.7  0.8    # Hi corner coordinates
+geometry.is_periodic    =   0   0       # Periodicity x y z (0/1)
 
 # Boundary conditions
-ylo.type                =   "mi"
-ylo.velocity            =   0.0  1.0  0.0
+xlo.type                =   "nsw"
+xlo.velocity            =   0.0  0.0  0.0
 
-yhi.type                =   "po"
-yhi.pressure            =   0.0
+xhi.type                =   "po"
+xhi.pressure            =   0.0
+
+# would need FOEXTRAP here to avoid using EB covered
+# bc amrex fill routines aren't EB aware
+#ylo.type                =   "nsw"
+#yhi.type                =   "nsw"
+
+# Hack Dirchlet BCs with mass inflow BC
+ylo.type                =   "mi"
+ylo.velocity            =   2.0  0.0  0.0
+
+yhi.type                =   "mi"
+yhi.velocity            =   2.0  0.0  0.0
+
 
 # Add box
-incflo.geometry = "sphere"
+incflo.geometry = "plane"
+plane.point = -0.05 0.0
+#plane.point = -0.04 0.0
+#plane.normal = -1.0 -0.05
 
-sphere.internal_flow = false
-sphere.radius = 0.4
-sphere.center = 0.80 0.805 0.0
+
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.ic_u             =   0.0         #
-incflo.ic_v             =   1.0         #
+incflo.ic_u             =   2.0         #
+incflo.ic_v             =   0.0         #
 incflo.ic_p             =   0.0         #
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -86,5 +98,5 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 #               EB FLOW                 #
 #.......................................#
-eb_flow.velocity        = 0.0 1.0 0.0
-eb_flow.density         = 0.0
+eb_flow.velocity        = 2.0 0.0 0.0
+eb_flow.density         = 1.0

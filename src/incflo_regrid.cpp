@@ -111,23 +111,23 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 void incflo::MakeNewGeometry (int lev, Real time)
 {
     // Erase old EB
-    EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(eb_old));
+    EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(m_eb_old));
 
     // Build a new EB
     MakeEBGeometry(time);
 
-    eb_old = eb_new;
-    eb_new = &(EB2::IndexSpace::top());
+    m_eb_old = m_eb_new;
+    m_eb_new = &(EB2::IndexSpace::top());
 
     m_old_factory[lev] = std::move(m_new_factory[lev]);
 
-    m_new_factory[lev] = makeEBFabFactory(eb_new, geom[lev], grids[lev], dmap[lev],
+    m_new_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
                                           {nghost_eb_basic(),
                                            nghost_eb_volume(),
                                            nghost_eb_full()},
                                           EBSupport::full);
 
-    EB2::IndexSpace::push(const_cast<EB2::IndexSpace*>(eb_new));
+    EB2::IndexSpace::push(const_cast<EB2::IndexSpace*>(m_eb_new));
 }
 
 // Remake an existing level with a new geometry but nothing else changed

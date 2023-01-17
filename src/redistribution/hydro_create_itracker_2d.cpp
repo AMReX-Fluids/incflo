@@ -44,7 +44,7 @@ Redistribution::MakeITracker ( Box const& bx,
     Array<int,9> imap{0,-1,0,1,-1,1,-1,0,1};
     Array<int,9> jmap{0,-1,-1,-1,0,0,1,1,1};
 
-    Array<int,9> nmap{0,0,7,0,5,4,0,2,0};
+    Array<int,9> nmap{0,8,7,6,5,4,3,2,1};
 
     const auto& is_periodic_x = lev_geom.isPeriodic(0);
     const auto& is_periodic_y = lev_geom.isPeriodic(1);
@@ -155,11 +155,11 @@ Redistribution::MakeITracker ( Box const& bx,
 #if 1
            Real sum_vol = vfrac_new(i,j,k) + vfrac_new(i+ioff,j+joff,k);
            
-           //if ( debug_verbose > 0 )
-           //    amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac_new(i,j,k) <<
-           //                      " merge " << IntVect(i+ioff,j+joff) <<
-           //                      " with vfrac " << vfrac_new(i+ioff,j+joff,k) <<
-           //                      " to get new vfrac " <<  sum_vol << std::endl;
+           if ( i==8 && j==8 ) //( debug_verbose > 0 )
+              amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac_new(i,j,k) <<
+                                " merge " << IntVect(i+ioff,j+joff) <<
+                                " with vfrac " << vfrac_new(i+ioff,j+joff,k) <<
+                                " to get new vfrac " <<  sum_vol << std::endl;
 #endif
 
                  
@@ -288,40 +288,34 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        // Check if Neighbors are Covered Cells
         if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)
         {
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
             {
-                int ioff = imap[itracker(i,j,k,1)];
-                int joff = jmap[itracker(i,j,k,1)];   
+                int ioff = imap[itracker(i,j,k,i_nbor)];
+                int joff = jmap[itracker(i,j,k,i_nbor)];   
            
+		// Check if Neighbors are Covered Cells
                 if (vfrac_new(i+ioff,j+joff,k) == 0. )
                 {
                     amrex::Print() << "Cell  " << IntVect(i,j) << " is merged with a covered neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
                     itracker(i+ioff,j+joff,k,0) += 1;
-                    itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
+                    itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,i_nbor)];
                 }
-            }
-        }
-	// Add neighboors to uncovered cells
-        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
-        {
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-            
-    	    amrex::Print() << "Uncovered Cell " << IntVect(i,j) << std::endl;   
-            {
-                int ioff = imap[itracker(i,j,k,1)];
-                int joff = jmap[itracker(i,j,k,1)];   
-           
-                    itracker(i+ioff,j+joff,k,0) += 1;
-                    itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,1)];
-            }
-        }
 
+		// Check if Neighbors are newly Regular Cells
+		if ( vfrac_new(i+ioff,j+joff,k) == 1. && vfrac_old(i+ioff,j+joff,k) < 1.  )
+                {
+                    amrex::Print() << "Cell  " << IntVect(i,j) << " is merged with a newly regular neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
+                    itracker(i+ioff,j+joff,k,0) += 1;
+                    itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,i_nbor)];
+                }
+
+            }
+        }
     });
 
-#if 0
+#if 1
     amrex::Print() << "Check for all covered cells." << std::endl;
 
     amrex::ParallelFor(Box(itracker),
@@ -363,35 +357,35 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
-#if 1
-    amrex::Print() << "Post Update to Cell Merging" << std::endl;
+// #if 0
+//     amrex::Print() << "Post Update to Cell Merging" << std::endl;
 
-    amrex::ParallelFor(Box(itracker),
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if (itracker(i,j,k) > 0)
-        {
-            amrex::Print() << "Cell " << IntVect(i,j) << " is merged with: ";   
+//     amrex::ParallelFor(Box(itracker),
+//     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//     {
+//         if (itracker(i,j,k) > 0)
+//         {
+//             amrex::Print() << "Cell " << IntVect(i,j) << " is merged with: ";   
 
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-            {
-                int ioff = imap[itracker(i,j,k,i_nbor)];
-                int joff = jmap[itracker(i,j,k,i_nbor)];  
+//             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
+//             {
+//                 int ioff = imap[itracker(i,j,k,i_nbor)];
+//                 int joff = jmap[itracker(i,j,k,i_nbor)];  
                 
-                if (i_nbor > 1)
-                {
-                    amrex::Print() << ", " << IntVect(i+ioff, j+joff);
-                } else
-                {
-                    amrex::Print() << IntVect(i+ioff, j+joff);
-                }
-            }
+//                 if (i_nbor > 1)
+//                 {
+//                     amrex::Print() << ", " << IntVect(i+ioff, j+joff);
+//                 } else
+//                 {
+//                     amrex::Print() << IntVect(i+ioff, j+joff);
+//                 }
+//             }
 
-            amrex::Print() << std::endl;
-        }
-    });    
-    amrex::Print() << std::endl;
-#endif
+//             amrex::Print() << std::endl;
+//         }
+//     });    
+//     amrex::Print() << std::endl;
+// #endif
 
 }
 #endif
