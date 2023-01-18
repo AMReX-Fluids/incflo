@@ -327,11 +327,11 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 	    if ( (i==8 || i==9) && j == 8)
 		amrex::Print() << "Final U: " << IntVect(i,j) << U_out(i,j,k,n) << std::endl; 
 	    
-            if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1. && nrs(i,j,k) == 1){
-                U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
-                amrex::Print() << "Adding new fix here: U_out" << IntVect(i,j) << ": " << U_out(i,j,k,n) << std::endl;
-            }
-            // if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. ) 
+            // if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1. && nrs(i,j,k) == 1){
+            //     U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
+            //     amrex::Print() << "Adding new fix here: U_out" << IntVect(i,j) << ": " << U_out(i,j,k,n) << std::endl;
+            // }
+           // if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. ) 
             //     amrex::Print() << "VFRAC / UOUT " << IntVect(i,j) << " " << 
             //     vfrac_new(i,j,k) << " " << U_out(i,j,k,n) << std::endl;
         }

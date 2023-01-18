@@ -170,21 +170,30 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 		// FIXME Probably want to enforce scale == 1.0 for MEB for now
 		scratch(i,j,k,n) = U_in(i,j,k,n) + dt * U_in(i,j,k,n) * delta_vol;
 	    }
-	    
-	    // So check to see any if neighbors were covered at time n.
-	    // For cells in my nbhd that were covered, add it's vol correction to me
-	    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
-	    {
+	});
+
+	amrex::ParallelFor(Box(scratch), ncomp,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+	{
+// scratch was not initialized to zero. nb cell might not be initilaized yet. doing it
+	    // this way requires this extra loop...
+	    // Check to see if this cell was covered at time n.
+	    // If covered, add my vol correction to the cells in my nbhd
+	    if ( vfrac_old(i,j,k) == 0.0 ) {
+		for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+		{
 		    int ioff = imap[itr(i,j,k,i_nbor)];
 		    int joff = jmap[itr(i,j,k,i_nbor)];   
 
-		    if ( vfrac_old(i+ioff,j+joff,k) == 0.0 )
+		    // Seems we only want this correction if the nb is regular?...
+		    if ( 1 ) //vfrac_new(i+ioff,j+joff,k) == 1.0 )
 		    {
-			amrex::Print() << "Cell  " << IntVect(i,j) << " gets correction from newly uncovered neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
+			amrex::Print() << "Cell  " << IntVect(i,j) << " newly uncovered, correct neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
 
-			Real delta_vol = vfrac_new(i+ioff,j+joff,k) / vfrac_old(i,j,k); 
-			scratch(i,j,k,n) += U_in(i,j,k,n) * delta_vol;
+			Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k); 
+			scratch(i+ioff,j+joff,k,n) += U_in(i+ioff,j+joff,k,n) * delta_vol;
 		    }
+		}
 	    }
 
 	    //fixme
@@ -218,15 +227,19 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
 		// FIXME need to think more about this
                 //if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.))
-		if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.))
+		if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
+		    || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) )
                 {
                    const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
 
                    if (vfrac_old(i,j,k) == 0.){
-                       dUdt_out(i,j,k,n) = dUdt_out(i,j,k,n);
+		       // Do nothing, we already have what we want to pass out
+                       //dUdt_out(i,j,k,n) = dUdt_out(i,j,k,n);
                    } else {
+		       // We redistributed the whole state, but want to pass out only the update
                        dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
                    }
+		   // FIXME need to make sure NR cells see the SRD result...
                 }
                 else
                 {
