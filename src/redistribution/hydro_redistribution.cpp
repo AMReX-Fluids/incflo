@@ -185,14 +185,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 		    int ioff = imap[itr(i,j,k,i_nbor)];
 		    int joff = jmap[itr(i,j,k,i_nbor)];   
 
-		    // Seems we only want this correction if the nb is regular?...
-		    if ( 1 ) //vfrac_new(i+ioff,j+joff,k) == 1.0 )
-		    {
-			amrex::Print() << "Cell  " << IntVect(i,j) << " newly uncovered, correct neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
+		    amrex::Print() << "Cell  " << IntVect(i,j) << " newly uncovered, correct neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
 
-			Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k); 
-			scratch(i+ioff,j+joff,k,n) += U_in(i+ioff,j+joff,k,n) * delta_vol;
-		    }
+		    Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k);
+		    // NOTE this correction is only right for the case that the newly
+		    // uncovered cell has only one other cell in it's neghborhood.
+		    scratch(i+ioff,j+joff,k,n) += U_in(i+ioff,j+joff,k,n) * delta_vol;
 		}
 	    }
 

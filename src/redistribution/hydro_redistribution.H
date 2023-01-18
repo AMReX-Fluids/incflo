@@ -29,13 +29,13 @@ namespace Redistribution {
 			 amrex::Geometry const& lev_geom,
 			 amrex::Real target_volfrac);
 
-    void ebFlowMerging ( int i, int j,
-			 amrex::Array4<amrex::Real const> const& apx,
-			 amrex::Array4<amrex::Real const> const& apy,
-			 amrex::Array4<amrex::Real const> const& vfrac,
-			 amrex::Array4<int> const& itracker,
-			 amrex::Geometry const& lev_geom,
-			 amrex::Real target_volfrac);
+    void newlyUncoveredNbhd ( int i, int j,
+			      amrex::Array4<amrex::Real const> const& apx,
+			      amrex::Array4<amrex::Real const> const& apy,
+			      amrex::Array4<amrex::Real const> const& vfrac,
+			      amrex::Array4<int> const& itracker,
+			      amrex::Geometry const& lev_geom,
+			      amrex::Real target_volfrac);
 
     void Apply ( amrex::Box const& bx, int ncomp,
                  amrex::Array4<amrex::Real>       const& dUdt_out,
@@ -78,7 +78,7 @@ namespace Redistribution {
                               amrex::BCRec  const* d_bcrec_ptr,
                               amrex::Geometry& geom, std::string redistribution_type,
                               const int srd_max_order = 2,
-                              amrex::Real target_volfrac = 0.5);
+                              amrex::Real target_volfrac = 1.0);
 
     void StateRedistribute ( amrex::Box const& bx, int ncomp,
                              amrex::Array4<amrex::Real> const& dUdt_out,
