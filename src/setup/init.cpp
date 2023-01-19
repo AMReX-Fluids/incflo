@@ -63,23 +63,24 @@ void incflo::ReadParameters ()
         pp.query("godunov_include_diff_in_forcing"  , m_godunov_include_diff_in_forcing);
         pp.query("use_mac_phi_in_godunov"           , m_use_mac_phi_in_godunov);
 
+        if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;
+
+        if (m_advection_type != "MOL" && m_advection_type != "Godunov" && m_advection_type != "BDS")
+            amrex::Abort("advection type must be MOL, Godunov, or BDS");
+
+#ifdef AMREX_USE_EB
+        if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
+
         // What type of redistribution algorithm;
         // {NoRedist, FluxRedist, StateRedist}
-#ifdef AMREX_USE_EB
         pp.query("redistribution_type"              , m_redistribution_type);
         if (m_redistribution_type != "NoRedist" &&
             m_redistribution_type != "FluxRedist" &&
             m_redistribution_type != "StateRedist")
             amrex::Abort("redistribution type must be NoRedist, FluxRedist, or StateRedist");
 
-        if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
         pp.query("write_geom_chk", m_write_geom_chk);
 #endif
-
-        if (m_advection_type == "MOL") m_godunov_include_diff_in_forcing = false;
-
-        if (m_advection_type != "MOL" && m_advection_type != "Godunov" && m_advection_type != "BDS")
-            amrex::Abort("advection type must be MOL, Godunov, or BDS");
 
         // The default for diffusion_type is 2, i.e. the default m_diff_type is DiffusionType::Implicit
         int diffusion_type = 2;
@@ -198,6 +199,14 @@ void incflo::ReadParameters ()
           pp_eb_flow.query("normal_tol", tol_deg);
           m_eb_flow.normal_tol = tol_deg*M_PI/amrex::Real(180.);
        }
+
+#ifdef AMREX_USE_MOVING_EB
+       // Do some checks
+       //if (m_advection_type != "MOL") amrex::Abort("Moving EB requires MOL");
+       if (m_redistribution_type != "StateRedist") amrex::Abort("Moving EB requires StateRedist");
+       if (m_advect_momentum != 1) amrex::Abort("Moving EB requires advecting momentum");
+#endif
+
     } // end prefix eb_flow
 #endif
 }
