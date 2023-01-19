@@ -45,7 +45,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             dUdt_out(i,j,k,n) = 0.;
         });
 
-    if (redistribution_type == "StateRedist") {
+    if (redistribution_type == "FluxRedist")
+    {
+        int icomp = 0;
+        apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp, flag, vfrac_old, lev_geom);
+
+    } else if (redistribution_type == "StateRedist") {
 
         Box const& bxg1 = grow(bx,1);
         Box const& bxg2 = grow(bx,2);
@@ -53,44 +58,40 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         Box const& bxg4 = grow(bx,4);
 
 #if (AMREX_SPACEDIM == 2)
-        // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
-        //    use the first component of this for the number of neighbors, so 4 comps
-	// For Central Merging we include all surrounding cells, so 9 in 2D
-	// For Moving EB, we have to allow for more then just normal merging (due to covering/
-	// uncovering), so just allow for the max.
-        IArrayBox itracker(bxg4,9);
+        // For Normal Merging, we assume that in 2D a cell will need at most 3 neighbors to
+	//   merge with. We use the first component of this for the number of neighbors, so
+	//   4 comps needed.
+	// For Central Merging, we include all surrounding cells, so in 2D, 9 comps needed.
+	// For Moving EB, we have to allow for more then just Normal Merging (due to covering/
+	//   uncovering reciprocity), so just allow for the max for now.
+        IArrayBox itracker(bxg4,9,The_Async_Arena());
         // How many nbhds is a cell in
 #else
         // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
         //    use the first component of this for the number of neighbors
-        IArrayBox itracker(bxg4,8);
+        IArrayBox itracker(bxg4,8,The_Async_Arena());
 #endif
-        FArrayBox nrs_fab(bxg3,1);
-        FArrayBox alpha_fab(bxg3,2);
+        FArrayBox nrs_fab(bxg3,1,The_Async_Arena());
+        FArrayBox alpha_fab(bxg3,2,The_Async_Arena());
 
         // Total volume of all cells in my nbhd
-        FArrayBox nbhd_vol_fab(bxg2,1);
+        FArrayBox nbhd_vol_fab(bxg2,1,The_Async_Arena());
 
         // Centroid of my nbhd
-        FArrayBox cent_hat_fab     (bxg3,AMREX_SPACEDIM);
+        FArrayBox cent_hat_fab(bxg3,AMREX_SPACEDIM,The_Async_Arena());
 
-        Elixir eli_itr = itracker.elixir();
         Array4<int> itr = itracker.array();
         Array4<int const> itr_const = itracker.const_array();
 
-        Elixir eli_nrs = nrs_fab.elixir();
         Array4<Real      > nrs       = nrs_fab.array();
         Array4<Real const> nrs_const = nrs_fab.const_array();
 
-        Elixir eli_alpha = alpha_fab.elixir();
         Array4<Real      > alpha       = alpha_fab.array();
         Array4<Real const> alpha_const = alpha_fab.const_array();
 
-        Elixir eli_nbf = nbhd_vol_fab.elixir();
         Array4<Real      > nbhd_vol       = nbhd_vol_fab.array();
         Array4<Real const> nbhd_vol_const = nbhd_vol_fab.const_array();
 
-        Elixir eli_chf = cent_hat_fab.elixir();
         Array4<Real      > cent_hat       = cent_hat_fab.array();
         Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
 
@@ -126,14 +127,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 	//
 	// Moving SRD corrections
 	//
-	// Compute a delta-divU correction instead of using flow through EB
 	// Here, delta-divU is the difference between reasonable divU values
 	// that we could pass into the MAC
 	//
 	// const GpuArray<Real,AMREX_SPACEDIM> dxinv = lev_geom.InvCellSizeArray();
 	// FArrayBox tmp_fab(bxg4, 1, The_Async_Arena());
 	// Array4<Real> const& Ueb_divu = tmp_fab.array(mfi);
-	// // FIXME would need to pass these in to this fn. Also need header for EB div...
+	// // FIXME would need to pass these into this fn.
 	// Array4<Real const> const& vel_eb_arr = get_velocity_eb()[lev]->const_array(mfi);
 	// Array4<Real const> const& bnormarr = ebfact_old->getBndryNormal().const_array(mfi);
 	// Array4<Real const> const& bareaarr = ebfact_old->getBndryArea().const_array(mfi);
@@ -149,7 +149,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 	    
 	    // For newly uncovered cells, use U-star == 0. Don't want uninitialized value.
 	    if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
-		scratch(i,j,k,n) = 0.; //vfrac_new(i,j,k); 
+		scratch(i,j,k,n) = 0.;
 	    
 	    // Correct all cells that are cut at time n or become cut at time n+1
 	    if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
@@ -175,17 +175,19 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 	amrex::ParallelFor(Box(scratch), ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
 	{
-// scratch was not initialized to zero. nb cell might not be initilaized yet. doing it
-	    // this way requires this extra loop...
 	    // Check to see if this cell was covered at time n.
 	    // If covered, add my vol correction to the cells in my nbhd
+	    // Need this in a separate loop because otherwise we can't be guaranteed
+	    // that the nb has been initialized.
 	    if ( vfrac_old(i,j,k) == 0.0 ) {
 		for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
 		{
 		    int ioff = imap[itr(i,j,k,i_nbor)];
 		    int joff = jmap[itr(i,j,k,i_nbor)];   
 
-		    amrex::Print() << "Cell  " << IntVect(i,j) << " newly uncovered, correct neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
+		    amrex::Print() << "Cell  " << IntVect(i,j)
+				   << " newly uncovered, correct neighbor at "
+				   << IntVect(i+ioff,j+joff) << std::endl;
 
 		    Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k);
 		    // NOTE this correction is only right for the case that the newly
@@ -223,8 +225,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
                 }
 
-		// FIXME need to think more about this
-                //if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.))
 		if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
 		    || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) )
                 {
@@ -237,7 +237,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 		       // We redistributed the whole state, but want to pass out only the update
                        dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
                    }
-		   // FIXME need to make sure NR cells see the SRD result...
                 }
                 else
                 {
@@ -282,7 +281,8 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                      amrex::Real target_volfrac)
 {
     if (redistribution_type != "StateRedist") {
-    std::string msg = "Redistribution::ApplyToInitialData: Shouldn't be here with redist type "+redistribution_type;
+        std::string msg = "Redistribution::ApplyToInitialData: Shouldn't be here with redist type "
+	    +redistribution_type;
         amrex::Error(msg);
     }
 
@@ -293,38 +293,33 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,4);
+    IArrayBox itracker(bxg4,4,The_Async_Arena());
 #else
     // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,8);
+    IArrayBox itracker(bxg4,8,The_Async_Arena());
 #endif
-    FArrayBox nrs_fab(bxg3,1);
-    FArrayBox alpha_fab(bxg3,2);
+    FArrayBox nrs_fab(bxg3,1,The_Async_Arena());
+    FArrayBox alpha_fab(bxg3,2,The_Async_Arena());
 
     // Total volume of all cells in my nbhd
-    FArrayBox nbhd_vol_fab(bxg2,1);
+    FArrayBox nbhd_vol_fab(bxg2,1,The_Async_Arena());
 
     // Centroid of my nbhd
-    FArrayBox cent_hat_fab  (bxg3,AMREX_SPACEDIM);
+    FArrayBox cent_hat_fab(bxg3,AMREX_SPACEDIM,The_Async_Arena());
 
-    Elixir eli_itr = itracker.elixir();
     Array4<int> itr = itracker.array();
     Array4<int const> itr_const = itracker.const_array();
 
-    Elixir eli_nrs = nrs_fab.elixir();
     Array4<Real      > nrs       = nrs_fab.array();
     Array4<Real const> nrs_const = nrs_fab.const_array();
 
-    Elixir eli_alpha = alpha_fab.elixir();
     Array4<Real      > alpha       = alpha_fab.array();
     Array4<Real const> alpha_const = alpha_fab.const_array();
 
-    Elixir eli_nbf = nbhd_vol_fab.elixir();
     Array4<Real      > nbhd_vol       = nbhd_vol_fab.array();
     Array4<Real const> nbhd_vol_const = nbhd_vol_fab.const_array();
 
-    Elixir eli_chf = cent_hat_fab.elixir();
     Array4<Real      > cent_hat       = cent_hat_fab.array();
     Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
 

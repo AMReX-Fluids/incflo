@@ -219,9 +219,11 @@ Redistribution::normalMerging ( int i, int j,
 	amrex::Print() << "normalMerging(): Couldn't merge with enough cells to raise volume at " <<
 	    IntVect(i,j) << " so stuck with sum_vol " << sum_vol << std::endl;
 	amrex::Warning("Couldn't merge with enough cells to raise volume greater than target_volfrac");
-	if (sum_vol < Real(0.5))
+// FIXME -- need this to get plane_right to work (has wall BC), but 0.5 is likely a better choice here
+	// or using target_volume...
+	if (sum_vol < Real(0.4))
 	{
-	    amrex::Abort("Couldn't merge with enough cells to raise volume greater than 0.5");
+	    amrex::Abort("Couldn't merge with enough cells to raise volume greater than 0.4");
 	}
     }
 }
@@ -264,13 +266,9 @@ Redistribution::newlyUncoveredNbhd ( int i, int j,
     bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
 		      (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
 
-// deltaVold is not sufficient to determine motion of EB
-    // and if we're only doing this for newly uncovered cells, it's always the same, so
-    // how does this help us???
-    //Real deltaV = vfrac_new(i,j,k) - vfrac_old(i,j,k);
-    
-    // Choose just based on the EB normal 
-    if (std::abs(nx) > std::abs(ny))
+    // Choose just based on the EB normal
+    // For now, we just choose x-direction. Would need eb_vel to do better...
+    if (std::abs(nx) > std::abs(ny) || nx_eq_ny)
     {
 	if (nx > 0)
 	    itracker(i,j,k,1) = 5;
@@ -326,9 +324,10 @@ Redistribution::newlyUncoveredNbhd ( int i, int j,
 
 }
 
-//            //
-// 	   // Central Merging
-// 	   //
+//
+// Central Merging
+//
+
 //            Real sum_vol = vfrac_new(i,j,k);
 	    
 //            //int label[3][3] = {{1,2,3}, {4,0,5}, {6,7,8}};
@@ -429,6 +428,7 @@ Redistribution::MakeITracker ( Box const& bx,
 	else if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < 1.0) && vfrac_old(i,j,k) == 0.0)
 	{
             // For now, require that newly uncovered cells only have one other cell in it's nbhd
+	    // FIXME, unsure of target_volfrac here...
 	    newlyUncoveredNbhd(i, j, apx_new, apy_new, vfrac_new, itracker,
 			       lev_geom, 0.5);
 	}
