@@ -160,6 +160,11 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     MultiFab::Copy(new_leveldata->gp   , m_leveldata[lev]->gp   ,0,0,AMREX_SPACEDIM,0);
     MultiFab::Copy(new_leveldata->p_nd , m_leveldata[lev]->p_nd ,0,0,1,0);
 
+    MultiFab::Copy(new_leveldata->conv_velocity_o , m_leveldata[lev]->conv_velocity_o,0,0,AMREX_SPACEDIM,0);
+    MultiFab::Copy(new_leveldata->conv_density_o , m_leveldata[lev]->conv_density_o,0,0,1,0);
+    MultiFab::Copy(new_leveldata->conv_velocity , m_leveldata[lev]->conv_velocity,0,0,AMREX_SPACEDIM,0);
+    MultiFab::Copy(new_leveldata->conv_density , m_leveldata[lev]->conv_density,0,0,1,0);
+
     // Fill in ghost cells for new MultiFabs (Matt - Not sure if 4 is the correct ng)
     fillpatch_velocity(lev, time, new_leveldata->velocity_o, 4);
     fillpatch_velocity(lev, time, new_leveldata->velocity, 4);
@@ -182,6 +187,8 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
         EB_set_covered( new_leveldata->tracer_o  , 1.e45);
     }
     EB_set_covered( new_leveldata->gp , 1.e45);
+
+    EB_set_covered( new_leveldata->conv_velocity_o, 1.e45);
 
 #if 1
     // Now let's make sure to fill cells that were previously covered but are now cut cell

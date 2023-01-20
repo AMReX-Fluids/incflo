@@ -8,10 +8,10 @@ using namespace amrex;
 //
 //  1. Use u = vel_pred to compute
 //
-//      if (!advect_momentum) then
-//          conv_u  = - u grad u
+//      if (advect_momentum) then
+//          conv_u  = - div(rho u u)
 //      else
-//          conv_u  = - del dot (rho u u)
+//          conv_u  = - u grad u
 //      conv_r  = - div( u rho  )
 //      conv_t  = - div( u trac )
 //      eta     = viscosity
@@ -346,17 +346,17 @@ void incflo::ApplyCorrector()
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
-                                                    m_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0))
-                                                  + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
-                                                  + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
+                                                    m_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0)) );,
+//                                                + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
+//                                                + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
                                      vel(i,j,k,1) =  rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
-                                                     m_half*(  dvdt_o(i,j,k,1)+  dvdt(i,j,k,1))
-                                                   + m_half*(divtau_o(i,j,k,1)+divtau(i,j,k,1))
-                                                   + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
+                                                     m_half*(  dvdt_o(i,j,k,1)+  dvdt(i,j,k,1)) );,
+//                                                 + m_half*(divtau_o(i,j,k,1)+divtau(i,j,k,1))
+//                                                 + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
                                      vel(i,j,k,2) =  rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
-                                                     m_half*(  dvdt_o(i,j,k,2)+  dvdt(i,j,k,2))
-                                                   + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
-                                                   + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
+                                                     m_half*(  dvdt_o(i,j,k,2)+  dvdt(i,j,k,2)) ););
+//                                                 + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
+//                                                 + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
 
                         AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
                                      vel(i,j,k,1) /= rho_new(i,j,k);,
@@ -522,8 +522,8 @@ void incflo::ApplyCorrector()
     // Over-write velocity in cells with vfrac < 1e-4
     //
     // **********************************************************************************************
-    incflo_correct_small_cells(get_velocity_new(),
-                               AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
-                               GetVecOfConstPtrs(w_mac)));
+    //incflo_correct_small_cells(get_velocity_new(),
+    //                           AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
+    //                           GetVecOfConstPtrs(w_mac)));
 #endif
 }

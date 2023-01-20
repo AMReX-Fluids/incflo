@@ -53,7 +53,7 @@ geometry.prob_lo        =   0.  0.      # Lo corner coordinates
 geometry.prob_hi        =   3.4 1.6     # Hi corner coordinates
 geometry.is_periodic    =   0   1       # Periodicity x y z (0/1)
 
-# Boundary conditions
+# Boundary conditions -- note xlo is covered
 xlo.type                =   "nsw"
 xlo.velocity            =   0.0  0.0  0.0
 
