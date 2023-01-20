@@ -202,7 +202,7 @@ void incflo::ReadParameters ()
 
 #ifdef AMREX_USE_MOVING_EB
        // Do some checks
-       //if (m_advection_type != "MOL") amrex::Abort("Moving EB requires MOL");
+       if (m_advection_type != "MOL") amrex::Abort("Moving EB requires MOL");
        if (m_redistribution_type != "StateRedist") amrex::Abort("Moving EB requires StateRedist");
        if (m_advect_momentum != 1) amrex::Abort("Moving EB requires advecting momentum");
 #endif
