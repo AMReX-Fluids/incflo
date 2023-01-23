@@ -9,7 +9,6 @@
 #include <AMReX_EBFabFactory.H>
 #include <hydro_ebgodunov.H>
 #include <hydro_ebmol.H>
-#include <AMReX_EBMultiFabUtil_2D_C.H>
 #endif
 
 using namespace amrex;
@@ -250,19 +249,19 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                      u[1] = v_mac[lev];,
                      u[2] = w_mac[lev];);
 
-	// CEG fixme 
-	// VisMF::Write(*u_mac[0],"umac");
-	// VisMF::Write(*v_mac[0],"vmac");
-    
+        // CEG fixme
+        // VisMF::Write(*u_mac[0],"umac");
+        // VisMF::Write(*v_mac[0],"vmac");
+
 #ifdef AMREX_USE_EB
         const auto& ebfact_old = OldEBFactory(lev);
         const auto& ebfact_new =    EBFactory(lev);
 
         if (!ebfact_old.isAllRegular()) {
-	    // NOTE this divu is not relevant for MSRD
-	    // It's used for non-conservative adjustment (but MSRD is always conservative)
-	    // and in EBGod in 3D for corner-coupling (but flow through EB doesn't use any
-	    // transverse or CC (aka d/dt) terms)
+            // NOTE this divu is not relevant for MSRD
+            // It's used for non-conservative adjustment (but MSRD is always conservative)
+            // and in EBGod in 3D for corner-coupling (but flow through EB doesn't use any
+            // transverse or CC (aka d/dt) terms)
             if (m_eb_flow.enabled) {
                 amrex::EB_computeDivergence(divu[lev],u,geom[lev],true,*get_velocity_eb()[lev]);
             } else {
@@ -277,8 +276,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         divu[lev].FillBoundary(geom[lev].periodicity());
 
-	// CEG fixme 
-	//VisMF::Write(divu[0],"divu");
+        // CEG fixme
+        //VisMF::Write(divu[0],"divu");
 
         // ************************************************************************
         // Compute advective fluxes
@@ -498,8 +497,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
             Box const& bx = mfi.tilebox();
 
-	    Print()<<"Vel advection term..."<<std::endl;
-	    
+            Print()<<"Vel advection term..."<<std::endl;
+
             int flux_comp = 0;
             int  num_comp = AMREX_SPACEDIM;
 #ifdef AMREX_USE_EB
@@ -515,8 +514,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_MOVING_EB
 // Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
 // any d/dt terms (e.g transverse)
-						 Array4<Real const>{},
-						 Array4<Real const>{},
+                                                 Array4<Real const>{},
+                                                 Array4<Real const>{},
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -567,8 +566,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             Box const& bx = mfi.tilebox();
 
 #ifdef AMREX_USE_EB
-	    Print()<<"Density advection term..."<<std::endl;
-	    
+            Print()<<"Density advection term..."<<std::endl;
+
             EBCellFlagFab const& flagfab = ebfact_old->getMultiEBCellFlagFab()[mfi];
             if (flagfab.getType(bx) != FabType::covered)
                 HydroUtils::EB_ComputeDivergence(bx, drdt_tmp.array(mfi),
@@ -580,8 +579,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_MOVING_EB
 // Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
 // any d/dt terms (e.g transverse)
-						 Array4<Real const>{},
-						 Array4<Real const>{},
+                                                 Array4<Real const>{},
+                                                 Array4<Real const>{},
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -629,8 +628,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 // Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
 // any d/dt terms (e.g transverse)
 
-						 Array4<Real const>{},
-						 Array4<Real const>{},
+                                                 Array4<Real const>{},
+                                                 Array4<Real const>{},
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -676,7 +675,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           conv_r[lev]->array(mfi),
                                           (m_advect_tracer && (m_ntrac>0)) ? conv_t[lev]->array(mfi) : Array4<Real>{},
                                           m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
-                                          ebfact_old, ebfact_new, geom[lev], m_dt);
+                                          ebfact_old, ebfact_new,
+                                          m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                          geom[lev], m_dt);
        } // mfi
 #endif
     } // lev

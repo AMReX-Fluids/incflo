@@ -25,32 +25,36 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                        bool l_advect_tracer, int l_ntrac,
                                        EBFArrayBoxFactory const* ebfact_old,
                                        EBFArrayBoxFactory const* ebfact_new,
+                                       Array4<Real const > const& vel_eb,
                                        Geometry& lev_geom, Real l_dt)
 {
     EBCellFlagFab const& flagfab = ebfact_old->getMultiEBCellFlagFab()[mfi];
-    Array4<EBCellFlag const> const& flag = flagfab.const_array();
 
     bool regular = (flagfab.getType(amrex::grow(bx,4)) == FabType::regular);
 
-    Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz);
-    Array4<Real const> AMREX_D_DECL(apx_old, apy_old, apz_old);
-    Array4<Real const> AMREX_D_DECL(apx_new, apy_new, apz_new);
-    Array4<Real const> ccc, vfrac_old, vfrac_new;
 
     if (!regular)
     {
-        AMREX_D_TERM(fcx = ebfact_old->getFaceCent()[0]->const_array(mfi);,
-                     fcy = ebfact_old->getFaceCent()[1]->const_array(mfi);,
-                     fcz = ebfact_old->getFaceCent()[2]->const_array(mfi););
-        ccc   = ebfact_old->getCentroid().const_array(mfi);
-        AMREX_D_TERM(apx_old = ebfact_old->getAreaFrac()[0]->const_array(mfi);,
-                     apy_old = ebfact_old->getAreaFrac()[1]->const_array(mfi);,
-                     apz_old = ebfact_old->getAreaFrac()[2]->const_array(mfi););
-        AMREX_D_TERM(apx_new = ebfact_new->getAreaFrac()[0]->const_array(mfi);,
-                     apy_new = ebfact_new->getAreaFrac()[1]->const_array(mfi);,
-                     apz_new = ebfact_new->getAreaFrac()[2]->const_array(mfi););
-        vfrac_old = ebfact_old->getVolFrac().const_array(mfi);
-        vfrac_new = ebfact_new->getVolFrac().const_array(mfi);
+        Array4<EBCellFlag const> const& flag = flagfab.const_array();
+        AMREX_D_TERM(Array4<Real const> apx_old = ebfact_old->getAreaFrac()[0]->const_array(mfi);,
+                     Array4<Real const> apy_old = ebfact_old->getAreaFrac()[1]->const_array(mfi);,
+                     Array4<Real const> apz_old = ebfact_old->getAreaFrac()[2]->const_array(mfi););
+        AMREX_D_TERM(Array4<Real const> apx_new = ebfact_new->getAreaFrac()[0]->const_array(mfi);,
+                     Array4<Real const> apy_new = ebfact_new->getAreaFrac()[1]->const_array(mfi);,
+                     Array4<Real const> apz_new = ebfact_new->getAreaFrac()[2]->const_array(mfi););
+        Array4<Real const> vfrac_old = ebfact_old->getVolFrac().const_array(mfi);
+        Array4<Real const> vfrac_new = ebfact_new->getVolFrac().const_array(mfi);
+        // These are for the polynomial interpolation in SRD, need new time EB
+        AMREX_D_TERM(Array4<Real const> fcx = ebfact_new->getFaceCent()[0]->const_array(mfi);,
+                     Array4<Real const> fcy = ebfact_new->getFaceCent()[1]->const_array(mfi);,
+                     Array4<Real const> fcz = ebfact_new->getFaceCent()[2]->const_array(mfi););
+        Array4<Real const> ccc   = ebfact_new->getCentroid().const_array(mfi);
+
+#ifdef AMREX_USE_MOVING_EB
+        // For creating the MSRD correction term, so at time n
+        Array4<Real const> const& bnorm = ebfact_old->getBndryNormal().const_array(mfi);
+        Array4<Real const> const& barea = ebfact_old->getBndryArea().const_array(mfi);
+#endif
 
         Box gbx = bx;
 
@@ -86,7 +90,9 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                               AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                               AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
-                              bc_vel, lev_geom, l_dt, l_redistribution_type);
+                              bc_vel, lev_geom, l_dt, l_redistribution_type,
+                              vel_eb, bnorm, barea,
+                              2, 1.0, Array4<Real const> {});
 
         // density
         if (!l_constant_density) {
@@ -96,7 +102,9 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                   AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                                   AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
-                                  bc_den, lev_geom, l_dt, l_redistribution_type);
+                                  bc_den, lev_geom, l_dt, l_redistribution_type,
+                                  vel_eb, bnorm, barea,
+                                  2, 1.0, Array4<Real const> {});
         } else {
             amrex::ParallelFor(bx,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -112,7 +120,9 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                   AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                                   AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
-                                  bc_tra, lev_geom, l_dt, l_redistribution_type);
+                                  bc_tra, lev_geom, l_dt, l_redistribution_type,
+                                  vel_eb, bnorm, barea,
+                                  2, 1.0, Array4<Real const> {});
         }
 
     } else {
