@@ -157,6 +157,7 @@ public: // for cuda
                                        bool l_constant_density, bool l_advect_tracer, int l_ntrac,
                                        amrex::EBFArrayBoxFactory const* ebfact_old,
                                        amrex::EBFArrayBoxFactory const* ebfact_new,
+                                       amrex::Array4<amrex::Real const > const& vel_eb,
                                        amrex::Geometry& geom, amrex::Real l_dt);
 #endif
 
