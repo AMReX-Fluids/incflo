@@ -1,40 +1,81 @@
+
+
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Building incflo with gmake &mdash; incflo 22.01-dev documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+  
+  <title>Building incflo with gmake &mdash; incflo 23.02-dev documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
         <script src="_static/sphinx_highlight.js"></script>
-    <script src="_static/js/theme.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Run-time Inputs" href="Inputs_Chapter.html" />
     <link rel="prev" title="Building incflo with CMake" href="BuildingCMake.html" /> 
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
+
+   
   <div class="wy-grid-for-nav">
+    
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
+          
+
+          
             <a href="index.html" class="icon icon-home"> incflo
+          
+
+          
           </a>
+
+          
+            
+            
               <div class="version">
-                22.01-dev
+                23.02-dev
               </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -42,7 +83,18 @@
     <input type="hidden" name="area" value="default" />
   </form>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
@@ -58,61 +110,97 @@
 <li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
+            
+          
         </div>
+        
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">incflo</a>
+        
       </nav>
 
+
       <div class="wy-nav-content">
+        
         <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a></li>
-          <li class="breadcrumb-item"><a href="GettingStarted.html">Getting Started</a></li>
-      <li class="breadcrumb-item active">Building incflo with gmake</li>
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="GettingStarted.html">Getting Started</a> &raquo;</li>
+        
+      <li>Building incflo with gmake</li>
+    
+    
       <li class="wy-breadcrumbs-aside">
+        
+          
             <a href="_sources/BuildingGMake.rst.txt" rel="nofollow"> View page source</a>
+          
+        
       </li>
+    
   </ul>
+
+  
   <hr/>
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+            
   <section id="building-incflo-with-gmake">
-<h1>Building incflo with gmake<a class="headerlink" href="#building-incflo-with-gmake" title="Permalink to this heading"></a></h1>
+<h1>Building incflo with gmake<a class="headerlink" href="#building-incflo-with-gmake" title="Permalink to this heading">¶</a></h1>
 <p>Building incflo with gmake</p>
 <p>If you want to use gmake to build incflo, you will need to have already
 cloned amrex into a local directory:</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git clone https://github.com/amrex-codes/amrex
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt;<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/amrex-codes/amrex
 </pre></div>
 </div>
 <p>Then,</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git clone http://github.com/amrex-codes/incflo.git
-&gt; <span class="nb">cd</span> incflo
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt;<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>http://github.com/amrex-codes/incflo.git
+&gt;<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>incflo
 </pre></div>
 </div>
 <p>Now decide whether you want to build the executable in 2-D vs 3-D,
 with EB (embedded boundaries / cut cells) or not.  For this example,
 let’s say you want to build in 2-D with cut cells.  Then</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; git clone http://github.com/amrex-codes/incflo.git
-&gt; <span class="nb">cd</span> test_2d
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt;<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>http://github.com/amrex-codes/incflo.git
+&gt;<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>test_2d
 </pre></div>
 </div>
 <p>(The other directories are test_3d, test_no_eb, and test_no_eb_2d.)</p>
 <p>Edit the GNUmakefile to set AMREX_HOME to be the path to the directory
 where you have put amrex.  Other options that you can set include</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 22%" />
-<col style="width: 38%" />
-<col style="width: 23%" />
-<col style="width: 17%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Option name</p></th>
 <th class="head"><p>Description</p></th>
@@ -174,40 +262,57 @@ value</p></th>
 <p><strong>Do not set both USE_OMP and USE_CUDA to true.</strong></p>
 </div>
 <p>Then type</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt; make
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>&gt;<span class="w"> </span>make
 </pre></div>
 </div>
 </section>
 
 
            </div>
+           
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="BuildingCMake.html" class="btn btn-neutral float-left" title="Building incflo with CMake" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
         <a href="Inputs_Chapter.html" class="btn btn-neutral float-right" title="Run-time Inputs" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="BuildingCMake.html" class="btn btn-neutral float-left" title="Building incflo with CMake" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
-  </div>
+    <p>
+        &#169; Copyright 2017-2018, Incflo Team.
 
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
         </div>
       </div>
+
     </section>
+
   </div>
-  <script>
+  
+
+  <script type="text/javascript">
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
+
+  
+  
+    
+   
 
 </body>
 </html>
