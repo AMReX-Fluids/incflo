@@ -99,11 +99,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
     for (int lev = 0; lev <= finest_level; ++lev) {
         AMREX_D_TERM(u_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));,
+                          1, ngmac, MFInfo(), OldFactory(lev));,
                      v_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));,
+                          1, ngmac, MFInfo(), OldFactory(lev));,
                      w_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev)););
+                          1, ngmac, MFInfo(), OldFactory(lev)););
         // do we still want to do this now that we always call a FillPatch (and all ghost cells get filled)?
         if (ngmac > 0) {
             AMREX_D_TERM(u_mac[lev].setBndry(0.0);,
@@ -185,21 +185,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
 
-#ifdef INCFLO_USE_MOVING_EB
-    // **********************************************************************************************
-    //
-    // Update the moving geometry and arrays
-    //
-    // **********************************************************************************************
-
-    if (!incremental_projection) {
-        for (int lev = 0; lev <= finest_level; lev++)
-        {
-            MakeNewGeometry(lev,new_time);
-        }
-    }
-#endif
-
+    
     // *************************************************************************************
     // if (advection_type == "Godunov")
     //      Compute the explicit advective terms R_u^(n+1/2), R_s^(n+1/2) and R_t^(n+1/2)
@@ -214,12 +200,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
                             GetVecOfPtrs(w_mac)),
                             GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
                             m_cur_time);
-
-    {
-        amrex::Print() << "SETTING TO ZERO IN PREDICTOR " << std::endl;
-        auto& ld = *m_leveldata[0];
-        ld.conv_velocity_o.setVal(0.);
-    }
    
     // *************************************************************************************
     // Define local variables for lambda to capture.
@@ -254,14 +234,19 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-                    {
-			// FIXME? Seems inconsistent that there's no dt here, but then it exists below....
-			// Apply() at the end, divides out dt but only for !covered at time n
-                        // This just ensures we don't try to use garbage stored in the covered cell.
-                        rho_new(i,j,k) = drdt(i,j,k);
-                    } else {
+			Print()<<"NU rho old "<<rho_o(i,j,k)<<std::endl;
+                    // {
+		    // 	// FIXME? Seems inconsistent that there's no dt here, but then it exists below....
+		    // 	// No. Apply() at the end, divides out dt but only for !covered at time n
+                    //     // This just ensures we don't try to use garbage stored in the covered cell.
+		    // 	//
+		    // 	// RemakeWithNewGeometry will fill NU cells at t^n with the average of it's nbs
+		    // 	// so do we need to redefine drdt in a way that is consistent with the rho_old
+		    // 	// we use to form rho_nph???
+                    //     rho_new(i,j,k) = drdt(i,j,k);
+                    // } else {
                         rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
-                    }
+                    // }
 
                     if (j == 8)
                         amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_new(i,j,k) << " / " << drdt(i,j,k) << std::endl;
@@ -290,8 +275,13 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
                  amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
-                     rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
-                     
+		     // RemakeWithNewGeometry will fill NU cells at t^n with the average of it's nbs
+		     // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+		     // {
+		     // 	 rho_nph(i,j,k) = m_half * rho_new(i,j,k);
+		     // } else {
+			 rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
+                     // }
                      // if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)) 
                      //     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl; 
                  });
@@ -405,11 +395,18 @@ void incflo::ApplyPredictor (bool incremental_projection)
                        get_tracer_old_const(), get_tracer_new_const());
 
 
+    VisMF::Write(vel_forces[0],"vf");
+    VisMF::Write(m_leveldata[0]->conv_velocity_o,"cv");
+    
+
     // *************************************************************************************
     // Update the velocity
     // *************************************************************************************
     for (int lev = 0; lev <= finest_level; lev++)
     {
+	// FIXME
+	m_leveldata[lev]->divtau_o.setVal(0.0);
+	
         auto& ld = *m_leveldata[lev];
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -424,6 +421,13 @@ void incflo::ApplyPredictor (bool incremental_projection)
             Array4<Real const> const& rho_new  = ld.density.const_array(mfi);
             Array4<Real const> const& rho_nph  = density_nph_oldeb[lev].array(mfi);
 
+	    // FIXME for debugging
+	    auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+	    auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+
+
+	    // FIXME -- what about NU cells. rho treats these separately
+	    // here, we don't. 
             if (m_diff_type == DiffusionType::Implicit) {
 
                 if (use_tensor_correction)
@@ -507,9 +511,22 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 if (m_advect_momentum) {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
+			if (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
+			    Print()<<"vel pieces "<<vel(i,j,k,0)
+				   <<" "<<rho_old(i,j,k)
+				   <<" "<<dvdt(i,j,k,0)
+				   <<" "<<rho_nph(i,j,k)
+				   <<" "<<vel_f(i,j,k,0)
+				   <<" "<<divtau_o(i,j,k,0)
+				   <<" "<<rho_new(i,j,k)
+				   <<std::endl;
+			}
+			
                         AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                      vel(i,j,k,1) *= rho_old(i,j,k);,
                                      vel(i,j,k,2) *= rho_old(i,j,k););
+			// fixme - Something above in the diffusion routines sets EB covered to 1e40
+			// For now, just ignore forcing and divtau
                         AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+rho_nph(i,j,k)*vel_f(i,j,k,0)+divtau_o(i,j,k,0));,
                                      vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+rho_nph(i,j,k)*vel_f(i,j,k,1)+divtau_o(i,j,k,1));,
                                      vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+rho_nph(i,j,k)*vel_f(i,j,k,2)+divtau_o(i,j,k,2)););
@@ -553,6 +570,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 // CEG not sure why we would apply projection here. unless this intermediate is needed to get final proj to converge...
 //    ApplyProjection(GetVecOfConstPtrs(density_nph_oldeb),new_time,m_dt,incremental_projection);
 
+// FIXME - need to think if this is really the best place for this
     if (!incremental_projection) {
         for (int lev = 0; lev <= finest_level; lev++)
         {
@@ -560,11 +578,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
         }
     }
 #endif
-
-        amrex::Print() << "IN PREDICTOR " << std::endl;
-        auto& ld = *m_leveldata[0];
-        ld.conv_velocity_o.setVal(0.);
-        print_state(ld.conv_velocity_o, IntVect(0,0));
 
     // *************************************************************************************
     // Allocate space for half-time density after we have updated EB
@@ -595,9 +608,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                 Array4<Real>        const& rho_nph  = density_nph_neweb[lev].array(mfi);
 
+                auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+
                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     // FIXME? what happens with newly uncovered cells here? how have covered cells in rho_old been set?
+		    if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.){
+			Print()<<"Proj: "<<rho_old(i,j,k)
+			       <<" "<<rho_new(i,j,k)<<std::endl;
+		    }
+		    
                     rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
                     if (rho_nph(i,j,k) < 0.0){
                     // if (i == 34 && j == 46 || i == 29 && j == 17){
@@ -610,6 +631,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
             } // mfi
         } // lev
     } // not constant density
+
+    VisMF::Write(m_leveldata[0]->density,"dens");
     
     // **********************************************************************************************
     //
@@ -618,4 +641,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // **********************************************************************************************
     ApplyProjection(GetVecOfConstPtrs(density_nph_neweb),
                     new_time,m_dt,incremental_projection);
+
+    // static int count = 0;
+    // count++;
+    // if (count > 2) Abort();
+    
 }

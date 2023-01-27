@@ -166,17 +166,20 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     MultiFab::Copy(new_leveldata->conv_density , m_leveldata[lev]->conv_density,0,0,1,0);
 
     // Fill in ghost cells for new MultiFabs (Matt - Not sure if 4 is the correct ng)
-    fillpatch_velocity(lev, time, new_leveldata->velocity_o, 4);
-    fillpatch_velocity(lev, time, new_leveldata->velocity, 4);
-    fillpatch_density(lev, time, new_leveldata->density_o, 4);
-    fillpatch_density(lev, time, new_leveldata->density, 4);
+    fillpatch_velocity(lev, time, new_leveldata->velocity_o, nghost_state());
+    fillpatch_velocity(lev, time, new_leveldata->velocity, nghost_state());
+    fillpatch_density(lev, time, new_leveldata->density_o, nghost_state());
+    fillpatch_density(lev, time, new_leveldata->density, nghost_state());
     if (m_ntrac > 0) {
-        fillpatch_tracer(lev, time, new_leveldata->tracer_o, 4);
-        fillpatch_tracer(lev, time, new_leveldata->tracer, 4);
+        fillpatch_tracer(lev, time, new_leveldata->tracer_o, nghost_state());
+        fillpatch_tracer(lev, time, new_leveldata->tracer, nghost_state());
     }
     fillpatch_gradp(lev, time, new_leveldata->gp, 0);
     new_leveldata->p_nd.setVal(0.0);
-    
+
+    // No, we need to retain vals in NU cells in both new and old
+#if 1
+    // This should be okay to do...
     // Let's fill the newly covered cells with 1e45 to be different
     EB_set_covered( new_leveldata->velocity  , 1.e45);
     EB_set_covered( new_leveldata->velocity_o, 1.e45);
@@ -189,8 +192,12 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     EB_set_covered( new_leveldata->gp , 1.e45);
 
     EB_set_covered( new_leveldata->conv_velocity_o, 1.e45);
-
-#if 1
+#endif
+    
+#if 0
+    //FIXME - is this what we want to do for MOL pred-corr. new has been filled already from
+    // update with MSRD, and we wouldn't want to re-define what rho_old is...
+    //
     // Now let's make sure to fill cells that were previously covered but are now cut cell
     //amrex::Print() << "Fill Velocity" << std::endl;
     EB_fill_uncovered(lev,new_leveldata->velocity  , m_leveldata[lev]->velocity  );

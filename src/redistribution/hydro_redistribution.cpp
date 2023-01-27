@@ -162,7 +162,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
                 {
                     // For newly uncovered cells, use U-star == 0. Don't want uninitialized value.
-                    scratch(i,j,k,n) = 0.;
+                    // For this case, the value has been filled with the average of it's neighbors
+		    // Shouldn't matter what's in here (without SRD slopes) because it get mult by
+		    // V^n which is zero
+                    scratch(i,j,k,n) = U_in(i,j,k,n);
                 }
                 else if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
                          (vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 1.0) )
@@ -249,13 +252,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 {
                    const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
 
-                   if (vfrac_old(i,j,k) == 0.){
-                       // Do nothing, we already have what we want to pass out
-                       //dUdt_out(i,j,k,n) = dUdt_out(i,j,k,n);
-                   } else {
+                   // if (vfrac_old(i,j,k) == 0.){
+                   //     // Do nothing, we already have what we want to pass out
+                   //     //dUdt_out(i,j,k,n) = dUdt_out(i,j,k,n);
+                   // } else {
                        // We redistributed the whole state, but want to pass out only the update
                        dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
-                   }
+                   // }
                 }
                 else
                 {
@@ -268,6 +271,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         );
 
     } else if (redistribution_type == "NoRedist") {
+	Print()<<"No redistribution..."<<std::endl;
+	
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {

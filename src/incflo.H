@@ -646,6 +646,14 @@ private:
         OldEBFactory (int lev) const noexcept {
             return static_cast<amrex::EBFArrayBoxFactory const&>(*m_old_factory[lev]);
     }
+    amrex::EBFArrayBoxFactory const&
+    EBFactory (int lev, amrex::Real time) const noexcept {
+	if ( time == m_cur_time ) {
+	    return static_cast<amrex::EBFArrayBoxFactory const&>(*m_old_factory[lev]);
+	} else {
+	    return static_cast<amrex::EBFArrayBoxFactory const&>(*m_new_factory[lev]);
+	}
+    }
 #else
     amrex::EBFArrayBoxFactory const&
         EBFactory (int lev) const noexcept {

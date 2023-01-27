@@ -33,6 +33,7 @@ void incflo::Advance()
     copy_from_new_to_old_density();
     copy_from_new_to_old_tracer();
 
+    
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
         fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
@@ -56,8 +57,66 @@ void incflo::Advance()
     }
 #endif
 
+#ifdef INCFLO_USE_MOVING_EB
+    // **********************************************************************************************
+    //
+    // Update the moving geometry and arrays
+    //
+    // **********************************************************************************************
+
+//    if (!incremental_projection) {
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+	MakeNewGeometry(lev,m_t_new[lev]);
+//    }
+// Need to fill the to be NU cells here
+     // Or we stick with special treatment of NU cells in apply and redistribute.cpp
+// Need to update the EBFactory for this to work...
+    
+	// Now let's make sure to fill cells that were previously covered but are now cut cell
+	// Not sure we need to do the new MFs, maybe could get by with just the olds
+	//amrex::Print() << "Fill Velocity" << std::endl;
+	EB_fill_uncovered(lev, m_leveldata[lev]->velocity  , m_leveldata[lev]->velocity  );
+	EB_fill_uncovered(lev, m_leveldata[lev]->velocity_o, m_leveldata[lev]->velocity_o);
+
+	//amrex::Print() << "\nFill density" << std::endl;
+	EB_fill_uncovered(lev, m_leveldata[lev]->density   , m_leveldata[lev]->density   );
+	EB_fill_uncovered(lev, m_leveldata[lev]->density_o , m_leveldata[lev]->density_o );
+
+	if (m_ntrac > 0) {
+	    EB_fill_uncovered(lev, m_leveldata[lev]->tracer   , m_leveldata[lev]->tracer  );
+	    EB_fill_uncovered(lev, m_leveldata[lev]->tracer_o , m_leveldata[lev]->tracer_o);
+	}
+
+	//FIXME - will need to be more careful here when adding diffusion...
+	// problem here in that divtau hasn't been computed yet...
+	// EB_fill_uncovered_with_zero(lev, m_leveldata[lev]->divtau_o, m_leveldata[lev]->divtau_o);
+	Print()<<"Setting divtau to zero..."<<std::endl;       
+	m_leveldata[lev]->divtau_o.setVal(0.0);
+
+// FIXME also need to worry about all the pieces of U*, forces, etc...
+
+	VisMF::Write(m_leveldata[lev]->gp,"gp");
+	//amrex::Print() << "\nFill gp" << std::endl;
+	EB_fill_uncovered(lev, m_leveldata[lev]->gp      , m_leveldata[lev]->gp  );
+
+	// This function is for cell-centered data. Not garaunteed to be correct for
+	// nodal or face centered data...
+	//amrex::Print() << "\nFill p_nd" << std::endl;
+	EB_fill_uncovered(lev, m_leveldata[lev]->p_nd    , m_leveldata[lev]->p_nd);
+    }
+#endif
+    VisMF::Write(m_leveldata[0]->velocity,"vel");
+    VisMF::Write(m_leveldata[0]->velocity_o,"velo");
+
+    
     ApplyPredictor();
 
+//FIXME
+    // this will overwrite the previous time plotfile
+    WritePlotFile();
+
+    
     if (m_advection_type == "MOL") {
         for (int lev = 0; lev <= finest_level; ++lev) {
             fillpatch_velocity(lev, m_t_new[lev], m_leveldata[lev]->velocity, ng);

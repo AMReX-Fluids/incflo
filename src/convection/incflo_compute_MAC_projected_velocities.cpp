@@ -12,7 +12,7 @@ incflo::compute_MAC_projected_velocities (
                                               Vector<MultiFab*> const& v_mac,
                                               Vector<MultiFab*> const& w_mac),
                                  Vector<MultiFab*> const& vel_forces,
-                                 Real /*time*/)
+                                 Real time)
 {
     BL_PROFILE("incflo::compute_MAC_projected_velocities()");
     Real l_dt = m_dt;
@@ -95,7 +95,11 @@ incflo::compute_MAC_projected_velocities (
 
 // MATT -- We are computing the new geometry after the MAC projection.
 //#ifdef AMREX_USE_EB
-        const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
+	// if ( time == m_cur_time ){ // NOT needed. Predictor calls MakeNewGeometry in middle
+	const EBFArrayBoxFactory* ebfact = &EBFactory(lev, time);
+	// } else {
+
+	// }
 //#endif
 
         //
@@ -133,49 +137,11 @@ incflo::compute_MAC_projected_velocities (
 
     // FIXME Right now we're just doing this for single-level
     AMREX_ALWAYS_ASSERT(finest_level == 0);
-    // MultiFab* mac_rhs;
 
 #ifdef AMREX_USE_EB
     if (m_eb_flow.enabled) {
        for (int lev=0; lev <= finest_level; ++lev)
        {
-	   
-// 	  // Use delta-V correction instead of flow through EB
-	   
-//           mac_rhs = new MultiFab(grids[lev],dmap[lev],1,0); //Use unique pointer here, remove delete
-
-//           auto const& vfrac_old  = OldEBFactory(lev).getVolFrac();
-//           auto const& vfrac_new  =    EBFactory(lev).getVolFrac();
-
-// #ifdef _OPENMP
-// #pragma omp parallel if (Gpu::notInLaunchRegion())
-// #endif
-//           for (MFIter mfi(*mac_rhs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
-//           {
-//               Box const& bx = mfi.tilebox();
-
-//               Array4<Real const> const& vfold_arr  =  vfrac_old.const_array(mfi);
-//               Array4<Real const> const& vfnew_arr  =  vfrac_new.const_array(mfi);
-//               Array4<Real      > const&   divu_arr = mac_rhs->array(mfi);
-
-//               amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-//               {
-// 		  // Correct all cells that are cut at time n or n+1
-//                   if ((vfold_arr(i,j,k) > 0. && vfold_arr(i,j,k) < 1.0) ||
-// 		      (vfnew_arr(i,j,k) < 1. && vfold_arr(i,j,k) == 1.0) )
-//                   {
-// 		      Real delta_vol_real = vfnew_arr(i,j,k) - vfold_arr(i,j,k);
-// 		      divu_arr(i,j,k) = -delta_vol_real / l_dt / vfold_arr(i,j,k);
-// 		  } else {
-//                       divu_arr(i,j,k) = 0.;
-//                   }
-
-//                   if (i==9 && j == 8)
-// 		    amrex::Print() << "delta-vol: " << IntVect(i,j) << divu_arr(i,j,k) << std::endl; 
-//               });
-//           }
-// 	  macproj->setDivU({mac_rhs});
-
 	  //
 	  // Pass EB flow BC into MAC, no RHS correction
 	  //
@@ -203,8 +169,6 @@ incflo::compute_MAC_projected_velocities (
     } else {
         macproj->project(m_mac_mg_rtol,m_mac_mg_atol);
     }
-
-    // delete mac_rhs;
 
     // Note that the macproj->project call above ensures that the MAC velocities are averaged down --
     //      we don't need to do that again here
