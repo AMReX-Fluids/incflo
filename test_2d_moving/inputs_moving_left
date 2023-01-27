@@ -86,3 +86,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 eb_flow.velocity        = -2.0 0.0 0.0
 eb_flow.density         = 1.0 # this doesn't matter; won't be used for MEB-- maybe not true, currently using it to turn off d/dt terms in EBGodunov
+eb_flow.tracer         = 0.0
