@@ -50,6 +50,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     bool fluxes_are_area_weighted = false;
     bool knownFaceStates          = false; // HydroUtils always recompute face states
 
+    //fixme
+    VisMF::Write(*density[0],"rpred1");
+    
 #ifdef AMREX_USE_EB
     amrex::Print() << "REDISTRIBUTION TYPE " << m_redistribution_type << std::endl;
 #endif
@@ -219,8 +222,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                      u[2] = w_mac[lev];);
 
         // CEG fixme
-        // VisMF::Write(*u_mac[0],"umac");
-        // VisMF::Write(*v_mac[0],"vmac");
+        VisMF::Write(*u_mac[0],"umac");
+        VisMF::Write(*v_mac[0],"vmac");
+	VisMF::Write(*vel[0],"vpred");
+	VisMF::Write(*density[0],"rpred2");
 
 #ifdef AMREX_USE_EB
         const auto& ebfact_old = OldEBFactory(lev);
@@ -636,6 +641,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         drdt_tmp.FillBoundary(geom[lev].periodicity());
         dtdt_tmp.FillBoundary(geom[lev].periodicity());
 
+//fixme
+	VisMF::Write(dvdt_tmp,"vtmp");
+	VisMF::Write(drdt_tmp,"rtmp");
+	
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Box const& bx = mfi.tilebox();

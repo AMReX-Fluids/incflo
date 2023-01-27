@@ -116,7 +116,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     Vector<MultiFab> density_nph_oldeb;
     for (int lev = 0; lev <= finest_level; ++lev)
-        density_nph_oldeb.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+        density_nph_oldeb.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), OldFactory(lev));
 
     // *************************************************************************************
     // Forcing terms
@@ -130,15 +130,15 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel_forces.emplace_back(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_force(),
-                                MFInfo(), Factory(lev));
+                                MFInfo(), OldFactory(lev));
 
         if (m_advect_tracer) {
             tra_forces.emplace_back(grids[lev], dmap[lev], m_ntrac, nghost_force(),
-                                    MFInfo(), Factory(lev));
+                                    MFInfo(), OldFactory(lev));
         }
-        vel_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+        vel_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), OldFactory(lev));
         if (m_advect_tracer) {
-            tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, 1, MFInfo(), Factory(lev));
+            tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, 1, MFInfo(), OldFactory(lev));
         }
     }
 
@@ -180,11 +180,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
                        get_density_old_const(), get_tracer_old_const(), get_tracer_new_const(),
                        include_pressure_gradient);
 
-
+    VisMF::Write(m_leveldata[0]->density_o,"do3");
+    
     compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
 
+    //FIXME this density is not the same as the print out from first thing inside compute_convective_term
+    VisMF::Write(m_leveldata[0]->density_o,"do4");
     
     // *************************************************************************************
     // if (advection_type == "Godunov")
@@ -271,7 +274,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                  Array4<Real>        const& rho_nph  = density_nph_oldeb[lev].array(mfi);
 
-                 auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+                 //auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
 
                  amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
