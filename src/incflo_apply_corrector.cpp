@@ -131,6 +131,7 @@ void incflo::ApplyCorrector()
     compute_MAC_projected_velocities(get_velocity_new_const(), get_density_new_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), new_time);
+
     // **********************************************************************************************
     // Compute the explicit "new" advective terms R_u^(n+1,*), R_r^(n+1,*) and R_t^(n+1,*)
     // Note that "get_conv_tracer_new" returns div(rho u tracer)
@@ -192,9 +193,15 @@ void incflo::ApplyCorrector()
                 Array4<Real const> const& drdt_o = ld.conv_density_o.const_array(mfi);
                 Array4<Real const> const& drdt   = ld.conv_density.const_array(mfi);
 
+		auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     const Real rho_old = rho_o(i,j,k);
+
+		    if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+			Print()<<"NU rho old "<<rho_o(i,j,k)<<std::endl;
 
                     Real rho_new = rho_old + l_dt * m_half*(drdt(i,j,k)+drdt_o(i,j,k));
                     rho_nph(i,j,k) = m_half * (rho_old + rho_new);
