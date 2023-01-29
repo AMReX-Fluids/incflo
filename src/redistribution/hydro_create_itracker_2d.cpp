@@ -133,7 +133,8 @@ normalMerging ( int i, int j,
             " to get new vfrac " <<  sum_vol << std::endl;
 
     // If the merged cell isn't large enough, we try to merge in the other direction
-    if (0) //(sum_vol < target_volfrac || nx_eq_ny)
+    //if (sum_vol < target_volfrac || nx_eq_ny)
+    if (0) // MATT - Changing this seems to fix the problem with the 1d moving_up test.
     {
         // Original offset was in y-direction, so we will add to the x-direction
         // Note that if we can't because it would go outside the domain, we don't
