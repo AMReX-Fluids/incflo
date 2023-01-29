@@ -30,6 +30,7 @@ incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
 incflo.advection_type        =  "Godunov" 
+incflo.advection_type        =  "MOL" 
 incflo.advect_momentum       = true
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
@@ -65,7 +66,7 @@ yhi.pressure            =  0.0
 incflo.geometry = "box"
 box.internal_flow = true
 
-box.Lo =  -0.2   0.45  
+box.Lo =  -1.2   0.45  
 box.Hi =  3.80   1.80   
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#

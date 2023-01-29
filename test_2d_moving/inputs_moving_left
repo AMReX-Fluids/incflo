@@ -29,8 +29,9 @@ incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
-incflo.advect_momentum = 1
+incflo.advect_momentum      =   true
 incflo.advection_type        =  "Godunov" 
+incflo.advection_type        =  "MOL" 
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
 
@@ -65,7 +66,7 @@ incflo.geometry = "box"
 box.internal_flow = true
 
 box.Lo =  0.95  -0.20
-box.Hi =  3.80   1.80   
+box.Hi =  4.80   1.80   
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #

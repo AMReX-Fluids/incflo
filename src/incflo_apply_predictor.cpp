@@ -181,14 +181,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
                        include_pressure_gradient);
 
     VisMF::Write(m_leveldata[0]->density_o,"do3");
-    
+    //amrex::Print() << "density: " << m_leveldata[0]->density_o << std::endl; 
+        
     compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
 
     //FIXME this density is not the same as the print out from first thing inside compute_convective_term
-    VisMF::Write(m_leveldata[0]->density_o,"do4");
-    
+    //VisMF::Write(m_leveldata[0]->density_o,"do4");
+    //amrex::Print() << "desnsity_o:\n" << m_leveldata[0]->density_o << std::endl;
+
     // *************************************************************************************
     // if (advection_type == "Godunov")
     //      Compute the explicit advective terms R_u^(n+1/2), R_s^(n+1/2) and R_t^(n+1/2)
