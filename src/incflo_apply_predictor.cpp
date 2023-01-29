@@ -236,6 +236,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
                 auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
 
+                amrex::Print() << "\n\n\n!%!%! -- Updating density inside predictor -- !%!%!\n\n\n" << std::endl;
+
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
@@ -253,7 +255,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                         rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
                     // }
 
-                    if (j == 8)
+                    if ((j>4) && (j<12))
                         amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_new(i,j,k) << " / " << drdt(i,j,k) << std::endl;
 
                     if (m_redistribution_type == "NoRedist") {

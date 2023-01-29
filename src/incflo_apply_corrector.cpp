@@ -196,6 +196,8 @@ void incflo::ApplyCorrector()
 		auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
                 auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
 
+                amrex::Print() << "\n\n\n!%!%! -- Updating density inside corrector -- !%!%!\n\n\n" << std::endl;
+
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     const Real rho_old = rho_o(i,j,k);
@@ -207,6 +209,11 @@ void incflo::ApplyCorrector()
                     rho_nph(i,j,k) = m_half * (rho_old + rho_new);
 
                     rho_n  (i,j,k) = rho_new;
+                
+                
+                    if (j > 4 && j < 12)
+                        amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_n(i,j,k) << " / " << drdt(i,j,k) << std::endl;
+
                 });
             } // mfi
         } // lev

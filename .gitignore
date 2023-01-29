@@ -67,3 +67,6 @@ test_2d_moving/Backtrace.0
 test_2d/
 test_3d/
 test_no_eb_3d/
+
+# rm files from test
+test_2d_moving/rm_utils
