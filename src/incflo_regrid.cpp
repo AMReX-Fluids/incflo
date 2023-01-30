@@ -326,20 +326,20 @@ void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
     }
 }
 
-void incflo::EB_fill_uncovered_with_zero (int lev, MultiFab& mf_new, MultiFab& mf_old)
+void incflo::EB_fill_uncovered_with_zero (int lev, MultiFab& mf)
 {
     auto const& vfrac_old = OldEBFactory(lev).getVolFrac();
     auto const& vfrac_new =    EBFactory(lev).getVolFrac();
 
-    for (MFIter mfi(mf_new,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    for (MFIter mfi(mf,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
         Box const& bx = mfi.tilebox();
-        Array4<Real>       const& fab_new = mf_new.array(mfi);
+        Array4<Real>       const& fab = mf.array(mfi);
 
         Array4<Real const> const&  vf_old = vfrac_old.const_array(mfi);
         Array4<Real const> const&  vf_new = vfrac_new.const_array(mfi);
 
-        const int ncomp = mf_new.nComp();
+        const int ncomp = mf.nComp();
 
         amrex::ParallelFor(bx,
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -350,7 +350,8 @@ void incflo::EB_fill_uncovered_with_zero (int lev, MultiFab& mf_new, MultiFab& m
                 //amrex::Print() << "Need to fill cell with zero " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
                 for (int n = 0; n < ncomp; n++)
                 {
-                    fab_new(i,j,k,n) = 0.;
+		    // FIXME- for now make this not identically zero so inv does not cause error
+                    fab(i,j,k,n) = 1.e-40;
                 }
             }
         });

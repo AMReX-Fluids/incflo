@@ -92,7 +92,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
                               bc_vel, lev_geom, l_dt, l_redistribution_type,
                               vel_eb, bnorm, barea,
-                              2, 1.0, Array4<Real const> {});
+                              2, .5, Array4<Real const> {});
 
         // density
         if (!l_constant_density) {
@@ -104,7 +104,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_den, lev_geom, l_dt, l_redistribution_type,
                                   vel_eb, bnorm, barea,
-                                  2, 1.0, Array4<Real const> {});
+                                  2, .5, Array4<Real const> {});
         } else {
             amrex::ParallelFor(bx,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -122,7 +122,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc_tra, lev_geom, l_dt, l_redistribution_type,
                                   vel_eb, bnorm, barea,
-                                  2, 1.0, Array4<Real const> {});
+                                  2, .5, Array4<Real const> {});
         }
 
     } else {

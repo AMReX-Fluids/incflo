@@ -162,10 +162,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
                 {
                     // For newly uncovered cells, use U-star == 0. Don't want uninitialized value.
-                    // For this case, the value has been filled with the average of it's neighbors
 		    // Shouldn't matter what's in here (without SRD slopes) because it get mult by
 		    // V^n which is zero
-                    scratch(i,j,k,n) = U_in(i,j,k,n);
+                    //scratch(i,j,k,n) = U_in(i,j,k,n);
 		    scratch(i,j,k,n) = 0.0;
                 }
                 else if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
@@ -253,12 +252,18 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 {
                    const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
 
+		   if (i==0 && j==10){
+		       Print()<<"redist apply update "<<dUdt_out(i,j,k,n)
+			      <<" "<<U_in(i,j,k,n) <<std::endl;
+			   }
                    // if (vfrac_old(i,j,k) == 0.){
                    //     // Do nothing, we already have what we want to pass out
-                   //     //dUdt_out(i,j,k,n) = dUdt_out(i,j,k,n);
+		   //     Print()<<"Uncovered cell ddt ...."<<std::endl;
+                   //     dUdt_out(i,j,k,n) = dUdt_out(i,j,k,n);
                    // } else {
-                       // We redistributed the whole state, but want to pass out only the update
-                       dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+                   //     // We redistributed the whole state, but want to pass out only the update
+		   // FIXME - this requires that we pass in 0 for cells that go covered to cut
+		   dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
                    // }
                 }
                 else
@@ -266,7 +271,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                    dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
                 }
 
-                if (i==8 && j==8)
+                if (i==0 && j==10)
                     amrex::Print() << "Post dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
             }
         );
