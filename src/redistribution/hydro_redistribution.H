@@ -20,7 +20,7 @@ namespace Redistribution {
 
     namespace defaults {
         constexpr int srd_max_order = 2;
-        constexpr amrex::Real target_vol_fraction = 1.0;
+        constexpr amrex::Real target_vol_fraction = 0.5;
     }
     amrex::Array<amrex::Array<int,9>,AMREX_SPACEDIM> getCellMap();
     amrex::Array<int,9> getInvCellMap();

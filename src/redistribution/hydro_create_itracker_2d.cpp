@@ -454,7 +454,7 @@ Redistribution::MakeITracker ( Box const& bx,
     });
 
 
-#if 1
+#if 0
     amrex::Print() << "\nInitial Cell Merging" << std::endl;
 
     amrex::ParallelFor(Box(itracker),
@@ -498,7 +498,7 @@ Redistribution::MakeITracker ( Box const& bx,
 
                 if ( Box(itracker).contains(IntVect(i+ioff,j+joff)) )
                 {
-                    amrex::Print() << "Cell  " << IntVect(i,j) << " is covered and merged with neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
+                    // amrex::Print() << "Cell  " << IntVect(i,j) << " is covered and merged with neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
                     itracker(i+ioff,j+joff,k,0) += 1;
                     itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,i_nbor)];
                 }
@@ -515,7 +515,7 @@ Redistribution::MakeITracker ( Box const& bx,
 
                 if ( Box(itracker).contains(IntVect(i+ioff,j+joff)) )
                 {
-                    amrex::Print() << "Cell  " << IntVect(i,j) << " is newly uncovered and merged with neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
+                    // amrex::Print() << "Cell  " << IntVect(i,j) << " is newly uncovered and merged with neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
                     itracker(i+ioff,j+joff,k,0) += 1;
                     itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,i_nbor)];
                 }
@@ -523,7 +523,7 @@ Redistribution::MakeITracker ( Box const& bx,
         }
     });
 
-#if 1
+#if 0
     amrex::Print() << "Check for all covered cells." << std::endl;
 
     amrex::ParallelFor(Box(itracker),
@@ -537,7 +537,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
-#if 1
+#if 0
     amrex::Print() << "Check for all uncovered cells." << std::endl;
 
     amrex::ParallelFor(Box(itracker),
@@ -551,7 +551,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
-#if 1
+#if 0
     amrex::Print() << "Check for all cell that become regular." << std::endl;
 
     amrex::ParallelFor(Box(itracker),
@@ -565,35 +565,35 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
-// #if 0
-//     amrex::Print() << "Post Update to Cell Merging" << std::endl;
+#if 1
+    amrex::Print() << "Post Update to Cell Merging" << std::endl;
 
-//     amrex::ParallelFor(Box(itracker),
-//     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-//     {
-//         if (itracker(i,j,k) > 0)
-//         {
-//             amrex::Print() << "Cell " << IntVect(i,j) << " is merged with: ";
+    amrex::ParallelFor(Box(itracker),
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        if (itracker(i,j,k) > 0)
+        {
+            amrex::Print() << "Cell " << IntVect(i,j) << " is merged with: ";
 
-//             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-//             {
-//                 int ioff = imap[itracker(i,j,k,i_nbor)];
-//                 int joff = jmap[itracker(i,j,k,i_nbor)];
+            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
+            {
+                int ioff = imap[itracker(i,j,k,i_nbor)];
+                int joff = jmap[itracker(i,j,k,i_nbor)];
 
-//                 if (i_nbor > 1)
-//                 {
-//                     amrex::Print() << ", " << IntVect(i+ioff, j+joff);
-//                 } else
-//                 {
-//                     amrex::Print() << IntVect(i+ioff, j+joff);
-//                 }
-//             }
+                if (i_nbor > 1)
+                {
+                    amrex::Print() << ", " << IntVect(i+ioff, j+joff);
+                } else
+                {
+                    amrex::Print() << IntVect(i+ioff, j+joff);
+                }
+            }
 
-//             amrex::Print() << std::endl;
-//         }
-//     });
-//     amrex::Print() << std::endl;
-// #endif
+            amrex::Print() << std::endl;
+        }
+    });
+    amrex::Print() << std::endl;
+#endif
 
 }
 #endif

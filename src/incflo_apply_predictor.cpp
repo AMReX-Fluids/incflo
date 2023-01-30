@@ -241,21 +241,21 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-			Print()<<"NU rho old "<<rho_o(i,j,k)<<std::endl;
-                    // {
-		    // 	// FIXME? Seems inconsistent that there's no dt here, but then it exists below....
-		    // 	// No. Apply() at the end, divides out dt but only for !covered at time n
-                    //     // This just ensures we don't try to use garbage stored in the covered cell.
-		    // 	//
-		    // 	// RemakeWithNewGeometry will fill NU cells at t^n with the average of it's nbs
-		    // 	// so do we need to redefine drdt in a way that is consistent with the rho_old
-		    // 	// we use to form rho_nph???
-                    //     rho_new(i,j,k) = drdt(i,j,k);
-                    // } else {
+			//Print()<<"NU rho old "<<rho_o(i,j,k)<<std::endl;
+                    {
+			// FIXME? Seems inconsistent that there's no dt here, but then it exists below....
+			// No. Apply() at the end, divides out dt but only for !covered at time n
+                        // This just ensures we don't try to use garbage stored in the covered cell.
+			//
+			// RemakeWithNewGeometry will fill NU cells at t^n with the average of it's nbs
+			// so do we need to redefine drdt in a way that is consistent with the rho_old
+			// we use to form rho_nph???
+                        rho_new(i,j,k) = drdt(i,j,k);
+                    } else {
                         rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
-                    // }
+                    }
 
-                    if ((j>4) && (j<12))
+                    if (j == 5)
                         amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_new(i,j,k) << " / " << drdt(i,j,k) << std::endl;
 
                     if (m_redistribution_type == "NoRedist") {
@@ -265,12 +265,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
                     }
                  }); 
             } // mfi
-                 
+
+	    VisMF::Write(m_leveldata[0]->density_o,"do5");
+	    
             // Fill ghost cells of the new density field so that we can define density_nph
             //      on the valid region grown by 1
             int ng = 1;
             fillpatch_density(lev, m_t_new[lev], ld.density, ng);
-            
+
+	    VisMF::Write(m_leveldata[0]->density_o,"do6");
+	    
             for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
                  Box const& gbx = mfi.growntilebox(1);
@@ -532,7 +536,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                         AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                      vel(i,j,k,1) *= rho_old(i,j,k);,
                                      vel(i,j,k,2) *= rho_old(i,j,k););
-			// fixme - Something above in the diffusion routines sets EB covered to 1e40
+			// fixme - Something above in the diffusion routines sets divtau EB covered to 1e40
 			// For now, just ignore forcing and divtau
                         AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+rho_nph(i,j,k)*vel_f(i,j,k,0)+divtau_o(i,j,k,0));,
                                      vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+rho_nph(i,j,k)*vel_f(i,j,k,1)+divtau_o(i,j,k,1));,
@@ -581,7 +585,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
     if (!incremental_projection) {
         for (int lev = 0; lev <= finest_level; lev++)
         {
+	    VisMF::Write(m_leveldata[0]->density,"do8");
             RemakeLevelWithNewGeometry(lev, new_time);
+
+	    VisMF::Write(m_leveldata[0]->density_o,"do9");
         }
     }
 #endif
