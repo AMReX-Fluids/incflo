@@ -88,3 +88,6 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 eb_flow.velocity        = 0.0 2.0 0.0
 eb_flow.density         = 1.0
+
+
+projection.mac_proj.maxiter = 300
