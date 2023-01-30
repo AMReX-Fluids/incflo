@@ -142,11 +142,11 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             for (int n = 0; n < ncomp; n++){
                 soln_hat(i,j,k,n) = U_in(i,j,k,n) * alpha(i,j,k,0) * vfrac_old(i,j,k);
 
-	    if ( (i==-1) && j == 4)
-		amrex::Print() << "soln hatA: " << IntVect(i,j) << soln_hat(i,j,k,n)
-			       << ", "<<U_in(i,j,k,n)
-			       << ", "<<alpha(i,j,k,0)
-			       << std::endl; 
+		if ( (i==-1) && j == 4 && n==1)
+		    amrex::Print() << "soln hatA: " << IntVect(i,j) << soln_hat(i,j,k,n)
+				   << ", "<<U_in(i,j,k,n)
+				   << ", "<<alpha(i,j,k,0)
+				   << std::endl; 
 	    }
 	    
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
@@ -161,15 +161,16 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     for (int n = 0; n < ncomp; n++){
                         soln_hat(i,j,k,n) += U_in(r,s,t,n) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t);
 
-		    if ( (i==-1) && j == 4)
-			amrex::Print() << "soln hat nb: " << IntVect(r,s)
-				       << ", "<<U_in(r,s,t,n)
-				       << ", "<<alpha(i,j,k,1)
-				       << ", "<<vfrac_old(r,s,t)
-				       << ", "<<nrs(r,s,t)
-				       << ", "<<soln_hat(i,j,k,n)
-				       << std::endl;
-		    
+			if ( (i==-1) && j == 4  && n==1)
+			    amrex::Print() << "soln hat nb: " << IntVect(i,j)
+					   << " " <<IntVect(r,s)
+					   << ", "<<U_in(r,s,t,n)
+					   << ", "<<alpha(i,j,k,1)
+					   << ", "<<vfrac_old(r,s,t)
+					   << ", "<<nrs(r,s,t)
+					   << ", "<<soln_hat(i,j,k,n)
+					   << std::endl;
+			
 		    }
 
                 }
@@ -182,10 +183,10 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                 soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
 
 	    //fixme
-		if ( (i==0 || i==1) && j == 5)
+		if ( (i==0 || i==1) && j == 5  && n==1)
 		amrex::Print() << "U^(n+1): " << IntVect(i,j) << soln_hat(i,j,k,n)
 			       <<" nbhd vol "<<nbhd_vol(i,j,k)<< std::endl; 
-		if ( (i==-1) && j == 4)
+		if ( (i==-1) && j == 4  && n==1)
 		    amrex::Print() << "soln hat2: " << IntVect(i,j) << soln_hat(i,j,k,n)
 				   << std::endl; 
 

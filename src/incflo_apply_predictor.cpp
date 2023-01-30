@@ -240,20 +240,19 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-			//Print()<<"NU rho old "<<rho_o(i,j,k)<<std::endl;
-                    {
-			// FIXME? Seems inconsistent that there's no dt here, but then it exists below....
-			// No. Apply() at the end, divides out dt but only for !covered at time n
-                        // This just ensures we don't try to use garbage stored in the covered cell.
-			//
-			// RemakeWithNewGeometry will fill NU cells at t^n with the average of it's nbs
-			// so do we need to redefine drdt in a way that is consistent with the rho_old
-			// we use to form rho_nph???
-                        rho_new(i,j,k) = drdt(i,j,k);
-                    } else {
+                    // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+		    // 	//Print()<<"NU rho old "<<rho_o(i,j,k)<<std::endl;
+                    // {
+		    // 	// FIXME? Seems inconsistent that there's no dt here, but then it exists below....
+		    // 	// No. Apply() at the end, divides out dt but only for !covered at time n
+                    //     // This just ensures we don't try to use garbage stored in the covered cell.
+		    // 	//
+                    //     rho_new(i,j,k) = drdt(i,j,k);
+                    // } else {
+		    // FIXME? We now fill rho old with zero for NU cells, and define drdt in a consitent
+		    // way in redistribution::APply so that we may do this...
                         rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
-                    }
+                    // }
 
                     if (j == 5)
                         amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_new(i,j,k) << " / " << drdt(i,j,k) << std::endl;
@@ -282,17 +281,18 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                  Array4<Real>        const& rho_nph  = density_nph_oldeb[lev].array(mfi);
 
-                 //auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+                 auto const& vfrac_new = OldEBFactory(lev).getVolFrac().const_array(mfi);
+		 auto const& vfrac_old =    EBFactory(lev).getVolFrac().const_array(mfi); 
 
                  amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
-		     // RemakeWithNewGeometry will fill NU cells at t^n with the average of it's nbs
-		     // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-		     // {
-		     // 	 rho_nph(i,j,k) = m_half * rho_new(i,j,k);
-		     // } else {
+		     // FIXME - probably want to think more about what to do with rho_n+1/2 here
+		     if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+		     {
+			 rho_nph(i,j,k) = rho_new(i,j,k);
+		     } else {
 			 rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
-                     // }
+                     }
                      // if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)) 
                      //     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl; 
                  });

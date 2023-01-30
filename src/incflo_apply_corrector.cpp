@@ -132,8 +132,11 @@ void incflo::ApplyCorrector()
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), new_time);
 
-    VisMF::Write(m_leveldata[0]->density_o,"do7");
+    VisMF::Write(u_mac[0],"umc0");
+    VisMF::Write(v_mac[0],"umc1");
 
+    VisMF::Write(m_leveldata[0]->density,"dcc");
+	
     // **********************************************************************************************
     // Compute the explicit "new" advective terms R_u^(n+1,*), R_r^(n+1,*) and R_t^(n+1,*)
     // Note that "get_conv_tracer_new" returns div(rho u tracer)
@@ -204,12 +207,32 @@ void incflo::ApplyCorrector()
                 {
                     const Real rho_old = rho_o(i,j,k);
 
-		    if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-			Print()<<"NU rho old "<<rho_o(i,j,k)<<std::endl;
-
                     Real rho_new = rho_old + l_dt * m_half*(drdt(i,j,k)+drdt_o(i,j,k));
                     rho_nph(i,j,k) = m_half * (rho_old + rho_new);
 
+// FIXME -- think more about rho n+1/2 for this case
+		    // ALSO still need to do velocity
+		    if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+		    {
+			rho_new = rho_n(i,j,k) + l_dt * drdt(i,j,k);
+			rho_nph(i,j,k) = rho_new;
+		    }
+		    // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+                    // {
+                    //     rho_new(i,j,k) = drdt(i,j,k);
+                    // } else {
+                    //     rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
+                    // }
+
+		   if (i==0 && j==10)
+		   {
+		       Print()<<"rho update "<<rho_o(i,j,k)
+			      <<" "<<drdt(i,j,k)
+			      <<" "<<drdt_o(i,j,k)
+			      <<" "<<rho_new
+			      <<std::endl;
+			   
+		   }
                     rho_n  (i,j,k) = rho_new;
                 
                 
@@ -525,6 +548,10 @@ void incflo::ApplyCorrector()
         Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
         diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
+
+
+    VisMF::Write(m_leveldata[0]->density,"dcor");
+    VisMF::Write(m_leveldata[0]->velocity,"vcor");
 
     // **********************************************************************************************
     //

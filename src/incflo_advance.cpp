@@ -74,19 +74,19 @@ void incflo::Advance()
      // Or we stick with special treatment of NU cells in apply and redistribute.cpp
 // Need to update the EBFactory for this to work...
     
-	// Now let's make sure to fill cells that were previously covered but are now cut cell
+	// Now let's make sure to fill cells that were previously covered but become cut cell
 	// Not sure we need to do the new MFs, maybe could get by with just the olds
 	//amrex::Print() << "Fill Velocity" << std::endl;
-	EB_fill_uncovered(lev, m_leveldata[lev]->velocity  , m_leveldata[lev]->velocity  );
-	EB_fill_uncovered(lev, m_leveldata[lev]->velocity_o, m_leveldata[lev]->velocity_o);
+	EB_fill_uncovered_with_zero(lev, m_leveldata[lev]->velocity  );
+	EB_fill_uncovered_with_zero(lev, m_leveldata[lev]->velocity_o);
 
 	//amrex::Print() << "\nFill density" << std::endl;
-	EB_fill_uncovered(lev, m_leveldata[lev]->density   , m_leveldata[lev]->density   );
-	EB_fill_uncovered(lev, m_leveldata[lev]->density_o , m_leveldata[lev]->density_o );
+	EB_fill_uncovered_with_zero(lev, m_leveldata[lev]->density  );
+	EB_fill_uncovered_with_zero(lev, m_leveldata[lev]->density_o);
 
 	if (m_ntrac > 0) {
-	    EB_fill_uncovered(lev, m_leveldata[lev]->tracer   , m_leveldata[lev]->tracer  );
-	    EB_fill_uncovered(lev, m_leveldata[lev]->tracer_o , m_leveldata[lev]->tracer_o);
+	    EB_fill_uncovered_with_zero(lev, m_leveldata[lev]->tracer  );
+	    EB_fill_uncovered_with_zero(lev, m_leveldata[lev]->tracer_o);
 	}
 
 	//FIXME - will need to be more careful here when adding diffusion...
