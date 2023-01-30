@@ -131,6 +131,7 @@ void incflo::MakeNewGeometry (int lev, Real time)
 }
 
 // Remake an existing level with a new geometry but nothing else changed
+//FIXME - time parameter is misleading, remove...
 void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
 {
     BL_PROFILE("incflo::RemakeLevelWithNewGeometry()");
@@ -149,34 +150,42 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
                        use_tensor_correction,
                        m_advect_tracer));
 
-    MultiFab::Copy(new_leveldata->velocity  , m_leveldata[lev]->velocity  ,0,0,AMREX_SPACEDIM,0);
-    MultiFab::Copy(new_leveldata->velocity_o, m_leveldata[lev]->velocity_o,0,0,AMREX_SPACEDIM,0);
-    MultiFab::Copy(new_leveldata->density   , m_leveldata[lev]->density  ,0,0,1,0);
-    MultiFab::Copy(new_leveldata->density_o , m_leveldata[lev]->density_o,0,0,1,0);
-    if (m_ntrac > 0) {
-        MultiFab::Copy(new_leveldata->tracer  , m_leveldata[lev]->tracer  ,0,0,1,0);
-        MultiFab::Copy(new_leveldata->tracer_o, m_leveldata[lev]->tracer_o,0,0,1,0);
-    }
-    MultiFab::Copy(new_leveldata->gp   , m_leveldata[lev]->gp   ,0,0,AMREX_SPACEDIM,0);
-    MultiFab::Copy(new_leveldata->p_nd , m_leveldata[lev]->p_nd ,0,0,1,0);
+    // MultiFab::Copy(new_leveldata->velocity  , m_leveldata[lev]->velocity  ,0,0,AMREX_SPACEDIM,0);
+    // MultiFab::Copy(new_leveldata->velocity_o, m_leveldata[lev]->velocity_o,0,0,AMREX_SPACEDIM,0);
+    // MultiFab::Copy(new_leveldata->density   , m_leveldata[lev]->density  ,0,0,1,0);
+    // MultiFab::Copy(new_leveldata->density_o , m_leveldata[lev]->density_o,0,0,1,0);
+    // if (m_ntrac > 0) {
+    //     MultiFab::Copy(new_leveldata->tracer  , m_leveldata[lev]->tracer  ,0,0,1,0);
+    //     MultiFab::Copy(new_leveldata->tracer_o, m_leveldata[lev]->tracer_o,0,0,1,0);
+    // }
+    // MultiFab::Copy(new_leveldata->gp   , m_leveldata[lev]->gp   ,0,0,AMREX_SPACEDIM,0);
+    // MultiFab::Copy(new_leveldata->p_nd , m_leveldata[lev]->p_nd ,0,0,1,0);
 
     MultiFab::Copy(new_leveldata->conv_velocity_o , m_leveldata[lev]->conv_velocity_o,0,0,AMREX_SPACEDIM,0);
     MultiFab::Copy(new_leveldata->conv_density_o , m_leveldata[lev]->conv_density_o,0,0,1,0);
     MultiFab::Copy(new_leveldata->conv_velocity , m_leveldata[lev]->conv_velocity,0,0,AMREX_SPACEDIM,0);
     MultiFab::Copy(new_leveldata->conv_density , m_leveldata[lev]->conv_density,0,0,1,0);
 
+    VisMF::Write(m_leveldata[0]->density_o,"do10");
     // Fill in ghost cells for new MultiFabs (Matt - Not sure if 4 is the correct ng)
-    fillpatch_velocity(lev, time, new_leveldata->velocity_o, nghost_state());
-    fillpatch_velocity(lev, time, new_leveldata->velocity, nghost_state());
-    fillpatch_density(lev, time, new_leveldata->density_o, nghost_state());
-    fillpatch_density(lev, time, new_leveldata->density, nghost_state());
+// This doesn;t work as expected because it relies on m_leveldata, which still has the old EB!!
+    // however, the periodic fill is just supposed to look at whatever is in the valid region...
+    // not sure why this doesn't work...
+    Real old_time = m_cur_time;
+    Real new_time = m_cur_time + m_dt;
+    
+    fillpatch_velocity(lev, old_time, new_leveldata->velocity_o, nghost_state());
+    fillpatch_velocity(lev, new_time, new_leveldata->velocity, nghost_state());
+    fillpatch_density(lev, old_time, new_leveldata->density_o, nghost_state());
+    fillpatch_density(lev, new_time, new_leveldata->density, nghost_state());
     if (m_ntrac > 0) {
-        fillpatch_tracer(lev, time, new_leveldata->tracer_o, nghost_state());
-        fillpatch_tracer(lev, time, new_leveldata->tracer, nghost_state());
+        fillpatch_tracer(lev, old_time, new_leveldata->tracer_o, nghost_state());
+        fillpatch_tracer(lev, new_time, new_leveldata->tracer, nghost_state());
     }
+    // time is really a dummy variable here. Since we only have one gp, FP will just take that
     fillpatch_gradp(lev, time, new_leveldata->gp, 0);
     new_leveldata->p_nd.setVal(0.0);
-
+    VisMF::Write(new_leveldata->density_o,"do11");
     // No, we need to retain vals in NU cells in both new and old
 #if 1
     // This should be okay to do...
@@ -193,6 +202,8 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
 
     EB_set_covered( new_leveldata->conv_velocity_o, 1.e45);
 #endif
+
+    VisMF::Write(new_leveldata->density,"do12");
     
 #if 0
     //FIXME - is this what we want to do for MOL pred-corr. new has been filled already from

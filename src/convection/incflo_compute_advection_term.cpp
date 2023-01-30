@@ -634,6 +634,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
           } // mfi
         } // advect tracer
 
+	//fixme
+	VisMF::Write(dvdt_tmp,"vtmp");
+	VisMF::Write(drdt_tmp,"rtmp");
+	
 #ifdef AMREX_USE_EB
         // We only filled these on the valid cells so we fill same-level interior ghost cells here.
         // (We don't need values outside the domain or at a coarser level so we can call just FillBoundary)
@@ -642,8 +646,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         dtdt_tmp.FillBoundary(geom[lev].periodicity());
 
 //fixme
-	VisMF::Write(dvdt_tmp,"vtmp");
-	VisMF::Write(drdt_tmp,"rtmp");
+	// VisMF::Write(dvdt_tmp,"vtmp");
+	// VisMF::Write(drdt_tmp,"rtmp");
 	
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {

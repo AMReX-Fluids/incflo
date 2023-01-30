@@ -64,6 +64,7 @@ void incflo::Advance()
     //
     // **********************************************************************************************
 
+    VisMF::Write(m_leveldata[0]->density_o,"do1");
 //    if (!incremental_projection) {
     for (int lev = 0; lev <= finest_level; lev++)
     {
@@ -108,14 +109,15 @@ void incflo::Advance()
 #endif
     VisMF::Write(m_leveldata[0]->velocity,"vel");
     VisMF::Write(m_leveldata[0]->velocity_o,"velo");
-
+    VisMF::Write(m_leveldata[0]->density_o,"do2");
     
     ApplyPredictor();
 
 //FIXME
     // this will overwrite the previous time plotfile
-    WritePlotFile();
-
+    //WritePlotFile();
+    static int count=0; count++;
+    if (count>2) Abort();
     
     if (m_advection_type == "MOL") {
         for (int lev = 0; lev <= finest_level; ++lev) {
