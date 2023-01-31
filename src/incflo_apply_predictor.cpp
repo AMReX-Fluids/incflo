@@ -249,7 +249,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		    // 	//
                     //     rho_new(i,j,k) = drdt(i,j,k);
                     // } else {
-		    // FIXME? We now fill rho old with zero for NU cells, and define drdt in a consitent
+		    // FIXME? We now fill rho old with nb avg for NU cells, and define drdt in a consitent
 		    // way in redistribution::APply so that we may do this...
                         rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
                     // }
@@ -287,12 +287,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
 		     // FIXME - probably want to think more about what to do with rho_n+1/2 here
-		     if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-		     {
-			 rho_nph(i,j,k) = rho_new(i,j,k);
-		     } else {
+		     // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+		     // {
+		     // 	 rho_nph(i,j,k) = rho_new(i,j,k);
+		     // } else {
 			 rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
-                     }
+                     // }
                      // if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)) 
                      //     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl; 
                  });

@@ -131,11 +131,6 @@ void incflo::ApplyCorrector()
     compute_MAC_projected_velocities(get_velocity_new_const(), get_density_new_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), new_time);
-
-    VisMF::Write(u_mac[0],"umc0");
-    VisMF::Write(v_mac[0],"umc1");
-
-    VisMF::Write(m_leveldata[0]->density,"dcc");
 	
     // **********************************************************************************************
     // Compute the explicit "new" advective terms R_u^(n+1,*), R_r^(n+1,*) and R_t^(n+1,*)
@@ -210,13 +205,16 @@ void incflo::ApplyCorrector()
                     Real rho_new = rho_old + l_dt * m_half*(drdt(i,j,k)+drdt_o(i,j,k));
                     rho_nph(i,j,k) = m_half * (rho_old + rho_new);
 
-// FIXME -- think more about rho n+1/2 for this case
-		    // ALSO still need to do velocity
-		    if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-		    {
-			rho_new = rho_n(i,j,k) + l_dt * drdt(i,j,k);
-			rho_nph(i,j,k) = rho_new;
-		    }
+		    // If filling NU at time n with average of nbs, then the normal
+		    // update should work
+// // FIXME -- think more about rho n+1/2 for this case
+// 		    // ALSO still need to do velocity
+// 		    if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+// 		    {
+// // THis is more like an approximation to U^n+2...
+// 			rho_new = rho_n(i,j,k) + l_dt * drdt(i,j,k);
+// 			rho_nph(i,j,k) = rho_new;
+// 		    }
 		    // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
                     // {
                     //     rho_new(i,j,k) = drdt(i,j,k);
@@ -376,6 +374,9 @@ void incflo::ApplyCorrector()
             Array4<Real const> const& rho_new  = ld.density.const_array(mfi);
             Array4<Real const> const& rho_nph  = density_nph[lev].array(mfi);
 
+	    auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+	    auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+
             if (m_diff_type == DiffusionType::Explicit)
             {
                 Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
@@ -396,6 +397,27 @@ void incflo::ApplyCorrector()
                                                      m_half*(  dvdt_o(i,j,k,2)+  dvdt(i,j,k,2)) ););
 //                                                 + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
 //                                                 + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
+
+// 			if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+// 			{
+// // // THis is more like an approximation to U^n+2...
+// // 			    rho_new = rho_n(i,j,k) + l_dt * drdt(i,j,k);
+// // 			    rho_nph(i,j,k) = rho_new;
+
+//                         AMREX_D_TERM(vel(i,j,k,0) = rho_new(i,j,k) * vel(i,j,k,0) + l_dt * (
+//                                                     dvdt(i,j,k,0) );,
+// //                                                + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
+// //                                                + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
+//                                      vel(i,j,k,1) =  rho_new(i,j,k) * vel(i,j,k,1) + l_dt * (
+//                                                      dvdt(i,j,k,1) );,
+// //                                                 + m_half*(divtau_o(i,j,k,1)+divtau(i,j,k,1))
+// //                                                 + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
+//                                      vel(i,j,k,2) =  rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
+//                                                      dvdt(i,j,k,2) ););
+// //                                                 + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
+// //                                                 + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
+
+// 			}
 
                         AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
                                      vel(i,j,k,1) /= rho_new(i,j,k);,
