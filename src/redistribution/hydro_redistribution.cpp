@@ -164,8 +164,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // For newly uncovered cells, use U-star == 0. Don't want uninitialized value.
 		    // Shouldn't matter what's in here (without SRD slopes) because it get mult by
 		    // V^n which is zero
-                    //scratch(i,j,k,n) = U_in(i,j,k,n);
-		    scratch(i,j,k,n) = 0.0;
+                    scratch(i,j,k,n) = U_in(i,j,k,n);
+		    //scratch(i,j,k,n) = 0.0;
                 }
                 else if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
                          (vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 1.0) )
