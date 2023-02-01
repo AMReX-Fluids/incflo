@@ -131,7 +131,7 @@ void incflo::ApplyCorrector()
     compute_MAC_projected_velocities(get_velocity_new_const(), get_density_new_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), new_time);
-	
+
     // **********************************************************************************************
     // Compute the explicit "new" advective terms R_u^(n+1,*), R_r^(n+1,*) and R_t^(n+1,*)
     // Note that "get_conv_tracer_new" returns div(rho u tracer)
@@ -193,10 +193,8 @@ void incflo::ApplyCorrector()
                 Array4<Real const> const& drdt_o = ld.conv_density_o.const_array(mfi);
                 Array4<Real const> const& drdt   = ld.conv_density.const_array(mfi);
 
-		auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
-
-                amrex::Print() << "\n\n\n!%!%! -- Updating density inside corrector -- !%!%!\n\n\n" << std::endl;
+                auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
@@ -205,37 +203,37 @@ void incflo::ApplyCorrector()
                     Real rho_new = rho_old + l_dt * m_half*(drdt(i,j,k)+drdt_o(i,j,k));
                     rho_nph(i,j,k) = m_half * (rho_old + rho_new);
 
-		    // If filling NU at time n with average of nbs, then the normal
-		    // update should work
+                    // If filling NU at time n with average of nbs, then the normal
+                    // update should work
 // // FIXME -- think more about rho n+1/2 for this case
-// 		    // ALSO still need to do velocity
-// 		    if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-// 		    {
+//                  // ALSO still need to do velocity
+//                  if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+//                  {
 // // THis is more like an approximation to U^n+2...
-// 			rho_new = rho_n(i,j,k) + l_dt * drdt(i,j,k);
-// 			rho_nph(i,j,k) = rho_new;
-// 		    }
-		    // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+//                      rho_new = rho_n(i,j,k) + l_dt * drdt(i,j,k);
+//                      rho_nph(i,j,k) = rho_new;
+//                  }
+                    // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
                     // {
                     //     rho_new(i,j,k) = drdt(i,j,k);
                     // } else {
                     //     rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
                     // }
 
-		   if (i==0 && j==10)
-		   {
-		       Print()<<"rho update "<<rho_o(i,j,k)
-			      <<" "<<drdt(i,j,k)
-			      <<" "<<drdt_o(i,j,k)
-			      <<" "<<rho_new
-			      <<std::endl;
-			   
-		   }
+                   // if (i==0 && j==10)
+                   // {
+                   //     Print()<<"rho update "<<rho_o(i,j,k)
+                   //         <<" "<<drdt(i,j,k)
+                   //         <<" "<<drdt_o(i,j,k)
+                   //         <<" "<<rho_new
+                   //         <<std::endl;
+
+                   // }
                     rho_n  (i,j,k) = rho_new;
-                
-                
-                    if (j > 4 && j < 12)
-                        amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_n(i,j,k) << " / " << drdt(i,j,k) << std::endl;
+
+
+                    // if (j > 4 && j < 12)
+                    //     amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_n(i,j,k) << " / " << drdt(i,j,k) << std::endl;
 
                 });
             } // mfi
@@ -374,8 +372,8 @@ void incflo::ApplyCorrector()
             Array4<Real const> const& rho_new  = ld.density.const_array(mfi);
             Array4<Real const> const& rho_nph  = density_nph[lev].array(mfi);
 
-	    auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-	    auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+            auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+            auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
             if (m_diff_type == DiffusionType::Explicit)
             {
@@ -398,11 +396,11 @@ void incflo::ApplyCorrector()
 //                                                 + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
 //                                                 + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
 
-// 			if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-// 			{
+//                      if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+//                      {
 // // // THis is more like an approximation to U^n+2...
-// // 			    rho_new = rho_n(i,j,k) + l_dt * drdt(i,j,k);
-// // 			    rho_nph(i,j,k) = rho_new;
+// //                       rho_new = rho_n(i,j,k) + l_dt * drdt(i,j,k);
+// //                       rho_nph(i,j,k) = rho_new;
 
 //                         AMREX_D_TERM(vel(i,j,k,0) = rho_new(i,j,k) * vel(i,j,k,0) + l_dt * (
 //                                                     dvdt(i,j,k,0) );,
@@ -417,7 +415,7 @@ void incflo::ApplyCorrector()
 // //                                                 + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
 // //                                                 + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
 
-// 			}
+//                      }
 
                         AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
                                      vel(i,j,k,1) /= rho_new(i,j,k);,
@@ -489,11 +487,11 @@ void incflo::ApplyCorrector()
                             AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
                                                         m_half*(dvdt_o(i,j,k,0) +   dvdt(i,j,k,0))
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,0) + divtau(i,j,k,0));,
-//    
+//
                                          vel(i,j,k,1) = rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
                                                         m_half*(dvdt_o(i,j,k,1) +   dvdt(i,j,k,1))
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,1) + divtau(i,j,k,1));,
-//    
+//
                                          vel(i,j,k,2) = rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
                                                         m_half*(dvdt_o(i,j,k,2) +   dvdt(i,j,k,2))
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,2) + divtau(i,j,k,2)););
@@ -508,11 +506,11 @@ void incflo::ApplyCorrector()
                             AMREX_D_TERM(vel(i,j,k,0) = vel_o(i,j,k,0) + l_dt * (
                                                         m_half*(  dvdt_o(i,j,k,0) +   dvdt(i,j,k,0))
                                                       + vel_f(i,j,k,0) + divtau(i,j,k,0));,
-//    
+//
                                          vel(i,j,k,1) = vel_o(i,j,k,1) + l_dt * (
                                                         m_half*(dvdt_o(i,j,k,1) +   dvdt(i,j,k,1))
                                                       + vel_f(i,j,k,1) + divtau(i,j,k,1) );,
-//    
+//
                                          vel(i,j,k,2) = vel_o(i,j,k,2) + l_dt * (
                                                         m_half*(  dvdt_o(i,j,k,2) +   dvdt(i,j,k,2))
                                                       + vel_f(i,j,k,2) + divtau(i,j,k,2) ););
@@ -524,13 +522,13 @@ void incflo::ApplyCorrector()
                         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
-                                                        m_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0)) 
+                                                        m_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0))
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
                                          vel(i,j,k,1) = rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
-                                                        m_half*(  dvdt_o(i,j,k,1)+dvdt(i,j,k,1)) 
+                                                        m_half*(  dvdt_o(i,j,k,1)+dvdt(i,j,k,1))
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
                                          vel(i,j,k,2) = rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
-                                                        m_half*(  dvdt_o(i,j,k,2)+dvdt(i,j,k,2)) 
+                                                        m_half*(  dvdt_o(i,j,k,2)+dvdt(i,j,k,2))
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
                             AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
                                          vel(i,j,k,1) /= rho_new(i,j,k);,

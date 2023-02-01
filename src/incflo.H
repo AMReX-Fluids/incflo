@@ -67,7 +67,8 @@ public:
                               const amrex::DistributionMapping& dm) override;
 
 #ifdef INCFLO_USE_MOVING_EB
-    void MakeNewGeometry (int lev, amrex::Real time);
+    void MakeNewEBGeometry (amrex::Real time);
+    void MakeFactoryWithNewGeometry ();
     void RemakeLevelWithNewGeometry (int lev, amrex::Real time);
     void EB_fill_uncovered(int lev, amrex::MultiFab& mf_new, amrex::MultiFab& mf_old);
     void EB_fill_uncovered_with_zero(int lev, amrex::MultiFab& mf);
@@ -648,11 +649,11 @@ private:
     }
     amrex::EBFArrayBoxFactory const&
     EBFactory (int lev, amrex::Real time) const noexcept {
-	if ( time == m_cur_time ) {
-	    return static_cast<amrex::EBFArrayBoxFactory const&>(*m_old_factory[lev]);
-	} else {
-	    return static_cast<amrex::EBFArrayBoxFactory const&>(*m_new_factory[lev]);
-	}
+        if ( time == m_cur_time ) {
+            return static_cast<amrex::EBFArrayBoxFactory const&>(*m_old_factory[lev]);
+        } else {
+            return static_cast<amrex::EBFArrayBoxFactory const&>(*m_new_factory[lev]);
+        }
     }
 #else
     amrex::EBFArrayBoxFactory const&

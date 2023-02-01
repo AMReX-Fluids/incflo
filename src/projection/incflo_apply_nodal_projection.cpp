@@ -104,12 +104,16 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
 #ifdef AMREX_USE_EB
         if (m_eb_flow.enabled && !incremental) {
            if (m_eb_flow.is_omega) {
-              set_eb_velocity_for_rotation(lev, time, *get_velocity_eb()[lev], 1);
+              set_eb_velocity_for_rotation(lev, time, *get_velocity_eb()[lev],
+					   get_velocity_eb()[lev]->nGrow());
            } else {
-              set_eb_velocity(lev, time, *get_velocity_eb()[lev], 1);
-           }
-           set_eb_density(lev, time, *get_density_eb()[lev], 1);
-           set_eb_tracer(lev, time, *get_tracer_eb()[lev], 1);
+              set_eb_velocity(lev, time, *get_velocity_eb()[lev],
+			      get_velocity_eb()[lev]->nGrow());
+	   }
+           set_eb_density(lev, time, *get_density_eb()[lev],
+			  get_density_eb()[lev]->nGrow());
+           set_eb_tracer(lev, time, *get_tracer_eb()[lev],
+			 get_tracer_eb()[lev]->nGrow());
         }
 #endif
         vel.push_back(&(m_leveldata[lev]->velocity));

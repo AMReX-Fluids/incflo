@@ -21,8 +21,9 @@ incflo::incflo ()
     MakeEBGeometry();
 
 #ifdef INCFLO_USE_MOVING_EB
-    // fixme do we also need to do old???
-    //m_eb_old = &(EB2::IndexSpace::top());
+    // // fixme do we also need to do old???
+    // m_eb_old = &(EB2::IndexSpace::top());
+    // MakeNewEBGeometry(m_dt);
     m_eb_new = &(EB2::IndexSpace::top());
 #endif
 #endif
@@ -206,6 +207,13 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 #ifdef INCFLO_USE_MOVING_EB
     // Fixme --- this causes a memory problem on initialization, and it probabaly should be managed elsewhere anyway.
     //EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(m_eb_old));  // erase old EB
+//FIXME - for now, just initialize old and new EBFactory to the same thing
+    m_old_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
+                                         {nghost_eb_basic(),
+                                          nghost_eb_volume(),
+                                          nghost_eb_full()},
+                                          EBSupport::full);
+
     m_new_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
                                          {nghost_eb_basic(),
                                           nghost_eb_volume(),

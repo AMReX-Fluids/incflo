@@ -94,3 +94,24 @@ void incflo::MakeEBGeometry(Real cur_time)
        eb_level.write_to_chkpt_file("geom_chk", amrex::EB2::ExtendDomainFace(), amrex::EB2::max_grid_size);
     }
 }
+
+// This probably belongs in embedded_boundaries.cpp with MakeGeometry()...
+#ifdef AMREX_USE_EB
+#ifdef INCFLO_USE_MOVING_EB
+void incflo::MakeNewEBGeometry (Real time)
+{
+    // FIXME - Don't we only need to make the EB once, and not for every level like this?
+    // Erase old EB
+    EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(m_eb_old));
+
+    // Build a new EB
+    MakeEBGeometry(time);
+
+    m_eb_old = m_eb_new;
+    m_eb_new = &(EB2::IndexSpace::top());
+
+    EB2::IndexSpace::push(const_cast<EB2::IndexSpace*>(m_eb_new));
+}
+#endif
+#endif
+

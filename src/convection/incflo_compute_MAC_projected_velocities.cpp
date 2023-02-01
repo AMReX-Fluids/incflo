@@ -51,9 +51,9 @@ incflo::compute_MAC_projected_velocities (
         amrex::average_cellcenter_to_face(GetArrOfPtrs(inv_rho[lev]), *density[lev], geom[lev]);
 #endif
 
-	VisMF::Write(*density[0],"r");
-	VisMF::Write(inv_rho[0][0],"ri0");
-	VisMF::Write(inv_rho[0][0],"ri1");
+        VisMF::Write(*density[0],"r");
+        VisMF::Write(inv_rho[0][0],"ri0");
+        VisMF::Write(inv_rho[0][0],"ri1");
 
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
             inv_rho[lev][idim].invert(l_dt, 0);
@@ -97,18 +97,9 @@ incflo::compute_MAC_projected_velocities (
     {
         mac_phi[lev]->FillBoundary(geom[lev].periodicity());
 
-// MATT -- We are computing the new geometry after the MAC projection.
-//#ifdef AMREX_USE_EB
-	// if ( time == m_cur_time ){ // NOT needed. Predictor calls MakeNewGeometry in middle
-	    const EBFArrayBoxFactory* ebfact = &EBFactory(lev, time);
-        amrex::Print() << "LOOK HERE!" << std::endl;
-        amrex::Print() << "time: " << time << "\nm_cur_time: " << m_cur_time << std::endl;
-        amrex::Print() << " ebfact getVolFrac:\n " << ebfact->getVolFrac()[0] << std::endl;
-        
-	// } else {
-
-	// }
-//#endif
+#ifdef AMREX_USE_EB
+        const EBFArrayBoxFactory* ebfact = &EBFactory(lev, time);
+#endif
 
         //
         // For now, BDS is only for edge state prediction given a known advective velocity,
@@ -119,8 +110,8 @@ incflo::compute_MAC_projected_velocities (
             l_advection_type = "Godunov";
         }
 
-	VisMF::Write(*vel[0],"vin");
-	VisMF::Write(*vel_forces[0],"vfin");
+        VisMF::Write(*vel[0],"vin");
+        VisMF::Write(*vel_forces[0],"vfin");
 
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
@@ -137,8 +128,8 @@ incflo::compute_MAC_projected_velocities (
     }
 
     // MATT -- Print out umac, vmac after extrapolating to the face
-    //amrex::Print() << "umac: \n" << (*u_mac[0])[0] << std::endl; 
-    
+    //amrex::Print() << "umac: \n" << (*u_mac[0])[0] << std::endl;
+
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
     for (int lev=0; lev <= finest_level; ++lev)
     {
@@ -150,7 +141,7 @@ incflo::compute_MAC_projected_velocities (
     VisMF::Write(*u_mac[0], "um0");
     VisMF::Write(*v_mac[0], "um1");
     VisMF::Write(*get_velocity_eb()[0], "ebv");
-    
+
     macproj->setUMAC(mac_vec);
 
     // FIXME Right now we're just doing this for single-level
@@ -160,10 +151,10 @@ incflo::compute_MAC_projected_velocities (
     if (m_eb_flow.enabled) {
        for (int lev=0; lev <= finest_level; ++lev)
        {
-	  //
-	  // Pass EB flow BC into MAC, no RHS correction
-	  //
-	  macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
+          //
+          // Pass EB flow BC into MAC, no RHS correction
+          //
+          macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
        }
     }
 #endif

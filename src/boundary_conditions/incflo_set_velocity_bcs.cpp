@@ -43,13 +43,14 @@ incflo::set_inflow_velocity (int lev, amrex::Real time, MultiFab& vel, int nghos
 
 #ifdef AMREX_USE_EB
 void
-incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int nghost)
+incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& eb_vel, int nghost)
 {
     Geometry const& gm = Geom(lev);
     eb_vel.setVal(0.);
 
-    const auto& factory =
-       dynamic_cast<EBFArrayBoxFactory const&>(eb_vel.Factory());
+    const auto& factory =    EBFactory(lev, time);
+    // const auto& factory =
+    //    dynamic_cast<EBFArrayBoxFactory const&>(eb_vel.Factory());
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -135,13 +136,14 @@ incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int ng
 }
 
 void
-incflo::set_eb_density (int lev, amrex::Real /*time*/, MultiFab& eb_density, int nghost)
+incflo::set_eb_density (int lev, amrex::Real time, MultiFab& eb_density, int nghost)
 {
     Geometry const& gm = Geom(lev);
     eb_density.setVal(0.);
 
-    const auto& factory =
-       dynamic_cast<EBFArrayBoxFactory const&>(eb_density.Factory());
+    const auto& factory =    EBFactory(lev, time);
+    // const auto& factory =
+    //    dynamic_cast<EBFArrayBoxFactory const&>(eb_density.Factory());
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -204,13 +206,14 @@ incflo::set_eb_density (int lev, amrex::Real /*time*/, MultiFab& eb_density, int
 }
 
 void
-incflo::set_eb_tracer (int lev, amrex::Real /*time*/, MultiFab& eb_tracer, int nghost)
+incflo::set_eb_tracer (int lev, amrex::Real time, MultiFab& eb_tracer, int nghost)
 {
     Geometry const& gm = Geom(lev);
     eb_tracer.setVal(0.);
 
-    const auto& factory =
-       dynamic_cast<EBFArrayBoxFactory const&>(eb_tracer.Factory());
+    const auto& factory =    EBFactory(lev, time);
+    // const auto& factory =
+    //    dynamic_cast<EBFArrayBoxFactory const&>(eb_tracer.Factory());
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -281,14 +284,15 @@ incflo::set_eb_tracer (int lev, amrex::Real /*time*/, MultiFab& eb_tracer, int n
 }
 
 void
-incflo::set_eb_velocity_for_rotation (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int nghost)
+incflo::set_eb_velocity_for_rotation (int lev, amrex::Real time, MultiFab& eb_vel, int nghost)
 {
     Geometry const& gm = Geom(lev);
     const auto dx = gm.CellSizeArray();
     eb_vel.setVal(0.);
 
-    const auto& factory =
-       dynamic_cast<EBFArrayBoxFactory const&>(eb_vel.Factory());
+    const auto& factory =    EBFactory(lev, time);
+    // const auto& factory =
+    //    dynamic_cast<EBFArrayBoxFactory const&>(eb_vel.Factory());
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())

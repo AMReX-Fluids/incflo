@@ -181,8 +181,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
                        include_pressure_gradient);
 
     VisMF::Write(m_leveldata[0]->density_o,"do3");
-    //amrex::Print() << "density: " << m_leveldata[0]->density_o << std::endl; 
-        
+    //amrex::Print() << "density: " << m_leveldata[0]->density_o << std::endl;
+
     compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
@@ -198,14 +198,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
     //      Compute the explicit advective terms R_u^n      , R_s^n       and R_t^n
     // Note that "get_conv_tracer_old" returns div(rho u tracer)
     // *************************************************************************************
-    
+
     compute_convective_term(get_conv_velocity_old(), get_conv_density_old(), get_conv_tracer_old(),
                             get_velocity_old_const(), get_density_old_const(), get_tracer_old_const(),
                             AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                             GetVecOfPtrs(w_mac)),
                             GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
                             m_cur_time);
-   
+
     // *************************************************************************************
     // Define local variables for lambda to capture.
     // *************************************************************************************
@@ -234,46 +234,44 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real const> const& drdt    = ld.conv_density_o.const_array(mfi);
 
                 auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
-
-                amrex::Print() << "\n\n\n!%!%! -- Updating density inside predictor -- !%!%!\n\n\n" << std::endl;
+                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-		    // 	//Print()<<"NU rho old "<<rho_o(i,j,k)<<std::endl;
+                    //  //Print()<<"NU rho old "<<rho_o(i,j,k)<<std::endl;
                     // {
-		    // 	// FIXME? Seems inconsistent that there's no dt here, but then it exists below....
-		    // 	// No. Apply() at the end, divides out dt but only for !covered at time n
+                    //  // FIXME? Seems inconsistent that there's no dt here, but then it exists below....
+                    //  // No. Apply() at the end, divides out dt but only for !covered at time n
                     //     // This just ensures we don't try to use garbage stored in the covered cell.
-		    // 	//
+                    //  //
                     //     rho_new(i,j,k) = drdt(i,j,k);
                     // } else {
-		    // FIXME? We now fill rho old with nb avg for NU cells, and define drdt in a consitent
-		    // way in redistribution::APply so that we may do this...
+                    // FIXME? We now fill rho old with nb avg for NU cells, and define drdt in a consitent
+                    // way in redistribution::APply so that we may do this...
                         rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
                     // }
 
-                    if (j == 5)
-                        amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_new(i,j,k) << " / " << drdt(i,j,k) << std::endl;
+                    // if (j == 5)
+                    //     amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_new(i,j,k) << " / " << drdt(i,j,k) << std::endl;
 
                     if (m_redistribution_type == "NoRedist") {
                         if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) {
                             rho_new(i,j,k) = rho_new(i,j,k) * vfrac_old(i,j,k) / vfrac_new(i,j,k);
                         }
                     }
-                 }); 
+                 });
             } // mfi
 
-	    VisMF::Write(m_leveldata[0]->density_o,"do5");
-	    
+            VisMF::Write(m_leveldata[0]->density_o,"do5");
+
             // Fill ghost cells of the new density field so that we can define density_nph
             //      on the valid region grown by 1
             int ng = 1;
             fillpatch_density(lev, m_t_new[lev], ld.density, ng);
 
-	    VisMF::Write(m_leveldata[0]->density_o,"do6");
-	    
+            VisMF::Write(m_leveldata[0]->density_o,"do6");
+
             for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
                  Box const& gbx = mfi.growntilebox(1);
@@ -282,19 +280,19 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  Array4<Real>        const& rho_nph  = density_nph_oldeb[lev].array(mfi);
 
                  auto const& vfrac_new = OldEBFactory(lev).getVolFrac().const_array(mfi);
-		 auto const& vfrac_old =    EBFactory(lev).getVolFrac().const_array(mfi); 
+                 auto const& vfrac_old =    EBFactory(lev).getVolFrac().const_array(mfi);
 
                  amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
-		     // FIXME - probably want to think more about what to do with rho_n+1/2 here
-		     // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-		     // {
-		     // 	 rho_nph(i,j,k) = rho_new(i,j,k);
-		     // } else {
-			 rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
+                     // FIXME - probably want to think more about what to do with rho_n+1/2 here
+                     // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+                     // {
+                     //          rho_nph(i,j,k) = rho_new(i,j,k);
+                     // } else {
+                         rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
                      // }
-                     // if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.)) 
-                     //     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl; 
+                     // if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.))
+                     //     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl;
                  });
             } // mfi
         } // lev
@@ -408,16 +406,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
     VisMF::Write(vel_forces[0],"vf");
     VisMF::Write(m_leveldata[0]->conv_velocity_o,"cv");
-    
+
 
     // *************************************************************************************
     // Update the velocity
     // *************************************************************************************
     for (int lev = 0; lev <= finest_level; lev++)
     {
-	// FIXME
-	m_leveldata[lev]->divtau_o.setVal(0.0);
-	
+        // FIXME
+        m_leveldata[lev]->divtau_o.setVal(0.0);
+
         auto& ld = *m_leveldata[lev];
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -432,13 +430,13 @@ void incflo::ApplyPredictor (bool incremental_projection)
             Array4<Real const> const& rho_new  = ld.density.const_array(mfi);
             Array4<Real const> const& rho_nph  = density_nph_oldeb[lev].array(mfi);
 
-	    // FIXME for debugging
-	    auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-	    auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+            // FIXME for debugging
+            auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+            auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
 
-	    // FIXME -- what about NU cells. rho treats these separately
-	    // here, we don't. 
+            // FIXME -- what about NU cells. rho treats these separately
+            // here, we don't.
             if (m_diff_type == DiffusionType::Implicit) {
 
                 if (use_tensor_correction)
@@ -522,22 +520,22 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 if (m_advect_momentum) {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-			if (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
-			    Print()<<"vel pieces "<<vel(i,j,k,0)
-				   <<" "<<rho_old(i,j,k)
-				   <<" "<<dvdt(i,j,k,0)
-				   <<" "<<rho_nph(i,j,k)
-				   <<" "<<vel_f(i,j,k,0)
-				   <<" "<<divtau_o(i,j,k,0)
-				   <<" "<<rho_new(i,j,k)
-				   <<std::endl;
-			}
-			
+                        // if (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
+                        //     Print()<<"vel pieces "<<vel(i,j,k,0)
+                        //         <<" "<<rho_old(i,j,k)
+                        //         <<" "<<dvdt(i,j,k,0)
+                        //         <<" "<<rho_nph(i,j,k)
+                        //         <<" "<<vel_f(i,j,k,0)
+                        //         <<" "<<divtau_o(i,j,k,0)
+                        //         <<" "<<rho_new(i,j,k)
+                        //         <<std::endl;
+                        // }
+
                         AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                      vel(i,j,k,1) *= rho_old(i,j,k);,
                                      vel(i,j,k,2) *= rho_old(i,j,k););
-			// fixme - Something above in the diffusion routines sets divtau EB covered to 1e40
-			// For now, just ignore forcing and divtau
+                        // fixme - Something above in the diffusion routines sets divtau EB covered to 1e40
+                        // For now, just ignore forcing and divtau
                         AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+rho_nph(i,j,k)*vel_f(i,j,k,0)+divtau_o(i,j,k,0));,
                                      vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+rho_nph(i,j,k)*vel_f(i,j,k,1)+divtau_o(i,j,k,1));,
                                      vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+rho_nph(i,j,k)*vel_f(i,j,k,2)+divtau_o(i,j,k,2)););
@@ -585,10 +583,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
     if (!incremental_projection) {
         for (int lev = 0; lev <= finest_level; lev++)
         {
-	    VisMF::Write(m_leveldata[0]->density,"do8");
+            VisMF::Write(m_leveldata[0]->density,"do8");
             RemakeLevelWithNewGeometry(lev, new_time);
 
-	    VisMF::Write(m_leveldata[0]->density_o,"do9");
+            VisMF::Write(m_leveldata[0]->density_o,"do9");
         }
     }
 #endif
@@ -600,7 +598,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     for (int lev = 0; lev <= finest_level; ++lev)
         density_nph_neweb.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
 
-    
+
     // *************************************************************************************
     // Update density^n+1/2 first
     // *************************************************************************************
@@ -623,21 +621,21 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real>        const& rho_nph  = density_nph_neweb[lev].array(mfi);
 
                 auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi); 
+                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     // FIXME? what happens with newly uncovered cells here? how have covered cells in rho_old been set?
-		    if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.){
-			Print()<<"Proj: "<<rho_old(i,j,k)
-			       <<" "<<rho_new(i,j,k)<<std::endl;
-		    }
-		    
+                    // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.){
+                    //  Print()<<"Proj: "<<rho_old(i,j,k)
+                    //         <<" "<<rho_new(i,j,k)<<std::endl;
+                    // }
+
                     rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
                     if (rho_nph(i,j,k) < 0.0){
                     // if (i == 34 && j == 46 || i == 29 && j == 17){
                         amrex::Print() << "Negative Density rho_nph(" << i << ", " << j << "): "
-				       << rho_nph(i,j,0) << std::endl;
+                                       << rho_nph(i,j,0) << std::endl;
                         amrex::Print() << "rho_old(" << i << ", " << j << "): " << rho_old(i,j,0) << std::endl;
                         amrex::Print() << "rho_new(" << i << ", " << j << "): " << rho_new(i,j,0) << std::endl;
                     }
@@ -647,7 +645,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     } // not constant density
 
     VisMF::Write(m_leveldata[0]->density,"dens");
-    
+
     // **********************************************************************************************
     //
     // Project velocity field, update pressure
@@ -659,5 +657,5 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // static int count = 0;
     // count++;
     // if (count > 2) Abort();
-    
+
 }

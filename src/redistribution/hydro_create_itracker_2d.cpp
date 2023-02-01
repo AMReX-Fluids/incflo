@@ -268,14 +268,46 @@ newlyUncoveredNbhd ( int i, int j,
     bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
                       (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
 
-    Real vx = vel_eb(i,j,k,0);
-    Real vy = vel_eb(i,j,k,1);
+    // THis is a newly uncovered cell, so my vel_eb (which is time lagged here at n)
+    // would be zero
+    // fill with average of neighbors
+    Real vx = 0.; // vel_eb(i,j,k,0);
+    Real vy = 0.; // vel_eb(i,j,k,1);
+
+    int kk=0;
+    for(int jj(-1); jj<=1; jj++) {
+        for(int ii(-1); ii<=1; ii++) {
+            if ( vfrac(i+ii,j+jj,k) > 0.0 )
+            {
+                if ( !(ii==0 && jj==0)
+                     &&(is_periodic_x || (domain.smallEnd(0)<=i+ii && i+ii<=domain.bigEnd(0)))
+                     &&(is_periodic_y || (domain.smallEnd(1)<=j+jj && j+jj<=domain.bigEnd(1)))
+                     && Box(vel_eb).contains(IntVect(i+ii,j+jj)) )
+                {
+                    // take an "average" over all valid cells in 3x3 neighborhood
+                    // excluding i,j itself. Just looking for direction, so don't worry
+                    // about division
+                    vx += vel_eb(i+ii,j+jj,k+kk,0);
+                    vy += vel_eb(i+ii,j+jj,k+kk,1);
+//fixme
+                    // if ( i==16 && j==8 ){
+                    //  Print()<<"Including cell ("<<ii<<","<<jj<<"). label: "
+                    //         <<label[ii+1][jj+1]<<std::endl;
+                    // }
+                }
+            }
+        }
+    }
+
     bool vx_eq_vy = ( (std::abs(vx-vy) < small_norm_diff) ||
                       (std::abs(vx+vy) < small_norm_diff)  ) ? true : false;
 
-    if ( vx_eq_vy && nx_eq_ny )
+    if ( vx_eq_vy && nx_eq_ny ){
+        Print()<<"cell "<<IntVect(i,j)
+               <<"eb_vel "<< vx <<", "<<vy<<std::endl;
+        Print()<<"eb_norm "<< nx <<", "<<ny<<std::endl;
         Abort("Newly uncovered cell nbhd: Direction to merge not well resolved");
-
+    }
     // Select first for EB motion. If that's indeterminate, choose based on EB normal
     if ( std::abs(vx) > std::abs(vy) || ( vx_eq_vy && std::abs(nx) > std::abs(ny) ) )
     {

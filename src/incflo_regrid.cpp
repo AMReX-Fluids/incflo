@@ -106,28 +106,27 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 #endif
 }
 
-#ifdef AMREX_USE_EB
-#ifdef INCFLO_USE_MOVING_EB
-void incflo::MakeNewGeometry (int lev, Real time)
+void incflo::MakeFactoryWithNewGeometry ()
 {
-    // Erase old EB
-    EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(m_eb_old));
+    BL_PROFILE("incflo::MakeFactoryWithNewGeometry()");
 
-    // Build a new EB
-    MakeEBGeometry(time);
+    if (m_verbose > 0) {
+        amrex::Print() << "Updating Factory with new geometry" << std::endl;
+    }
 
-    m_eb_old = m_eb_new;
-    m_eb_new = &(EB2::IndexSpace::top());
+    // This has been called at the beginning of the timestep
+    // MakeNewEBGeometry(lev,time);
 
-    m_old_factory[lev] = std::move(m_new_factory[lev]);
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+        m_old_factory[lev] = std::move(m_new_factory[lev]);
 
-    m_new_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
-                                          {nghost_eb_basic(),
-                                           nghost_eb_volume(),
-                                           nghost_eb_full()},
-                                          EBSupport::full);
-
-    EB2::IndexSpace::push(const_cast<EB2::IndexSpace*>(m_eb_new));
+        m_new_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
+                                              {nghost_eb_basic(),
+                                               nghost_eb_volume(),
+                                               nghost_eb_full()},
+                                              EBSupport::full);
+    }
 }
 
 // Remake an existing level with a new geometry but nothing else changed
@@ -143,6 +142,15 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     // This has been called at the beginning of the timestep
     // MakeNewGeometry(lev,time);
 
+    // This is now done in MakeFactoryWithNewGeometry
+    // m_old_factory[lev] = std::move(m_new_factory[lev]);
+
+    // m_new_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
+    //                                       {nghost_eb_basic(),
+    //                                        nghost_eb_volume(),
+    //                                        nghost_eb_full()},
+    //                                       EBSupport::full);
+
     std::unique_ptr<LevelData> new_leveldata
         (new LevelData(grids[lev], dmap[lev], *m_new_factory[lev], m_ntrac, nghost_state(),
                        m_advection_type,
@@ -150,6 +158,7 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
                        use_tensor_correction,
                        m_advect_tracer));
 
+// FillPatch does this copy for us
     // MultiFab::Copy(new_leveldata->velocity  , m_leveldata[lev]->velocity  ,0,0,AMREX_SPACEDIM,0);
     // MultiFab::Copy(new_leveldata->velocity_o, m_leveldata[lev]->velocity_o,0,0,AMREX_SPACEDIM,0);
     // MultiFab::Copy(new_leveldata->density   , m_leveldata[lev]->density  ,0,0,1,0);
@@ -167,13 +176,14 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     MultiFab::Copy(new_leveldata->conv_density , m_leveldata[lev]->conv_density,0,0,1,0);
 
     VisMF::Write(m_leveldata[0]->density_o,"do10");
-    // Fill in ghost cells for new MultiFabs (Matt - Not sure if 4 is the correct ng)
-// This doesn;t work as expected because it relies on m_leveldata, which still has the old EB!!
-    // however, the periodic fill is just supposed to look at whatever is in the valid region...
-    // not sure why this doesn't work...
+
+
     Real old_time = m_cur_time;
     Real new_time = m_cur_time + m_dt;
-    
+
+    // Want to make sure we copy from the correct time MF in m_leveldata
+    // FIXME? THis will use eb_cell_cons interpolator, and m_leveldata was made
+    // with the old EBFactory. IS this a problem?
     fillpatch_velocity(lev, old_time, new_leveldata->velocity_o, nghost_state());
     fillpatch_velocity(lev, new_time, new_leveldata->velocity, nghost_state());
     fillpatch_density(lev, old_time, new_leveldata->density_o, nghost_state());
@@ -186,6 +196,7 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     fillpatch_gradp(lev, time, new_leveldata->gp, 0);
     new_leveldata->p_nd.setVal(0.0);
     VisMF::Write(new_leveldata->density_o,"do11");
+
     // No, we need to retain vals in NU cells in both new and old
 #if 1
     // This should be okay to do...
@@ -204,7 +215,7 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
 #endif
 
     VisMF::Write(new_leveldata->density,"do12");
-    
+
 #if 0
     //FIXME - is this what we want to do for MOL pred-corr. new has been filled already from
     // update with MSRD, and we wouldn't want to re-define what rho_old is...
@@ -230,8 +241,33 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
     EB_fill_uncovered(lev,new_leveldata->p_nd    , m_leveldata[lev]->p_nd    );
 #endif
 
+    #ifdef AMREX_USE_MOVING_EB
+// We want to pass the new time eb velocity to redistributuion
+        // Doing this here also ensures we use the new EB vel for the nodal projection
+        // at the end of the step. Technically don't need to redo this for time = n+1...
+        if (m_eb_flow.enabled)
+        {
+            Print()<<"Updating the eb_velocity..."<<std::endl;
+
+            //FIXME - leveldata is constructed based on the old time EB
+            // for now, we hack the set_eb functions, but perhaps it would be
+            // better to create a MF with the new time EB to put the eb values in...
+            if (m_eb_flow.is_omega) {
+                set_eb_velocity_for_rotation(lev, m_t_new[lev], *get_velocity_eb()[lev],
+                                             get_velocity_eb()[lev]->nGrow());
+            } else {
+                set_eb_velocity(lev, m_t_new[lev], *get_velocity_eb()[lev],
+                                get_velocity_eb()[lev]->nGrow());
+            }
+            set_eb_density(lev, m_t_new[lev], *get_density_eb()[lev],
+                           get_density_eb()[lev]->nGrow());
+            set_eb_tracer(lev, m_t_new[lev], *get_tracer_eb()[lev],
+                          get_tracer_eb()[lev]->nGrow());
+        }
+#endif
+
     m_leveldata[lev] = std::move(new_leveldata);
-    
+
     // MATT -- reset macproj
     macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
                       MLMG::Location::FaceCentroid,  // Location of mac_vec
@@ -240,8 +276,6 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
 
 
 }
-#endif
-#endif
 
 // Delete level data
 // overrides the pure virtual function in AmrCore
@@ -358,7 +392,7 @@ void incflo::EB_fill_uncovered_with_zero (int lev, MultiFab& mf)
                 //amrex::Print() << "Need to fill cell with zero " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
                 for (int n = 0; n < ncomp; n++)
                 {
-		    // FIXME- for now make this not identically zero so inv does not cause error
+                    // FIXME- for now make this not identically zero so inv does not cause error
                     fab(i,j,k,n) = 1.e-40;
                 }
             }
