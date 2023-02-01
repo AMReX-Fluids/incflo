@@ -31,6 +31,7 @@ incflo.constant_density =   false        #
 
 incflo.advect_momentum = true
 incflo.advection_type        =  "Godunov" 
+incflo.advection_type        =  "MOL" 
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
 #incflo.redistribution_type   =  "NoRedist" 

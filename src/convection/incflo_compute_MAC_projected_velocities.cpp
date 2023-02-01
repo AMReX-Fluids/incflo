@@ -100,7 +100,11 @@ incflo::compute_MAC_projected_velocities (
 // MATT -- We are computing the new geometry after the MAC projection.
 //#ifdef AMREX_USE_EB
 	// if ( time == m_cur_time ){ // NOT needed. Predictor calls MakeNewGeometry in middle
-	const EBFArrayBoxFactory* ebfact = &EBFactory(lev, time);
+	    const EBFArrayBoxFactory* ebfact = &EBFactory(lev, time);
+        amrex::Print() << "LOOK HERE!" << std::endl;
+        amrex::Print() << "time: " << time << "\nm_cur_time: " << m_cur_time << std::endl;
+        amrex::Print() << " ebfact getVolFrac:\n " << ebfact->getVolFrac()[0] << std::endl;
+        
 	// } else {
 
 	// }
@@ -132,6 +136,9 @@ incflo::compute_MAC_projected_velocities (
                                       l_advection_type);
     }
 
+    // MATT -- Print out umac, vmac after extrapolating to the face
+    //amrex::Print() << "umac: \n" << (*u_mac[0])[0] << std::endl; 
+    
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
     for (int lev=0; lev <= finest_level; ++lev)
     {
