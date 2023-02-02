@@ -102,8 +102,8 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-	if (vfrac_old(i,j,k) > 0.0 || vfrac_new(i,j,k) > 0.0)
-	//if (!flag(i,j,k).isCovered())
+        if (vfrac_old(i,j,k) > 0.0 || vfrac_new(i,j,k) > 0.0)
+        //if (!flag(i,j,k).isCovered())
         {
             // Start with the vfrac_new of (i,j,k)
             nbhd_vol(i,j,k) = vfrac_new(i,j,k) / nrs(i,j,k);
@@ -153,13 +153,14 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         if (vfrac_new(i,j,k) > 0.0)
-	//if (!flag(i,j,k).isCovered())
+        //if (!flag(i,j,k).isCovered())
         {
             nbhd_vol(i,j,k)  = alpha(i,j,k,0) * vfrac_new(i,j,k);
 
-	    if ((i==9 || i==8) && j == 8) {
-		amrex::Print() << "nbhd_vol A: " << IntVect(i,j) << nbhd_vol(i,j,k) << std::endl; 
-	    }
+//fixme
+            // if ((i==9 || i==8) && j == 8) {
+            //  amrex::Print() << "nbhd_vol A: " << IntVect(i,j) << nbhd_vol(i,j,k) << std::endl;
+            // }
 
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
@@ -169,15 +170,15 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
                 int t = k+kmap[itracker(i,j,k,i_nbor)];
                 amrex::Gpu::Atomic::Add(&nbhd_vol(i,j,k),alpha(i,j,k,1) * vfrac_new(r,s,t) / nrs(r,s,t));
 
-		if ((i==9 || i==8) && j == 8) {
-		    amrex::Print() << "nbhd_vol addition: " << IntVect(i,j) << vfrac_new(r,s,t) << std::endl; 
-		}
+                // if ((i==9 || i==8) && j == 8) {
+                //     amrex::Print() << "nbhd_vol addition: " << IntVect(i,j) << vfrac_new(r,s,t) << std::endl;
+                // }
 
             }
-	    //fixme
-	    if ((i==9 || i==8) && j == 8) {
-		amrex::Print() << "nbhd_vol: " << IntVect(i,j) << nbhd_vol(i,j,k) << std::endl; 
-	    }
+            // //fixme
+            // if ((i==9 || i==8) && j == 8) {
+            //  amrex::Print() << "nbhd_vol: " << IntVect(i,j) << nbhd_vol(i,j,k) << std::endl;
+            // }
         }
     });
 

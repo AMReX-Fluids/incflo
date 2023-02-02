@@ -162,10 +162,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
                 {
                     // For newly uncovered cells, use U-star == 0. Don't want uninitialized value.
-		    // Shouldn't matter what's in here (without SRD slopes) because it get mult by
-		    // V^n which is zero
+                    // Shouldn't matter what's in here (without SRD slopes) because it get mult by
+                    // V^n which is zero
                     scratch(i,j,k,n) = U_in(i,j,k,n);
-		    //scratch(i,j,k,n) = 0.0;
+                    //scratch(i,j,k,n) = 0.0;
                 }
                 else if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
                          (vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 1.0) )
@@ -182,10 +182,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     Real delta_divU = delta_vol - scratch(i,j,k,n);
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
                                                      + dt * U_in(i,j,k,n) * delta_divU;
-
-                    // For case of const rho & U, U_in * Ueb_div = advective update = dUdt_in
-                    // So this way will be easier for now, fewer code changes...
-                    //scratch(i,j,k,n) = U_in(i,j,k,n) + dt * U_in(i,j,k,n) * delta_vol;
                 }
                 else
                 {
@@ -242,43 +238,40 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 // neighborhood of another cell -- if either of those is true the
                 // value may have changed
 
-                if (i==8  && j==8){
-                    amrex::Print() << "Pre dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
-                    amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
-                }
+                //fixme
+                // if (i==8  && j==8){
+                //     amrex::Print() << "Pre dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
+                //     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
+                // }
 
-                if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1. || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
+                if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.
+                    || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
                     || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) )
                 {
                    const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
 
-		   if (i==0 && j==10){
-		       Print()<<"redist apply update "<<dUdt_out(i,j,k,n)
-			      <<" "<<U_in(i,j,k,n) <<std::endl;
-			   }
-                   // if (vfrac_old(i,j,k) == 0.){
-                   //     // Do nothing, we already have what we want to pass out
-		   //     Print()<<"Uncovered cell ddt ...."<<std::endl;
-                   //     dUdt_out(i,j,k,n) = dUdt_out(i,j,k,n);
-                   // } else {
-                   //     // We redistributed the whole state, but want to pass out only the update
-		   // FIXME - this requires that we pass in 0 for cells that go covered to cut
-		   dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+                   // if (i==0 && j==10){
+                   //     Print()<<"redist apply update "<<dUdt_out(i,j,k,n)
+                   //         <<" "<<U_in(i,j,k,n) <<std::endl;
                    // }
+
+                   // Now that we give NU cells a U_in value, we can do this for everyone
+                   dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
                 }
                 else
                 {
                    dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
                 }
 
-                if (i==0 && j==10)
-                    amrex::Print() << "Post dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
+                //FIXME
+                // if (i==0 && j==10)
+                //     amrex::Print() << "Post dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
             }
         );
 
     } else if (redistribution_type == "NoRedist") {
-	Print()<<"No redistribution..."<<std::endl;
-	
+        Print()<<"No redistribution..."<<std::endl;
+
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {

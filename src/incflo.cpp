@@ -21,9 +21,9 @@ incflo::incflo ()
     MakeEBGeometry();
 
 #ifdef INCFLO_USE_MOVING_EB
-    // // fixme do we also need to do old???
-    // m_eb_old = &(EB2::IndexSpace::top());
-    // MakeNewEBGeometry(m_dt);
+    // Initialization only needs one EB (no movement treatment yet).
+    // The "old" gets initialized in the first call to advance(), in which the
+    // "new" data gets moved into the "old" containers.
     m_eb_new = &(EB2::IndexSpace::top());
 #endif
 #endif
@@ -205,9 +205,8 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 #ifdef AMREX_USE_EB
 
 #ifdef INCFLO_USE_MOVING_EB
-    // Fixme --- this causes a memory problem on initialization, and it probabaly should be managed elsewhere anyway.
-    //EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(m_eb_old));  // erase old EB
-//FIXME - for now, just initialize old and new EBFactory to the same thing
+    // For initialization, we only need one EB, but we need to fill both old and new
+    // EBFactory containers.
     m_old_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
                                          {nghost_eb_basic(),
                                           nghost_eb_volume(),

@@ -81,12 +81,12 @@ void incflo::ApplyCorrector()
     int ngmac = nghost_mac();
 
     for (int lev = 0; lev <= finest_level; ++lev) {
-        AMREX_D_TERM(u_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));,
-                     v_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));,
-                     w_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev)););
+        AMREX_D_TERM(u_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)),
+                                       dmap[lev], 1, ngmac, MFInfo(), Factory(lev));,
+                     v_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)),
+                                       dmap[lev], 1, ngmac, MFInfo(), Factory(lev));,
+                     w_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)),
+                                       dmap[lev], 1, ngmac, MFInfo(), Factory(lev)););
         if (ngmac > 0) {
             AMREX_D_TERM(u_mac[lev].setBndry(0.0);,
                          v_mac[lev].setBndry(0.0);,
@@ -203,32 +203,8 @@ void incflo::ApplyCorrector()
                     Real rho_new = rho_old + l_dt * m_half*(drdt(i,j,k)+drdt_o(i,j,k));
                     rho_nph(i,j,k) = m_half * (rho_old + rho_new);
 
-                    // If filling NU at time n with average of nbs, then the normal
+                    // If filling NU at time n in some way, then the normal
                     // update should work
-// // FIXME -- think more about rho n+1/2 for this case
-//                  // ALSO still need to do velocity
-//                  if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-//                  {
-// // THis is more like an approximation to U^n+2...
-//                      rho_new = rho_n(i,j,k) + l_dt * drdt(i,j,k);
-//                      rho_nph(i,j,k) = rho_new;
-//                  }
-                    // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-                    // {
-                    //     rho_new(i,j,k) = drdt(i,j,k);
-                    // } else {
-                    //     rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
-                    // }
-
-                   // if (i==0 && j==10)
-                   // {
-                   //     Print()<<"rho update "<<rho_o(i,j,k)
-                   //         <<" "<<drdt(i,j,k)
-                   //         <<" "<<drdt_o(i,j,k)
-                   //         <<" "<<rho_new
-                   //         <<std::endl;
-
-                   // }
                     rho_n  (i,j,k) = rho_new;
 
 
@@ -383,6 +359,7 @@ void incflo::ApplyCorrector()
                 if (m_advect_momentum) {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
+                        // FIXME - Needs attention for diffusion to work
                         AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
                                                     m_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0)) );,
 //                                                + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
@@ -395,28 +372,6 @@ void incflo::ApplyCorrector()
                                                      m_half*(  dvdt_o(i,j,k,2)+  dvdt(i,j,k,2)) ););
 //                                                 + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
 //                                                 + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
-
-//                      if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-//                      {
-// // // THis is more like an approximation to U^n+2...
-// //                       rho_new = rho_n(i,j,k) + l_dt * drdt(i,j,k);
-// //                       rho_nph(i,j,k) = rho_new;
-
-//                         AMREX_D_TERM(vel(i,j,k,0) = rho_new(i,j,k) * vel(i,j,k,0) + l_dt * (
-//                                                     dvdt(i,j,k,0) );,
-// //                                                + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
-// //                                                + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
-//                                      vel(i,j,k,1) =  rho_new(i,j,k) * vel(i,j,k,1) + l_dt * (
-//                                                      dvdt(i,j,k,1) );,
-// //                                                 + m_half*(divtau_o(i,j,k,1)+divtau(i,j,k,1))
-// //                                                 + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
-//                                      vel(i,j,k,2) =  rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
-//                                                      dvdt(i,j,k,2) ););
-// //                                                 + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
-// //                                                 + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
-
-//                      }
-
                         AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
                                      vel(i,j,k,1) /= rho_new(i,j,k);,
                                      vel(i,j,k,2) /= rho_new(i,j,k););
@@ -569,9 +524,9 @@ void incflo::ApplyCorrector()
         diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
 
-
-    VisMF::Write(m_leveldata[0]->density,"dcor");
-    VisMF::Write(m_leveldata[0]->velocity,"vcor");
+//FIXME
+    // VisMF::Write(m_leveldata[0]->density,"dcor");
+    // VisMF::Write(m_leveldata[0]->velocity,"vcor");
 
     // **********************************************************************************************
     //

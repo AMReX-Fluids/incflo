@@ -3,8 +3,6 @@
 #ifdef AMREX_USE_EB
 
 #include <hydro_redistribution.H>
-//#include <AMReX_MultiFabUtil.H>
-//#include <AMReX_MultiCutFab.H>
 #include <incflo.H>
 
 using namespace amrex;
@@ -83,7 +81,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
 
         // velocity
         auto const& bc_vel = get_velocity_bcrec_device_ptr();
-        amrex::Print() << "Redist for velocity " << std::endl;
+        if (m_verbose > 1) { amrex::Print() << "Redist for velocity " << std::endl; }
         // std::string vel_redistribution_type = "NoRedist";
 
         Redistribution::Apply(bx, AMREX_SPACEDIM, dvdt, dvdt_tmp, vel, scratch, flag,
@@ -97,7 +95,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
         // density
         if (!l_constant_density) {
             auto const& bc_den = get_density_bcrec_device_ptr();
-            amrex::Print() << "Redist for density " << std::endl;
+            if (m_verbose > 1) { amrex::Print() << "Redist for density " << std::endl; }
             Redistribution::Apply(bx, 1, drdt, drdt_tmp, rho, scratch, flag,
                                   AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                                   AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
@@ -115,7 +113,7 @@ incflo::redistribute_convective_term ( Box const& bx, MFIter const& mfi,
 
         if (l_advect_tracer) {
             auto const& bc_tra = get_tracer_bcrec_device_ptr();
-            amrex::Print() << "Redist for tracer " << std::endl;
+            if (m_verbose > 1) { amrex::Print() << "Redist for tracer " << std::endl; }
             Redistribution::Apply(bx, l_ntrac, dtdt, dtdt_tmp, rhotrac, scratch, flag,
                                   AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                                   AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,

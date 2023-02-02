@@ -115,7 +115,7 @@ void incflo::MakeFactoryWithNewGeometry ()
     }
 
     // This has been called at the beginning of the timestep
-    // MakeNewEBGeometry(lev,time);
+    // MakeNewEBGeometry(time);
 
     for (int lev = 0; lev <= finest_level; lev++)
     {
@@ -130,128 +130,85 @@ void incflo::MakeFactoryWithNewGeometry ()
 }
 
 // Remake an existing level with a new geometry but nothing else changed
-//FIXME - time parameter is misleading, remove...
-void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
+void incflo::RemakeWithNewGeometry ()
 {
-    BL_PROFILE("incflo::RemakeLevelWithNewGeometry()");
+    BL_PROFILE("incflo::RemakeWithNewGeometry()");
 
     if (m_verbose > 0) {
-        amrex::Print() << "Remaking level " << lev << " with new geometry" << std::endl;
+        amrex::Print() << "Remaking with new geometry" << std::endl;
     }
 
     // This has been called at the beginning of the timestep
-    // MakeNewGeometry(lev,time);
+    // MakeNewGeometry(time);
 
-    // This is now done in MakeFactoryWithNewGeometry
-    // m_old_factory[lev] = std::move(m_new_factory[lev]);
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+        // This is now done in MakeFactoryWithNewGeometry
+        // m_old_factory[lev] = std::move(m_new_factory[lev]);
 
-    // m_new_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
-    //                                       {nghost_eb_basic(),
-    //                                        nghost_eb_volume(),
-    //                                        nghost_eb_full()},
-    //                                       EBSupport::full);
+        // m_new_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
+        //                                       {nghost_eb_basic(),
+        //                                        nghost_eb_volume(),
+        //                                        nghost_eb_full()},
+        //                                       EBSupport::full);
 
-    std::unique_ptr<LevelData> new_leveldata
-        (new LevelData(grids[lev], dmap[lev], *m_new_factory[lev], m_ntrac, nghost_state(),
-                       m_advection_type,
-                       m_diff_type==DiffusionType::Implicit,
-                       use_tensor_correction,
-                       m_advect_tracer));
+        std::unique_ptr<LevelData> new_leveldata
+            (new LevelData(grids[lev], dmap[lev], *m_new_factory[lev], m_ntrac, nghost_state(),
+                           m_advection_type,
+                           m_diff_type==DiffusionType::Implicit,
+                           use_tensor_correction,
+                           m_advect_tracer));
 
-// FillPatch does this copy for us
-    // MultiFab::Copy(new_leveldata->velocity  , m_leveldata[lev]->velocity  ,0,0,AMREX_SPACEDIM,0);
-    // MultiFab::Copy(new_leveldata->velocity_o, m_leveldata[lev]->velocity_o,0,0,AMREX_SPACEDIM,0);
-    // MultiFab::Copy(new_leveldata->density   , m_leveldata[lev]->density  ,0,0,1,0);
-    // MultiFab::Copy(new_leveldata->density_o , m_leveldata[lev]->density_o,0,0,1,0);
-    // if (m_ntrac > 0) {
-    //     MultiFab::Copy(new_leveldata->tracer  , m_leveldata[lev]->tracer  ,0,0,1,0);
-    //     MultiFab::Copy(new_leveldata->tracer_o, m_leveldata[lev]->tracer_o,0,0,1,0);
-    // }
-    // MultiFab::Copy(new_leveldata->gp   , m_leveldata[lev]->gp   ,0,0,AMREX_SPACEDIM,0);
-    // MultiFab::Copy(new_leveldata->p_nd , m_leveldata[lev]->p_nd ,0,0,1,0);
-
-    MultiFab::Copy(new_leveldata->conv_velocity_o , m_leveldata[lev]->conv_velocity_o,0,0,AMREX_SPACEDIM,0);
-    MultiFab::Copy(new_leveldata->conv_density_o , m_leveldata[lev]->conv_density_o,0,0,1,0);
-    MultiFab::Copy(new_leveldata->conv_velocity , m_leveldata[lev]->conv_velocity,0,0,AMREX_SPACEDIM,0);
-    MultiFab::Copy(new_leveldata->conv_density , m_leveldata[lev]->conv_density,0,0,1,0);
-
-    VisMF::Write(m_leveldata[0]->density_o,"do10");
+        MultiFab::Copy(new_leveldata->conv_velocity_o , m_leveldata[lev]->conv_velocity_o,0,0,AMREX_SPACEDIM,0);
+        MultiFab::Copy(new_leveldata->conv_density_o , m_leveldata[lev]->conv_density_o,0,0,1,0);
+        MultiFab::Copy(new_leveldata->conv_velocity , m_leveldata[lev]->conv_velocity,0,0,AMREX_SPACEDIM,0);
+        MultiFab::Copy(new_leveldata->conv_density , m_leveldata[lev]->conv_density,0,0,1,0);
 
 
-    Real old_time = m_cur_time;
-    Real new_time = m_cur_time + m_dt;
+        Real old_time = m_cur_time;
+        Real new_time = m_cur_time + m_dt;
 
-    // Want to make sure we copy from the correct time MF in m_leveldata
-    // FIXME? THis will use eb_cell_cons interpolator, and m_leveldata was made
-    // with the old EBFactory. IS this a problem?
-    fillpatch_velocity(lev, old_time, new_leveldata->velocity_o, nghost_state());
-    fillpatch_velocity(lev, new_time, new_leveldata->velocity, nghost_state());
-    fillpatch_density(lev, old_time, new_leveldata->density_o, nghost_state());
-    fillpatch_density(lev, new_time, new_leveldata->density, nghost_state());
-    if (m_ntrac > 0) {
-        fillpatch_tracer(lev, old_time, new_leveldata->tracer_o, nghost_state());
-        fillpatch_tracer(lev, new_time, new_leveldata->tracer, nghost_state());
-    }
-    // time is really a dummy variable here. Since we only have one gp, FP will just take that
-    fillpatch_gradp(lev, time, new_leveldata->gp, 0);
-    new_leveldata->p_nd.setVal(0.0);
-    VisMF::Write(new_leveldata->density_o,"do11");
+        // FIXME? fillpatch uses m_leveldata (potentially old EB) under the covers,
+        // and eb_cell_cons interpolator which pulls EB info from the coarse level
+        // If we always call on level 0 first and go to finer, then it's probably okay...
+        fillpatch_velocity(lev, old_time, new_leveldata->velocity_o, nghost_state());
+        fillpatch_velocity(lev, new_time, new_leveldata->velocity, nghost_state());
+        fillpatch_density(lev, old_time, new_leveldata->density_o, nghost_state());
+        fillpatch_density(lev, new_time, new_leveldata->density, nghost_state());
+        if (m_ntrac > 0) {
+            fillpatch_tracer(lev, old_time, new_leveldata->tracer_o, nghost_state());
+            fillpatch_tracer(lev, new_time, new_leveldata->tracer, nghost_state());
+        }
 
-    // No, we need to retain vals in NU cells in both new and old
+        // time is really a dummy variable here, since we only carry one gradp (at
+        // time n-1/2).
+        fillpatch_gradp(lev, old_time, new_leveldata->gp, 0);
+        new_leveldata->p_nd.setVal(0.0);
+
 #if 1
-    // This should be okay to do...
-    // Let's fill the newly covered cells with 1e45 to be different
-    EB_set_covered( new_leveldata->velocity  , 1.e45);
-    EB_set_covered( new_leveldata->velocity_o, 1.e45);
-    EB_set_covered( new_leveldata->density   , 1.e45);
-    EB_set_covered( new_leveldata->density_o , 1.e45);
-    if (m_ntrac > 0) {
-        EB_set_covered( new_leveldata->tracer    , 1.e45);
-        EB_set_covered( new_leveldata->tracer_o  , 1.e45);
-    }
-    EB_set_covered( new_leveldata->gp , 1.e45);
+        // This should be okay to do...
+        // Let's fill the newly covered cells with 1e45 to be different
+        EB_set_covered( new_leveldata->velocity  , 1.e45);
+        EB_set_covered( new_leveldata->velocity_o, 1.e45);
+        EB_set_covered( new_leveldata->density   , 1.e45);
+        EB_set_covered( new_leveldata->density_o , 1.e45);
+        if (m_ntrac > 0) {
+            EB_set_covered( new_leveldata->tracer    , 1.e45);
+            EB_set_covered( new_leveldata->tracer_o  , 1.e45);
+        }
+        EB_set_covered( new_leveldata->gp , 1.e45);
 
-    EB_set_covered( new_leveldata->conv_velocity_o, 1.e45);
+        EB_set_covered( new_leveldata->conv_velocity_o, 1.e45);
 #endif
 
-    VisMF::Write(new_leveldata->density,"do12");
+        // Update the member variable with the newly created version
+        m_leveldata[lev] = std::move(new_leveldata);
 
-#if 0
-    //FIXME - is this what we want to do for MOL pred-corr. new has been filled already from
-    // update with MSRD, and we wouldn't want to re-define what rho_old is...
-    //
-    // Now let's make sure to fill cells that were previously covered but are now cut cell
-    //amrex::Print() << "Fill Velocity" << std::endl;
-    EB_fill_uncovered(lev,new_leveldata->velocity  , m_leveldata[lev]->velocity  );
-    EB_fill_uncovered(lev,new_leveldata->velocity_o, m_leveldata[lev]->velocity_o);
-
-    //amrex::Print() << "\nFill density" << std::endl;
-    EB_fill_uncovered(lev,new_leveldata->density   , m_leveldata[lev]->density   );
-    EB_fill_uncovered(lev,new_leveldata->density_o , m_leveldata[lev]->density_o );
-
-    if (m_ntrac > 0) {
-        EB_fill_uncovered(lev,new_leveldata->tracer    , m_leveldata[lev]->tracer    );
-        EB_fill_uncovered(lev,new_leveldata->tracer_o  , m_leveldata[lev]->tracer_o  );
-    }
-
-    //amrex::Print() << "\nFill gp" << std::endl;
-    EB_fill_uncovered(lev,new_leveldata->gp      , m_leveldata[lev]->gp      );
-
-    //amrex::Print() << "\nFill p_nd" << std::endl;
-    EB_fill_uncovered(lev,new_leveldata->p_nd    , m_leveldata[lev]->p_nd    );
-#endif
-
-    #ifdef AMREX_USE_MOVING_EB
-// We want to pass the new time eb velocity to redistributuion
-        // Doing this here also ensures we use the new EB vel for the nodal projection
-        // at the end of the step. Technically don't need to redo this for time = n+1...
+#ifdef AMREX_USE_MOVING_EB
         if (m_eb_flow.enabled)
         {
-            Print()<<"Updating the eb_velocity..."<<std::endl;
+            if (m_verbose >0) { Print()<<"Updating the eb_velocity..."<<std::endl; }
 
-            //FIXME - leveldata is constructed based on the old time EB
-            // for now, we hack the set_eb functions, but perhaps it would be
-            // better to create a MF with the new time EB to put the eb values in...
             if (m_eb_flow.is_omega) {
                 set_eb_velocity_for_rotation(lev, m_t_new[lev], *get_velocity_eb()[lev],
                                              get_velocity_eb()[lev]->nGrow());
@@ -266,15 +223,13 @@ void incflo::RemakeLevelWithNewGeometry (int lev, Real time)
         }
 #endif
 
-    m_leveldata[lev] = std::move(new_leveldata);
-
-    // MATT -- reset macproj
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
-                      MLMG::Location::FaceCentroid,  // Location of mac_vec
-                      MLMG::Location::FaceCentroid,  // Location of beta
-                      MLMG::Location::CellCenter  ) ); // Location of solution variable phi
-
-
+        // MATT -- reset macproj
+        // FIXME - do we really want to do this here? Not sure the most logical place...
+        macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
+                                              MLMG::Location::FaceCentroid,  // Location of mac_vec
+                                              MLMG::Location::FaceCentroid,  // Location of beta
+                                              MLMG::Location::CellCenter  ) ); // Location of solution variable phi
+    }
 }
 
 // Delete level data
