@@ -3,7 +3,7 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  1         # Max number of time steps
+max_step                =  10           # Max number of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -23,13 +23,15 @@ amr.plt_regtest         =   1
 #               PHYSICS                 #
 #.......................................#
 incflo.gravity          =   0.  0.      # Gravitational force (3D)
-incflo.ro_0             =   0.1         # Reference density 
+incflo.ro_0             =   1.0         # Reference density 
 
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
+incflo.advect_momentum       =  true
 incflo.advection_type        =  "Godunov" 
+incflo.advection_type        =  "MOL" 
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
 #incflo.redistribution_type   =  "NoRedist" 
