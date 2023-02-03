@@ -126,15 +126,14 @@ normalMerging ( int i, int j,
 
     Real sum_vol = vfrac(i,j,k) + vfrac(i+ioff,j+joff,k);
 
-    if ( i==9 && j==9 ) //( debug_verbose > 0 )
-        amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac(i,j,k) <<
-            " merge " << IntVect(i+ioff,j+joff) <<
-            " with vfrac " << vfrac(i+ioff,j+joff,k) <<
-            " to get new vfrac " <<  sum_vol << std::endl;
+    // if ( i==9 && j==9 ) //( debug_verbose > 0 )
+    //     amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac(i,j,k) <<
+    //         " merge " << IntVect(i+ioff,j+joff) <<
+    //         " with vfrac " << vfrac(i+ioff,j+joff,k) <<
+    //         " to get new vfrac " <<  sum_vol << std::endl;
 
     // If the merged cell isn't large enough, we try to merge in the other direction
-    //if (sum_vol < target_volfrac || nx_eq_ny)
-    if (0) // MATT - Changing this seems to fix the problem with the 1d moving_up test.
+    if (sum_vol < target_volfrac || nx_eq_ny)
     {
         // Original offset was in y-direction, so we will add to the x-direction
         // Note that if we can't because it would go outside the domain, we don't
@@ -268,7 +267,7 @@ newlyUncoveredNbhd ( int i, int j,
     bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
                       (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
 
-    // THis is a newly uncovered cell, so my vel_eb (which is time lagged here at n)
+    // This is a newly uncovered cell, so my vel_eb (which is time lagged here at n)
     // would be zero
     // fill with average of neighbors
     Real vx = 0.; // vel_eb(i,j,k,0);
@@ -349,11 +348,11 @@ newlyUncoveredNbhd ( int i, int j,
 
     Real sum_vol = vfrac(i,j,k) + vfrac(i+ioff,j+joff,k);
 
-    if ( i==10 && j==9 ) //( debug_verbose > 0 )
-        amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac(i,j,k) <<
-            " merge " << IntVect(i+ioff,j+joff) <<
-            " with vfrac " << vfrac(i+ioff,j+joff,k) <<
-            " to get new vfrac " <<  sum_vol << std::endl;
+    // if ( i==10 && j==9 ) //( debug_verbose > 0 )
+    //     amrex::Print() << "Cell " << IntVect(i,j) << " with vfrac " << vfrac(i,j,k) <<
+    //         " merge " << IntVect(i+ioff,j+joff) <<
+    //         " with vfrac " << vfrac(i+ioff,j+joff,k) <<
+    //         " to get new vfrac " <<  sum_vol << std::endl;
 
     // For now, require we merge with only one other cell.
     if (sum_vol < target_volfrac)
@@ -516,6 +515,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
+    // FIXME - Need to do some sort of check for if they've already been included though
     // Check uncovered and covered cells, make sure the neighbors also include them.
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept

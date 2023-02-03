@@ -73,6 +73,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     Real new_time = m_cur_time + m_dt;
 
 #ifdef INCFLO_USE_MOVING_EB
+    // FIXME - would these be good from the corrector step? can we rely on doing a corrector?
     // *************************************************************************************
     // Reset the solvers to work with the new EB
     // *************************************************************************************
@@ -180,7 +181,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                        get_density_old_const(), get_tracer_old_const(), get_tracer_new_const(),
                        include_pressure_gradient);
 
-    VisMF::Write(m_leveldata[0]->density_o,"do3");
+    //VisMF::Write(m_leveldata[0]->density_o,"do3");
     //amrex::Print() << "density: " << m_leveldata[0]->density_o << std::endl;
 
     compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
@@ -238,19 +239,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-                    //  //Print()<<"NU rho old "<<rho_o(i,j,k)<<std::endl;
-                    // {
-                    //  // FIXME? Seems inconsistent that there's no dt here, but then it exists below....
-                    //  // No. Apply() at the end, divides out dt but only for !covered at time n
-                    //     // This just ensures we don't try to use garbage stored in the covered cell.
-                    //  //
-                    //     rho_new(i,j,k) = drdt(i,j,k);
-                    // } else {
-                    // FIXME? We now fill rho old with nb avg for NU cells, and define drdt in a consitent
-                    // way in redistribution::APply so that we may do this...
-                        rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
-                    // }
+                    // For NU cells, recall that we fill rho_old, and then define
+                    // drdt (in redistribution::Apply) in a way so that we may do this...
+                    rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
 
                     // if (j == 5)
                     //     amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_new(i,j,k) << " / " << drdt(i,j,k) << std::endl;
@@ -263,14 +254,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  });
             } // mfi
 
-            VisMF::Write(m_leveldata[0]->density_o,"do5");
 
             // Fill ghost cells of the new density field so that we can define density_nph
             //      on the valid region grown by 1
             int ng = 1;
             fillpatch_density(lev, m_t_new[lev], ld.density, ng);
 
-            VisMF::Write(m_leveldata[0]->density_o,"do6");
 
             for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
@@ -404,16 +393,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
                        get_tracer_old_const(), get_tracer_new_const());
 
 
-    VisMF::Write(vel_forces[0],"vf");
-    VisMF::Write(m_leveldata[0]->conv_velocity_o,"cv");
-
-
     // *************************************************************************************
     // Update the velocity
     // *************************************************************************************
     for (int lev = 0; lev <= finest_level; lev++)
     {
         // FIXME
+        // Something above in the diffusion routines sets divtau EB covered to 1e40
+        // For now, just ignore
         m_leveldata[lev]->divtau_o.setVal(0.0);
 
         auto& ld = *m_leveldata[lev];
@@ -435,8 +422,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
             auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
 
-            // FIXME -- what about NU cells. rho treats these separately
-            // here, we don't.
             if (m_diff_type == DiffusionType::Implicit) {
 
                 if (use_tensor_correction)
@@ -534,8 +519,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
                         AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                      vel(i,j,k,1) *= rho_old(i,j,k);,
                                      vel(i,j,k,2) *= rho_old(i,j,k););
-                        // fixme - Something above in the diffusion routines sets divtau EB covered to 1e40
-                        // For now, just ignore forcing and divtau
                         AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+rho_nph(i,j,k)*vel_f(i,j,k,0)+divtau_o(i,j,k,0));,
                                      vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+rho_nph(i,j,k)*vel_f(i,j,k,1)+divtau_o(i,j,k,1));,
                                      vel(i,j,k,2) += l_dt*(dvdt(i,j,k,2)+rho_nph(i,j,k)*vel_f(i,j,k,2)+divtau_o(i,j,k,2)););
@@ -571,24 +554,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
     }
 
 #ifdef INCFLO_USE_MOVING_EB
-    // **********************************************************************************************
+    // *************************************************************************************
     //
     // Update the moving geometry and arrays
     //
-    // **********************************************************************************************
-// CEG not sure why we would apply projection here. unless this intermediate is needed to get final proj to converge...
-//    ApplyProjection(GetVecOfConstPtrs(density_nph_oldeb),new_time,m_dt,incremental_projection);
+    // *************************************************************************************
 
-// FIXME - need to think if this is really the best place for this
-    if (!incremental_projection) {
-        for (int lev = 0; lev <= finest_level; lev++)
-        {
-            VisMF::Write(m_leveldata[0]->density,"do8");
-            RemakeLevelWithNewGeometry(lev, new_time);
-
-            VisMF::Write(m_leveldata[0]->density_o,"do9");
-        }
-    }
+    // Need to remake the LevelData for the NodalProjection which computes U^(n+1)
+    RemakeWithNewGeometry();
 #endif
 
     // *************************************************************************************
@@ -644,7 +617,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
         } // lev
     } // not constant density
 
-    VisMF::Write(m_leveldata[0]->density,"dens");
+    //VisMF::Write(m_leveldata[0]->density,"dens");
 
     // **********************************************************************************************
     //

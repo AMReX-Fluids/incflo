@@ -29,6 +29,8 @@ void incflo::Advance()
                        << " with dt = " << m_dt << ".\n" << std::endl;
     }
 
+    // Note that fillpatch_xx(new_time) won't work to copy new data into old container.
+    // That would be passing inconsistent info about the time of the old container
     copy_from_new_to_old_velocity();
     copy_from_new_to_old_density();
     copy_from_new_to_old_tracer();
@@ -53,22 +55,18 @@ void incflo::Advance()
 
 //    VisMF::Write(m_leveldata[0]->density_o,"do1");
 
+    // Create the time n+1 geometry and associated Factories
     MakeNewEBGeometry(m_t_new[0]);
     MakeFactoryWithNewGeometry();
 
     for (int lev = 0; lev <= finest_level; lev++)
     {
-// Need to fill the to be NU cells here
-     // Or we stick with special treatment of NU cells in apply and redistribute.cpp
-// Need to update the EBFactory for this to work...
-
-        // Now let's make sure to fill cells that were previously covered but become cut cell
-        // Not sure we need to do the new MFs, maybe could get by with just the olds
-        //amrex::Print() << "Fill Velocity" << std::endl;
+        // Fill cells that were previously covered but become cut cell with the average
+        // of it's neighbors for now. (Later we want to use it's SRD merging nbhd)
+        // FIXME - Not sure we need to do the new MFs, maybe could get by with just the olds
         EB_fill_uncovered(lev, m_leveldata[lev]->velocity  , m_leveldata[lev]->velocity  );
         EB_fill_uncovered(lev, m_leveldata[lev]->velocity_o, m_leveldata[lev]->velocity_o);
 
-        //amrex::Print() << "\nFill density" << std::endl;
         EB_fill_uncovered(lev, m_leveldata[lev]->density   , m_leveldata[lev]->density   );
         EB_fill_uncovered(lev, m_leveldata[lev]->density_o , m_leveldata[lev]->density_o );
 
@@ -77,30 +75,23 @@ void incflo::Advance()
             EB_fill_uncovered(lev, m_leveldata[lev]->tracer_o , m_leveldata[lev]->tracer_o);
         }
 
-        //FIXME - will need to be more careful here when adding diffusion...
-        // problem here in that divtau hasn't been computed yet...
-        // EB_fill_uncovered_with_zero(lev, m_leveldata[lev]->divtau_o, m_leveldata[lev]->divtau_o);
-        Print()<<"Setting divtau to zero..."<<std::endl;
-        m_leveldata[lev]->divtau_o.setVal(0.0);
-
-// FIXME also need to worry about all the pieces of U*, forces, etc...
-
-        VisMF::Write(m_leveldata[lev]->gp,"gp");
-        //amrex::Print() << "\nFill gp" << std::endl;
         EB_fill_uncovered(lev, m_leveldata[lev]->gp      , m_leveldata[lev]->gp  );
 
-        // This function is for cell-centered data. Not garaunteed to be correct for
+        // FIXME - This function is for cell-centered data. Not garaunteed to be correct for
         // nodal or face centered data...
-        //amrex::Print() << "\nFill p_nd" << std::endl;
-        EB_fill_uncovered(lev, m_leveldata[lev]->p_nd    , m_leveldata[lev]->p_nd);
+        //EB_fill_uncovered(lev, m_leveldata[lev]->p_nd    , m_leveldata[lev]->p_nd);
+
+        //FIXME - will need to be more careful here when adding diffusion since
+        // divtau hasn't been computed yet. Likely want to do this after diffusion solve.
+        m_leveldata[lev]->divtau_o.setVal(0.0);
+
+// FIXME will we also need to worry about all the pieces of U*, forces, etc???
     }
 #endif
-    VisMF::Write(m_leveldata[0]->velocity,"vel");
-    VisMF::Write(m_leveldata[0]->velocity_o,"velo");
-    VisMF::Write(m_leveldata[0]->density_o,"do2");
 
     // FIXME - don;t know that we need this here. Shouldn't this be good from the
     // last time step? -- that's only true for moving EB probably
+    // Also, need this to fill eb_vel for 1st time step with MEB
 #ifdef AMREX_USE_EB
     if (m_eb_flow.enabled) {
        for (int lev = 0; lev <= finest_level; ++lev) {
@@ -127,11 +118,11 @@ void incflo::Advance()
             }
         }
 
-        //FIXME
-    // this will overwrite the previous time plotfile
-    WritePlotFile();
-    static int count=0; count++;
-    //if (count>2) Abort();
+    //     //FIXME
+    // // this will overwrite the previous time plotfile
+    // WritePlotFile();
+    // static int count=0; count++;
+    // //if (count>2) Abort();
 
         ApplyCorrector();
     }

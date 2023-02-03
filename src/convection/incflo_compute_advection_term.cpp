@@ -50,9 +50,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     bool fluxes_are_area_weighted = false;
     bool knownFaceStates          = false; // HydroUtils always recompute face states
 
-    //fixme
-    VisMF::Write(*density[0],"rpred1");
-
 #ifdef AMREX_USE_EB
     amrex::Print() << "REDISTRIBUTION TYPE " << m_redistribution_type << std::endl;
 #endif
@@ -221,11 +218,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                      u[1] = v_mac[lev];,
                      u[2] = w_mac[lev];);
 
-        // CEG fixme
-        VisMF::Write(*u_mac[0],"umac");
-        VisMF::Write(*v_mac[0],"vmac");
-        VisMF::Write(*vel[0],"vpred");
-        VisMF::Write(*density[0],"rpred2");
+        // // CEG fixme
+        // VisMF::Write(*u_mac[0],"umac");
+        // VisMF::Write(*v_mac[0],"vmac");
+        // VisMF::Write(*vel[0],"vpred");
+        // VisMF::Write(*density[0],"rpred2");
 
 #ifdef AMREX_USE_EB
         const auto& ebfact_old = OldEBFactory(lev);
@@ -251,8 +248,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         divu[lev].FillBoundary(geom[lev].periodicity());
 
-        // CEG fixme
-        //VisMF::Write(divu[0],"divu");
 
         // ************************************************************************
         // Compute advective fluxes
@@ -452,10 +447,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         const EBFArrayBoxFactory* ebfact     = &EBFactory(lev, time);
         auto const& vfrac = ebfact->getVolFrac();
 
-        //fixme
-        VisMF::Write(vfrac, "vfm");
-        VisMF::Write(ebfact_new->getVolFrac(), "vfn");
-        VisMF::Write(*get_velocity_eb()[0], "veb");
+        // //fixme
+        // VisMF::Write(vfrac, "vfm");
+        // VisMF::Write(ebfact_new->getVolFrac(), "vfn");
+        // VisMF::Write(*get_velocity_eb()[0], "veb");
 
         // MSRD updates are really associated to the EB at both times...
         // Don't think it actaully matters what time this factory is at though.
@@ -478,7 +473,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
             Box const& bx = mfi.tilebox();
 
-            Print()<<"Vel advection term..."<<std::endl;
+            if (m_verbose > 1) { Print()<<"Vel advection term..."<<std::endl; }
 
             int flux_comp = 0;
             int  num_comp = AMREX_SPACEDIM;
@@ -498,8 +493,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  // For corrector, we include the contribution from EB
                                                  (time==m_cur_time) ? Array4<Real const>{} : get_velocity_eb()[lev]->const_array(mfi),
                                                  (time==m_cur_time) ? Array4<Real const>{} : get_velocity_eb()[lev]->const_array(mfi),
-                                                 // Array4<Real const>{},
-                                                 // Array4<Real const>{},
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -550,7 +543,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             Box const& bx = mfi.tilebox();
 
 #ifdef AMREX_USE_EB
-            Print()<<"Density advection term..."<<std::endl;
+            if (m_verbose > 1) { Print()<<"Density advection term..."<<std::endl; }
 
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
             if (flagfab.getType(bx) != FabType::covered)
@@ -565,8 +558,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 // any d/dt terms (e.g transverse)
                                                  (time==m_cur_time) ? Array4<Real const>{} : get_velocity_eb()[lev]->const_array(mfi),
                                                  (time==m_cur_time) ? Array4<Real const>{} : get_density_eb()[lev]->const_array(mfi),
-                                                 // Array4<Real const>{},
-                                                 // Array4<Real const>{},
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -616,8 +607,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  // this didn't help with corrector
                                                  (time==m_cur_time) ? Array4<Real const>{} : get_velocity_eb()[lev]->const_array(mfi),
                                                  (time==m_cur_time) ? Array4<Real const>{} : get_tracer_eb()[lev]->const_array(mfi),
-                                                 // Array4<Real const>{},
-                                                 // Array4<Real const>{},
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -642,9 +631,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
           } // mfi
         } // advect tracer
 
-        //fixme
-        VisMF::Write(dvdt_tmp,"vtmp");
-        VisMF::Write(drdt_tmp,"rtmp");
+        // //fixme
+        // VisMF::Write(dvdt_tmp,"vtmp");
+        // VisMF::Write(drdt_tmp,"rtmp");
 
 #ifdef AMREX_USE_EB
         // We only filled these on the valid cells so we fill same-level interior ghost cells here.
