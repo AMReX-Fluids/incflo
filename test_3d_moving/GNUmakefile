@@ -1,0 +1,28 @@
+AMREX_HOME ?= ../../amrex
+AMREX_HYDRO_HOME ?= ../../AMReX-Hydro
+TOP = ..
+
+EBASE = incflo
+
+BL_NO_FORT = TRUE
+
+DIM = 3
+
+PRECISION  = DOUBLE
+
+TINY_PROFILE = FALSE
+
+DEBUG      = TRUE
+
+COMP	   = gnu
+
+USE_MPI    = FALSE
+USE_OMP    = FALSE
+USE_CUDA   = FALSE
+
+USE_HYPRE = FALSE
+
+USE_EB = TRUE
+USE_MOVING_EB = TRUE
+
+include ../src/Make.incflo

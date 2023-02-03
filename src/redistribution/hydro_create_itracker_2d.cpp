@@ -11,11 +11,13 @@ using namespace amrex;
 
 #if (AMREX_SPACEDIM == 2)
 
+//FIXME - there are at most 8 neightbors, so why is the 9???
+//Need to think about better limit...
 amrex::Array<amrex::Array<int,9>,AMREX_SPACEDIM>
 Redistribution::getCellMap()
 {
     //
-    // Note that itracker has 4 components and all are initialized to zero
+    // Note that itracker has XX components and all are initialized to zero
     // We will add to the first component every time this cell is included in a merged neighborhood,
     //    either by merging or being merged
     // We identify the cells in the remaining three components with the following ordering

@@ -10,6 +10,49 @@
 using namespace amrex;
 
 #if (AMREX_SPACEDIM == 3)
+amrex::Array<amrex::Array<int,26>,AMREX_SPACEDIM>
+Redistribution::getCellMap()
+{
+    //
+    // Note that itracker has XX components and all are initialized to zero
+    // We will add to the first component every time this cell is included in a merged neighborhood,
+    //    either by merging or being merged
+    // We identify the cells in the remaining three components with the following ordering
+    //
+    //    at k-1   |   at k  |   at k+1
+    //
+    // ^  15 16 17 |  6 7 8  |  24 25 26
+    // |  12 13 14 |  4   5  |  21 22 23
+    // j  9  10 11 |  1 2 3  |  18 19 20
+    //   i --->
+    //
+    // Note the first component of each of these arrays should never be used
+    //
+    Array<int,27>    imap{0,-1, 0, 1,-1, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1};
+    Array<int,27>    jmap{0,-1,-1,-1, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1};
+    Array<int,27>    kmap{0, 0, 0, 0, 0, 0, 0, 0, 0,-1,-1,-1,-1,-1,-1,-1,-1,-1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+    amrex::Array<amrex::Array<int,26>,AMREX_SPACEDIM> map{imap,jmap,kmap};
+    return map;
+}
+
+amrex::Array<int,26>
+Redistribution::getInvCellMap()
+{
+    //
+    // Create the inverse cell map for
+    //
+    //    at k-1   |   at k  |   at k+1
+    //
+    // ^  15 16 17 |  6 7 8  |  24 25 26
+    // |  12 13 14 |  4   5  |  21 22 23
+    // j  9  10 11 |  1 2 3  |  18 19 20
+    //   i --->
+    //
+    Array<int,26> nmap{0,8,7,6,5,4,3,2,1,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10,9};
+    return nmap;
+}
+
 void
 Redistribution::MakeITracker ( Box const& bx,
                                Array4<Real const> const& apx,
@@ -28,22 +71,6 @@ Redistribution::MakeITracker ( Box const& bx,
 
     const Box domain = lev_geom.Domain();
 
-    // Note that itracker has 8 components and all are initialized to zero
-    // We will add to the first component every time this cell is included in a merged neighborhood,
-    //    either by merging or being merged
-    // We identify the cells in the remaining three components with the following ordering
-    //
-    //    at k-1   |   at k  |   at k+1
-    //
-    // ^  15 16 17 |  6 7 8  |  24 25 26
-    // |  12 13 14 |  4   5  |  21 22 23
-    // j  9  10 11 |  1 2 3  |  18 19 20
-    //   i --->
-    //
-    // Note the first component of each of these arrays should never be used
-    Array<int,27>    imap{0,-1, 0, 1,-1, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1};
-    Array<int,27>    jmap{0,-1,-1,-1, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1};
-    Array<int,27>    kmap{0, 0, 0, 0, 0, 0, 0, 0, 0,-1,-1,-1,-1,-1,-1,-1,-1,-1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
     const auto& is_periodic_x = lev_geom.isPeriodic(0);
     const auto& is_periodic_y = lev_geom.isPeriodic(1);

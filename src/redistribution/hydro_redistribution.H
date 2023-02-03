@@ -22,9 +22,15 @@ namespace Redistribution {
         constexpr int srd_max_order = 2;
         constexpr amrex::Real target_vol_fraction = 0.5;
     }
+   
+#if (AMREX_SPACEDIM == 3)
+    //FIXME - think of a better way to deal with this?
+    amrex::Array<amrex::Array<int,26,AMREX_SPACEDIM> getCellMap();
+    amrex::Array<int,26> getInvCellMap();
+#else 
     amrex::Array<amrex::Array<int,9>,AMREX_SPACEDIM> getCellMap();
     amrex::Array<int,9> getInvCellMap();
-
+#endif
     void Apply ( amrex::Box const& bx, int ncomp,
                  amrex::Array4<amrex::Real>       const& dUdt_out,
                  amrex::Array4<amrex::Real>       const& dUdt_in,
