@@ -20,7 +20,10 @@ void incflo::prob_init_fluid (int lev)
                  ld.velocity.setVal(m_ic_v, 1, 1);,
                  ld.velocity.setVal(m_ic_w, 2, 1););
 
-    if (m_ntrac > 0) ld.tracer.setVal(0.0);
+    if (m_ntrac > 0) {
+        ld.tracer.setVal(0.0);
+        ld.tracer_o.setVal(0.0);
+    }
 
     amrex::Print() <<" TYPE " << m_probtype << std::endl;
 
