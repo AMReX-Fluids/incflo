@@ -22,9 +22,17 @@ namespace Redistribution {
         constexpr int srd_max_order = 2;
         constexpr amrex::Real target_vol_fraction = 0.5;
     }
+
     amrex::Array<amrex::Array<int,9>,AMREX_SPACEDIM> getCellMap();
     amrex::Array<int,9> getInvCellMap();
 
+     void FillNewlyUncovered ( amrex::MultiFab& mf,
+			       amrex::EBFArrayBoxFactory const& ebfact_old,
+			       amrex::EBFArrayBoxFactory const& ebfact_new,
+			       amrex::MultiFab const& vel_eb,
+			       amrex::Geometry& geom,
+			       amrex::Real target_volfrac);
+    
     void Apply ( amrex::Box const& bx, int ncomp,
                  amrex::Array4<amrex::Real>       const& dUdt_out,
                  amrex::Array4<amrex::Real>       const& dUdt_in,

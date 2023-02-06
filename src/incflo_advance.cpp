@@ -1,5 +1,9 @@
 #include <incflo.H>
 
+#ifdef AMREX_USE_MOVING_EB
+#include <hydro_redistribution.H>
+#endif
+
 using namespace amrex;
 
 void incflo::Advance()
@@ -38,6 +42,7 @@ void incflo::Advance()
 
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
+	// Note: fillpatch pulls any EBFactory info from the coarse level
         fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
         fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
         if (m_advect_tracer) {
@@ -58,37 +63,6 @@ void incflo::Advance()
     // Create the time n+1 geometry and associated Factories
     MakeNewEBGeometry(m_t_new[0]);
     MakeFactoryWithNewGeometry();
-
-    for (int lev = 0; lev <= finest_level; lev++)
-    {
-	// FOR varible density, we have to take the NU cell's merging neighbor
-	// Now we do this in Redistribution::Apply (hydro_redistribution.cpp)
-        // // Fill cells that were previously covered but become cut cell with the average
-        // // of it's neighbors for now. (Later we want to use it's SRD merging nbhd)
-        // // FIXME - Not sure we need to do the new MFs, maybe could get by with just the olds
-        // EB_fill_uncovered(lev, m_leveldata[lev]->velocity  , m_leveldata[lev]->velocity  );
-        // EB_fill_uncovered(lev, m_leveldata[lev]->velocity_o, m_leveldata[lev]->velocity_o);
-
-        // EB_fill_uncovered(lev, m_leveldata[lev]->density   , m_leveldata[lev]->density   );
-        // EB_fill_uncovered(lev, m_leveldata[lev]->density_o , m_leveldata[lev]->density_o );
-
-        // if (m_ntrac > 0) {
-        //     EB_fill_uncovered(lev, m_leveldata[lev]->tracer   , m_leveldata[lev]->tracer  );
-        //     EB_fill_uncovered(lev, m_leveldata[lev]->tracer_o , m_leveldata[lev]->tracer_o);
-        // }
-
-        // EB_fill_uncovered(lev, m_leveldata[lev]->gp      , m_leveldata[lev]->gp  );
-
-        // // FIXME - This function is for cell-centered data. Not garaunteed to be correct for
-        // // nodal or face centered data...
-        // //EB_fill_uncovered(lev, m_leveldata[lev]->p_nd    , m_leveldata[lev]->p_nd);
-
-        //FIXME - will need to be more careful here when adding diffusion since
-        // divtau hasn't been computed yet. Likely want to do this after diffusion solve.
-        m_leveldata[lev]->divtau_o.setVal(0.0);
-
-// FIXME will we also need to worry about all the pieces of U*, forces, etc???
-    }
 #endif
 
     // FIXME - don;t know that we need this here. Shouldn't this be good from the
@@ -107,9 +81,79 @@ void incflo::Advance()
        }
     }
 #endif
+    
+#ifdef INCFLO_USE_MOVING_EB
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+	// FIXME - need some way to make sure target volfrac is consistent between
+	// here and the call in redistribute convective term
+	Real target_volfrac = 0.5;
+	// FOR varible density, we have to take the NU cell's merging neighbor
+	// Needs one filled ghost cell. Fills only valid region
+	Redistribution::FillNewlyUncovered(m_leveldata[lev]->velocity_o,
+					   OldEBFactory(lev), EBFactory(lev),
+					   *get_velocity_eb()[lev],
+					   geom[lev], target_volfrac);
+        fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
+	// Note: fillpatch pulls any EBFactory info from the coarse level, so
+        // as long as EB stays only on finest level, we're fine, but this probably
+	// won't work otherwise
+
+	//FIXME
+	// Update in ApplyPredictor assumes new vel is the same as old vel
+	// Should think about whether to change ApplyPredictor, do this or
+	// do a copy of vel_old
+	Redistribution::FillNewlyUncovered(m_leveldata[lev]->velocity,
+					   OldEBFactory(lev), EBFactory(lev),
+					   *get_velocity_eb()[lev],
+					   geom[lev], target_volfrac);
+        fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity, ng);
+
+	Redistribution::FillNewlyUncovered(m_leveldata[lev]->density_o,
+					   OldEBFactory(lev), EBFactory(lev),
+					   *get_velocity_eb()[lev],
+					   geom[lev], target_volfrac);
+        fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
+
+	if (m_ntrac > 0) {
+	    Redistribution::FillNewlyUncovered(m_leveldata[lev]->tracer_o,
+					       OldEBFactory(lev), EBFactory(lev),
+					       *get_velocity_eb()[lev],
+					       geom[lev], target_volfrac);
+	    fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
+	}
+
+
+// // Fill cells that were previously covered but become cut cell with the average
+        // // of it's neighbors for now. (Later we want to use it's SRD merging nbhd)
+        // // FIXME - Not sure we need to do the new MFs, maybe could get by with just the olds
+        // EB_fill_uncovered(lev, m_leveldata[lev]->velocity  , m_leveldata[lev]->velocity  );
+        // EB_fill_uncovered(lev, m_leveldata[lev]->velocity_o, m_leveldata[lev]->velocity_o);
+
+        // EB_fill_uncovered(lev, m_leveldata[lev]->density   , m_leveldata[lev]->density   );
+        // EB_fill_uncovered(lev, m_leveldata[lev]->density_o , m_leveldata[lev]->density_o );
+
+        // if (m_ntrac > 0) {
+        //     EB_fill_uncovered(lev, m_leveldata[lev]->tracer   , m_leveldata[lev]->tracer  );
+        //     EB_fill_uncovered(lev, m_leveldata[lev]->tracer_o , m_leveldata[lev]->tracer_o);
+        // }
+
+        //FIXME - will need to be more careful here when adding diffusion since
+        // divtau hasn't been computed yet. Likely want to do this after diffusion solve.
+        m_leveldata[lev]->divtau_o.setVal(0.0);
+
+// FIXME will we also need to worry about all the pieces of U*, forces, etc???
+    }
+#endif
+
 
     ApplyPredictor();
 
+	//FIXME
+    // this will overwrite the previous time plotfile
+    WritePlotFile();
+    static int count=0; count++;
+    //if (count>2) Abort();
 
     if (m_advection_type == "MOL") {
         for (int lev = 0; lev <= finest_level; ++lev) {

@@ -505,16 +505,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 if (m_advect_momentum) {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        // if (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
-                        //     Print()<<"vel pieces "<<vel(i,j,k,0)
-                        //         <<" "<<rho_old(i,j,k)
-                        //         <<" "<<dvdt(i,j,k,0)
-                        //         <<" "<<rho_nph(i,j,k)
-                        //         <<" "<<vel_f(i,j,k,0)
-                        //         <<" "<<divtau_o(i,j,k,0)
-                        //         <<" "<<rho_new(i,j,k)
-                        //         <<std::endl;
-                        // }
+                        if (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
+                            Print()<<"vel pieces "<<vel(i,j,k,0)
+                                <<" "<<rho_old(i,j,k)
+                                <<" "<<dvdt(i,j,k,0)
+                                <<" "<<rho_nph(i,j,k)
+                                <<" "<<vel_f(i,j,k,0)
+                                <<" "<<divtau_o(i,j,k,0)
+                                <<" "<<rho_new(i,j,k)
+                                <<std::endl;
+                        }
 
                         AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                      vel(i,j,k,1) *= rho_old(i,j,k);,
