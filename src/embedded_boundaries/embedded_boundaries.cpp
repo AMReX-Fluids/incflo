@@ -16,7 +16,14 @@ void incflo::MakeEBGeometry()
     ParmParse pp("incflo");
 
     std::string geom_type;
+    std::string csg_file;
     pp.query("geometry", geom_type);
+    pp.query("geometry_filename", csg_file);
+    amrex::Print() << "incflo.geometry_filename: " << csg_file;
+
+#ifndef CSG_EB
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( csg_file.empty(), "CSG Geometry defined in input deck but solver not built with CSG support!");
+#endif
 
    /******************************************************************************
    *                                                                            *
@@ -70,6 +77,12 @@ void incflo::MakeEBGeometry()
     {
        make_eb_chkptfile();
     }
+#ifdef CSG_EB
+    else if(!csg_file.empty()) {
+      amrex::Print() << "\n Building geometry from .csg file:  " << csg_file << std::endl;
+      make_eb_csg(csg_file);
+    }
+#endif
     else
     {
     amrex::Print() << "\n No EB geometry declared in inputs => "

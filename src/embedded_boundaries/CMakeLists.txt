@@ -16,3 +16,8 @@ target_sources(incflo
    writeEBsurface.cpp
    eb_if.H
    )
+
+if (INCFLO_CSG)
+   target_sources(incflo PRIVATE eb_csg.cpp)
+   target_compile_definitions(incflo PRIVATE CSG_EB)
+endif()

@@ -24,4 +24,6 @@ BL_NO_FORT = TRUE
 
 USE_EB = FALSE
 
+USE_CSG = FALSE
+
 include ../src/Make.incflo

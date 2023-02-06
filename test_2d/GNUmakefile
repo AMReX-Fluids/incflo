@@ -25,4 +25,6 @@ USE_HYPRE = FALSE
 
 USE_EB = TRUE
 
+USE_CSG = FALSE
+
 include ../src/Make.incflo

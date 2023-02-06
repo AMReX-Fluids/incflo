@@ -40,6 +40,9 @@ option( INCFLO_EB     "Build Embedded Boundary support" NO )
 option( INCFLO_HYPRE  "Enable HYPRE"  NO )
 option( INCFLO_FPE    "Enable Floating Point Exceptions checks" NO )
 
+# CSG support
+option( INCFLO_CSG "Build with CSG support" OFF)
+
 if (INCFLO_CUDA)
     enable_language(CUDA)
 endif ()
@@ -199,3 +202,14 @@ if (INCFLO_CUDA)
       CUDA_SEPARABLE_COMPILATION ON  # This add -dc flag
       )
 endif ()
+
+if(INCFLO_CSG)
+   if(NOT INCFLO_EB)
+      message(FATAL_ERROR "CSG option also requires EB.")
+   endif()
+   if(CSGEB_HOME)
+      list(APPEND CMAKE_PREFIX_PATH ${CSGEB_HOME})
+   endif()
+   find_package(CsgEb)
+   target_link_libraries(incflo PUBLIC CsgEb::csg-eb)
+endif()
