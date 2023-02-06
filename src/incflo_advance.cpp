@@ -61,25 +61,27 @@ void incflo::Advance()
 
     for (int lev = 0; lev <= finest_level; lev++)
     {
-        // Fill cells that were previously covered but become cut cell with the average
-        // of it's neighbors for now. (Later we want to use it's SRD merging nbhd)
-        // FIXME - Not sure we need to do the new MFs, maybe could get by with just the olds
-        EB_fill_uncovered(lev, m_leveldata[lev]->velocity  , m_leveldata[lev]->velocity  );
-        EB_fill_uncovered(lev, m_leveldata[lev]->velocity_o, m_leveldata[lev]->velocity_o);
+	// FOR varible density, we have to take the NU cell's merging neighbor
+	// Now we do this in Redistribution::Apply (hydro_redistribution.cpp)
+        // // Fill cells that were previously covered but become cut cell with the average
+        // // of it's neighbors for now. (Later we want to use it's SRD merging nbhd)
+        // // FIXME - Not sure we need to do the new MFs, maybe could get by with just the olds
+        // EB_fill_uncovered(lev, m_leveldata[lev]->velocity  , m_leveldata[lev]->velocity  );
+        // EB_fill_uncovered(lev, m_leveldata[lev]->velocity_o, m_leveldata[lev]->velocity_o);
 
-        EB_fill_uncovered(lev, m_leveldata[lev]->density   , m_leveldata[lev]->density   );
-        EB_fill_uncovered(lev, m_leveldata[lev]->density_o , m_leveldata[lev]->density_o );
+        // EB_fill_uncovered(lev, m_leveldata[lev]->density   , m_leveldata[lev]->density   );
+        // EB_fill_uncovered(lev, m_leveldata[lev]->density_o , m_leveldata[lev]->density_o );
 
-        if (m_ntrac > 0) {
-            EB_fill_uncovered(lev, m_leveldata[lev]->tracer   , m_leveldata[lev]->tracer  );
-            EB_fill_uncovered(lev, m_leveldata[lev]->tracer_o , m_leveldata[lev]->tracer_o);
-        }
+        // if (m_ntrac > 0) {
+        //     EB_fill_uncovered(lev, m_leveldata[lev]->tracer   , m_leveldata[lev]->tracer  );
+        //     EB_fill_uncovered(lev, m_leveldata[lev]->tracer_o , m_leveldata[lev]->tracer_o);
+        // }
 
-        EB_fill_uncovered(lev, m_leveldata[lev]->gp      , m_leveldata[lev]->gp  );
+        // EB_fill_uncovered(lev, m_leveldata[lev]->gp      , m_leveldata[lev]->gp  );
 
-        // FIXME - This function is for cell-centered data. Not garaunteed to be correct for
-        // nodal or face centered data...
-        //EB_fill_uncovered(lev, m_leveldata[lev]->p_nd    , m_leveldata[lev]->p_nd);
+        // // FIXME - This function is for cell-centered data. Not garaunteed to be correct for
+        // // nodal or face centered data...
+        // //EB_fill_uncovered(lev, m_leveldata[lev]->p_nd    , m_leveldata[lev]->p_nd);
 
         //FIXME - will need to be more careful here when adding diffusion since
         // divtau hasn't been computed yet. Likely want to do this after diffusion solve.

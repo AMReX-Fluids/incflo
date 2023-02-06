@@ -161,9 +161,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             {
                 if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
                 {
-                    // For newly uncovered cells, use U-star == 0. Don't want uninitialized value.
-                    // Shouldn't matter what's in here (without SRD slopes) because it get mult by
-                    // V^n which is zero
+                    // For SRD without slopes, shouldn't matter what's in here because
+		    // it gets mult by V^n which is zero
+		    // But, we need this to be consistent with how we define the update
+		    // (dUdt_out) below and in the application code
+		    // TODO: Need to create Redistribute::FillNU(), that utilizes itracker
+		    // to put the desired U_in the NU cells at the old time value...
                     scratch(i,j,k,n) = U_in(i,j,k,n);
                     //scratch(i,j,k,n) = 0.0;
                 }
@@ -202,6 +205,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         int ioff = imap[itr(i,j,k,i_nbor)];
                         int joff = jmap[itr(i,j,k,i_nbor)];
 
+			// FIXME -- correct fix of parallel OOB error here is that
+			// we check if we fall in the box...
                         amrex::Print() << "Cell  " << IntVect(i,j)
                                        << " newly uncovered, correct neighbor at "
                                        << IntVect(i+ioff,j+joff) << std::endl;
