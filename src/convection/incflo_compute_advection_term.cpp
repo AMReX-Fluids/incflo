@@ -93,7 +93,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         divu[lev].define(vel[lev]->boxArray(),dmap[lev],1,4,MFInfo(),Factory(lev));
         if (m_advect_momentum)
             rhovel[lev].define(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,
-			       vel[lev]->nGrow(),MFInfo(),Factory(lev));
+                               vel[lev]->nGrow(),MFInfo(),Factory(lev));
         if (m_advect_tracer && m_ntrac > 0)
             rhotrac[lev].define(vel[lev]->boxArray(),dmap[lev],tracer[lev]->nComp(),
                                 tracer[lev]->nGrow(),MFInfo(),Factory(lev));
@@ -454,6 +454,24 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int flux_comp = 0;
             int  num_comp = AMREX_SPACEDIM;
 #ifdef AMREX_USE_EB
+            FArrayBox rhovel;
+            if (m_advect_momentum && m_eb_flow.enabled)
+            {
+                // FIXME - not sure if rhovel needs same num grow cells as vel or if
+                // could make do with tmp_ng
+                Box const& bxg = amrex::grow(bx,vel[lev]->nGrow());
+                rhovel.resize(bxg, AMREX_SPACEDIM, The_Async_Arena());
+
+                Array4<Real const> U       = get_velocity_eb()[lev]->const_array(mfi);
+                Array4<Real const> rho     =  get_density_eb()[lev]->const_array(mfi);
+                Array4<Real      > rho_vel =  rhovel.array();
+
+                amrex::ParallelFor(bxg, AMREX_SPACEDIM,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    rho_vel(i,j,k,n) = rho(i,j,k) * U(i,j,k,n);
+                });
+            }
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
             auto const& update_arr  = dvdt_tmp.array(mfi);
             if (flagfab.getType(bx) != FabType::covered)
@@ -466,7 +484,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
-                                                    get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                 ( m_advect_momentum  ? rhovel.const_array() : get_velocity_eb()[lev]->const_array(mfi))
+                                                 : Array4<Real const>{},
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
