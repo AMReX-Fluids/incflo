@@ -454,9 +454,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         // MSRD updates are really associated to the EB at both times...
         // Don't think it actaully matters what time this factory is at though.
-        MultiFab dvdt_tmp(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,3,MFInfo(),Factory(lev));
-        MultiFab drdt_tmp(vel[lev]->boxArray(),dmap[lev],1             ,3,MFInfo(),Factory(lev));
-        MultiFab dtdt_tmp(vel[lev]->boxArray(),dmap[lev],m_ntrac       ,3,MFInfo(),Factory(lev));
+        int tmp_ng = 3;
+        MultiFab dvdt_tmp(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,tmp_ng,MFInfo(),Factory(lev));
+        MultiFab drdt_tmp(vel[lev]->boxArray(),dmap[lev],1             ,tmp_ng,MFInfo(),Factory(lev));
+        MultiFab dtdt_tmp(vel[lev]->boxArray(),dmap[lev],m_ntrac       ,tmp_ng,MFInfo(),Factory(lev));
 
         // Must initialize to zero because not all values may be set, e.g. outside the domain.
         dvdt_tmp.setVal(0.);
@@ -478,6 +479,25 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int flux_comp = 0;
             int  num_comp = AMREX_SPACEDIM;
 #ifdef AMREX_USE_EB
+            FArrayBox rhovel;
+            if (m_advect_momentum)
+            {
+                // FIXME - not sure if rhovel needs same num grow cells as vel or if
+                // could make do with tmp_ng
+                Box const& bxg = amrex::grow(bx,vel[lev]->nGrow());
+                rhovel.resize(bxg, AMREX_SPACEDIM, The_Async_Arena());
+
+                Array4<Real const> U       = get_velocity_eb()[lev]->const_array(mfi);
+                Array4<Real const> rho     =  get_density_eb()[lev]->const_array(mfi);
+                Array4<Real      > rho_vel =  rhovel.array();
+
+                amrex::ParallelFor(bxg, AMREX_SPACEDIM,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    rho_vel(i,j,k,n) = rho(i,j,k) * U(i,j,k,n);
+                });
+
+            }
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
             auto const& update_arr  = dvdt_tmp.array(mfi);
             if (flagfab.getType(bx) != FabType::covered)
@@ -492,12 +512,14 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 // any d/dt terms (e.g transverse)
                                                  // For corrector, we include the contribution from EB
                                                  (time==m_cur_time) ? Array4<Real const>{} : get_velocity_eb()[lev]->const_array(mfi),
-                                                 (time==m_cur_time) ? Array4<Real const>{} : get_velocity_eb()[lev]->const_array(mfi),
+                                                 (time==m_cur_time) ? Array4<Real const>{}
+                                                 : ( m_advect_momentum  ? rhovel.const_array() : get_velocity_eb()[lev]->const_array(mfi)),
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
-                                                    get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                 ( m_advect_momentum  ? rhovel.const_array() : get_velocity_eb()[lev]->const_array(mfi)),
+                                                 : Array4<Real const>{},
 #endif
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
