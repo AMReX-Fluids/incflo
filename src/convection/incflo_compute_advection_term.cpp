@@ -478,17 +478,17 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int flux_comp = 0;
             int  num_comp = AMREX_SPACEDIM;
 #ifdef AMREX_USE_EB
-            FArrayBox rhovel;
+            FArrayBox rhovel_eb;
             if (m_advect_momentum && m_eb_flow.enabled)
             {
-                // FIXME - not sure if rhovel needs same num grow cells as vel or if
+                // FIXME - not sure if rhovel_eb needs same num grow cells as vel or if
                 // could make do with tmp_ng
                 Box const& bxg = amrex::grow(bx,vel[lev]->nGrow());
-                rhovel.resize(bxg, AMREX_SPACEDIM, The_Async_Arena());
+                rhovel_eb.resize(bxg, AMREX_SPACEDIM, The_Async_Arena());
 
                 Array4<Real const> U       = get_velocity_eb()[lev]->const_array(mfi);
                 Array4<Real const> rho     =  get_density_eb()[lev]->const_array(mfi);
-                Array4<Real      > rho_vel =  rhovel.array();
+                Array4<Real      > rho_vel =  rhovel_eb.array();
 
                 amrex::ParallelFor(bxg, AMREX_SPACEDIM,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -511,12 +511,12 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  // For corrector, we include the contribution from EB
                                                  (time==m_cur_time) ? Array4<Real const>{} : get_velocity_eb()[lev]->const_array(mfi),
                                                  (time==m_cur_time) ? Array4<Real const>{}
-                                                 : ( m_advect_momentum  ? rhovel.const_array() : get_velocity_eb()[lev]->const_array(mfi)),
+                                                 : ( m_advect_momentum  ? rhovel_eb.const_array() : get_velocity_eb()[lev]->const_array(mfi)),
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
-                                                 ( m_advect_momentum  ? rhovel.const_array() : get_velocity_eb()[lev]->const_array(mfi))
+                                                 ( m_advect_momentum  ? rhovel_eb.const_array() : get_velocity_eb()[lev]->const_array(mfi))
                                                  : Array4<Real const>{},
 #endif
                                                  flagfab.const_array(),
