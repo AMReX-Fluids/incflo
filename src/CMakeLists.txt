@@ -9,7 +9,6 @@ target_sources(incflo
    incflo_compute_forces.cpp
    incflo_tagging.cpp
    incflo_regrid.cpp
-   incflo_vol_wgt_sum.cpp
    main.cpp
    )
 

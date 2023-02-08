@@ -248,7 +248,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         divu[lev].FillBoundary(geom[lev].periodicity());
 
-
         // ************************************************************************
         // Compute advective fluxes
         // ************************************************************************
@@ -480,7 +479,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int  num_comp = AMREX_SPACEDIM;
 #ifdef AMREX_USE_EB
             FArrayBox rhovel;
-            if (m_advect_momentum)
+            if (m_advect_momentum && m_eb_flow.enabled)
             {
                 // FIXME - not sure if rhovel needs same num grow cells as vel or if
                 // could make do with tmp_ng
@@ -496,7 +495,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 {
                     rho_vel(i,j,k,n) = rho(i,j,k) * U(i,j,k,n);
                 });
-
             }
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
             auto const& update_arr  = dvdt_tmp.array(mfi);
@@ -518,7 +516,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
-                                                 ( m_advect_momentum  ? rhovel.const_array() : get_velocity_eb()[lev]->const_array(mfi)),
+                                                 ( m_advect_momentum  ? rhovel.const_array() : get_velocity_eb()[lev]->const_array(mfi))
                                                  : Array4<Real const>{},
 #endif
                                                  flagfab.const_array(),
@@ -673,17 +671,17 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             Box const& bx = mfi.tilebox();
             if ( time == m_cur_time )
             {
-                redistribute_convective_term (bx, mfi,
-                                              (m_advect_momentum) ? rhovel[lev].const_array(mfi) : vel[lev]->const_array(mfi),
-                                              density[lev]->const_array(mfi),
-                                              (m_advect_tracer && (m_ntrac>0)) ? rhotrac[lev].const_array(mfi) : Array4<Real const>{},
-                                              dvdt_tmp.array(mfi),
-                                              drdt_tmp.array(mfi),
-                                              (m_advect_tracer && (m_ntrac>0)) ? dtdt_tmp.array(mfi) : Array4<Real>{},
-                                              conv_u[lev]->array(mfi),
-                                              conv_r[lev]->array(mfi),
-                                              (m_advect_tracer && (m_ntrac>0)) ? conv_t[lev]->array(mfi) : Array4<Real>{},
-                                              m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
+            redistribute_convective_term (bx, mfi,
+                                          (m_advect_momentum) ? rhovel[lev].const_array(mfi) : vel[lev]->const_array(mfi),
+                                          density[lev]->const_array(mfi),
+                                          (m_advect_tracer && (m_ntrac>0)) ? rhotrac[lev].const_array(mfi) : Array4<Real const>{},
+                                          dvdt_tmp.array(mfi),
+                                          drdt_tmp.array(mfi),
+                                          (m_advect_tracer && (m_ntrac>0)) ? dtdt_tmp.array(mfi) : Array4<Real>{},
+                                          conv_u[lev]->array(mfi),
+                                          conv_r[lev]->array(mfi),
+                                          (m_advect_tracer && (m_ntrac>0)) ? conv_t[lev]->array(mfi) : Array4<Real>{},
+                                          m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
                                               ebfact, ebfact_new,
                                               m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                               geom[lev], m_dt);
