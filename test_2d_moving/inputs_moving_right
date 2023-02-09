@@ -86,4 +86,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #               EB FLOW                 #
 #.......................................#
 eb_flow.velocity        = 2.0 0.0 0.0
-eb_flow.density         = 1.0 # this doesn't matter; won't be used for MEB
+

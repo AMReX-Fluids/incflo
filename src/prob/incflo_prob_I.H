@@ -57,6 +57,15 @@
                                amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& problo,
                                amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& probhi);
 
+    void init_scalar_jump (amrex::Box const& vbx, amrex::Box const& gbx,
+                           amrex::Array4<amrex::Real> const& vel,
+                           amrex::Array4<amrex::Real> const& density,
+                           amrex::Array4<amrex::Real> const& tracer,
+                           amrex::Box const& domain,
+                           amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
+                           amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& problo,
+                           amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& probhi);
+
     void init_tuscan (amrex::Box const& vbx, amrex::Box const& gbx,
                       amrex::Array4<amrex::Real> const& vel,
                       amrex::Array4<amrex::Real> const& density,
@@ -110,6 +119,24 @@
                            amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
                            amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& problo,
                            amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& probhi);
+
+    void init_circ_traceradvect (amrex::Box const& vbx, amrex::Box const& gbx,
+                                 amrex::Array4<amrex::Real> const& vel,
+                                 amrex::Array4<amrex::Real> const& density,
+                                 amrex::Array4<amrex::Real> const& tracer,
+                                 amrex::Box const& domain,
+                                 amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
+                                 amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& problo,
+                                 amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& probhi);
+
+    void init_gaussian_traceradvect (amrex::Box const& vbx, amrex::Box const& gbx,
+                                     amrex::Array4<amrex::Real> const& vel,
+                                     amrex::Array4<amrex::Real> const& density,
+                                     amrex::Array4<amrex::Real> const& tracer,
+                                     amrex::Box const& domain,
+                                     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
+                                     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& problo,
+                                     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& probhi);
 
     void init_vortex_in_sphere (amrex::Box const& vbx, amrex::Box const& gbx,
                                 amrex::Array4<amrex::Real> const& vel,
