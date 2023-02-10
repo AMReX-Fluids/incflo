@@ -126,10 +126,10 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             soln_hat(i,j,k,n) = U_in(i,j,k,n);
 
 	    if ((i==0 || i==1) && j == 5)
-	    amrex::Print() << "U-star: " << IntVect(i,j) << soln_hat(i,j,k,n) << std::endl; 
+	    amrex::Print() << "U-star: " << Dim3{i,j,k} << soln_hat(i,j,k,n) << std::endl; 
 
 	    if ( (i==-1) && j == 4)
-		amrex::Print() << "soln hat: " << IntVect(i,j) << soln_hat(i,j,k,n)
+		amrex::Print() << "soln hat: " << Dim3{i,j,k} << soln_hat(i,j,k,n)
 			       << std::endl; 
 
 	}
@@ -143,7 +143,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                 soln_hat(i,j,k,n) = U_in(i,j,k,n) * alpha(i,j,k,0) * vfrac_old(i,j,k);
 
 		if ( (i==-1) && j == 4 && n==1)
-		    amrex::Print() << "soln hatA: " << IntVect(i,j) << soln_hat(i,j,k,n)
+		    amrex::Print() << "soln hatA: " << Dim3{i,j,k} << soln_hat(i,j,k,n)
 				   << ", "<<U_in(i,j,k,n)
 				   << ", "<<alpha(i,j,k,0)
 				   << std::endl; 
@@ -162,8 +162,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         soln_hat(i,j,k,n) += U_in(r,s,t,n) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t);
 
 			if ( (i==-1) && j == 4  && n==1)
-			    amrex::Print() << "soln hat nb: " << IntVect(i,j)
-					   << " " <<IntVect(r,s)
+			    amrex::Print() << "soln hat nb: " << Dim3{i,j,k}
+					   << " " <<Dim3{r,s,t}
 					   << ", "<<U_in(r,s,t,n)
 					   << ", "<<alpha(i,j,k,1)
 					   << ", "<<vfrac_old(r,s,t)
@@ -176,7 +176,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                 }
             }
 	    if (nbhd_vol(i,j,k) < 1e-14 ){
-		amrex::Print() << "NBVOL " << IntVect(i,j) << " " <<  nbhd_vol(i,j,k) << std::endl;
+		amrex::Print() << "NBVOL " << Dim3{i,j,k} << " " <<  nbhd_vol(i,j,k) << std::endl;
 		   Abort();
 	    }
 	    for (int n = 0; n < ncomp; n++)  {
@@ -184,16 +184,16 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
 	    //fixme
 		if ( (i==0 || i==1) && j == 5  && n==1)
-		amrex::Print() << "U^(n+1): " << IntVect(i,j) << soln_hat(i,j,k,n)
+		amrex::Print() << "U^(n+1): " << Dim3{i,j,k} << soln_hat(i,j,k,n)
 			       <<" nbhd vol "<<nbhd_vol(i,j,k)<< std::endl; 
 		if ( (i==-1) && j == 4  && n==1)
-		    amrex::Print() << "soln hat2: " << IntVect(i,j) << soln_hat(i,j,k,n)
+		    amrex::Print() << "soln hat2: " << Dim3{i,j,k} << soln_hat(i,j,k,n)
 				   << std::endl; 
 
 	    }
 	    // for (int n = 0; n < ncomp; n++){
             // if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0 || j == 12)
-            //     amrex::Print() << "QHAT NBVOL " << IntVect(i,j) << " " << soln_hat(i,j,k,n) << " " <<  nbhd_vol(i,j,k) << std::endl;;
+            //     amrex::Print() << "QHAT NBVOL " << Dim3{i,j,k} << " " << soln_hat(i,j,k,n) << " " <<  nbhd_vol(i,j,k) << std::endl;;
         	
 	    // }
 	}
@@ -214,7 +214,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         amrex::Gpu::Atomic::Add(&U_out(i,j,k,n),alpha(i,j,k,0)*nrs(i,j,k)*soln_hat(i,j,k,n));
 
 			if ( (i==0 || i==1) && j == 5)
-			    amrex::Print() << "U_out (should equal U^(n+1)): " << IntVect(i,j) << U_out(i,j,k,n) << std::endl; 
+			    amrex::Print() << "U_out (should equal U^(n+1)): " << Dim3{i,j,k} << U_out(i,j,k,n) << std::endl; 
 		    }
                 }
 
@@ -222,7 +222,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
                     for (int n = 0; n < ncomp; n++) {
 			if ( (i==0 || i==1) && j == 5)
-			    amrex::Print() << "U_out3: " << IntVect(i,j) << U_out(i,j,k,n)
+			    amrex::Print() << "U_out3: " << Dim3{i,j,k} << U_out(i,j,k,n)
 					   << std::endl; 
 		    }
 
@@ -324,7 +324,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     {
                         Real update = soln_hat(i,j,k,n);
 			if ( (i==0 || i==1) && j == 5)
-			    amrex::Print() << "U^(n+1), add self: " << IntVect(i,j) << U_out(i,j,k,n)
+			    amrex::Print() << "U^(n+1), add self: " << Dim3{i,j,k} << U_out(i,j,k,n)
 					   <<", "<< alpha(i,j,k,0)
 					   <<", "<< nrs(i,j,k)
 					   <<", "<< update
@@ -336,7 +336,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         amrex::Gpu::Atomic::Add(&U_out(i,j,k,n),alpha(i,j,k,0)*nrs(i,j,k)*update);
 
 			// if ( (i==0 || i==1) && j == 5)
-			//     amrex::Print() << "U^(n+1), add self: " << IntVect(i,j) << U_out(i,j,k,n)
+			//     amrex::Print() << "U^(n+1), add self: " << Dim3{i,j,k} << U_out(i,j,k,n)
 			// 		   <<", "<< alpha(i,j,k,0)
 			// 		   <<", "<< nrs(i,j,k)
 			// 		   <<", "<< update
@@ -360,8 +360,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                             amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),alpha(i,j,k,1)*update);
 
 			    if ( (r==0 || r==1) && s == 5)
-				amrex::Print() << "U^(n+1), add nb: " << IntVect(r,s)
-					       <<" from "<<IntVect(i,j)<< U_out(r,s,t,n)
+				amrex::Print() << "U^(n+1), add nb: " << Dim3{r,s,t}
+					       <<" from "<<Dim3{i,j,k}<< U_out(r,s,t,n)
 					   << std::endl; 
 
                         } // if bx contains
@@ -381,14 +381,14 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             U_out(i,j,k,n) *= denom;
 
 	    if ( (i==0 || i==1) && j == 5)
-		amrex::Print() << "Final U: " << IntVect(i,j) << U_out(i,j,k,n) << std::endl; 
+		amrex::Print() << "Final U: " << Dim3{i,j,k} << U_out(i,j,k,n) << std::endl; 
 	    
             // if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1. && nrs(i,j,k) == 1){
             //     U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
-            //     amrex::Print() << "Adding new fix here: U_out" << IntVect(i,j) << ": " << U_out(i,j,k,n) << std::endl;
+            //     amrex::Print() << "Adding new fix here: U_out" << Dim3{i,j,k} << ": " << U_out(i,j,k,n) << std::endl;
             // }
            // if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. ) 
-            //     amrex::Print() << "VFRAC / UOUT " << IntVect(i,j) << " " << 
+            //     amrex::Print() << "VFRAC / UOUT " << Dim3{i,j,k} << " " << 
             //     vfrac_new(i,j,k) << " " << U_out(i,j,k,n) << std::endl;
         }
         else

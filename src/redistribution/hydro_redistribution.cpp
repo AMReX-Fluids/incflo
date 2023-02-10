@@ -87,9 +87,9 @@ Redistribution::FillNewlyUncovered ( MultiFab& mf,
 		    
 		    // FIXME -- correct fix of parallel OOB error here is that
 		    // we check if we fall in the box...
-		    amrex::Print() << "Cell  " << IntVect(i,j)
+		    amrex::Print() << "Cell  " << Dim3{i,j,k}
 				   << " newly uncovered, fill with value of neighbor at "
-				   << IntVect(i+ioff,j+joff)
+				   << Dim3{i+ioff,j+joff,k+koff}
 				   <<": "<<U_in(i,j,k,n)<< std::endl;
 		}
 	    }
@@ -283,9 +283,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
 			// FIXME -- correct fix of parallel OOB error here is that
 			// we check if we fall in the box...
-                        // amrex::Print() << "Cell  " << IntVect(i,j)
+                        // amrex::Print() << "Cell  " << Dim3{i,j,k}
                         //                << " newly uncovered, correct neighbor at "
-                        //                << IntVect(i+ioff,j+joff) << std::endl;
+                        //                << Dim3{i+ioff,j+joff,k+koff} << std::endl;
 
                         Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k);
                         // NOTE this correction is only right for the case that the newly
@@ -297,7 +297,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 //fixme
                 // if (i==8 && j == 8){
                 //  Print().SetPrecision(15);
-                //  amrex::Print() << "adv: " << IntVect(i,j) << dUdt_in(i,j,k,n) << std::endl;
+                //  amrex::Print() << "adv: " << Dim3{i,j,k} << dUdt_in(i,j,k,n) << std::endl;
                 // }
             });
         }
@@ -321,7 +321,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                 //fixme
                 // if (i==8  && j==8){
-                //     amrex::Print() << "Pre dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
+                //     amrex::Print() << "Pre dUdt_out" << Dim3{i,j,k} << dUdt_out(i,j,k,n) << std::endl;
                 //     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
                 // }
 
@@ -346,7 +346,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                 //FIXME
                 // if (i==0 && j==10)
-                //     amrex::Print() << "Post dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
+                //     amrex::Print() << "Post dUdt_out" << Dim3{i,j,k} << dUdt_out(i,j,k,n) << std::endl;
             }
         );
 

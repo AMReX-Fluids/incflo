@@ -11,8 +11,6 @@ using namespace amrex;
 
 #if (AMREX_SPACEDIM == 2)
 
-//FIXME - there are at most 8 neightbors, so why is the 9???
-//Need to think about better limit...
 amrex::Array<amrex::Array<int,9>,AMREX_SPACEDIM>
 Redistribution::getCellMap()
 {
@@ -49,15 +47,14 @@ Redistribution::getInvCellMap()
     return nmap;
 }
 
-// limit merging functions to this file only
 void
-normalMerging ( int i, int j,
-                Array4<Real const> const& apx,
-                Array4<Real const> const& apy,
-                Array4<Real const> const& vfrac,
-                Array4<int> const& itracker,
-                Geometry const& lev_geom,
-                Real target_volfrac)
+Redistribution::normalMerging ( int i, int j, int /*k*/,
+				Array4<Real const> const& apx,
+				Array4<Real const> const& apy,
+				Array4<Real const> const& vfrac,
+				Array4<int> const& itracker,
+				Geometry const& geom,
+				Real target_volfrac)
 {
     int debug_verbose = 0;
     //
@@ -67,11 +64,11 @@ normalMerging ( int i, int j,
     Array<int,9> imap = map[0];
     Array<int,9> jmap = map[1];
 
-    const Real small_norm_diff = 1.e-8;
+    using defaults::small_norm_diff;
 
-    const Box domain = lev_geom.Domain();
-    const auto& is_periodic_x = lev_geom.isPeriodic(0);
-    const auto& is_periodic_y = lev_geom.isPeriodic(1);
+    const Box domain = geom.Domain();
+    const auto& is_periodic_x = geom.isPeriodic(0);
+    const auto& is_periodic_y = geom.isPeriodic(1);
 
     Real apnorm, apnorm_inv, dapx, dapy;
     int k = 0;
@@ -232,14 +229,14 @@ normalMerging ( int i, int j,
 }
 
 void
-newlyUncoveredNbhd ( int i, int j,
-                     Array4<Real const> const& apx,
-                     Array4<Real const> const& apy,
-                     Array4<Real const> const& vfrac,
-                     Array4<Real const> const& vel_eb,
-                     Array4<int> const& itracker,
-                     Geometry const& lev_geom,
-                     Real target_volfrac)
+Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
+				     Array4<Real const> const& apx,
+				     Array4<Real const> const& apy,
+				     Array4<Real const> const& vfrac,
+				     Array4<Real const> const& vel_eb,
+				     Array4<int> const& itracker,
+				     Geometry const& geom,
+				     Real target_volfrac)
 {
     int debug_verbose = 1;
     //
@@ -249,11 +246,11 @@ newlyUncoveredNbhd ( int i, int j,
     Array<int,9> imap = map[0];
     Array<int,9> jmap = map[1];
 
-    const Real small_norm_diff = 1.e-8;
+    using defaults::small_norm_diff;
 
-    const Box domain = lev_geom.Domain();
-    const auto& is_periodic_x = lev_geom.isPeriodic(0);
-    const auto& is_periodic_y = lev_geom.isPeriodic(1);
+    const Box domain = geom.Domain();
+    const auto& is_periodic_x = geom.isPeriodic(0);
+    const auto& is_periodic_y = geom.isPeriodic(1);
 
     Real apnorm, apnorm_inv, dapx, dapy;
     int k = 0;
@@ -305,10 +302,11 @@ newlyUncoveredNbhd ( int i, int j,
 
     if ( vx_eq_vy && nx_eq_ny ){
         Print()<<"cell "<<IntVect(i,j)
-               <<"eb_vel "<< vx <<", "<<vy<<std::endl;
+               <<"eb_vel  "<< vx <<", "<<vy<<std::endl;
         Print()<<"eb_norm "<< nx <<", "<<ny<<std::endl;
         Abort("Newly uncovered cell nbhd: Direction to merge not well resolved");
     }
+
     // Select first for EB motion. If that's indeterminate, choose based on EB normal
     if ( std::abs(vx) > std::abs(vy) || ( vx_eq_vy && std::abs(nx) > std::abs(ny) ) )
     {
@@ -420,215 +418,5 @@ newlyUncoveredNbhd ( int i, int j,
 //         }
 // Add check on sum_vol...
 
-void
-Redistribution::MakeITracker ( Box const& bx,
-                               Array4<Real const> const& apx_old,
-                               Array4<Real const> const& apy_old,
-                               Array4<Real const> const& vfrac_old,
-                               Array4<Real const> const& apx_new,
-                               Array4<Real const> const& apy_new,
-                               Array4<Real const> const& vfrac_new,
-                               Array4<int> const& itracker,
-                               Geometry const& lev_geom,
-                               Real target_volfrac,
-                               Array4<Real const> const& vel_eb)
-{
-    int debug_verbose = 1;
-
-    auto map = getCellMap();
-    Array<int,9> imap = map[0];
-    Array<int,9> jmap = map[1];
-    // Inverse map
-    auto nmap = getInvCellMap();
-
-    if (debug_verbose > 0)
-        amrex::Print() << " IN MAKE_ITRACKER DOING BOX " << bx << std::endl;
-
-    amrex::ParallelFor(Box(itracker),
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        itracker(i,j,k,0) = 0;
-    });
-
-    const auto& is_periodic_x = lev_geom.isPeriodic(0);
-    const auto& is_periodic_y = lev_geom.isPeriodic(1);
-    Box domain_per_grown = lev_geom.Domain();
-    if (is_periodic_x) domain_per_grown.grow(0,4);
-    if (is_periodic_y) domain_per_grown.grow(1,4);
-
-    Box const& bxg4 = amrex::grow(bx,4);
-    Box bx_per_g4= domain_per_grown & bxg4;
-
-    amrex::ParallelFor(bx_per_g4,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        // We check for cut-cells in the new geometry
-        if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < 1.0) && vfrac_old(i,j,k) > 0.0)
-        {
-            normalMerging(i, j, apx_new, apy_new, vfrac_new, itracker,
-                          lev_geom, target_volfrac);
-        }
-        else if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < 1.0) && vfrac_old(i,j,k) == 0.0)
-        {
-            // For now, require that newly uncovered cells only have one other cell in it's nbhd
-            // FIXME, unsure of target_volfrac here...
-            newlyUncoveredNbhd(i, j, apx_new, apy_new, vfrac_new, vel_eb, itracker,
-                               lev_geom, 0.5);
-        }
-        else if ( vfrac_old(i,j,k) > 0.0 && vfrac_new(i,j,k) == 0.0)
-        {
-            // Create a nbhd for cells that become covered...
-            // vfrac is only for checking volume of nbhd
-            // Probably don't need target_volfrac to match with general case,
-            // only need to put this in one cell???
-            normalMerging(i, j, apx_old, apy_old, vfrac_new, itracker,
-                          lev_geom, target_volfrac);
-        }
-    });
-
-
-#if 0
-    amrex::Print() << "\nInitial Cell Merging" << std::endl;
-
-    amrex::ParallelFor(Box(itracker),
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if (itracker(i,j,k) > 0)
-        {
-            amrex::Print() << "Cell " << IntVect(i,j) << " is merged with: ";
-
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-            {
-                int ioff = imap[itracker(i,j,k,i_nbor)];
-                int joff = jmap[itracker(i,j,k,i_nbor)];
-
-                if (i_nbor > 1)
-                {
-                    amrex::Print() << ", " << IntVect(i+ioff, j+joff);
-                } else
-                {
-                    amrex::Print() << IntVect(i+ioff, j+joff);
-                }
-            }
-
-            amrex::Print() << std::endl;
-        }
-    });
-    amrex::Print() << std::endl;
-#endif
-
-    // FIXME - Need to do some sort of check for if they've already been included though
-    // Check uncovered and covered cells, make sure the neighbors also include them.
-    amrex::ParallelFor(Box(itracker),
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        // Newly covered Cells
-        if (vfrac_new(i,j,k) == 0. && vfrac_old(i,j,k) > 0.0)
-        {
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-            {
-                int ioff = imap[itracker(i,j,k,i_nbor)];
-                int joff = jmap[itracker(i,j,k,i_nbor)];
-
-                if ( Box(itracker).contains(IntVect(i+ioff,j+joff)) )
-                {
-                    // amrex::Print() << "Cell  " << IntVect(i,j) << " is covered and merged with neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
-                    itracker(i+ioff,j+joff,k,0) += 1;
-                    itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,i_nbor)];
-                }
-            }
-        }
-
-        // Newly uncovered
-        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.0 )
-        {
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-            {
-                int ioff = imap[itracker(i,j,k,i_nbor)];
-                int joff = jmap[itracker(i,j,k,i_nbor)];
-
-                if ( Box(itracker).contains(IntVect(i+ioff,j+joff)) )
-                {
-                    // amrex::Print() << "Cell  " << IntVect(i,j) << " is newly uncovered and merged with neighbor at " << IntVect(i+ioff,j+joff) << std::endl;
-                    itracker(i+ioff,j+joff,k,0) += 1;
-                    itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = nmap[itracker(i,j,k,i_nbor)];
-                }
-            }
-        }
-    });
-
-#if 0
-    amrex::Print() << "Check for all covered cells." << std::endl;
-
-    amrex::ParallelFor(Box(itracker),
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if (vfrac_new(i,j,k) == 0. && vfrac_old(i,j,k) > 0.)
-        {
-            amrex::Print() << "Covered Cell " << IntVect(i,j) << std::endl;
-        }
-    });
-    amrex::Print() << std::endl;
-#endif
-
-#if 0
-    amrex::Print() << "Check for all uncovered cells." << std::endl;
-
-    amrex::ParallelFor(Box(itracker),
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
-        {
-            amrex::Print() << "Uncovered Cell " << IntVect(i,j) << std::endl;
-        }
-    });
-    amrex::Print() << std::endl;
-#endif
-
-#if 0
-    amrex::Print() << "Check for all cell that become regular." << std::endl;
-
-    amrex::ParallelFor(Box(itracker),
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.)
-        {
-            amrex::Print() << "New Regular Cell " << IntVect(i,j) << std::endl;
-        }
-    });
-    amrex::Print() << std::endl;
-#endif
-
-#if 1
-    amrex::Print() << "Post Update to Cell Merging" << std::endl;
-
-    amrex::ParallelFor(Box(itracker),
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if (itracker(i,j,k) > 0)
-        {
-            amrex::Print() << "Cell " << IntVect(i,j) << " is merged with: ";
-
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-            {
-                int ioff = imap[itracker(i,j,k,i_nbor)];
-                int joff = jmap[itracker(i,j,k,i_nbor)];
-
-                if (i_nbor > 1)
-                {
-                    amrex::Print() << ", " << IntVect(i+ioff, j+joff);
-                } else
-                {
-                    amrex::Print() << IntVect(i+ioff, j+joff);
-                }
-            }
-
-            amrex::Print() << std::endl;
-        }
-    });
-    amrex::Print() << std::endl;
-#endif
-
-}
 #endif
 /** @} */

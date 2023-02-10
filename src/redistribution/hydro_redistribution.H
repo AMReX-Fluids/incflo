@@ -21,12 +21,15 @@ namespace Redistribution {
     namespace defaults {
         constexpr int srd_max_order = 2;
         constexpr amrex::Real target_vol_fraction = 0.5;
+	constexpr amrex::Real small_norm_diff = 1.e-8;
+
     }
    
 #if (AMREX_SPACEDIM == 3)
     //FIXME - think of a better way to deal with this?
-    amrex::Array<amrex::Array<int,26,AMREX_SPACEDIM> getCellMap();
-    amrex::Array<int,26> getInvCellMap();
+    // could i use pow(3,AMREX_SPACEDIM)?
+    amrex::Array<amrex::Array<int,27>,AMREX_SPACEDIM> getCellMap();
+    amrex::Array<int,27> getInvCellMap();
 #else 
     amrex::Array<amrex::Array<int,9>,AMREX_SPACEDIM> getCellMap();
     amrex::Array<int,9> getInvCellMap();
@@ -39,6 +42,25 @@ namespace Redistribution {
 			       amrex::Geometry& geom,
 			       amrex::Real target_volfrac);
     
+    void normalMerging ( int i, int j, int k,
+			 AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
+				      amrex::Array4<amrex::Real const> const& apy,
+				      amrex::Array4<amrex::Real const> const& apz),
+			 amrex::Array4<amrex::Real const> const& vfrac,
+			 amrex::Array4<int> const& itracker,
+			 amrex::Geometry const& geom,
+			 amrex::Real target_volfrac);
+
+    void newlyUncoveredNbhd ( int i, int j, int k,
+			      AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
+					   amrex::Array4<amrex::Real const> const& apy,
+					   amrex::Array4<amrex::Real const> const& apz),
+			      amrex::Array4<amrex::Real const> const& vfrac,
+			      amrex::Array4<amrex::Real const> const& vel_eb,
+			      amrex::Array4<int> const& itracker,
+			      amrex::Geometry const& geom,
+			      amrex::Real target_volfrac);
+
     void Apply ( amrex::Box const& bx, int ncomp,
                  amrex::Array4<amrex::Real>       const& dUdt_out,
                  amrex::Array4<amrex::Real>       const& dUdt_in,
