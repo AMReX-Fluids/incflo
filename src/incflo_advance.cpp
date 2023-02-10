@@ -153,7 +153,7 @@ void incflo::Advance()
     // this will overwrite the previous time plotfile
     WritePlotFile();
     static int count=0; count++;
-    //if (count>2) Abort();
+    if (count>44) Abort();
 
     if (m_advection_type == "MOL") {
         for (int lev = 0; lev <= finest_level; ++lev) {

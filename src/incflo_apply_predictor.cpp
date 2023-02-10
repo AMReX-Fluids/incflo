@@ -505,7 +505,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 if (m_advect_momentum) {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        if (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
+                        if (i==16 && j==4)//(vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
+			{
                             Print()<<"vel pieces "<<vel(i,j,k,0)
                                 <<" "<<rho_old(i,j,k)
                                 <<" "<<dvdt(i,j,k,0)
@@ -617,7 +618,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
         } // lev
     } // not constant density
 
-    //VisMF::Write(m_leveldata[0]->density,"dens");
+    VisMF::Write(m_leveldata[0]->density,"dens");
+    VisMF::Write(density_nph_neweb[0],"rnph");
+    VisMF::Write(m_leveldata[0]->velocity,"vel");
 
     // **********************************************************************************************
     //
