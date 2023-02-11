@@ -31,16 +31,6 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
 
     bool proj_for_small_dt = (time > 0.0 && m_dt < 0.1 * m_prev_dt);
 
-    if (m_verbose > 2)
-    {
-        if (proj_for_small_dt) {
-            amrex::Print() << "Before projection (with small dt modification):" << std::endl;
-        } else {
-            amrex::Print() << "Before projection:" << std::endl;
-        }
-        PrintMaxValues(time);
-    }
-
     // Add the ( grad p /ro ) back to u* (note the +dt)
     if (!incremental)
     {
@@ -203,15 +193,5 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
         amrex::average_down(m_leveldata[lev+1]->gp, m_leveldata[lev]->gp,
                             0, AMREX_SPACEDIM, refRatio(lev));
 #endif
-    }
-
-    if (m_verbose > 2)
-    {
-        if (proj_for_small_dt) {
-            amrex::Print() << "After  projection (with small dt modification):" << std::endl;
-        } else {
-            amrex::Print() << "After  projection:" << std::endl;
-        }
-        PrintMaxValues(time);
     }
 }

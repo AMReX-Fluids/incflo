@@ -128,9 +128,9 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
             [xlo, xhi, ylo, yhi, zlo, zhi, problo, l_dx, l_dy, l_dz,tagval, tag]
             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                 Real x = problo[0] + (i+0.5)*l_dx;
-                 Real y = problo[1] + (j+0.5)*l_dy;
-                 Real z = problo[2] + (k+0.5)*l_dz;
+                 Real x = problo[0] + Real(i+0.5)*l_dx;
+                 Real y = problo[1] + Real(j+0.5)*l_dy;
+                 Real z = problo[2] + Real(k+0.5)*l_dz;
 
                  // Tag if we are inside the specified box
                  if (x >= xlo && x <= xhi && y >= ylo && y <= yhi && z >= zlo && z <= zhi)

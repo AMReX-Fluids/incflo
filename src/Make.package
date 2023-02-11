@@ -6,9 +6,19 @@ CEXE_sources += incflo_compute_dt.cpp
 CEXE_sources += incflo_compute_forces.cpp
 CEXE_sources += incflo_tagging.cpp
 CEXE_sources += incflo_regrid.cpp
-CEXE_sources += incflo_vol_wgt_sum.cpp
 CEXE_sources += main.cpp
 
 ifeq ($(USE_EB), TRUE)
 CEXE_sources += incflo_correct_small_cells.cpp
+endif
+
+ifeq ($(USE_CSG),TRUE)
+   ifneq ($(USE_EB), TRUE)
+      $(error CSG option also requires EB.)
+   endif
+   ifdef CSGEB_HOME
+     INCLUDE_LOCATIONS += $(CSGEB_HOME)/include
+     CPPFLAGS += -DCSG_EB
+     LIBRARIES += -lcsg-eb -L$(CSGEB_HOME)/lib
+   endif
 endif

@@ -40,7 +40,11 @@ void incflo::ComputeDivU(Real /*time_in*/)
 #endif
 }
 
+#ifdef AMREX_USE_EB
 void incflo::compute_strainrate_at_level (int lev,
+#else
+void incflo::compute_strainrate_at_level (int /*lev*/,
+#endif
                                           MultiFab* strainrate,
                                           MultiFab* vel,
                                           Geometry& lev_geom,
@@ -52,9 +56,9 @@ void incflo::compute_strainrate_at_level (int lev,
         auto const& flags = fact.getMultiEBCellFlagFab();
 #endif
 
-        AMREX_D_TERM(Real idx = 1.0 / lev_geom.CellSize(0);,
-                     Real idy = 1.0 / lev_geom.CellSize(1);,
-                     Real idz = 1.0 / lev_geom.CellSize(2););
+        AMREX_D_TERM(Real idx = Real(1.0) / lev_geom.CellSize(0);,
+                     Real idy = Real(1.0) / lev_geom.CellSize(1);,
+                     Real idz = Real(1.0) / lev_geom.CellSize(2););
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -71,7 +75,7 @@ void incflo::compute_strainrate_at_level (int lev,
                 {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        sr_arr(i,j,k) = 0.0;
+                        sr_arr(i,j,k) = Real(0.0);
                     });
                 }
                 else if (typ == FabType::singlevalued)
@@ -99,7 +103,7 @@ Real incflo::ComputeKineticEnergy () const
     BL_PROFILE("incflo::ComputeKineticEnergy");
 
     // integrated total Kinetic energy
-    Real KE = 0.0;
+    Real KE = Real(0.0);
 
     for(int lev = 0; lev <= finest_level; lev++)
     {
@@ -111,7 +115,7 @@ Real incflo::ComputeKineticEnergy () const
                                    Array4<Real const> const& vel_arr,
                                    Array4<int const>  const& mask_arr) -> Real
         {
-            Real KE_Fab = 0.0;
+            Real KE_Fab = Real(0.0);
 
             amrex::Loop(bx, [=,&KE_Fab] (int i, int j, int k) noexcept
             {
@@ -128,7 +132,7 @@ Real incflo::ComputeKineticEnergy () const
     // total volume of grid on level 0
     Real total_vol = geom[0].ProbDomain().volume();
 
-    KE *= 0.5/total_vol/ro_0;
+    KE *= Real(0.5)/total_vol/ro_0;
 
     ParallelDescriptor::ReduceRealSum(KE);
 
@@ -166,7 +170,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         {
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                vort_fab(i,j,k) = 0.0;
+                vort_fab(i,j,k) = Real(0.0);
             });
         }
         else if (typ == FabType::singlevalued)
@@ -174,13 +178,13 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
             const auto& flag_fab = flags.const_array();
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                constexpr Real c0 = -1.5;
-                constexpr Real c1 = 2.0;
-                constexpr Real c2 = -0.5;
+                constexpr Real c0 = Real(-1.5);
+                constexpr Real c1 = Real( 2.0);
+                constexpr Real c2 = Real(-0.5);
 
                 if (flag_fab(i,j,k).isCovered())
                 {
-                    vort_fab(i,j,k) = 0.0;
+                    vort_fab(i,j,k) = Real(0.0);
                 }
                 else
                 {
@@ -204,7 +208,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
                     else
                     {
                         // No covered cells right or left, use standard stencil
-                        vx = 0.5 * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
+                        vx = Real(0.5) * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
                     }
                     // Do the same in y-direction
                     if (!flag_fab(i,j,k).isConnected(0, 1,0))
@@ -221,7 +225,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
                     }
                     else
                     {
-                        uy = 0.5 * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
+                        uy = Real(0.5) * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
                     }
                     vort_fab(i,j,k) = vx-uy;
                 }
@@ -232,8 +236,8 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         {
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                Real vx = 0.5 * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
-                Real uy = 0.5 * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
+                Real vx = Real(0.5) * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
+                Real uy = Real(0.5) * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
                 vort_fab(i,j,k) = vx-uy;
             });
         }
@@ -269,7 +273,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         {
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                vort_fab(i,j,k) = 0.0;
+                vort_fab(i,j,k) = Real(0.0);
             });
         }
         else if (typ == FabType::singlevalued)
@@ -277,13 +281,13 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
             const auto& flag_fab = flags.const_array();
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                constexpr Real c0 = -1.5;
-                constexpr Real c1 = 2.0;
-                constexpr Real c2 = -0.5;
+                constexpr Real c0 = Real(-1.5);
+                constexpr Real c1 = Real( 2.0);
+                constexpr Real c2 = Real(-0.5);
 
                 if (flag_fab(i,j,k).isCovered())
                 {
-                    vort_fab(i,j,k) = 0.0;
+                    vort_fab(i,j,k) = Real(0.0);
                 }
                 else
                 {
@@ -313,8 +317,8 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
                     else
                     {
                         // No covered cells right or left, use standard stencil
-                        vx = 0.5 * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
-                        wx = 0.5 * (ccvel_fab(i+1,j,k,2) - ccvel_fab(i-1,j,k,2)) * idx;
+                        vx = Real(0.5) * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
+                        wx = Real(0.5) * (ccvel_fab(i+1,j,k,2) - ccvel_fab(i-1,j,k,2)) * idx;
                     }
                     // Do the same in y-direction
                     if (!flag_fab(i,j,k).isConnected(0, 1,0))
@@ -337,8 +341,8 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
                     }
                     else
                     {
-                        uy = 0.5 * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
-                        wy = 0.5 * (ccvel_fab(i,j+1,k,2) - ccvel_fab(i,j-1,k,2)) * idy;
+                        uy = Real(0.5) * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
+                        wy = Real(0.5) * (ccvel_fab(i,j+1,k,2) - ccvel_fab(i,j-1,k,2)) * idy;
                     }
                     // Do the same in z-direction
                     if (!flag_fab(i,j,k).isConnected(0,0, 1))
@@ -361,8 +365,8 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
                     }
                     else
                     {
-                        uz = 0.5 * (ccvel_fab(i,j,k+1,0) - ccvel_fab(i,j,k-1,0)) * idz;
-                        vz = 0.5 * (ccvel_fab(i,j,k+1,1) - ccvel_fab(i,j,k-1,1)) * idz;
+                        uz = Real(0.5) * (ccvel_fab(i,j,k+1,0) - ccvel_fab(i,j,k-1,0)) * idz;
+                        vz = Real(0.5) * (ccvel_fab(i,j,k+1,1) - ccvel_fab(i,j,k-1,1)) * idz;
                     }
                     vort_fab(i,j,k) = std::sqrt((wy-vz)*(wy-vz) + (uz-wx)*(uz-wx) + (vx-uy)*(vx-uy));
                 }
@@ -373,14 +377,14 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         {
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                Real vx = 0.5 * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
-                Real wx = 0.5 * (ccvel_fab(i+1,j,k,2) - ccvel_fab(i-1,j,k,2)) * idx;
+                Real vx = Real(0.5) * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
+                Real wx = Real(0.5) * (ccvel_fab(i+1,j,k,2) - ccvel_fab(i-1,j,k,2)) * idx;
 
-                Real uy = 0.5 * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
-                Real wy = 0.5 * (ccvel_fab(i,j+1,k,2) - ccvel_fab(i,j-1,k,2)) * idy;
+                Real uy = Real(0.5) * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
+                Real wy = Real(0.5) * (ccvel_fab(i,j+1,k,2) - ccvel_fab(i,j-1,k,2)) * idy;
 
-                Real uz = 0.5 * (ccvel_fab(i,j,k+1,0) - ccvel_fab(i,j,k-1,0)) * idz;
-                Real vz = 0.5 * (ccvel_fab(i,j,k+1,1) - ccvel_fab(i,j,k-1,1)) * idz;
+                Real uz = Real(0.5) * (ccvel_fab(i,j,k+1,0) - ccvel_fab(i,j,k-1,0)) * idz;
+                Real vz = Real(0.5) * (ccvel_fab(i,j,k+1,1) - ccvel_fab(i,j,k-1,1)) * idz;
 
                 vort_fab(i,j,k) = std::sqrt((wy-vz)*(wy-vz) + (uz-wx)*(uz-wx) + (vx-uy)*(vx-uy));
             });

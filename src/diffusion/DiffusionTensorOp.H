@@ -60,11 +60,11 @@ private:
     int m_num_pre_smooth = 2;
     int m_num_post_smooth = 2;
 #ifdef AMREX_USE_FLOAT
-    amrex::Real m_mg_rtol = 1.0e-4;
-    amrex::Real m_mg_atol = 1.0e-7;
+    amrex::Real m_mg_rtol = amrex::Real(1.0e-4);
+    amrex::Real m_mg_atol = amrex::Real(1.0e-7);
 #else
-    amrex::Real m_mg_rtol = 1.0e-11;
-    amrex::Real m_mg_atol = 1.0e-14;
+    amrex::Real m_mg_rtol = amrex::Real(1.0e-11);
+    amrex::Real m_mg_atol = amrex::Real(1.0e-14);
 #endif
     std::string m_bottom_solver = "bicgstab";
 };

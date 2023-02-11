@@ -229,17 +229,9 @@ public: // for cuda
     ///////////////////////////////////////////////////////////////////////////
 
     void ApplyProjection(amrex::Vector<amrex::MultiFab const*> density,
-                         AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
-                                      amrex::Vector<amrex::MultiFab*> const& v_mac,
-                                      amrex::Vector<amrex::MultiFab*> const& w_mac),
                          amrex::Real time, amrex::Real scaling_factor, bool incremental);
     void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> density,
                               amrex::Real time, amrex::Real scaling_factor, bool incremental);
-    void ApplyCCProjection(amrex::Vector<amrex::MultiFab const*> density,
-                           AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
-                                        amrex::Vector<amrex::MultiFab*> const& v_mac,
-                                        amrex::Vector<amrex::MultiFab*> const& w_mac),
-                           amrex::Real time, amrex::Real scaling_factor, bool incremental);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -279,35 +271,35 @@ private:
 
     // Member variables for initial conditions
     int m_probtype = 0;
-    amrex::Real m_ic_u = 0.0;
-    amrex::Real m_ic_v = 0.0;
-    amrex::Real m_ic_w = 0.0;
-    amrex::Real m_ic_p = 0.0;
-    amrex::Real m_ic_t = 0.0;
+    amrex::Real m_ic_u = amrex::Real(0.0);
+    amrex::Real m_ic_v = amrex::Real(0.0);
+    amrex::Real m_ic_w = amrex::Real(0.0);
+    amrex::Real m_ic_p = amrex::Real(0.0);
+    amrex::Real m_ic_t = amrex::Real(0.0);
 
     amrex::Vector<amrex::Real> m_t_old;
     amrex::Vector<amrex::Real> m_t_new;
 
     // Times
-    amrex::Real m_cur_time     = 0.0;
-    amrex::Real m_dt           = -1.0;
-    amrex::Real m_prev_dt      = -1.0;
-    amrex::Real m_prev_prev_dt = -1.0;
+    amrex::Real m_cur_time     = amrex::Real( 0.0);
+    amrex::Real m_dt           = amrex::Real(-1.0);
+    amrex::Real m_prev_dt      = amrex::Real(-1.0);
+    amrex::Real m_prev_prev_dt = amrex::Real(-1.0);
 
     // Time step counter
     int m_nstep         = -1;
 
     // Stop simulation if cur_time reaches stop_time OR nstep reaches max_step
     // OR steady_state = true AND steady_state_tol is reached
-    amrex::Real m_stop_time = -1.0;
+    amrex::Real m_stop_time = amrex::Real(-1.0);
     int m_max_step = -1;
     bool m_steady_state = false;
-    amrex::Real m_steady_state_tol = 1.0e-5;
+    amrex::Real m_steady_state_tol = amrex::Real(1.0e-5);
 
     // Options to control time stepping
-    amrex::Real m_cfl = 0.5;
-    amrex::Real m_fixed_dt = -1.;
-    amrex::Real m_init_shrink = 0.1;
+    amrex::Real m_cfl = amrex::Real(0.5);
+    amrex::Real m_fixed_dt = amrex::Real(-1.);
+    amrex::Real m_init_shrink = amrex::Real(0.1);
 
     // Initial projection / iterations
     bool m_do_initial_proj    = true;
@@ -349,11 +341,11 @@ private:
     int m_mac_mg_max_coarsening_level = 100;
 
 #ifdef AMREX_USE_FLOAT
-    amrex::Real m_mac_mg_rtol = 1.0e-4;
-    amrex::Real m_mac_mg_atol = 1.0e-7;
+    amrex::Real m_mac_mg_rtol = amrex::Real(1.0e-4);
+    amrex::Real m_mac_mg_atol = amrex::Real(1.0e-7);
 #else
-    amrex::Real m_mac_mg_rtol = 1.0e-11;
-    amrex::Real m_mac_mg_atol = 1.0e-14;
+    amrex::Real m_mac_mg_rtol = amrex::Real(1.0e-11);
+    amrex::Real m_mac_mg_atol = amrex::Real(1.0e-14);
 #endif
 
     // ***************************************************************
@@ -374,11 +366,11 @@ private:
 
     // Control MLMG behavior
 #ifdef AMREX_USE_FLOAT
-    amrex::Real m_nodal_mg_rtol = 1.0e-4;
-    amrex::Real m_nodal_mg_atol = 1.0e-7;
+    amrex::Real m_nodal_mg_rtol = amrex::Real(1.0e-4);
+    amrex::Real m_nodal_mg_atol = amrex::Real(1.0e-7);
 #else
-    amrex::Real m_nodal_mg_rtol = 1.0e-11;
-    amrex::Real m_nodal_mg_atol = 1.0e-14;
+    amrex::Real m_nodal_mg_rtol = amrex::Real(1.0e-11);
+    amrex::Real m_nodal_mg_atol = amrex::Real(1.0e-14);
 #endif
 
     // Max coarsening level
@@ -401,6 +393,10 @@ private:
     bool m_constant_density = true;
     bool m_advect_tracer    = false;
     bool m_test_tracer_conservation = false;
+
+    // If false then we update velocity using the convective   form, u dot grad u
+    // If  true then we update velocity using the conservative form, del dot (u u)
+    bool m_advect_momentum = false;
 
     std::string m_advection_type = "Godunov";
 
@@ -439,6 +435,8 @@ private:
        {}
     };
     EBFlow_t m_eb_flow;
+
+    bool m_write_geom_chk = false;
 #else
     // If using Godunov with no EB, default to PPM
     bool m_godunov_ppm         = true;
@@ -456,9 +454,6 @@ private:
     //    in the forcing term passed into the godunov routine; instead
     //    use gradient of mac phi which contains the full pressure
     bool m_use_mac_phi_in_godunov = false;
-
-    // If true use CC projection; if false use nodal projection
-    bool m_use_cc_proj = false;
 
     enum struct DiffusionType {
         Invalid, Explicit, Crank_Nicolson, Implicit
@@ -506,7 +501,6 @@ private:
     int m_plt_rho         = 1;
     int m_plt_tracer      = 1;
     int m_plt_p_nd        = 0;
-    int m_plt_p_cc        = 0;
     int m_plt_macphi      = 0;
     int m_plt_eta         = 0;
     int m_plt_vort        = 1;
@@ -541,18 +535,19 @@ private:
 
         amrex::MultiFab mac_phi; // cell-centered pressure used in MAC projection
 
-        amrex::MultiFab gp; // pressure gradient
-        amrex::MultiFab p_cc; // pressure gradient
-        // nodal multifabs
+        // nodal pressure multifab
         amrex::MultiFab p_nd;
-        //
+
+        // cell-centered pressure gradient
+        amrex::MultiFab gp;
+
         amrex::MultiFab conv_velocity;
         amrex::MultiFab conv_velocity_o;
         amrex::MultiFab conv_density;
         amrex::MultiFab conv_density_o;
         amrex::MultiFab conv_tracer;
         amrex::MultiFab conv_tracer_o;
-        //
+
         amrex::MultiFab divtau;
         amrex::MultiFab divtau_o;
         amrex::MultiFab laps;
@@ -658,6 +653,10 @@ private:
 
     bool need_divtau () const {
         return ( m_godunov_include_diff_in_forcing || DiffusionType::Implicit != m_diff_type );
+    }
+
+    bool AdvectMomentum () const {
+        return m_advect_momentum;
     }
 
     bool useTensorSolve () const {
@@ -816,6 +815,10 @@ private:
     void make_eb_spherecube ();
     void make_eb_cyl_tuscan ();
     void make_eb_tuscan ();
+    void make_eb_chkptfile ();
+#ifdef CSG_EB
+    void make_eb_csg (const std::string& csg_file);
+#endif
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
@@ -851,11 +854,6 @@ private:
     void WriteCheckPointFile () const;
     void WritePlotFile ();
     void ReadCheckpointFile ();
-
-    void PrintMaxValues (amrex::Real time);
-    void PrintMaxVel (int lev);
-    void PrintMaxGp (int lev);
-
 };
 
 #endif

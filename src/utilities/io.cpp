@@ -98,9 +98,6 @@ void incflo::WriteCheckPointFile() const
 
         VisMF::Write(m_leveldata[lev]->p_nd,
                      amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_nd"));
-
-        VisMF::Write(m_leveldata[lev]->p_cc,
-                     amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_cc"));
     }
 }
 
@@ -223,9 +220,6 @@ void incflo::ReadCheckpointFile()
 
         VisMF::Read(m_leveldata[lev]->p_nd,
                     amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "p_nd"));
-
-        VisMF::Read(m_leveldata[lev]->p_cc,
-                    amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "p_cc"));
     }
 
     amrex::Print() << "Restart complete" << std::endl;
@@ -363,7 +357,6 @@ void incflo::WritePlotFile()
 
     // Pressure
     if(m_plt_p_nd) ++ncomp;
-    if(m_plt_p_cc) ++ncomp;
 
     // MAC phi
     if(m_plt_macphi) ncomp += 1;
@@ -479,13 +472,6 @@ void incflo::WritePlotFile()
         ++icomp;
     }
 
-    if (m_plt_p_cc) {
-        for (int lev = 0; lev <= finest_level; ++lev)
-            MultiFab::Copy(mf[lev], m_leveldata[lev]->p_cc, 0, icomp, 1, 0);
-        pltscaVarsName.push_back("p_cc");
-        ++icomp;
-    }
-
     if (m_plt_macphi) {
         for (int lev = 0; lev <= finest_level; ++lev)
             MultiFab::Copy(mf[lev], m_leveldata[lev]->mac_phi, 0, icomp, 1, 0);
@@ -541,7 +527,7 @@ void incflo::WritePlotFile()
 
         Real offset = mf[0].sum(icomp,true);
         ParallelDescriptor::ReduceRealSum(offset);
-        offset *= 1./grids[0].numPts();
+        offset *= Real(1.0)/grids[0].numPts();
 
         for (int lev = 0; lev <= finest_level; ++lev)
         {
@@ -561,7 +547,7 @@ void incflo::WritePlotFile()
 
         Real offset = mf[0].sum(icomp,true);
         ParallelDescriptor::ReduceRealSum(offset);
-        offset *= 1./grids[0].numPts();
+        offset *= Real(1.0)/grids[0].numPts();
 
         for (int lev = 0; lev <= finest_level; ++lev)
         {

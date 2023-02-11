@@ -5,6 +5,7 @@ CEXE_sources += eb_cylinder.cpp
 CEXE_sources += eb_cyl_tuscan.cpp
 CEXE_sources += eb_regular.cpp
 CEXE_sources += eb_sphere.cpp
+CEXE_sources += eb_chkptfile.cpp
 ifeq ($(DIM), 3)
   CEXE_sources += eb_spherecube.cpp
   CEXE_sources += eb_tuscan.cpp
@@ -13,3 +14,7 @@ endif
 CEXE_sources += writeEBsurface.cpp
 
 CEXE_headers += eb_if.H
+
+ifeq ($(USE_CSG),TRUE)
+	CEXE_sources += eb_csg.cpp
+endif

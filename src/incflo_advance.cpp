@@ -7,7 +7,7 @@ void incflo::Advance()
     BL_PROFILE("incflo::Advance");
 
     // Start timing current time step
-    Real strt_step = ParallelDescriptor::second();
+    Real strt_step = static_cast<Real>(ParallelDescriptor::second());
 
     // Compute time step size
     int initialisation = 0;
@@ -66,29 +66,17 @@ void incflo::Advance()
         ApplyCorrector();
     }
 
-    if (m_verbose > 2)
-    {
-        amrex::Print() << "End of time step: " << std::endl;
-#if 0
-        // xxxxx
-        PrintMaxValues(m_cur_time + dt);
-        if(m_probtype%10 == 3 || m_probtype == 5)
-        {
-            ComputeDrag();
-            amrex::Print() << "Drag force = " << (*drag[0]).sum(0, false) << std::endl;
-        }
-#endif
-    }
-
 #if 0
     // This sums over all levels
     if (m_test_tracer_conservation) {
-        amrex::Print() << "Sum tracer volume wgt2 = " << m_cur_time+m_dt << "   " << vol_wgt_sum(get_tracer_new(),0) << std::endl;
+        Real sum = volumeWeightedSum(get_tracer_new_const(),0,geom,ref_ratio);
+        amrex::Print() << "Sum tracer volume wgt2 = " << m_cur_time+m_dt << " " <<
+                           sum << std::endl;
     }
 #endif
 
     // Stop timing current time step
-    Real end_step = ParallelDescriptor::second() - strt_step;
+    Real end_step = static_cast<Real>(ParallelDescriptor::second()) - strt_step;
     ParallelDescriptor::ReduceRealMax(end_step, ParallelDescriptor::IOProcessorNumber());
     if (m_verbose > 0)
     {

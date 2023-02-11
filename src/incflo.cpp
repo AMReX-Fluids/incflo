@@ -171,19 +171,10 @@ void incflo::Evolve()
 
 void
 incflo::ApplyProjection (Vector<MultiFab const*> density,
-                         AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
-                                      Vector<MultiFab*> const& v_mac,
-                                      Vector<MultiFab*> const& w_mac),
                          Real time, Real scaling_factor, bool incremental)
 {
     BL_PROFILE("incflo::ApplyProjection");
-    if (m_use_cc_proj)
-    {
-        ApplyCCProjection(density,AMREX_D_DECL(u_mac,v_mac,w_mac),
-                          time,scaling_factor,incremental);
-    }
-    else
-        ApplyNodalProjection(density,time,scaling_factor,incremental);
+    ApplyNodalProjection(density,time,scaling_factor,incremental);
 }
 
 // Make a new level from scratch using provided BoxArray and DistributionMapping.
@@ -223,7 +214,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
                                          m_advect_tracer));
 
     m_t_new[lev] = time;
-    m_t_old[lev] = time - 1.e200;
+    m_t_old[lev] = time - Real(1.e200);
 
     if (m_restart_file.empty()) {
         prob_init_fluid(lev);
@@ -264,7 +255,7 @@ incflo::writeNow()
         // the counter, because we have indeed reached the next m_plot_per_approx interval
         // at this point.
 
-        const Real eps = std::numeric_limits<Real>::epsilon() * 10.0 * std::abs(m_cur_time);
+        const Real eps = std::numeric_limits<Real>::epsilon() * Real(10.0) * std::abs(m_cur_time);
         const Real next_plot_time = (num_per_old + 1) * m_plot_per_approx;
 
         if ((num_per_new == num_per_old) && std::abs(m_cur_time - next_plot_time) <= eps)

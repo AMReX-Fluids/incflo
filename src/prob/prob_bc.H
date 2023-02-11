@@ -23,9 +23,7 @@ struct IncfloVelFill
                      const amrex::BCRec* bcr, const int bcomp,
                      const int orig_comp) const
     {
-        using namespace amrex;
-
-        // do something for external Dirichlet (BCType::ext_dir)
+        // do something for external Dirichlet (amrex::BCType::ext_dir)
         const int i = iv[0];
         const int j = iv[1];
 #if (AMREX_SPACEDIM == 3)
@@ -34,85 +32,85 @@ struct IncfloVelFill
         const int k = 0;
 #endif
 
-        const Box& domain_box = geom.Domain();
+        const amrex::Box& domain_box = geom.Domain();
 
         for (int nc = 0; nc < num_comp; ++nc)
         {
-            const BCRec& bc = bcr[bcomp+nc];
+            const amrex::BCRec& bc = bcr[bcomp+nc];
 
-            if (bc.lo(0) == BCType::ext_dir && i < domain_box.smallEnd(0))
+            if (bc.lo(0) == amrex::BCType::ext_dir && i < domain_box.smallEnd(0))
             {
-                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::x,Orientation::low)][orig_comp+nc];
+                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
 
                 if (orig_comp+nc == 0) // x velocity
                 {
                     if (31 == probtype)
                     {
-                        Real y = (j+0.5)*(1.0/domain_box.length(1));
-                        vel(i,j,k,dcomp+nc) *= 6. * y * (1.-y);
+                        amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
+                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * y * (amrex::Real(1.0)-y);
                     }
                     else if (311 == probtype)
                     {
-                        Real z = (k+0.5)*(1.0/domain_box.length(2));
-                        vel(i,j,k,dcomp+nc) *= 6. * z * (1.-z);
+                        amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
+                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * z * (amrex::Real(1.0)-z);
                     }
                     else if (41 == probtype)
                     {
-                        Real z = (k+0.5)*(1.0/domain_box.length(2));
-                        vel(i,j,k,dcomp+nc) =  0.5 * z;
+                        amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
+                        vel(i,j,k,dcomp+nc) =  amrex::Real(0.5) * z;
                     }
                 }
             }
-            else if (bc.hi(0) == BCType::ext_dir && i > domain_box.bigEnd(0))
+            else if (bc.hi(0) == amrex::BCType::ext_dir && i > domain_box.bigEnd(0))
             {
-                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::x,Orientation::high)][orig_comp+nc];
+                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
             }
 
-            if (bc.lo(1) == BCType::ext_dir && j < domain_box.smallEnd(1))
+            if (bc.lo(1) == amrex::BCType::ext_dir && j < domain_box.smallEnd(1))
             {
-                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::y,Orientation::low)][orig_comp+nc];
+                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][orig_comp+nc];
 
                 if (orig_comp+nc == 1) // y velocity
                 {
                     if (32 == probtype)
                     {
-                        Real z = (k+0.5)*(1.0/domain_box.length(2));
-                        vel(i,j,k,dcomp+nc) *= 6. * z * (1.-z);
+                        amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
+                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * z * (amrex::Real(1.0)-z);
                     }
                     else if (322 == probtype)
                     {
-                        Real x = (i+0.5)*(1.0/domain_box.length(0));
-                        vel(i,j,k,dcomp+nc) *= 6. * x * (1.-x);
+                        amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
+                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * x * (amrex::Real(1.0)-x);
                     }
                 }
             }
-            else if (bc.hi(1) == BCType::ext_dir && j > domain_box.bigEnd(1))
+            else if (bc.hi(1) == amrex::BCType::ext_dir && j > domain_box.bigEnd(1))
             {
-                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::y,Orientation::high)][orig_comp+nc];
+                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
             }
 
 #if (AMREX_SPACEDIM == 3)
-            if (bc.lo(2) == BCType::ext_dir && k < domain_box.smallEnd(2))
+            if (bc.lo(2) == amrex::BCType::ext_dir && k < domain_box.smallEnd(2))
             {
-                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::z,Orientation::low)][orig_comp+nc];
+                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+nc];
 
                 if (orig_comp+nc == 2) // z velocity
                 {
                     if (33 == probtype)
                     {
-                        Real x = (i+0.5)*(1.0/domain_box.length(0));
-                        vel(i,j,k,dcomp+nc) *= 6. * x * (1.-x);
+                        amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
+                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.0) * x * (amrex::Real(1.0)-x);
                     }
                     if (333 == probtype)
                     {
-                        Real y = (j+0.5)*(1.0/domain_box.length(1));
-                        vel(i,j,k,dcomp+nc) *= 6. * y * (1.-y);
+                        amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
+                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.0) * y * (amrex::Real(1.0)-y);
                     }
                 }
             }
-            else if (bc.hi(2) == BCType::ext_dir && k > domain_box.bigEnd(2))
+            else if (bc.hi(2) == amrex::BCType::ext_dir && k > domain_box.bigEnd(2))
             {
-                vel(i,j,k,dcomp+nc) = bcv[Orientation(Direction::z,Orientation::high)][orig_comp+nc];
+                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][orig_comp+nc];
             }
 #endif
         }
@@ -137,7 +135,7 @@ struct IncfloDenFill
     {
         using namespace amrex;
 
-        // do something for external Dirichlet (BCType::ext_dir)
+        // do something for external Dirichlet (amrex::BCType::ext_dir)
         const int i = iv[0];
         const int j = iv[1];
 #if (AMREX_SPACEDIM == 3)
@@ -149,31 +147,31 @@ struct IncfloDenFill
         const Box& domain_box = geom.Domain();
         const BCRec& bc = bcr[bcomp];
 
-        if (bc.lo(0) == BCType::ext_dir && i < domain_box.smallEnd(0))
+        if (bc.lo(0) == amrex::BCType::ext_dir && i < domain_box.smallEnd(0))
         {
-            rho(i,j,k) = bcv[Orientation(Direction::x,Orientation::low)];
+            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)];
         }
-        else if (bc.hi(0) == BCType::ext_dir && i > domain_box.bigEnd(0))
+        else if (bc.hi(0) == amrex::BCType::ext_dir && i > domain_box.bigEnd(0))
         {
-            rho(i,j,k) = bcv[Orientation(Direction::x,Orientation::high)];
+            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)];
         }
 
-        if (bc.lo(1) == BCType::ext_dir && j < domain_box.smallEnd(1))
+        if (bc.lo(1) == amrex::BCType::ext_dir && j < domain_box.smallEnd(1))
         {
-            rho(i,j,k) = bcv[Orientation(Direction::y,Orientation::low)];
+            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)];
         }
-        else if (bc.hi(1) == BCType::ext_dir && j > domain_box.bigEnd(1))
+        else if (bc.hi(1) == amrex::BCType::ext_dir && j > domain_box.bigEnd(1))
         {
-            rho(i,j,k) = bcv[Orientation(Direction::y,Orientation::high)];
+            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
         }
 #if (AMREX_SPACEDIM == 3)
-        if (bc.lo(2) == BCType::ext_dir && k < domain_box.smallEnd(2))
+        if (bc.lo(2) == amrex::BCType::ext_dir && k < domain_box.smallEnd(2))
         {
-            rho(i,j,k) = bcv[Orientation(Direction::z,Orientation::low)];
+            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)];
         }
-        else if (bc.hi(2) == BCType::ext_dir && k > domain_box.bigEnd(2))
+        else if (bc.hi(2) == amrex::BCType::ext_dir && k > domain_box.bigEnd(2))
         {
-            rho(i,j,k) = bcv[Orientation(Direction::z,Orientation::high)];
+            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)];
         }
 #endif
     }
@@ -198,7 +196,7 @@ struct IncfloTracFill
     {
         using namespace amrex;
 
-        // do something for external Dirichlet (BCType::ext_dir)
+        // do something for external Dirichlet (amrex::BCType::ext_dir)
         const int i = iv[0];
         const int j = iv[1];
 #if (AMREX_SPACEDIM == 3)
@@ -213,31 +211,31 @@ struct IncfloTracFill
         {
             const BCRec& bc = bcr[bcomp+n];
 
-            if (bc.lo(0) == BCType::ext_dir && i < domain_box.smallEnd(0))
+            if (bc.lo(0) == amrex::BCType::ext_dir && i < domain_box.smallEnd(0))
             {
-                tracer(i,j,k,n) = bcv[Orientation(Direction::x,Orientation::low)][n];
+                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][n];
             }
-            else if (bc.hi(0) == BCType::ext_dir && i > domain_box.bigEnd(0))
+            else if (bc.hi(0) == amrex::BCType::ext_dir && i > domain_box.bigEnd(0))
             {
-                tracer(i,j,k,n) = bcv[Orientation(Direction::x,Orientation::high)][n];
+                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][n];
             }
 
-            if (bc.lo(1) == BCType::ext_dir && j < domain_box.smallEnd(1))
+            if (bc.lo(1) == amrex::BCType::ext_dir && j < domain_box.smallEnd(1))
             {
-                tracer(i,j,k,n) = bcv[Orientation(Direction::y,Orientation::low)][n];
+                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][n];
             }
-            else if (bc.hi(1) == BCType::ext_dir && j > domain_box.bigEnd(1))
+            else if (bc.hi(1) == amrex::BCType::ext_dir && j > domain_box.bigEnd(1))
             {
-                tracer(i,j,k,n) = bcv[Orientation(Direction::y,Orientation::high)][n];
+                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][n];
             }
 #if (AMREX_SPACEDIM == 3)
-            if (bc.lo(2) == BCType::ext_dir && k < domain_box.smallEnd(2))
+            if (bc.lo(2) == amrex::BCType::ext_dir && k < domain_box.smallEnd(2))
             {
-                tracer(i,j,k,n) = bcv[Orientation(Direction::z,Orientation::low)][n];
+                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][n];
             }
-            else if (bc.hi(2) == BCType::ext_dir && k > domain_box.bigEnd(2))
+            else if (bc.hi(2) == amrex::BCType::ext_dir && k > domain_box.bigEnd(2))
             {
-                tracer(i,j,k,n) = bcv[Orientation(Direction::z,Orientation::high)][n];
+                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][n];
             }
 #endif
         }

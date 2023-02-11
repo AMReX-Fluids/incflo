@@ -8,9 +8,12 @@ using namespace amrex;
 //
 //  1. Use u = vel_pred to compute
 //
-//      conv_u  = - u grad u
-//      conv_r  = - u grad rho
-//      conv_t  = - u grad trac
+//      if (!advect_momentum) then
+//          conv_u  = - u grad u
+//      else
+//          conv_u  = - del dot (rho u u)
+//      conv_r  = - div( u rho  )
+//      conv_t  = - div( u trac )
 //      eta     = viscosity
 //      divtau  = div( eta ( (grad u) + (grad u)^T ) ) / rho
 //
@@ -29,9 +32,6 @@ using namespace amrex;
 //
 //      rhs += dt * ( g - grad(p + p0) / rho )
 //
-//      Note that in order to add the pressure gradient terms divided by rho,
-//      we convert the velocity to momentum before adding and then convert them back.
-//
 //  3. A. If (m_diff_type == DiffusionType::Implicit)
 //        solve implicit diffusion equation for u*
 //
@@ -48,7 +48,10 @@ using namespace amrex;
 //
 //     Add pressure gradient term back to u*:
 //
-//      u** = u* + dt * grad p / rho
+//      if (advect_momentum) then
+//          (rho^(n+1) u**) = (rho^(n+1) u*) + dt * grad p
+//      else
+//          u** = u* + dt * grad p / rho^nph
 //
 //     Solve Poisson equation for phi:
 //
@@ -66,14 +69,10 @@ void incflo::ApplyCorrector()
 {
     BL_PROFILE("incflo::ApplyCorrector");
 
+    constexpr Real m_half = Real(0.5);
+
     // We use the new time value for things computed on the "*" state
     Real new_time = m_cur_time + m_dt;
-
-    if (m_verbose > 2)
-    {
-        amrex::Print() << "Before corrector step:" << std::endl;
-        PrintMaxValues(new_time);
-    }
 
     // *************************************************************************************
     // Allocate space for the MAC velocities
@@ -197,8 +196,8 @@ void incflo::ApplyCorrector()
                 {
                     const Real rho_old = rho_o(i,j,k);
 
-                    Real rho_new = rho_old + l_dt * 0.5*(drdt(i,j,k)+drdt_o(i,j,k));
-                    rho_nph(i,j,k) = 0.5 * (rho_old + rho_new);
+                    Real rho_new = rho_old + l_dt * m_half*(drdt(i,j,k)+drdt_o(i,j,k));
+                    rho_nph(i,j,k) = m_half * (rho_old + rho_new);
 
                     rho_n  (i,j,k) = rho_new;
                 });
@@ -248,8 +247,8 @@ void incflo::ApplyCorrector()
                         for (int n = 0; n < l_ntrac; ++n)
                         {
                             Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
-                                  0.5*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
-                                 +0.5*(laps_o(i,j,k,n) +   laps(i,j,k,n))
+                                  m_half*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
+                                 +m_half*(laps_o(i,j,k,n) +   laps(i,j,k,n))
                                    +    tra_f(i,j,k,n) );
 
                             tra_new /= rho(i,j,k);
@@ -266,8 +265,8 @@ void incflo::ApplyCorrector()
                         for (int n = 0; n < l_ntrac; ++n)
                         {
                             Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
-                                  0.5*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
-                                 +0.5*(laps_o(i,j,k,n)                  )
+                                  m_half*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
+                                 +m_half*(laps_o(i,j,k,n)                  )
                                    +    tra_f(i,j,k,n) );
 
                             tra_new /= rho(i,j,k);
@@ -282,7 +281,7 @@ void incflo::ApplyCorrector()
                         for (int n = 0; n < l_ntrac; ++n)
                         {
                             Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
-                                  0.5*(  dtdt(i,j,k,n)+dtdt_o(i,j,k,n))
+                                  m_half*(  dtdt(i,j,k,n)+dtdt_o(i,j,k,n))
                                  +      tra_f(i,j,k,n) );
 
                             tra_new /= rho(i,j,k);
@@ -304,7 +303,7 @@ void incflo::ApplyCorrector()
         for (int lev = 0; lev <= finest_level; ++lev)
             fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
 
-        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
         diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
     }
 
@@ -334,58 +333,159 @@ void incflo::ApplyCorrector()
             Array4<Real const> const& dvdt_o = ld.conv_velocity_o.const_array(mfi);
             Array4<Real const> const& vel_f = vel_forces[lev].const_array(mfi);
 
+            Array4<Real const> const& rho_old  = ld.density_o.const_array(mfi);
+            Array4<Real const> const& rho_new  = ld.density.const_array(mfi);
+            Array4<Real const> const& rho_nph  = density_nph[lev].array(mfi);
+
             if (m_diff_type == DiffusionType::Explicit)
             {
                 Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
                 Array4<Real const> const& divtau   = ld.divtau.const_array(mfi);
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                {
-                    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-                        vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
-                             0.5*(  dvdt_o(i,j,k,idim)+  dvdt(i,j,k,idim))
-                            +0.5*(divtau_o(i,j,k,idim)+divtau(i,j,k,idim))
-                            +        vel_f(i,j,k,idim) );
-                    }
-                });
+
+                if (m_advect_momentum) {
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
+                                                    m_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0))
+                                                  + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
+                                                  + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
+                                     vel(i,j,k,1) =  rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
+                                                     m_half*(  dvdt_o(i,j,k,1)+  dvdt(i,j,k,1))
+                                                   + m_half*(divtau_o(i,j,k,1)+divtau(i,j,k,1))
+                                                   + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
+                                     vel(i,j,k,2) =  rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
+                                                     m_half*(  dvdt_o(i,j,k,2)+  dvdt(i,j,k,2))
+                                                   + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
+                                                   + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
+
+                        AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
+                                     vel(i,j,k,1) /= rho_new(i,j,k);,
+                                     vel(i,j,k,2) /= rho_new(i,j,k););
+                    });
+                } else {
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        AMREX_D_TERM(vel(i,j,k,0) = vel_o(i,j,k,0) + l_dt * (
+                                                    m_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0))
+                                                  + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
+                                                  + vel_f(i,j,k,0) );,
+                                     vel(i,j,k,1) = vel_o(i,j,k,1) + l_dt * (
+                                                    m_half*(  dvdt_o(i,j,k,1)+  dvdt(i,j,k,1))
+                                                  + m_half*(divtau_o(i,j,k,1)+divtau(i,j,k,1))
+                                                  + vel_f(i,j,k,1) );,
+                                     vel(i,j,k,2) = vel_o(i,j,k,2) + l_dt * (
+                                                    m_half*(  dvdt_o(i,j,k,2)+  dvdt(i,j,k,2))
+                                                  + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
+                                                  + vel_f(i,j,k,2) ););
+                    });
+                }
             }
             else if (m_diff_type == DiffusionType::Crank_Nicolson)
             {
                 Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                {
-                    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-                        vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
-                            0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
-                           +0.5*(divtau_o(i,j,k,idim)                 )
-                           +        vel_f(i,j,k,idim) );
-                    }
-                });
+
+                if (m_advect_momentum) {
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
+                                                    m_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0))
+                                                   +m_half*(divtau_o(i,j,k,0) ) + rho_nph(i,j,k)*vel_f(i,j,k,0) );,
+                                     vel(i,j,k,1) = rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
+                                                    m_half*(  dvdt_o(i,j,k,1)+dvdt(i,j,k,1))
+                                                   +m_half*(divtau_o(i,j,k,1) ) + rho_nph(i,j,k)*vel_f(i,j,k,1) );,
+                                     vel(i,j,k,2) = rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
+                                                    m_half*(  dvdt_o(i,j,k,2)+dvdt(i,j,k,2))
+                                                   +m_half*(divtau_o(i,j,k,2) ) + rho_nph(i,j,k)*vel_f(i,j,k,2) ););
+
+                        AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
+                                     vel(i,j,k,1) /= rho_new(i,j,k);,
+                                     vel(i,j,k,2) /= rho_new(i,j,k););
+                    });
+                } else {
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        AMREX_D_TERM(vel(i,j,k,0) = vel_o(i,j,k,0) + l_dt * (
+                                                    m_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0))
+                                                  + m_half* divtau_o(i,j,k,0) + vel_f(i,j,k,0) );,
+                                     vel(i,j,k,1) = vel_o(i,j,k,1) + l_dt * (
+                                                    m_half*(  dvdt_o(i,j,k,1)+dvdt(i,j,k,1))
+                                                  + m_half* divtau_o(i,j,k,1) + vel_f(i,j,k,1) );,
+                                     vel(i,j,k,2) = vel_o(i,j,k,2) + l_dt * (
+                                                    m_half*(  dvdt_o(i,j,k,2)+dvdt(i,j,k,2))
+                                                  + m_half* divtau_o(i,j,k,2) + vel_f(i,j,k,2) ););
+                    });
+                }
             }
             else if (m_diff_type == DiffusionType::Implicit)
             {
                 if (use_tensor_correction)
                 {
                     Array4<Real const> const& divtau   = ld.divtau.const_array(mfi);
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    if (m_advect_momentum)
                     {
-                        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
+                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
-                            // Here divtau is the difference of tensor and scalar divtau!
-                            vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
-                                 0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
-                                +        vel_f(i,j,k,idim) + divtau(i,j,k,idim));
-                        }
-                    });
+                            AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
+                                                        m_half*(dvdt_o(i,j,k,0) +   dvdt(i,j,k,0))
+                                                      + rho_nph(i,j,k) * vel_f(i,j,k,0) + divtau(i,j,k,0));,
+//    
+                                         vel(i,j,k,1) = rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
+                                                        m_half*(dvdt_o(i,j,k,1) +   dvdt(i,j,k,1))
+                                                      + rho_nph(i,j,k) * vel_f(i,j,k,1) + divtau(i,j,k,1));,
+//    
+                                         vel(i,j,k,2) = rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
+                                                        m_half*(dvdt_o(i,j,k,2) +   dvdt(i,j,k,2))
+                                                      + rho_nph(i,j,k) * vel_f(i,j,k,2) + divtau(i,j,k,2)););
+
+                            AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
+                                         vel(i,j,k,1) /= rho_new(i,j,k);,
+                                         vel(i,j,k,2) /= rho_new(i,j,k););
+                        });
+                    } else {
+                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        {
+                            AMREX_D_TERM(vel(i,j,k,0) = vel_o(i,j,k,0) + l_dt * (
+                                                        m_half*(  dvdt_o(i,j,k,0) +   dvdt(i,j,k,0))
+                                                      + vel_f(i,j,k,0) + divtau(i,j,k,0));,
+//    
+                                         vel(i,j,k,1) = vel_o(i,j,k,1) + l_dt * (
+                                                        m_half*(dvdt_o(i,j,k,1) +   dvdt(i,j,k,1))
+                                                      + vel_f(i,j,k,1) + divtau(i,j,k,1) );,
+//    
+                                         vel(i,j,k,2) = vel_o(i,j,k,2) + l_dt * (
+                                                        m_half*(  dvdt_o(i,j,k,2) +   dvdt(i,j,k,2))
+                                                      + vel_f(i,j,k,2) + divtau(i,j,k,2) ););
+                        });
+                    }
                 } else {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    if (m_advect_momentum)
                     {
-                        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
+                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
-                            vel(i,j,k,idim) = vel_o(i,j,k,idim) + l_dt * (
-                                 0.5*(  dvdt_o(i,j,k,idim)+dvdt(i,j,k,idim))
-                                +        vel_f(i,j,k,idim) );
-                        }
-                    });
+                            AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
+                                                        m_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0)) 
+                                                      + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
+                                         vel(i,j,k,1) = rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
+                                                        m_half*(  dvdt_o(i,j,k,1)+dvdt(i,j,k,1)) 
+                                                      + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
+                                         vel(i,j,k,2) = rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
+                                                        m_half*(  dvdt_o(i,j,k,2)+dvdt(i,j,k,2)) 
+                                                      + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
+                            AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
+                                         vel(i,j,k,1) /= rho_new(i,j,k);,
+                                         vel(i,j,k,2) /= rho_new(i,j,k););
+                        });
+                    } else {
+                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        {
+                            AMREX_D_TERM(vel(i,j,k,0) = vel_o(i,j,k,0) + l_dt * (
+                                                        m_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0)) + vel_f(i,j,k,0) );,
+                                         vel(i,j,k,1) = vel_o(i,j,k,1) + l_dt * (
+                                                        m_half*(  dvdt_o(i,j,k,1)+dvdt(i,j,k,1)) + vel_f(i,j,k,1) );,
+                                         vel(i,j,k,2) = vel_o(i,j,k,2) + l_dt * (
+                                                        m_half*(  dvdt_o(i,j,k,2)+dvdt(i,j,k,2)) + vel_f(i,j,k,2) ););
+                        });
+                    }
                 }
             }
         }
@@ -406,7 +506,7 @@ void incflo::ApplyCorrector()
             fillphysbc_density (lev, new_time, m_leveldata[lev]->density , ng_diffusion);
         }
 
-        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : 0.5*m_dt;
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
         diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
 
@@ -414,9 +514,7 @@ void incflo::ApplyCorrector()
     //
     // Project velocity field, update pressure
     bool incremental_projection = false;
-    ApplyProjection(GetVecOfConstPtrs(density_nph),
-                    AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                    GetVecOfPtrs(w_mac)),new_time,m_dt,incremental_projection);
+    ApplyProjection(GetVecOfConstPtrs(density_nph), new_time,m_dt,incremental_projection);
 
 #ifdef AMREX_USE_EB
     // **********************************************************************************************

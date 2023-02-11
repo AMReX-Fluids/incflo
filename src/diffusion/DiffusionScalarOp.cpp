@@ -544,7 +544,6 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
         for (int lev = 0; lev <= finest_level; ++lev) {
             m_eb_vel_apply_op->setEBHomogDirichlet(lev, *a_eta[lev]);
         }
-
         // We want to return div (mu grad)) phi
         m_eb_vel_apply_op->setScalars(0.0, -1.0);
 
@@ -630,4 +629,26 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
             mlmg.apply(GetVecOfPtrs(divtau_single), GetVecOfPtrs(vel_single));
         }
     }
+
+    bool advect_momentum = m_incflo->AdvectMomentum();
+    if (!advect_momentum) {
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            for (MFIter mfi(*a_divtau[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+                Box const& bx = mfi.tilebox();
+                Array4<Real> const& divtau_arr = a_divtau[lev]->array(mfi);
+                Array4<Real const> const& rho_arr = a_density[lev]->const_array(mfi);
+                amrex::ParallelFor(bx,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    Real rhoinv = Real(1.0)/rho_arr(i,j,k);
+                    AMREX_D_TERM(divtau_arr(i,j,k,0) *= rhoinv;,
+                                 divtau_arr(i,j,k,1) *= rhoinv;,
+                                 divtau_arr(i,j,k,2) *= rhoinv;);
+                });
+            } // mfi
+        } // lev
+    } // not advect_momentum
 }

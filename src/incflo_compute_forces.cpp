@@ -73,8 +73,8 @@ void incflo::compute_vel_forces_on_level (int lev,
                 {
                     int n = 0; // Potential temperature
 
-                    Real rhoinv = 1.0/rho(i,j,k);
-                    Real ft = 0.5 * (tra_o(i,j,k,n) + tra_n(i,j,k,n));
+                    Real rhoinv = Real(1.0)/rho(i,j,k);
+                    Real ft = Real(0.5) * (tra_o(i,j,k,n) + tra_n(i,j,k,n));
 
                     if (include_pressure_gradient)
                     {
@@ -91,7 +91,7 @@ void incflo::compute_vel_forces_on_level (int lev,
             } else {
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    Real rhoinv = 1.0/rho(i,j,k);
+                    Real rhoinv = Real(1.0)/rho(i,j,k);
 
                     if (include_pressure_gradient)
                     {

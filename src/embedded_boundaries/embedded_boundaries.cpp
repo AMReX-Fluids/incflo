@@ -1,4 +1,5 @@
 #include <AMReX_ParmParse.H>
+#include <AMReX_EB2.H>
 
 #include <algorithm>
 #include <incflo.H>
@@ -15,7 +16,14 @@ void incflo::MakeEBGeometry()
     ParmParse pp("incflo");
 
     std::string geom_type;
+    std::string csg_file;
     pp.query("geometry", geom_type);
+    pp.query("geometry_filename", csg_file);
+    amrex::Print() << "incflo.geometry_filename: " << csg_file;
+
+#ifndef CSG_EB
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( csg_file.empty(), "CSG Geometry defined in input deck but solver not built with CSG support!");
+#endif
 
    /******************************************************************************
    *                                                                            *
@@ -65,6 +73,16 @@ void incflo::MakeEBGeometry()
     amrex::Print() << "\n Building JCAP geometry." << std::endl;
         make_eb_cyl_tuscan();
     }
+    else if(geom_type == "chkptfile")
+    {
+       make_eb_chkptfile();
+    }
+#ifdef CSG_EB
+    else if(!csg_file.empty()) {
+      amrex::Print() << "\n Building geometry from .csg file:  " << csg_file << std::endl;
+      make_eb_csg(csg_file);
+    }
+#endif
     else
     {
     amrex::Print() << "\n No EB geometry declared in inputs => "
@@ -72,4 +90,10 @@ void incflo::MakeEBGeometry()
         make_eb_regular();
     }
     amrex::Print() << "Done making the geometry ebfactory.\n" << std::endl;
+
+    if (m_write_geom_chk) {
+       const auto& is = amrex::EB2::IndexSpace::top();
+       const auto& eb_level = is.getLevel(geom.back());
+       eb_level.write_to_chkpt_file("geom_chk", amrex::EB2::ExtendDomainFace(), amrex::EB2::max_grid_size);
+    }
 }

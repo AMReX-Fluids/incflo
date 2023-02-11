@@ -11,7 +11,6 @@ target_sources(incflo
    incflo_correct_small_cells.cpp
    incflo_tagging.cpp
    incflo_regrid.cpp
-   incflo_vol_wgt_sum.cpp
    main.cpp
    )
 
