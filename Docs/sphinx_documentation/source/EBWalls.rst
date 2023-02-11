@@ -9,16 +9,21 @@
 Constructing Embedded Boundaries in incflo
 ============================================
 
-MincfloFiX uses AMReX's constructive solid geometry framework defined in the namespace
-:cpp:`amrex::EB2`. See the `AMReX EB documentation`_ for more details. These are
-defined in ``incflo/src/embedded_boundaries ``.
+Incflo uses AMReX's constructive solid geometry framework defined in the namespace :cpp:`amrex::EB2`. 
+See the `AMReX EB documentation <https://amrex-codes.github.io/amrex/docs_html/EB_Chapter.html>`_ for more details.
+
+Alternatively, the constructive solid geometry can also be constructed using OpenSCAD's CSG file format by installing the :cpp:`csg-eb` library.
+Incflo must be built with the flag :cpp:`USE_CSG=TRUE` and :cpp:`CSGEB_HOME` must be set to where the library was installed.
+See `MFIX's CSG-EB repository <https://mfix.netl.doe.gov/gitlab/exa/csg-eb>`_ for more details about this format.
+
+These are defined in :cpp:`incflo/src/embedded_boundaries`.
 
 How incflo Constructs the EB Geometry
 ---------------------------------------
 
 Once a geometry is selected by :cpp:`incflo::make_eb_geometry`, the procedure is
 the same for (almost) all geometries. Also see the `AMReX geometry
-documentation`_ for information on how to construct new geometries:
+documentation <https://amrex-codes.github.io/amrex/docs_html/EB_Chapter.html>`_ for information on how to construct new geometries:
 
 1. Construct an implicit function representing the geometry (using the language
    of constructive solid geometry). For example
@@ -35,7 +40,7 @@ documentation`_ for information on how to construct new geometries:
    construct the level-set function).
 
 incflo's EB Data Structures
--------------------------
+----------------------------
 
 The :cpp:`incflo` class stores the following EB data:
 

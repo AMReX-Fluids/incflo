@@ -14,3 +14,7 @@ endif
 CEXE_sources += writeEBsurface.cpp
 
 CEXE_headers += eb_if.H
+
+ifeq ($(USE_CSG),TRUE)
+	CEXE_sources += eb_csg.cpp
+endif
