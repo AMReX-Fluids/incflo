@@ -9,13 +9,17 @@ target_sources(incflo
    eb_cyl_tuscan.cpp
    eb_regular.cpp
    eb_sphere.cpp
-   eb_spherecube.cpp
-   eb_tuscan.cpp
-   eb_twocylinders.cpp
    eb_chkptfile.cpp
-   writeEBsurface.cpp
-   eb_if.H
-   )
+   eb_if.H)
+
+if (INCFLO_DIM EQUAL 3)
+   target_sources(incflo
+      PRIVATE
+      eb_spherecube.cpp
+      eb_tuscan.cpp
+      eb_twocylinders.cpp
+      writeEBsurface.cpp
+)
 
 if (INCFLO_CSG)
    target_sources(incflo PRIVATE eb_csg.cpp)
