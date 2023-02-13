@@ -618,9 +618,15 @@ void incflo::ApplyPredictor (bool incremental_projection)
         } // lev
     } // not constant density
 
-    VisMF::Write(m_leveldata[0]->density,"dens");
-    VisMF::Write(density_nph_neweb[0],"rnph");
-    VisMF::Write(m_leveldata[0]->velocity,"vel");
+    // VisMF::Write(m_leveldata[0]->density,"dens");
+    // VisMF::Write(density_nph_neweb[0],"rnph");
+    // VisMF::Write(m_leveldata[0]->velocity,"vel");
+
+
+    // WritePlotFile();
+    // static int count = 0;
+    // count++;
+    //if (count > 0) Abort();
 
     // **********************************************************************************************
     //
