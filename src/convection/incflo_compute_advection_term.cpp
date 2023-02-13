@@ -661,10 +661,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         dvdt_tmp.FillBoundary(geom[lev].periodicity());
         drdt_tmp.FillBoundary(geom[lev].periodicity());
         dtdt_tmp.FillBoundary(geom[lev].periodicity());
-
+        get_velocity_eb()[lev]->FillBoundary(geom[lev].periodicity());
 //fixme
-        VisMF::Write(dvdt_tmp,"vtmp");
-        VisMF::Write(drdt_tmp,"rtmp");
+        // VisMF::Write(dvdt_tmp,"vtmp");
+        // VisMF::Write(drdt_tmp,"rtmp");
 
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
