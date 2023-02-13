@@ -290,7 +290,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         int joff = map[1][itr(i,j,k,i_nbor)];
                         int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
 
-                        if ( Box(scratch).contains(IntVect(i+ioff,j+joff,k+koff)) )
+                        if ( Box(scratch).contains(IntVect(AMREX_D_DECL(i+ioff,j+joff,k+koff))) )
                         {
                             // amrex::Print() << "Cell  " << IntVect(i,j)
                             //                << " newly uncovered, correct neighbor at "
