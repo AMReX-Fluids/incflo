@@ -125,13 +125,12 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         for (int n = 0; n < ncomp; n++){
             soln_hat(i,j,k,n) = U_in(i,j,k,n);
 
-	    if ((i==0 || i==1) && j == 5)
-	    amrex::Print() << "U-star: " << Dim3{i,j,k} << soln_hat(i,j,k,n) << std::endl; 
+	    // if ((i==0 || i==1) && j == 5)
+	    // amrex::Print() << "U-star: " << Dim3{i,j,k} << soln_hat(i,j,k,n) << std::endl; 
 
-	    if ( (i==-1) && j == 4)
-		amrex::Print() << "soln hat: " << Dim3{i,j,k} << soln_hat(i,j,k,n)
-			       << std::endl; 
-
+	    // if ( (i==-1) && j == 4)
+	    // 	amrex::Print() << "soln hat: " << Dim3{i,j,k} << soln_hat(i,j,k,n)
+	    // 		       << std::endl; 
 	}
 	
         if ( ( vfrac_new(i,j,k) > 0.0 || vfrac_old(i,j,k) > 0.0 )
@@ -142,11 +141,11 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             for (int n = 0; n < ncomp; n++){
                 soln_hat(i,j,k,n) = U_in(i,j,k,n) * alpha(i,j,k,0) * vfrac_old(i,j,k);
 
-		if ( (i==-1) && j == 4 && n==1)
-		    amrex::Print() << "soln hatA: " << Dim3{i,j,k} << soln_hat(i,j,k,n)
-				   << ", "<<U_in(i,j,k,n)
-				   << ", "<<alpha(i,j,k,0)
-				   << std::endl; 
+		// if ( (i==-1) && j == 4 && n==1)
+		//     amrex::Print() << "soln hatA: " << Dim3{i,j,k} << soln_hat(i,j,k,n)
+		// 		   << ", "<<U_in(i,j,k,n)
+		// 		   << ", "<<alpha(i,j,k,0)
+		// 		   << std::endl; 
 	    }
 	    
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
@@ -161,16 +160,15 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     for (int n = 0; n < ncomp; n++){
                         soln_hat(i,j,k,n) += U_in(r,s,t,n) * alpha(i,j,k,1) * vfrac_old(r,s,t) / nrs(r,s,t);
 
-			if ( (i==-1) && j == 4  && n==1)
-			    amrex::Print() << "soln hat nb: " << Dim3{i,j,k}
-					   << " " <<Dim3{r,s,t}
-					   << ", "<<U_in(r,s,t,n)
-					   << ", "<<alpha(i,j,k,1)
-					   << ", "<<vfrac_old(r,s,t)
-					   << ", "<<nrs(r,s,t)
-					   << ", "<<soln_hat(i,j,k,n)
-					   << std::endl;
-			
+			// if ( (i==-1) && j == 4  && n==1)
+			//     amrex::Print() << "soln hat nb: " << Dim3{i,j,k}
+			// 		   << " " <<Dim3{r,s,t}
+			// 		   << ", "<<U_in(r,s,t,n)
+			// 		   << ", "<<alpha(i,j,k,1)
+			// 		   << ", "<<vfrac_old(r,s,t)
+			// 		   << ", "<<nrs(r,s,t)
+			// 		   << ", "<<soln_hat(i,j,k,n)
+			// 		   << std::endl;			
 		    }
 
                 }
@@ -183,13 +181,12 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                 soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
 
 	    //fixme
-		if ( (i==0 || i==1) && j == 5  && n==1)
-		amrex::Print() << "U^(n+1): " << Dim3{i,j,k} << soln_hat(i,j,k,n)
-			       <<" nbhd vol "<<nbhd_vol(i,j,k)<< std::endl; 
-		if ( (i==-1) && j == 4  && n==1)
-		    amrex::Print() << "soln hat2: " << Dim3{i,j,k} << soln_hat(i,j,k,n)
-				   << std::endl; 
-
+		// if ( (i==0 || i==1) && j == 5  && n==1)
+		// amrex::Print() << "U^(n+1): " << Dim3{i,j,k} << soln_hat(i,j,k,n)
+		// 	       <<" nbhd vol "<<nbhd_vol(i,j,k)<< std::endl; 
+		// if ( (i==-1) && j == 4  && n==1)
+		//     amrex::Print() << "soln hat2: " << Dim3{i,j,k} << soln_hat(i,j,k,n)
+		// 		   << std::endl; 
 	    }
 	    // for (int n = 0; n < ncomp; n++){
             // if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.0 || j == 12)
@@ -323,12 +320,12 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     if (bx.contains(IntVect(AMREX_D_DECL(i,j,k))))
                     {
                         Real update = soln_hat(i,j,k,n);
-			if ( (i==0 || i==1) && j == 5)
-			    amrex::Print() << "U^(n+1), add self: " << Dim3{i,j,k} << U_out(i,j,k,n)
-					   <<", "<< alpha(i,j,k,0)
-					   <<", "<< nrs(i,j,k)
-					   <<", "<< update
-					   << std::endl; 
+			// if ( (i==0 || i==1) && j == 5)
+			//     amrex::Print() << "U^(n+1), add self: " << Dim3{i,j,k} << U_out(i,j,k,n)
+			// 		   <<", "<< alpha(i,j,k,0)
+			// 		   <<", "<< nrs(i,j,k)
+			// 		   <<", "<< update
+			// 		   << std::endl; 
 
                         // AMREX_D_TERM(update += lim_slope[0] * (ccent(i,j,k,0)-cent_hat(i,j,k,0));,
                         //              update += lim_slope[1] * (ccent(i,j,k,1)-cent_hat(i,j,k,1));,
@@ -359,10 +356,10 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                             //              update += lim_slope[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2) + static_cast<Real>(t-k)););
                             amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),alpha(i,j,k,1)*update);
 
-			    if ( (r==0 || r==1) && s == 5)
-				amrex::Print() << "U^(n+1), add nb: " << Dim3{r,s,t}
-					       <<" from "<<Dim3{i,j,k}<< U_out(r,s,t,n)
-					   << std::endl; 
+			    // if ( (r==0 || r==1) && s == 5)
+			    // 	amrex::Print() << "U^(n+1), add nb: " << Dim3{r,s,t}
+			    // 		       <<" from "<<Dim3{i,j,k}<< U_out(r,s,t,n)
+			    // 		   << std::endl; 
 
                         } // if bx contains
                     } // i_nbor
@@ -380,8 +377,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             Real denom = 1. / (nrs(i,j,k) + 1.e-40);
             U_out(i,j,k,n) *= denom;
 
-	    if ( (i==0 || i==1) && j == 5)
-		amrex::Print() << "Final U: " << Dim3{i,j,k} << U_out(i,j,k,n) << std::endl; 
+	    // if ( (i==0 || i==1) && j == 5)
+	    // 	amrex::Print() << "Final U: " << Dim3{i,j,k} << U_out(i,j,k,n) << std::endl; 
 	    
             // if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1. && nrs(i,j,k) == 1){
             //     U_out(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k);
