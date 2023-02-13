@@ -12,15 +12,15 @@
 using namespace amrex;
 
 namespace {
-	// For Normal Merging, we assume that in 2D a cell will need at most 3 neighbors to
-	//   merge with. We use the first component of this for the number of neighbors, so
-	//   4 comps needed.
-	// For Central Merging, we include all surrounding cells, so in 2D, 9 comps needed.
-	// For Moving EB, we have to allow for more then just Normal Merging (due to covering/
-	//   uncovering reciprocity), so just allow for the max for now.
+        // For Normal Merging, we assume that in 2D a cell will need at most 3 neighbors to
+        //   merge with. We use the first component of this for the number of neighbors, so
+        //   4 comps needed.
+        // For Central Merging, we include all surrounding cells, so in 2D, 9 comps needed.
+        // For Moving EB, we have to allow for more then just Normal Merging (due to covering/
+        //   uncovering reciprocity), so just allow for the max for now.
 //
-	// We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
-	//    use the first component of this for the number of neighbors
+        // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
+        //    use the first component of this for the number of neighbors
     constexpr int itracker_comp = (AMREX_SPACEDIM < 3 ) ? 9 : 8;
 }
 
@@ -28,76 +28,84 @@ namespace {
 // the value of it's merging neighbor
 void
 Redistribution::FillNewlyUncovered ( MultiFab& mf,
-				     EBFArrayBoxFactory const& ebfact_old,
-				     EBFArrayBoxFactory const& ebfact_new,
-				     MultiFab const& vel_eb,
-				     Geometry& geom,
-				     Real target_volfrac)
+                                     EBFArrayBoxFactory const& ebfact_old,
+                                     EBFArrayBoxFactory const& ebfact_new,
+                                     MultiFab const& vel_eb,
+                                     Geometry& geom,
+                                     Real target_volfrac)
 {
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     for (MFIter mfi(mf,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
-	Box const& bx = mfi.tilebox();
-	
-        AMREX_D_TERM(Array4<Real const> apx_old = ebfact_old.getAreaFrac()[0]->const_array(mfi);,
-                     Array4<Real const> apy_old = ebfact_old.getAreaFrac()[1]->const_array(mfi);,
-                     Array4<Real const> apz_old = ebfact_old.getAreaFrac()[2]->const_array(mfi););
-        AMREX_D_TERM(Array4<Real const> apx_new = ebfact_new.getAreaFrac()[0]->const_array(mfi);,
-                     Array4<Real const> apy_new = ebfact_new.getAreaFrac()[1]->const_array(mfi);,
-                     Array4<Real const> apz_new = ebfact_new.getAreaFrac()[2]->const_array(mfi););
-        Array4<Real const> vfrac_old = ebfact_old.getVolFrac().const_array(mfi);
-        Array4<Real const> vfrac_new = ebfact_new.getVolFrac().const_array(mfi);
-	Array4<Real const> vel_eb_arr= vel_eb.const_array(mfi);
-	Array4<Real> U_in = mf.array(mfi);
+        Box const& bx = mfi.tilebox();
+
+        EBCellFlagFab const& flagfab = ebfact_new.getMultiEBCellFlagFab()[mfi];
+        if ( flagfab.getType(bx) == FabType::singlevalued)
+        {
+            AMREX_D_TERM(Array4<Real const> apx_old = ebfact_old.getAreaFrac()[0]->const_array(mfi);,
+                         Array4<Real const> apy_old = ebfact_old.getAreaFrac()[1]->const_array(mfi);,
+                         Array4<Real const> apz_old = ebfact_old.getAreaFrac()[2]->const_array(mfi););
+            AMREX_D_TERM(Array4<Real const> apx_new = ebfact_new.getAreaFrac()[0]->const_array(mfi);,
+                         Array4<Real const> apy_new = ebfact_new.getAreaFrac()[1]->const_array(mfi);,
+                         Array4<Real const> apz_new = ebfact_new.getAreaFrac()[2]->const_array(mfi););
+            Array4<Real const> vfrac_old = ebfact_old.getVolFrac().const_array(mfi);
+            Array4<Real const> vfrac_new = ebfact_new.getVolFrac().const_array(mfi);
+            Array4<Real const> vel_eb_arr= vel_eb.const_array(mfi);
+            Array4<Real> U_in = mf.array(mfi);
 
 
 // FIXME - how big does this box really need to be?
-	// MakeITracker has 4 hard-coded into it, but here we would otherwise only need
-	// 1 ghost cell
-	Box const& gbx = grow(bx,4);
-	
-	IArrayBox itracker(gbx,itracker_comp,The_Async_Arena());
-	Array4<int> itr = itracker.array();
-	
-	MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
-		         AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
-		     itr, geom, target_volfrac, vel_eb_arr);
+            // MakeITracker has 4 hard-coded into it, but here we would otherwise only need
+            // 1 ghost cell
+            Box const& gbx = grow(bx,4);
 
-	auto map = getCellMap();
-	    
-	// Fill only valid region here. This will require FillPatch later...
-	amrex::ParallelFor(Box(bx), mf.nComp(),
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-	{
-	    // Check to see if this cell was covered at time n, but uncovered at n+1
-	    if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
-	    { 
-		for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
-		{
-		    int ioff = map[0][itr(i,j,k,i_nbor)];
-		    int joff = map[1][itr(i,j,k,i_nbor)];
-		    int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
+            IArrayBox itracker(gbx,itracker_comp,The_Async_Arena());
+            Array4<int> itr = itracker.array();
 
-                    // Take the old value of my neighbor as my own
-		    // NOTE this is only right for the case that the newly
-		    // uncovered cell has only one other cell in it's neghborhood.
-		    U_in(i,j,k,n) = U_in(i+ioff,j+joff,k+koff,n);
-		    
-		    // FIXME -- correct fix of parallel OOB error here is that
-		    // we check if we fall in the box...
-		    amrex::Print() << "Cell  " << IntVect(i,j)
-				   << " newly uncovered, fill with value of neighbor at "
-				   << IntVect(i+ioff,j+joff)
-				   <<": "<<U_in(i,j,k,n)<< std::endl;
-		}
-	    }
-	});
+            MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+                             AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
+                         itr, geom, target_volfrac, vel_eb_arr);
+
+            auto map = getCellMap();
+
+            // Fill only valid region here. This will require FillPatch later...
+            amrex::ParallelFor(Box(bx), mf.nComp(),
+            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                // Check to see if this cell was covered at time n, but uncovered at n+1
+                if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
+                {
+                    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+                    {
+                        int ioff = map[0][itr(i,j,k,i_nbor)];
+                        int joff = map[1][itr(i,j,k,i_nbor)];
+                        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
+
+                        // Take the old value of my neighbor as my own
+                        // NOTE this is only right for the case that the newly
+                        // uncovered cell has only one other cell in it's neghborhood.
+                        U_in(i,j,k,n) = U_in(i+ioff,j+joff,k+koff,n);
+
+                        // FIXME -- correct fix of parallel OOB error here is that
+                        // we check if we fall in the box...
+                        amrex::Print() << "Cell  " << IntVect(i,j)
+                                       << " newly uncovered, fill with value of neighbor at "
+                                       << IntVect(i+ioff,j+joff)
+                                       <<": "<<U_in(i,j,k,n)<< std::endl;
+                    }
+                }
+            });
+        }
+        else if ( !(flagfab.getType(bx) == FabType::regular || flagfab.getType(bx) == FabType::covered) )
+        {
+            Abort("Redistribution::FillNewlyUncovered(): Bad CellFlag type");
+        }
     } //end mfiter
 }
-		       
-		       
+
+
 void Redistribution::Apply ( Box const& bx, int ncomp,
                              Array4<Real      > const& dUdt_out,
                              Array4<Real      > const& dUdt_in,
@@ -149,7 +157,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         Box const& bxg4 = grow(bx,4);
 
         // We use the first component of this for the number of neighbors, and later
-	// components identify the neighbors (utilizing the CellMap)
+        // components identify the neighbors (utilizing the CellMap)
         IArrayBox itracker(bxg4,itracker_comp,The_Async_Arena());
 
         FArrayBox nrs_fab(bxg3,1,The_Async_Arena());
@@ -237,11 +245,11 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
                 {
                     // For SRD without slopes, shouldn't matter what's in here because
-		    // it gets mult by V^n which is zero
-		    // But, we need this to be consistent with how we define the update
-		    // (dUdt_out) below and in the application code
-		    // TODO: Need to create Redistribute::FillNU(), that utilizes itracker
-		    // to put the desired U_in the NU cells at the old time value...
+                    // it gets mult by V^n which is zero
+                    // But, we need this to be consistent with how we define the update
+                    // (dUdt_out) below and in the application code
+                    // TODO: Need to create Redistribute::FillNU(), that utilizes itracker
+                    // to put the desired U_in the NU cells at the old time value...
                     scratch(i,j,k,n) = U_in(i,j,k,n);
                     //scratch(i,j,k,n) = 0.0;
                 }
@@ -267,6 +275,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 }
             });
 
+            // FIXME need to think about how big we really need this box to be
             amrex::ParallelFor(Box(scratch), ncomp,
             [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
@@ -279,18 +288,19 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     {
                         int ioff = map[0][itr(i,j,k,i_nbor)];
                         int joff = map[1][itr(i,j,k,i_nbor)];
-			int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
+                        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
 
-			// FIXME -- correct fix of parallel OOB error here is that
-			// we check if we fall in the box...
-                        // amrex::Print() << "Cell  " << IntVect(i,j)
-                        //                << " newly uncovered, correct neighbor at "
-                        //                << IntVect(i+ioff,j+joff) << std::endl;
+                        if ( Box(scratch).contains(IntVect(i+ioff,j+joff,k+koff)) )
+                        {
+                            // amrex::Print() << "Cell  " << IntVect(i,j)
+                            //                << " newly uncovered, correct neighbor at "
+                            //                << IntVect(i+ioff,j+joff) << std::endl;
 
-                        Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k);
-                        // NOTE this correction is only right for the case that the newly
-                        // uncovered cell has only one other cell in it's neghborhood.
-                        scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol;
+                            Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k);
+                            // NOTE this correction is only right for the case that the newly
+                            // uncovered cell has only one other cell in it's neghborhood.
+                            scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol;
+                        }
                     }
                 }
 
