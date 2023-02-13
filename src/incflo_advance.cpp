@@ -42,7 +42,7 @@ void incflo::Advance()
 
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
-	// Note: fillpatch pulls any EBFactory info from the coarse level
+        // Note: fillpatch pulls any EBFactory info from the coarse level
         fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
         fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
         if (m_advect_tracer) {
@@ -81,47 +81,48 @@ void incflo::Advance()
        }
     }
 #endif
-    
+
+
 #ifdef INCFLO_USE_MOVING_EB
     for (int lev = 0; lev <= finest_level; lev++)
     {
-	// FIXME - need some way to make sure target volfrac is consistent between
-	// here and the call in redistribute convective term
-	Real target_volfrac = 0.5;
-	// FOR varible density, we have to take the NU cell's merging neighbor
-	// Needs one filled ghost cell. Fills only valid region
-	Redistribution::FillNewlyUncovered(m_leveldata[lev]->velocity_o,
-					   OldEBFactory(lev), EBFactory(lev),
-					   *get_velocity_eb()[lev],
-					   geom[lev], target_volfrac);
+        // FIXME - need some way to make sure target volfrac is consistent between
+        // here and the call in redistribute convective term
+        Real target_volfrac = 0.5;
+        // FOR varible density, we have to take the NU cell's merging neighbor
+        // Needs one filled ghost cell. Fills only valid region
+        Redistribution::FillNewlyUncovered(m_leveldata[lev]->velocity_o,
+                                           OldEBFactory(lev), EBFactory(lev),
+                                           *get_velocity_eb()[lev],
+                                           geom[lev], target_volfrac);
         fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
-	// Note: fillpatch pulls any EBFactory info from the coarse level, so
+        // Note: fillpatch pulls any EBFactory info from the coarse level, so
         // as long as EB stays only on finest level, we're fine, but this probably
-	// won't work otherwise
+        // won't work otherwise
 
-	//FIXME
-	// Update in ApplyPredictor assumes new vel is the same as old vel
-	// Should think about whether to change ApplyPredictor, do this or
-	// do a copy of vel_old
-	Redistribution::FillNewlyUncovered(m_leveldata[lev]->velocity,
-					   OldEBFactory(lev), EBFactory(lev),
-					   *get_velocity_eb()[lev],
-					   geom[lev], target_volfrac);
+        //FIXME
+        // Update in ApplyPredictor assumes new vel is the same as old vel
+        // Should think about whether to change ApplyPredictor, do this or
+        // do a copy of vel_old
+        Redistribution::FillNewlyUncovered(m_leveldata[lev]->velocity,
+                                           OldEBFactory(lev), EBFactory(lev),
+                                           *get_velocity_eb()[lev],
+                                           geom[lev], target_volfrac);
         fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity, ng);
 
-	Redistribution::FillNewlyUncovered(m_leveldata[lev]->density_o,
-					   OldEBFactory(lev), EBFactory(lev),
-					   *get_velocity_eb()[lev],
-					   geom[lev], target_volfrac);
+        Redistribution::FillNewlyUncovered(m_leveldata[lev]->density_o,
+                                           OldEBFactory(lev), EBFactory(lev),
+                                           *get_velocity_eb()[lev],
+                                           geom[lev], target_volfrac);
         fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
 
-	if (m_ntrac > 0) {
-	    Redistribution::FillNewlyUncovered(m_leveldata[lev]->tracer_o,
-					       OldEBFactory(lev), EBFactory(lev),
-					       *get_velocity_eb()[lev],
-					       geom[lev], target_volfrac);
-	    fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
-	}
+        if (m_ntrac > 0) {
+            Redistribution::FillNewlyUncovered(m_leveldata[lev]->tracer_o,
+                                               OldEBFactory(lev), EBFactory(lev),
+                                               *get_velocity_eb()[lev],
+                                               geom[lev], target_volfrac);
+            fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
+        }
 
 
 // // Fill cells that were previously covered but become cut cell with the average
@@ -149,11 +150,11 @@ void incflo::Advance()
 
     ApplyPredictor();
 
-	//FIXME
+        //FIXME
     // this will overwrite the previous time plotfile
-    WritePlotFile();
-    static int count=0; count++;
-    if (count>44) Abort();
+    // WritePlotFile();
+    // static int count=0; count++;
+    // if (count>44) Abort();
 
     if (m_advection_type == "MOL") {
         for (int lev = 0; lev <= finest_level; ++lev) {
