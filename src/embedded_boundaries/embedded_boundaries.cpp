@@ -100,7 +100,6 @@ void incflo::MakeEBGeometry(Real cur_time)
 #ifdef INCFLO_USE_MOVING_EB
 void incflo::MakeNewEBGeometry (Real time)
 {
-    // FIXME - Don't we only need to make the EB once, and not for every level like this?
     // Erase old EB
     EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(m_eb_old));
 
