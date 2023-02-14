@@ -208,35 +208,35 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
     // For initialization, we only need one EB, but we need to fill both old and new
     // EBFactory containers.
     m_old_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
-                                         {nghost_eb_basic(),
-                                          nghost_eb_volume(),
-                                          nghost_eb_full()},
+                                          {nghost_eb_basic(),
+                                           nghost_eb_volume(),
+                                           nghost_eb_full()},
                                           EBSupport::full);
 
     m_new_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
-                                         {nghost_eb_basic(),
-                                          nghost_eb_volume(),
-                                          nghost_eb_full()},
+                                          {nghost_eb_basic(),
+                                           nghost_eb_volume(),
+                                           nghost_eb_full()},
                                           EBSupport::full);
 
     m_leveldata[lev].reset(new LevelData(grids[lev], dmap[lev], *m_new_factory[lev],
                                          m_ntrac, nghost_state(),
                                          m_advection_type,
                                          m_diff_type==DiffusionType::Implicit,
-                                           use_tensor_correction,
+                                         use_tensor_correction,
                                          m_advect_tracer));
 #else
     m_factory[lev] = makeEBFabFactory(geom[lev], grids[lev], dmap[lev],
                                       {nghost_eb_basic(),
                                        nghost_eb_volume(),
                                        nghost_eb_full()},
-                                       EBSupport::full);
+                                      EBSupport::full);
 
     m_leveldata[lev].reset(new LevelData(grids[lev], dmap[lev], *m_factory[lev],
                                          m_ntrac, nghost_state(),
                                          m_advection_type,
                                          m_diff_type==DiffusionType::Implicit,
-                                           use_tensor_correction,
+                                         use_tensor_correction,
                                          m_advect_tracer));
 #endif
 

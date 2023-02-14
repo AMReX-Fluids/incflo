@@ -86,7 +86,7 @@ void incflo::MakeEBGeometry(Real cur_time)
                    << " Will build all regular geometry." << std::endl;
         make_eb_regular();
     }
-    amrex::Print() << "Done making the geometry ebfactory.\n" << std::endl;
+    amrex::Print() << "Done making the EB geometry.\n" << std::endl;
 
     if (m_write_geom_chk) {
        const auto& is = amrex::EB2::IndexSpace::top();
@@ -95,8 +95,6 @@ void incflo::MakeEBGeometry(Real cur_time)
     }
 }
 
-// This probably belongs in embedded_boundaries.cpp with MakeGeometry()...
-#ifdef AMREX_USE_EB
 #ifdef INCFLO_USE_MOVING_EB
 void incflo::MakeNewEBGeometry (Real time)
 {
@@ -112,5 +110,5 @@ void incflo::MakeNewEBGeometry (Real time)
     EB2::IndexSpace::push(const_cast<EB2::IndexSpace*>(m_eb_new));
 }
 #endif
-#endif
+
 
