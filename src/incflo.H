@@ -144,6 +144,11 @@ public: // for cuda
                                   amrex::Real time);
 
 #ifdef AMREX_USE_EB
+    void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,
+                                     AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
+                                                  amrex::Vector<amrex::MultiFab const*> const& v_mac,
+                                                  amrex::Vector<amrex::MultiFab const*> const& w_mac));
+
     void redistribute_convective_term (amrex::Box const& bx, amrex::MFIter const& mfi,
                                        amrex::Array4<amrex::Real const> const& vel,       // velocity
                                        amrex::Array4<amrex::Real const> const& rho,       // density
