@@ -208,10 +208,10 @@ void incflo::ApplyCorrector()
         for (int lev = finest_level-1; lev >= 0; --lev) {
 #ifdef AMREX_USE_EB
             amrex::EB_average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
-                                   0, AMREX_SPACEDIM, refRatio(lev));
+                                   0, 1, refRatio(lev));
 #else
             amrex::average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
-                                0, AMREX_SPACEDIM, refRatio(lev));
+                                0, 1, refRatio(lev));
 #endif
         }
     } // not constant density
@@ -324,10 +324,10 @@ void incflo::ApplyCorrector()
             for (int lev = finest_level-1; lev >= 0; --lev) {
 #ifdef AMREX_USE_EB
                 amrex::EB_average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
-                                       0, AMREX_SPACEDIM, refRatio(lev));
+                                       0, m_ntrac, refRatio(lev));
 #else
                 amrex::average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
-                                    0, AMREX_SPACEDIM, refRatio(lev));
+                                    0, m_ntrac, refRatio(lev));
 #endif
             }
         }
