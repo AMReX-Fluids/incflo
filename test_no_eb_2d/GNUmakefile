@@ -4,7 +4,7 @@ TOP = ..
 
 EBASE = incflo
 
-DIM = 3
+DIM = 2
 
 PRECISION  = DOUBLE
 
