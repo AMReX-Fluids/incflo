@@ -124,7 +124,7 @@ Redistribution::MakeITracker ( Box const& bx,
             // Probably don't need target_volfrac to match with general case,
             // only need to put this in one cell???
             normalMerging(i, j, k,
-                          AMREX_D_DECL(apx_old, apy_old, apz_new),
+                          AMREX_D_DECL(apx_old, apy_old, apz_old),
                           vfrac_new, itracker,
                           lev_geom, target_volfrac);
         }
