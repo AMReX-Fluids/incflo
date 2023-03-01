@@ -214,6 +214,17 @@ void incflo::ApplyCorrector()
                 });
             } // mfi
         } // lev
+
+        // Average down solution
+        for (int lev = finest_level-1; lev >= 0; --lev) {
+#ifdef AMREX_USE_EB
+            amrex::EB_average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
+                                   0, AMREX_SPACEDIM, refRatio(lev));
+#else
+            amrex::average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
+                                0, AMREX_SPACEDIM, refRatio(lev));
+#endif
+        }
     } // not constant density
 
     // *************************************************************************************
@@ -307,16 +318,32 @@ void incflo::ApplyCorrector()
     // *************************************************************************************
     // Solve diffusion equation for tracer
     // *************************************************************************************
-    if ( m_advect_tracer &&
-        (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit) )
+    if ( m_advect_tracer )
     {
-        const int ng_diffusion = 1;
-        for (int lev = 0; lev <= finest_level; ++lev)
-            fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
+        if (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit)
+        {
+            const int ng_diffusion = 1;
+            for (int lev = 0; lev <= finest_level; ++lev)
+                fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
 
-        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
-        diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
-    }
+            Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
+            diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
+        }
+        else
+        {
+            // Need to average down tracer since the diffusion solver didn't do it for us.
+            for (int lev = finest_level-1; lev >= 0; --lev) {
+#ifdef AMREX_USE_EB
+                amrex::EB_average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
+                                       0, AMREX_SPACEDIM, refRatio(lev));
+#else
+                amrex::average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
+                                    0, AMREX_SPACEDIM, refRatio(lev));
+#endif
+            }
+        }
+    } // if (m_advect_tracer)
+
 
     // *************************************************************************************
     // Define the forcing terms to use in the final update (using half-time density)

@@ -41,6 +41,9 @@ Redistribution::FillNewlyUncovered ( MultiFab& mf,
     {
 	Box const& bx = mfi.tilebox();
 	
+        EBCellFlagFab const& flagfab = ebfact_new.getMultiEBCellFlagFab()[mfi];
+        if ( flagfab.getType(bx) == FabType::singlevalued)
+        {
         AMREX_D_TERM(Array4<Real const> apx_old = ebfact_old.getAreaFrac()[0]->const_array(mfi);,
                      Array4<Real const> apy_old = ebfact_old.getAreaFrac()[1]->const_array(mfi);,
                      Array4<Real const> apz_old = ebfact_old.getAreaFrac()[2]->const_array(mfi););
@@ -94,6 +97,11 @@ Redistribution::FillNewlyUncovered ( MultiFab& mf,
 		}
 	    }
 	});
+        }
+        else if ( !(flagfab.getType(bx) == FabType::regular || flagfab.getType(bx) == FabType::covered) )
+        {
+            Abort("Redistribution::FillNewlyUncovered(): Bad CellFlag type");
+        }
     } //end mfiter
 }
 		       
@@ -267,6 +275,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 }
             });
 
+            // FIXME need to think about how big we really need this box to be
             amrex::ParallelFor(Box(scratch), ncomp,
             [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
@@ -281,16 +290,17 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         int joff = map[1][itr(i,j,k,i_nbor)];
 			int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
 
-			// FIXME -- correct fix of parallel OOB error here is that
-			// we check if we fall in the box...
-                        // amrex::Print() << "Cell  " << Dim3{i,j,k}
-                        //                << " newly uncovered, correct neighbor at "
-                        //                << Dim3{i+ioff,j+joff,k+koff} << std::endl;
+                        if ( Box(scratch).contains(Dim3{i+ioff,j+joff,k+koff}) )
+                        {
+                            // amrex::Print() << "Cell  " << IntVect(i,j)
+			    //                << " newly uncovered, correct neighbor at "
+			    //                << Dim3{i+ioff,j+joff,k+koff} << std::endl;
 
-                        Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k);
-                        // NOTE this correction is only right for the case that the newly
-                        // uncovered cell has only one other cell in it's neghborhood.
-                        scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol;
+			    Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k+koff);
+			    // NOTE this correction is only right for the case that the newly
+			    // uncovered cell has only one other cell in it's neghborhood.
+			    scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol;
+			}
                     }
                 }
 

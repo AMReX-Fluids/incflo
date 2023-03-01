@@ -332,7 +332,7 @@ void incflo::InitialIterations ()
     {
         if (m_verbose) amrex::Print() << "\n In initial_iterations: iter = " << iter << "\n";
 
-     ApplyPredictor(true);
+        ApplyPredictor(true);
 
         copy_from_old_to_new_velocity();
         copy_from_old_to_new_density();

@@ -49,12 +49,12 @@ Redistribution::getInvCellMap()
 
 void
 Redistribution::normalMerging ( int i, int j, int /*k*/,
-				Array4<Real const> const& apx,
-				Array4<Real const> const& apy,
-				Array4<Real const> const& vfrac,
-				Array4<int> const& itracker,
+                Array4<Real const> const& apx,
+                Array4<Real const> const& apy,
+                Array4<Real const> const& vfrac,
+                Array4<int> const& itracker,
 				Geometry const& geom,
-				Real target_volfrac)
+                Real target_volfrac)
 {
     int debug_verbose = 0;
     //
@@ -230,13 +230,13 @@ Redistribution::normalMerging ( int i, int j, int /*k*/,
 
 void
 Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
-				     Array4<Real const> const& apx,
-				     Array4<Real const> const& apy,
-				     Array4<Real const> const& vfrac,
-				     Array4<Real const> const& vel_eb,
-				     Array4<int> const& itracker,
+                     Array4<Real const> const& apx,
+                     Array4<Real const> const& apy,
+                     Array4<Real const> const& vfrac,
+                     Array4<Real const> const& vel_eb,
+                     Array4<int> const& itracker,
 				     Geometry const& geom,
-				     Real target_volfrac)
+                     Real target_volfrac)
 {
     int debug_verbose = 1;
     //
@@ -302,7 +302,7 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
 
     if ( vx_eq_vy && nx_eq_ny ){
         Print()<<"cell "<<IntVect(i,j)
-               <<"eb_vel  "<< vx <<", "<<vy<<std::endl;
+               <<"eb_vel "<< vx <<", "<<vy<<std::endl;
         Print()<<"eb_norm "<< nx <<", "<<ny<<std::endl;
         Abort("Newly uncovered cell nbhd: Direction to merge not well resolved");
     }
@@ -367,56 +367,94 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
 //
 // Central Merging
 //
+void
+centralMerging ( int i, int j,
+                 Array4<Real const> const& apx,
+                 Array4<Real const> const& apy,
+                 Array4<Real const> const& vfrac,
+                 Array4<int> const& itracker,
+                 Geometry const& lev_geom,
+                 Real target_volfrac)
+{
+    const Box domain = lev_geom.Domain();
+    const auto& is_periodic_x = lev_geom.isPeriodic(0);
+    const auto& is_periodic_y = lev_geom.isPeriodic(1);
+    int k=0, kk=0;
+    Real sum_vol = vfrac(i,j,k);
 
-//            Real sum_vol = vfrac_new(i,j,k);
+    //int label[3][3] = {{1,2,3}, {4,0,5}, {6,7,8}};
+    int label[3][3] = {{1,4,6}, {2,0,7}, {3,5,8}};
+    for(int jj(-1); jj<=1; jj++) {
+        for(int ii(-1); ii<=1; ii++) {
+            if (vfrac(i+ii,j+jj,k+kk) > 0.0)
+            {
+                if ( !(ii==0 && jj==0)
+                     &&(is_periodic_x || (domain.smallEnd(0)<=i+ii && i+ii<=domain.bigEnd(0)))
+                     &&(is_periodic_y || (domain.smallEnd(1)<=j+jj && j+jj<=domain.bigEnd(1))))
+                {
+                    // take all valid interior cells in 3x3 neighborhood centered
+                    // excluding i,j itself
+                    // this includes any newly uncovered cells
+                    itracker(i,j,k,0) += 1;
+                    itracker(i,j,k,itracker(i,j,k,0)) = label[ii+1][jj+1];
+                    sum_vol += vfrac(i+ii,j+jj,k+kk);
 
-//            //int label[3][3] = {{1,2,3}, {4,0,5}, {6,7,8}};
-//         int label[3][3] = {{1,4,6}, {2,0,7}, {3,5,8}};
-//         int kk=0;
-//         for(int jj(-1); jj<=1; jj++) {
-//             for(int ii(-1); ii<=1; ii++) {
-//                 if (flag_new(i,j,k).isConnected(ii,jj,kk))
-//                 {
-//                     if ( !(ii==0 && jj==0)
-//                         &&(is_periodic_x || (domain.smallEnd(0)<=i+ii && i+ii<=domain.bigEnd(0)))
-//                         &&(is_periodic_y || (domain.smallEnd(1)<=j+jj && j+jj<=domain.bigEnd(1))))
-//                     {
-//                         // take all valid interior cells in 3x3 neighborhood centered
-//                         // excluding i,j itself
-//                         // this includes any newly uncovered cells
-//                         itracker(i,j,k,0) += 1;
-//                         itracker(i,j,k,itracker(i,j,k,0)) = label[ii+1][jj+1];
-//                         sum_vol += vfrac_new(i+ii,j+jj,k);
-
-//                         //FIXME -- still need to enfore reciprocity for newly uncovered cells
-// //fixme
-//                         if ( i==16 && j==8 ){
-//                             Print()<<"Including cell ("<<ii<<","<<jj<<"). label: "
-//                                    <<label[ii+1][jj+1]<<std::endl;
-//                         }
-//                     }
-//                 }
-//                 //FIXME - do we really want to try to include newly covered cells here?
-//                 // they can't fully participate in SRD because we don't give them a nbhd...
-//                 else if (flag_old(i,j,k).isConnected(ii,jj,kk))
-//                 {
-//                        // Add newly covered cells to the neighborhood
-//                     if (  (is_periodic_x || (domain.smallEnd(0)<=i+ii && i+ii<=domain.bigEnd(0)))
-//                         &&(is_periodic_y || (domain.smallEnd(1)<=j+jj && j+jj<=domain.bigEnd(1))))
-//                     {
-//                         itracker(i,j,k,0) += 1;
-//                         itracker(i,j,k,itracker(i,j,k,0)) = label[ii+1][jj+1];
-//                         sum_vol += vfrac_new(i+ii,j+jj,k);
-// //fixme
-//                         if ( i==16 && j==8 ){
-//                             Print()<<"Including newly covered cell ("<<ii<<","<<jj<<"). label: "
-//                                    <<label[ii+1][jj+1]<<std::endl;
-//                         }
-//                     }
-//                 }
-//             }
-//         }
+                    //FIXME -- still need to enfore reciprocity for newly uncovered cells
+//fixme
+                    if ( i==16 && j==8 ){
+                        Print()<<"Including cell ("<<ii<<","<<jj<<"). label: "
+                               <<label[ii+1][jj+1]<<std::endl;
+                    }
+                }
+            }
+        }
+    }
 // Add check on sum_vol...
+}
+
+void
+enforceReciprocity(int i, int j, int k, Array4<int> const& itracker)
+{
+    auto map = Redistribution::getCellMap();
+    // Inverse map
+    auto nmap = Redistribution::getInvCellMap();
+
+    // Loop over my neighbors to make sure it's reciprocal, i.e. that my neighbor
+    // include me in thier neighborhood too.
+    for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
+    {
+        int ioff = map[0][itracker(i,j,k,i_nbor)];
+        int joff = map[1][itracker(i,j,k,i_nbor)];
+        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itracker(i,j,k,i_nbor)];
+
+        int ii = i+ioff;
+        int jj = j+joff;
+        int kk = k+koff;
+
+        if ( Box(itracker).contains(Dim3{ii,jj,kk}) )
+        {
+            int nbor = itracker(i,j,k,i_nbor);
+            int me = nmap[nbor];
+            bool found = false;
+
+            // Loop over the neighbor's neighbors to see if I'm already included
+            // If not, add me to the neighbor list.
+            for (int i_nbor2 = 1; i_nbor2 <= itracker(ii,jj,kk,0); i_nbor2++)
+            {
+                if ( itracker(ii,jj,kk,i_nbor2) == me ) {
+                    Print()<<IntVect(i,j)<<" is ALREADY A NEIGHBOR!"<<std::endl;
+                    found = true;
+                    break;
+                }
+            }
+            if ( !found )
+            {
+                itracker(ii,jj,kk,0) += 1;
+                itracker(ii,jj,kk,itracker(ii,jj,kk,0)) = me;
+            }
+        }
+    }
+}
 
 #endif
 /** @} */

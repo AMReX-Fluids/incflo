@@ -184,6 +184,13 @@ void incflo::ReadCheckpointFile()
                                   Geom(lev).isPeriodic()));
     }
 
+#ifdef AMREX_USE_MOVING_EB
+    if ( m_verbose > 1 ) { Print()<<"Making new geometry at time "<<m_cur_time<<std::endl; }
+    // Create new EB geometry at the current time.
+    // MakeNewLevelFromScratch() will build EBFabFactories
+    MakeNewEBGeometry(m_cur_time);
+#endif
+
     for(int lev = 0; lev <= finest_level; ++lev)
     {
         // read in level 'lev' BoxArray from Header

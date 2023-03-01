@@ -285,7 +285,19 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  });
             } // mfi
         } // lev
+
+        // Average down solution
+        for (int lev = finest_level-1; lev >= 0; --lev) {
+#ifdef AMREX_USE_EB
+            amrex::EB_average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
+                                   0, AMREX_SPACEDIM, refRatio(lev));
+#else
+            amrex::average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
+                                0, AMREX_SPACEDIM, refRatio(lev));
+#endif
+        }
     } // not constant density
+
 
     // *************************************************************************************
     // Compute (or if Godunov, re-compute) the tracer forcing terms (forcing for (rho s), not for s)
@@ -372,17 +384,32 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     // Solve diffusion equation for tracer
     // *************************************************************************************
-    if ( m_advect_tracer &&
-        (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit) )
+    if ( m_advect_tracer )
     {
-        const int ng_diffusion = 1;
-        for (int lev = 0; lev <= finest_level; ++lev)
-            fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
+        if (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit)
+        {
+            const int ng_diffusion = 1;
+            for (int lev = 0; lev <= finest_level; ++lev)
+                fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
 
-        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
-        diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
-
+            Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
+            diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
+        }
+        else
+        {
+            // Need to average down tracer since the diffusion solver didn't do it for us.
+            for (int lev = finest_level-1; lev >= 0; --lev) {
+#ifdef AMREX_USE_EB
+                amrex::EB_average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
+                                       0, AMREX_SPACEDIM, refRatio(lev));
+#else
+                amrex::average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
+                                    0, AMREX_SPACEDIM, refRatio(lev));
+#endif
+            }
+        }
     } // if (m_advect_tracer)
+
 
     // *************************************************************************************
     // Define (or if advection_type != "MOL", re-define) the forcing terms, without the viscous terms
@@ -505,7 +532,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 if (m_advect_momentum) {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        if (vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
+                        if (i==16 && j==4)//(vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
+			{
                             Print()<<"vel pieces "<<vel(i,j,k,0)
                                 <<" "<<rho_old(i,j,k)
                                 <<" "<<dvdt(i,j,k,0)
@@ -617,7 +645,15 @@ void incflo::ApplyPredictor (bool incremental_projection)
         } // lev
     } // not constant density
 
-    //VisMF::Write(m_leveldata[0]->density,"dens");
+    // VisMF::Write(m_leveldata[0]->density,"dens");
+    // VisMF::Write(density_nph_neweb[0],"rnph");
+    // VisMF::Write(m_leveldata[0]->velocity,"vel");
+
+
+    // WritePlotFile();
+    // static int count = 0;
+    // count++;
+    //if (count > 0) Abort();
 
     // **********************************************************************************************
     //

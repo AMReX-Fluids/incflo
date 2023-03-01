@@ -16,7 +16,14 @@ void incflo::MakeEBGeometry(Real cur_time)
     ParmParse pp("incflo");
 
     std::string geom_type;
+    std::string csg_file;
     pp.query("geometry", geom_type);
+    pp.query("geometry_filename", csg_file);
+    amrex::Print() << "incflo.geometry_filename: " << csg_file;
+
+#ifndef CSG_EB
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE( csg_file.empty(), "CSG Geometry defined in input deck but solver not built with CSG support!");
+#endif
 
    /******************************************************************************
    *                                                                            *
@@ -80,13 +87,19 @@ void incflo::MakeEBGeometry(Real cur_time)
     {
        make_eb_chkptfile();
     }
+#ifdef CSG_EB
+    else if(!csg_file.empty()) {
+      amrex::Print() << "\n Building geometry from .csg file:  " << csg_file << std::endl;
+      make_eb_csg(csg_file);
+    }
+#endif
     else
     {
     amrex::Print() << "\n No EB geometry declared in inputs => "
                    << " Will build all regular geometry." << std::endl;
         make_eb_regular();
     }
-    amrex::Print() << "Done making the geometry ebfactory.\n" << std::endl;
+    amrex::Print() << "Done making the EB geometry.\n" << std::endl;
 
     if (m_write_geom_chk) {
        const auto& is = amrex::EB2::IndexSpace::top();
@@ -95,12 +108,9 @@ void incflo::MakeEBGeometry(Real cur_time)
     }
 }
 
-// This probably belongs in embedded_boundaries.cpp with MakeGeometry()...
-#ifdef AMREX_USE_EB
 #ifdef INCFLO_USE_MOVING_EB
 void incflo::MakeNewEBGeometry (Real time)
 {
-    // FIXME - Don't we only need to make the EB once, and not for every level like this?
     // Erase old EB
     EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(m_eb_old));
 
@@ -113,5 +123,5 @@ void incflo::MakeNewEBGeometry (Real time)
     EB2::IndexSpace::push(const_cast<EB2::IndexSpace*>(m_eb_new));
 }
 #endif
-#endif
+
 

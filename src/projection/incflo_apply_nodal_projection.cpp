@@ -119,12 +119,17 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
         vel.push_back(&(m_leveldata[lev]->velocity));
         vel[lev]->setBndry(0.0);
         if (!proj_for_small_dt && !incremental) {
+	    Print()<<"Setting inflow velocity..."<<std::endl;
             set_inflow_velocity(lev, time, *vel[lev], 1);
         }
     }
 
     LPInfo info;
     info.setMaxCoarseningLevel(m_nodal_mg_max_coarsening_level);
+
+//fixme
+VisMF::Write(*vel[0],"vp");
+VisMF::Write(sigma[0],"sig");
 
     if (m_constant_density)
     {
@@ -144,6 +149,9 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
           nodal_projector->getLinOp().setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
        }
     }
+
+//FIXME
+VisMF::Write(*get_velocity_eb()[0],"npveb");
 #endif
 
     nodal_projector->project(m_nodal_mg_rtol, m_nodal_mg_atol);
