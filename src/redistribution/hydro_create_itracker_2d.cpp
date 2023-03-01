@@ -49,12 +49,12 @@ Redistribution::getInvCellMap()
 
 void
 Redistribution::normalMerging ( int i, int j, int /*k*/,
-                Array4<Real const> const& apx,
-                Array4<Real const> const& apy,
-                Array4<Real const> const& vfrac,
-                Array4<int> const& itracker,
-				Geometry const& geom,
-                Real target_volfrac)
+                                Array4<Real const> const& apx,
+                                Array4<Real const> const& apy,
+                                Array4<Real const> const& vfrac,
+                                Array4<int> const& itracker,
+                                Geometry const& geom,
+                                Real target_volfrac)
 {
     int debug_verbose = 0;
     //
@@ -230,13 +230,13 @@ Redistribution::normalMerging ( int i, int j, int /*k*/,
 
 void
 Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
-                     Array4<Real const> const& apx,
-                     Array4<Real const> const& apy,
-                     Array4<Real const> const& vfrac,
-                     Array4<Real const> const& vel_eb,
-                     Array4<int> const& itracker,
-				     Geometry const& geom,
-                     Real target_volfrac)
+                                     Array4<Real const> const& apx,
+                                     Array4<Real const> const& apy,
+                                     Array4<Real const> const& vfrac,
+                                     Array4<Real const> const& vel_eb,
+                                     Array4<int> const& itracker,
+                                     Geometry const& geom,
+                                     Real target_volfrac)
 {
     int debug_verbose = 1;
     //
@@ -399,7 +399,6 @@ centralMerging ( int i, int j,
                     itracker(i,j,k,itracker(i,j,k,0)) = label[ii+1][jj+1];
                     sum_vol += vfrac(i+ii,j+jj,k+kk);
 
-                    //FIXME -- still need to enfore reciprocity for newly uncovered cells
 //fixme
                     if ( i==16 && j==8 ){
                         Print()<<"Including cell ("<<ii<<","<<jj<<"). label: "
@@ -410,50 +409,6 @@ centralMerging ( int i, int j,
         }
     }
 // Add check on sum_vol...
-}
-
-void
-enforceReciprocity(int i, int j, int k, Array4<int> const& itracker)
-{
-    auto map = Redistribution::getCellMap();
-    // Inverse map
-    auto nmap = Redistribution::getInvCellMap();
-
-    // Loop over my neighbors to make sure it's reciprocal, i.e. that my neighbor
-    // include me in thier neighborhood too.
-    for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-    {
-        int ioff = map[0][itracker(i,j,k,i_nbor)];
-        int joff = map[1][itracker(i,j,k,i_nbor)];
-        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itracker(i,j,k,i_nbor)];
-
-        int ii = i+ioff;
-        int jj = j+joff;
-        int kk = k+koff;
-
-        if ( Box(itracker).contains(Dim3{ii,jj,kk}) )
-        {
-            int nbor = itracker(i,j,k,i_nbor);
-            int me = nmap[nbor];
-            bool found = false;
-
-            // Loop over the neighbor's neighbors to see if I'm already included
-            // If not, add me to the neighbor list.
-            for (int i_nbor2 = 1; i_nbor2 <= itracker(ii,jj,kk,0); i_nbor2++)
-            {
-                if ( itracker(ii,jj,kk,i_nbor2) == me ) {
-                    Print()<<IntVect(i,j)<<" is ALREADY A NEIGHBOR!"<<std::endl;
-                    found = true;
-                    break;
-                }
-            }
-            if ( !found )
-            {
-                itracker(ii,jj,kk,0) += 1;
-                itracker(ii,jj,kk,itracker(ii,jj,kk,0)) = me;
-            }
-        }
-    }
 }
 
 #endif
