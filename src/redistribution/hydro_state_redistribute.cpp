@@ -114,7 +114,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     // 	}
     // });
 
-    // Define Qhat (from Berger and Guliani)
+    // Define Qhat (from Berger and Guliani) - the weighted solution average 
     // Here we initialize soln_hat to equal U_in on all cells in bxg3 so that
     //      in the event we need to use soln_hat 3 cells out from the bx limits
     //      in a modified slope computation, we have a value of soln_hat to use.
@@ -282,12 +282,16 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     if ( (z_max-z_min) < slope_stencil_min_width ) nz = 2;
 #endif
 
-#if 0
+#if 1
+		    //FIXME - need to think about what to do for new uncovered
+		    // we don't really want a slope from that cell, we want to use it's neighbor's
+		    // polynomial? but how does this work with multiple neighbors...
+		    // Why vfrac_old here??? shouldn't all this polynomial stuff be time n+1???
                     amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> slopes_eb;
                     if (nx*ny*nz == 1)
                         // Compute slope using 3x3x3 stencil
                         slopes_eb = amrex_calc_slopes_extdir_eb(
-                                                    i,j,k,n,soln_hat,cent_hat,vfrac_old,
+                                                    i,j,k,n,soln_hat,cent_hat,vfrac_new,
                                                     AMREX_D_DECL(fcx,fcy,fcz),flag,
                                                     AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
                                                     AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
@@ -299,7 +303,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         // Compute slope using grown stencil (no larger than 5x5x5)
                         slopes_eb = amrex_calc_slopes_extdir_eb_grown(
                                                     i,j,k,n,AMREX_D_DECL(nx,ny,nz),
-                                                    soln_hat,cent_hat,vfrac_old,
+                                                    soln_hat,cent_hat,vfrac_new,
                                                     AMREX_D_DECL(fcx,fcy,fcz),flag,
                                                     AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
                                                     AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
@@ -330,17 +334,17 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 					   <<", "<< update
 					   << std::endl; 
 
-                        // AMREX_D_TERM(update += lim_slope[0] * (ccent(i,j,k,0)-cent_hat(i,j,k,0));,
-                        //              update += lim_slope[1] * (ccent(i,j,k,1)-cent_hat(i,j,k,1));,
-                        //              update += lim_slope[2] * (ccent(i,j,k,2)-cent_hat(i,j,k,2)););
+                        AMREX_D_TERM(update += lim_slope[0] * (ccent(i,j,k,0)-cent_hat(i,j,k,0));,
+                                     update += lim_slope[1] * (ccent(i,j,k,1)-cent_hat(i,j,k,1));,
+                                     update += lim_slope[2] * (ccent(i,j,k,2)-cent_hat(i,j,k,2)););
                         amrex::Gpu::Atomic::Add(&U_out(i,j,k,n),alpha(i,j,k,0)*nrs(i,j,k)*update);
 
-			// if ( (i==0 || i==1) && j == 5)
-			//     amrex::Print() << "U^(n+1), add self: " << IntVect(i,j) << U_out(i,j,k,n)
-			// 		   <<", "<< alpha(i,j,k,0)
-			// 		   <<", "<< nrs(i,j,k)
-			// 		   <<", "<< update
-			// 		   << std::endl; 
+			if ( (i==0 || i==1) && j == 5)
+			    amrex::Print() << "U^(n+1), add self: " << IntVect(i,j) << U_out(i,j,k,n)
+					   <<", "<< alpha(i,j,k,0)
+					   <<", "<< nrs(i,j,k)
+					   <<", "<< update
+					   << std::endl; 
 
                     } // if bx contains
 
@@ -354,9 +358,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         if (bx.contains(IntVect(AMREX_D_DECL(r,s,t))))
                         {
                             Real update = soln_hat(i,j,k,n);
-                            // AMREX_D_TERM(update += lim_slope[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0) + static_cast<Real>(r-i));,
-                            //              update += lim_slope[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1) + static_cast<Real>(s-j));,
-                            //              update += lim_slope[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2) + static_cast<Real>(t-k)););
+                            AMREX_D_TERM(update += lim_slope[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0) + static_cast<Real>(r-i));,
+                                         update += lim_slope[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1) + static_cast<Real>(s-j));,
+                                         update += lim_slope[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2) + static_cast<Real>(t-k)););
                             amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),alpha(i,j,k,1)*update);
 
 			    if ( (r==0 || r==1) && s == 5)
@@ -397,7 +401,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         }
     });
 
-#if 0 
+#if 1
     //
     // This tests whether the redistribution procedure was conservative --
     //      only use if bx is the whole domain
@@ -421,7 +425,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         if (std::abs(sum1-sum2) > 1.e-8 * sum1 && std::abs(sum1-sum2) > 1.e-8)
         {
            printf("SUMS DO NOT MATCH IN STATE REDIST : %f %f ",sum1,sum2);
-           amrex::Abort();
+           //amrex::Abort();
         }
       }
     }
