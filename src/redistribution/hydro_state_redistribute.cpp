@@ -399,7 +399,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         }
     });
 
-#if 1
+#if 0
     //
     // This tests whether the redistribution procedure was conservative --
     //      only use if bx is the whole domain
@@ -418,12 +418,12 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         for (int i = bx.smallEnd(0); i <= domain.bigEnd(0); i++)
         {
             sum1 += vfrac_old(i,j,k)*U_in(i,j,k,n);
-            sum2 += vfrac_old(i,j,k)*U_out(i,j,k,n);
+            sum2 += vfrac_new(i,j,k)*U_out(i,j,k,n);
         }
         if (std::abs(sum1-sum2) > 1.e-8 * sum1 && std::abs(sum1-sum2) > 1.e-8)
         {
            printf("SUMS DO NOT MATCH IN STATE REDIST : %f %f ",sum1,sum2);
-           //amrex::Abort();
+           amrex::Abort();
         }
       }
     }
