@@ -32,13 +32,15 @@ namespace Redistribution {
 			       amrex::MultiFab const& vel_eb,
 			       amrex::Geometry& geom,
 			       amrex::Real target_volfrac);
-    
+
+    // FIXME - probably would benefit from passing ebfact instead of all the pieces...
     void Apply ( amrex::Box const& bx, int ncomp,
                  amrex::Array4<amrex::Real>       const& dUdt_out,
                  amrex::Array4<amrex::Real>       const& dUdt_in,
                  amrex::Array4<amrex::Real const> const& U_in,
                  amrex::Array4<amrex::Real> const& scratch,
-                 amrex::Array4<amrex::EBCellFlag const> const& flag,
+                 amrex::Array4<amrex::EBCellFlag const> const& flag_old,
+		 amrex::Array4<amrex::EBCellFlag const> const& flag_new,
                  AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx_old,
                               amrex::Array4<amrex::Real const> const& apy_old,
                               amrex::Array4<amrex::Real const> const& apz_old),
@@ -134,6 +136,7 @@ namespace Redistribution {
     //  //       vel_eb, bnorm, barea);
     // }
 
+    // FIXME? This initial one is always stationary right? then we can remove a vfrac...
     void ApplyToInitialData ( amrex::Box const& bx, int ncomp,
                               amrex::Array4<amrex::Real                  > const& U_out,
                               amrex::Array4<amrex::Real                  > const& U_in,
@@ -155,7 +158,7 @@ namespace Redistribution {
     void StateRedistribute ( amrex::Box const& bx, int ncomp,
                              amrex::Array4<amrex::Real> const& dUdt_out,
                              amrex::Array4<amrex::Real> const& dUdt_in,
-                             amrex::Array4<amrex::EBCellFlag const> const& flag,
+			     amrex::Array4<amrex::EBCellFlag const> const& flag_new,
                              amrex::Array4<amrex::Real const> const& vfrac_old,
                              amrex::Array4<amrex::Real const> const& vfrac_new,
                              AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
@@ -186,7 +189,6 @@ namespace Redistribution {
                         amrex::Array4<amrex::Real const> const& vel_eb = {});
 
     void MakeStateRedistUtils ( amrex::Box const& bx,
-                                amrex::Array4<amrex::EBCellFlag const> const& flag,
                                 amrex::Array4<amrex::Real const> const& vfrac_old,
                                 amrex::Array4<amrex::Real const> const& vfrac_new,
                                 amrex::Array4<amrex::Real const> const& ccent,

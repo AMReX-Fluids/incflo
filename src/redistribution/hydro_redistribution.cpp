@@ -111,7 +111,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              Array4<Real      > const& dUdt_in,
                              Array4<Real const> const& U_in,
                              Array4<Real> const& scratch,
-                             Array4<EBCellFlag const> const& flag,
+                             Array4<EBCellFlag const> const& flag_old,
+			     Array4<EBCellFlag const> const& flag_new,
                              AMREX_D_DECL(Array4<Real const> const& apx_old,
                                           Array4<Real const> const& apy_old,
                                           Array4<Real const> const& apz_old),
@@ -147,7 +148,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     if (redistribution_type == "FluxRedist")
     {
         int icomp = 0;
-        apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp, flag, vfrac_old, lev_geom);
+        apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp,
+				   flag_old, vfrac_old, lev_geom);
 
     } else if (redistribution_type == "StateRedist") {
 
@@ -210,7 +212,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
         amrex::Print() << "Start State Redistribution" << std::endl;
 
-        MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+        MakeStateRedistUtils(bx, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                              lev_geom, target_volfrac);
 
         if ( !vel_eb )
@@ -263,7 +265,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                     scratch(i,j,k,n) = 0.0;
                     eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
-                                                flag,vfrac_old,bnorm,barea,dxinv);
+                                                flag_old,vfrac_old,bnorm,barea,dxinv);
 
                     Real delta_divU = delta_vol - scratch(i,j,k,n);
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
@@ -312,7 +314,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             });
         }
 
-        StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac_old, vfrac_new,
+        StateRedistribute(bx, ncomp, dUdt_out, scratch, flag_new, vfrac_old, vfrac_new,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
                           itr_const, nrs_const, alpha_const, nbhd_vol_const,
                           cent_hat_const, lev_geom, srd_max_order);
@@ -408,11 +410,11 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,4,The_Async_Arena());
+    IArrayBox itracker(bxg4,itracker_comp,The_Async_Arena());
 #else
     // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,8,The_Async_Arena());
+    IArrayBox itracker(bxg4,itracker_comp,The_Async_Arena());
 #endif
     FArrayBox nrs_fab(bxg3,1,The_Async_Arena());
     FArrayBox alpha_fab(bxg3,2,The_Async_Arena());
@@ -449,7 +451,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                  itr, lev_geom, target_volfrac);
 
 
-    MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+    MakeStateRedistUtils(bx, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                          lev_geom, target_volfrac);
 
 
