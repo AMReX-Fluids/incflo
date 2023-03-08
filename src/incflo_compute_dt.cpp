@@ -169,8 +169,14 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
 
         forc_cfl = std::max(forc_cfl, forc_lev);
         conv_cfl = std::max(conv_cfl, conv_lev);
-        diff_cfl = std::max(diff_cfl, diff_lev*Real(2.0)*(dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1]+
-                                                       dxinv[2]*dxinv[2]));
+
+#if (AMREX_SPACEDIM == 2)
+        Real dxinv_norm = dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1];
+#else
+        Real dxinv_norm = dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1]+dxinv[2]*dxinv[2];
+#endif
+
+        diff_cfl = std::max(diff_cfl, diff_lev*Real(2.0)*dxinv_norm);
     }
 
     Real cd_cfl;
