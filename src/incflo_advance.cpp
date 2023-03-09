@@ -124,25 +124,6 @@ void incflo::Advance()
             fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
         }
 
-
-// // Fill cells that were previously covered but become cut cell with the average
-        // // of it's neighbors for now. (Later we want to use it's SRD merging nbhd)
-        // // FIXME - Not sure we need to do the new MFs, maybe could get by with just the olds
-        // EB_fill_uncovered(lev, m_leveldata[lev]->velocity  , m_leveldata[lev]->velocity  );
-        // EB_fill_uncovered(lev, m_leveldata[lev]->velocity_o, m_leveldata[lev]->velocity_o);
-
-        // EB_fill_uncovered(lev, m_leveldata[lev]->density   , m_leveldata[lev]->density   );
-        // EB_fill_uncovered(lev, m_leveldata[lev]->density_o , m_leveldata[lev]->density_o );
-
-        // if (m_ntrac > 0) {
-        //     EB_fill_uncovered(lev, m_leveldata[lev]->tracer   , m_leveldata[lev]->tracer  );
-        //     EB_fill_uncovered(lev, m_leveldata[lev]->tracer_o , m_leveldata[lev]->tracer_o);
-        // }
-
-        //FIXME - will need to be more careful here when adding diffusion since
-        // divtau hasn't been computed yet. Likely want to do this after diffusion solve.
-        m_leveldata[lev]->divtau_o.setVal(0.0);
-
 // FIXME will we also need to worry about all the pieces of U*, forces, etc???
     }
 #endif

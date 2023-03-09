@@ -425,11 +425,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     for (int lev = 0; lev <= finest_level; lev++)
     {
-        // FIXME
-        // Something above in the diffusion routines sets divtau EB covered to 1e40
-        // For now, just ignore
-        m_leveldata[lev]->divtau_o.setVal(0.0);
-
         auto& ld = *m_leveldata[lev];
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
