@@ -131,12 +131,13 @@ Redistribution::MakeITracker ( Box const& bx,
     });
 
 
-#if 0
+#if 1
     amrex::Print() << "\nInitial Cell Merging" << std::endl;
 
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+        if (k==8){
         if (itracker(i,j,k) > 0)
         {
             amrex::Print() << "Cell " << Dim3{i,j,k} << " is merged with: ";
@@ -157,6 +158,7 @@ Redistribution::MakeITracker ( Box const& bx,
             }
 
             amrex::Print() << std::endl;
+        }
         }
     });
     amrex::Print() << std::endl;
@@ -215,12 +217,13 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
-#if 0
+#if 1
     amrex::Print() << "Post Update to Cell Merging" << std::endl;
 
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+        if(k==8){
         if (itracker(i,j,k) > 0)
         {
             amrex::Print() << "Cell " << Dim3{i,j,k} << " is merged with: ";
@@ -241,6 +244,7 @@ Redistribution::MakeITracker ( Box const& bx,
             }
 
             amrex::Print() << std::endl;
+        }
         }
     });
     amrex::Print() << std::endl;

@@ -165,11 +165,11 @@ void incflo::Advance()
             }
         }
 
-    //     //FIXME
-    // // this will overwrite the previous time plotfile
+        //FIXME
+    // this will overwrite the previous time plotfile
     // WritePlotFile();
     // static int count=0; count++;
-    // //if (count>2) Abort();
+    //if (count>2) Abort();
 
         ApplyCorrector();
     }

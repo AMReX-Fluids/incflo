@@ -34,7 +34,7 @@ void incflo::MakeEBGeometry(Real cur_time)
     if(geom_type == "cylinder")
     {
     amrex::Print() << "\n Building cylinder geometry." << std::endl;
-        make_eb_cylinder();
+        make_eb_cylinder(cur_time);
     }
     else if(geom_type == "box")
     {

@@ -210,18 +210,18 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     for (int n = 0; n < ncomp; n++) {
                         amrex::Gpu::Atomic::Add(&U_out(i,j,k,n),alpha(i,j,k,0)*nrs(i,j,k)*soln_hat(i,j,k,n));
 
-			if ( (i==0 || i==1) && j == 5)
-			    amrex::Print() << "U_out (should equal U^(n+1)): " << Dim3{i,j,k} << U_out(i,j,k,n) << std::endl; 
+			// if ( (i==0 || i==1) && j == 5)
+			//     amrex::Print() << "U_out (should equal U^(n+1)): " << Dim3{i,j,k} << U_out(i,j,k,n) << std::endl; 
 		    }
                 }
 
             } else {
-
-                    for (int n = 0; n < ncomp; n++) {
-			if ( (i==0 || i==1) && j == 5)
-			    amrex::Print() << "U_out3: " << Dim3{i,j,k} << U_out(i,j,k,n)
-					   << std::endl; 
-		    }
+// Can cause OOB error
+                    // for (int n = 0; n < ncomp; n++) {
+		    // 	if ( (i==0 || i==1) && j == 5)
+		    // 	    amrex::Print() << "U_out3: " << Dim3{i,j,k} << U_out(i,j,k,n)
+		    // 			   << std::endl; 
+		    // }
 
                 for (int n = 0; n < ncomp; n++)
                 {

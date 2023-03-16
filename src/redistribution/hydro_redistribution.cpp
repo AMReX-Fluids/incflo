@@ -140,9 +140,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            dUdt_out(i,j,k,n) = 0.;
-        });
+    {
+        dUdt_out(i,j,k,n) = 0.;
+    });
 
     if (redistribution_type == "FluxRedist")
     {
@@ -196,10 +196,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         if (!domain_per_grown.contains(bxg1))
             amrex::ParallelFor(bxg1,ncomp,
             [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                {
-                    if (!domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
-                        dUdt_in(i,j,k,n) = 0.;
-                });
+            {
+                if (!domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
+                    dUdt_in(i,j,k,n) = 0.;
+            });
 
 
         amrex::Print() << "Start itracker" << std::endl;
@@ -319,56 +319,54 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                // Only update the values which actually changed -- this makes
-                // the results insensitive to tiling -- otherwise cells that aren't
-                // changed but are in a tile on which StateRedistribute gets called
-                // will have precision-level changes due to adding/subtracting U_in
-                // and multiplying/dividing by dt.   Here we test on whether (i,j,k)
-                // has at least one neighbor and/or whether (i,j,k) is in the
-                // neighborhood of another cell -- if either of those is true the
-                // value may have changed
+        {
+            // Only update the values which actually changed -- this makes
+            // the results insensitive to tiling -- otherwise cells that aren't
+            // changed but are in a tile on which StateRedistribute gets called
+            // will have precision-level changes due to adding/subtracting U_in
+            // and multiplying/dividing by dt.   Here we test on whether (i,j,k)
+            // has at least one neighbor and/or whether (i,j,k) is in the
+            // neighborhood of another cell -- if either of those is true the
+            // value may have changed
 
-                //fixme
-                // if (i==8  && j==8){
-                //     amrex::Print() << "Pre dUdt_out" << Dim3{i,j,k} << dUdt_out(i,j,k,n) << std::endl;
-                //     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
+            //fixme
+            // if (i==8  && j==8){
+            //     amrex::Print() << "Pre dUdt_out" << Dim3{i,j,k} << dUdt_out(i,j,k,n) << std::endl;
+            //     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
+            // }
+
+            if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.
+                || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
+                || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) )
+            {
+                const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
+
+                // if (i==0 && j==10){
+                //     Print()<<"redist apply update "<<dUdt_out(i,j,k,n)
+                //         <<" "<<U_in(i,j,k,n) <<std::endl;
                 // }
 
-                if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.
-                    || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
-                    || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) )
-                {
-                   const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
-
-                   // if (i==0 && j==10){
-                   //     Print()<<"redist apply update "<<dUdt_out(i,j,k,n)
-                   //         <<" "<<U_in(i,j,k,n) <<std::endl;
-                   // }
-
-                   // Now that we give NU cells a U_in value, we can do this for everyone
-                   dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
-                }
-                else
-                {
-                   dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
-                }
-
-                //FIXME
-                // if (i==0 && j==10)
-                //     amrex::Print() << "Post dUdt_out" << Dim3{i,j,k} << dUdt_out(i,j,k,n) << std::endl;
+                // Now that we give NU cells a U_in value, we can do this for everyone
+                dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
             }
-        );
+            else
+            {
+                dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
+            }
+
+            //FIXME
+            // if (i==0 && j==10)
+            //     amrex::Print() << "Post dUdt_out" << Dim3{i,j,k} << dUdt_out(i,j,k,n) << std::endl;
+        });
 
     } else if (redistribution_type == "NoRedist") {
         Print()<<"No redistribution..."<<std::endl;
 
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
-            }
-        );
+        {
+            dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
+        });
 
     } else {
        amrex::Error("Not a legit redist_type");
