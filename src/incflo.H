@@ -86,6 +86,7 @@ public: // for cuda
                                        const amrex::MultiFab& tracer_new,
                                        bool include_pressure_gradient = true);
 
+
     ///////////////////////////////////////////////////////////////////////////
     //
     // boundary_conditions
@@ -128,28 +129,6 @@ public: // for cuda
                                                amrex::Vector<amrex::MultiFab*> const& w_mac),
                                   amrex::Vector<amrex::MultiFab*> const& vel_forces,
                                   amrex::Real time);
-
-#ifdef AMREX_USE_EB
-    void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,
-                                     AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
-                                                  amrex::Vector<amrex::MultiFab const*> const& v_mac,
-                                                  amrex::Vector<amrex::MultiFab const*> const& w_mac));
-
-    void redistribute_convective_term (amrex::Box const& bx, amrex::MFIter const& mfi,
-                                       amrex::Array4<amrex::Real const> const& vel,       // velocity
-                                       amrex::Array4<amrex::Real const> const& rho,       // density
-                                       amrex::Array4<amrex::Real const> const& rhotrac,   // tracer
-                                       amrex::Array4<amrex::Real> const& dvdt_tmp,  // initial velocity update
-                                       amrex::Array4<amrex::Real> const& drdt_tmp,  // initial density update
-                                       amrex::Array4<amrex::Real> const& dtdt_tmp,  // initial tracer update
-                                       amrex::Array4<amrex::Real> const& dvdt,      // final velocity update
-                                       amrex::Array4<amrex::Real> const& drdt,      // final density update
-                                       amrex::Array4<amrex::Real> const& dtdt,      // final tracer update
-                                       std::string l_redistribution_type,
-                                       bool l_constant_density, bool l_advect_tracer, int l_ntrac,
-                                       amrex::EBFArrayBoxFactory const* ebfact,
-                                       amrex::Geometry& geom, amrex::Real l_dt);
-#endif
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -217,7 +196,6 @@ public: // for cuda
     void prob_init_fluid (int lev);
     void prob_set_inflow_velocity (int grid_id, amrex::Orientation ori, amrex::Box const& bx,
                                    amrex::Array4<amrex::Real> const& v, int lev, amrex::Real time);
-    void redistribute_initial_data(amrex::MultiFab& data, std::string redistribution_type);
 
 #include "incflo_prob_I.H"
 #include "incflo_prob_usr_I.H"
@@ -252,6 +230,28 @@ public: // for cuda
     virtual void compute_tracer_diff_coeff (amrex::Vector<amrex::MultiFab*> const& tra_eta,
                                             int nghost);
 
+#ifdef AMREX_USE_EB
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    // embedded_boundaries
+    //
+    ///////////////////////////////////////////////////////////////////////////
+    void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,
+                                     AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
+                                                  amrex::Vector<amrex::MultiFab const*> const& v_mac,
+                                                  amrex::Vector<amrex::MultiFab const*> const& w_mac));
+
+    void redistribute_term ( amrex::MultiFab& result, amrex::MultiFab& result_tmp,
+			     amrex::MultiFab const& state,
+			     amrex::BCRec const* bc,
+			     int lev);
+    void redistribute_term ( amrex::MFIter const& mfi,
+			     amrex::MultiFab& result, amrex::MultiFab& result_tmp,
+			     amrex::MultiFab const& state,
+			     amrex::BCRec const* bc,
+			     int lev);
+#endif
+
     ///////////////////////////////////////////////////////////////////////////
     //
     // utilities
@@ -260,6 +260,7 @@ public: // for cuda
 
     bool SteadyStateReached ();
 
+    
 private:
 
     //
@@ -402,9 +403,7 @@ private:
 
 #ifdef AMREX_USE_EB
     std::string m_redistribution_type = "StateRedist";
-#endif
 
-#ifdef AMREX_USE_EB
     // If using Godunov with EB, default to PLM
     bool m_godunov_ppm         = false;
 
@@ -839,9 +838,11 @@ private:
     void ReadParameters ();
     void ReadIOParameters ();
     void ResizeArrays (); // Resize arrays to fit (up to) max_level + 1 AMR levels
-    void InitialRedistribution ();
     void InitialProjection ();
     void InitialIterations ();
+#ifdef AMREX_USE_EB
+    void InitialRedistribution ();
+#endif
 
     ///////////////////////////////////////////////////////////////////////////
     //

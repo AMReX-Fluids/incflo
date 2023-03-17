@@ -233,10 +233,11 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
     if (m_eb_apply_op)
     {
         Vector<MultiFab> divtau_tmp(finest_level+1);
+        int tmp_comp = (m_incflo->m_redistribution_type == "StateRedist") ? 3 : 2;
         for (int lev = 0; lev <= finest_level; ++lev) {
             divtau_tmp[lev].define(a_divtau[lev]->boxArray(),
                                    a_divtau[lev]->DistributionMap(),
-                                   AMREX_SPACEDIM, 2, MFInfo(),
+                                   AMREX_SPACEDIM, tmp_comp, MFInfo(),
                                    a_divtau[lev]->Factory());
             divtau_tmp[lev].setVal(0.0);
         }
@@ -267,7 +268,10 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-            amrex::single_level_redistribute( divtau_tmp[lev], *a_divtau[lev], 0, AMREX_SPACEDIM, m_incflo->Geom(lev));
+	    amrex::single_level_redistribute( divtau_tmp[lev], *a_divtau[lev], 0, AMREX_SPACEDIM, m_incflo->Geom(lev));
+            // auto const& bc = m_incflo->get_velocity_bcrec_device_ptr();
+            // m_incflo->redistribute_term(*a_divtau[lev], divtau_tmp[lev], *a_velocity[lev],
+	    // 				bc, lev);
         }
     }
     else

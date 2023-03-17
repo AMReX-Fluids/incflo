@@ -10,6 +10,7 @@ CEXE_sources += main.cpp
 
 ifeq ($(USE_EB), TRUE)
 CEXE_sources += incflo_correct_small_cells.cpp
+CEXE_sources += incflo_redistribute.cpp
 endif
 
 ifeq ($(USE_CSG),TRUE)
