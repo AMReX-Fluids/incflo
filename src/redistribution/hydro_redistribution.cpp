@@ -105,6 +105,37 @@ Redistribution::FillNewlyUncovered ( MultiFab& mf,
     } //end mfiter
 }
 
+void Redistribution::Apply ( Box const& bx, int ncomp,
+			     Array4<Real>       const& dUdt_out,
+			     Array4<Real>       const& dUdt_in,
+			     Array4<Real const> const& U_in,
+			     Array4<Real> const& scratch,
+			     Array4<EBCellFlag const> const& flag,
+			     AMREX_D_DECL(Array4<Real const> const& apx,
+					  Array4<Real const> const& apy,
+					  Array4<Real const> const& apz),
+			     Array4<Real const> const& vfrac,
+			     AMREX_D_DECL(Array4<Real const> const& fcx,
+					  Array4<Real const> const& fcy,
+					  Array4<Real const> const& fcz),
+			     Array4<Real const> const& ccent,
+			     BCRec  const* d_bcrec_ptr,
+			     Geometry const& geom,
+			     Real dt, std::string redistribution_type,
+			     const int max_order,
+			     Real target_volfrac,
+			     Array4<Real const> const& update_scale)
+{
+    Apply(bx, ncomp, dUdt_out, dUdt_in, U_in, scratch, flag, flag,
+	  AMREX_D_DECL(apx, apy, apz), vfrac,
+	  AMREX_D_DECL(apx, apy, apz), vfrac,
+	  AMREX_D_DECL(fcx, fcy, fcz), ccent,
+	  d_bcrec_ptr, geom, dt, redistribution_type,
+	  Array4<Real const> {}, // vel_eb
+	  Array4<Real const> {}, // bnorm
+	  Array4<Real const> {}, // barea, all not needed
+	  max_order, target_volfrac, update_scale);
+}
 
 void Redistribution::Apply ( Box const& bx, int ncomp,
                              Array4<Real      > const& dUdt_out,

@@ -34,6 +34,7 @@ namespace Redistribution {
 			       amrex::Real target_volfrac);
 
     // FIXME - probably would benefit from passing ebfact instead of all the pieces...
+// Everything should eventually come down to calling this function
     void Apply ( amrex::Box const& bx, int ncomp,
                  amrex::Array4<amrex::Real>       const& dUdt_out,
                  amrex::Array4<amrex::Real>       const& dUdt_in,
@@ -62,6 +63,39 @@ namespace Redistribution {
                  const int max_order,
                  amrex::Real target_volfrac,
                  amrex::Array4<amrex::Real const> const& update_scale);
+
+    // for backwards compatibility
+    void Apply ( amrex::Box const& bx, int ncomp,
+                 amrex::Array4<amrex::Real>       const& dUdt_out,
+                 amrex::Array4<amrex::Real>       const& dUdt_in,
+                 amrex::Array4<amrex::Real const> const& U_in,
+                 amrex::Array4<amrex::Real> const& scratch,
+                 amrex::Array4<amrex::EBCellFlag const> const& flag,
+                 AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
+                              amrex::Array4<amrex::Real const> const& apy,
+                              amrex::Array4<amrex::Real const> const& apz),
+                 amrex::Array4<amrex::Real const> const& vfrac,
+                 AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
+                              amrex::Array4<amrex::Real const> const& fcy,
+                              amrex::Array4<amrex::Real const> const& fcz),
+                 amrex::Array4<amrex::Real const> const& ccent,
+                 amrex::BCRec  const* d_bcrec_ptr,
+                 amrex::Geometry const& geom,
+                 amrex::Real dt, std::string redistribution_type,
+                 const int max_order = defaults::srd_max_order,
+                 amrex::Real target_volfrac = defaults::target_vol_fraction,
+                 amrex::Array4<amrex::Real const> const& update_scale={});
+    // {
+    // 	Apply(bx, ncomp, dUdt_out, dUdt_in, U_in, scratch, flag, flag,
+    // 	      AMREX_D_DECL(apx, apy, apz), vfrac,
+    // 	      AMREX_D_DECL(apx, apy, apz), vfrac,
+    // 	      AMREX_D_DECL(fcx, fcy, fcz), ccent,
+    // 	      d_bcrec_ptr, geom, dt, redistribution_type,
+    // 	      amrex::Array4<amrex::Real const> {}, // vel_eb
+    // 	      amrex::Array4<amrex::Real const> {}, // bnorm
+    // 	      amrex::Array4<amrex::Real const> {}, // barea not needed
+    // 	      max_order, target_volfrac, update_scale);
+    // }
 
     // Overloading in this way doens't work. Get multiple defs during linking...
     //
