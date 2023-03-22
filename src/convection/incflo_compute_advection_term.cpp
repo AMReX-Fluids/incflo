@@ -557,7 +557,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         if (!m_constant_density)
         {
           int flux_comp = AMREX_SPACEDIM;
-
+//Was this OMP intentionally left off?
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
           for (MFIter mfi(*conv_r[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
@@ -606,6 +609,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
           int flux_comp = (m_constant_density) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
 
+//Was this OMP intentionally left off?
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
           for (MFIter mfi(*conv_t[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
@@ -651,10 +658,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
           } // mfi
         } // advect tracer
 
-        // //fixme
-        // VisMF::Write(dvdt_tmp,"vtmp");
-        // VisMF::Write(drdt_tmp,"rtmp");
-
 #ifdef AMREX_USE_EB
         // We only filled these on the valid cells so we fill same-level interior ghost cells here.
         // (We don't need values outside the domain or at a coarser level so we can call just FillBoundary)
@@ -669,6 +672,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Box const& bx = mfi.tilebox();
+
             if ( time == m_cur_time )
             {
             redistribute_convective_term (bx, mfi,
@@ -690,23 +694,33 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             {
                 // Regular SRD
                 // When we turn SRD slopes on, we need to think more about what we really want to be
-                // redistributing here
-                redistribute_convective_term (bx, mfi,
-                                              (m_advect_momentum) ? rhovel[lev].const_array(mfi) : vel[lev]->const_array(mfi),
-                                              density[lev]->const_array(mfi),
-                                              (m_advect_tracer && (m_ntrac>0)) ? rhotrac[lev].const_array(mfi) : Array4<Real const>{},
-                                              dvdt_tmp.array(mfi),
-                                              drdt_tmp.array(mfi),
-                                              (m_advect_tracer && (m_ntrac>0)) ? dtdt_tmp.array(mfi) : Array4<Real>{},
-                                              conv_u[lev]->array(mfi),
-                                              conv_r[lev]->array(mfi),
-                                              (m_advect_tracer && (m_ntrac>0)) ? conv_t[lev]->array(mfi) : Array4<Real>{},
-                                              m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
-                                              ebfact, ebfact, // FIXME, for now need these the same
-                                              // m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
-                                              Array4<Real const>{}, // No moving EB here, need a single switch...
-                                              geom[lev], m_dt);
-            }
+                // redistributing here	    
+	    // velocity
+	    auto const& bc_vel = get_velocity_bcrec_device_ptr();
+	    redistribute_term(mfi, *conv_u[lev], dvdt_tmp,
+			      (m_advect_momentum) ? rhovel[lev] : *vel[lev],
+			      bc_vel, lev);
+	    
+	    // density
+	    if (!m_constant_density) {
+		auto const& bc_den = get_density_bcrec_device_ptr();
+		redistribute_term(mfi, *conv_r[lev], drdt_tmp,
+				  *density[lev], bc_den, lev);
+	    } else {
+		auto const& drdt = conv_r[lev]->array(mfi);
+		amrex::ParallelFor(bx,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+		{
+		    drdt(i,j,k) = 0.;
+		});
+	    }
+
+	    if (m_advect_tracer) {
+		auto const& bc_tra = get_tracer_bcrec_device_ptr();
+		redistribute_term(mfi, *conv_t[lev], dtdt_tmp,
+				  rhotrac[lev], bc_tra, lev);
+	    }
+}
        } // mfi
 #endif
     } // lev

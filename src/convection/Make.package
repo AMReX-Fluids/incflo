@@ -1,3 +1,2 @@
 CEXE_sources += incflo_compute_advection_term.cpp
-CEXE_sources += incflo_redistribute_convective_term.cpp
 CEXE_sources += incflo_compute_MAC_projected_velocities.cpp

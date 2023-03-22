@@ -71,7 +71,7 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
             constexpr Real u0 = Real(1.0);
             constexpr Real v0 = Real(1.0);
 
-            constexpr Real visc_coef = Real(0.001);
+            Real visc_coef = m_mu;
 
             Real omega = pi * pi * visc_coef;
 

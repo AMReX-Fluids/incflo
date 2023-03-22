@@ -414,6 +414,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
     int finest_level = m_incflo->finestLevel();
 
+    // FIXME - Why do we need this copy?
     Vector<MultiFab> scalar(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
         AMREX_ASSERT(a_scalar[lev]->nComp() == a_laps[lev]->nComp());
@@ -428,10 +429,11 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
     if (m_eb_scal_apply_op)
     {
         Vector<MultiFab> laps_tmp(finest_level+1);
+        int tmp_comp = (m_incflo->m_redistribution_type == "StateRedist") ? 3 : 2;
         for (int lev = 0; lev <= finest_level; ++lev) {
             laps_tmp[lev].define(a_laps[lev]->boxArray(),
                                  a_laps[lev]->DistributionMap(),
-                                 m_incflo->m_ntrac, 2, MFInfo(),
+                                 m_incflo->m_ntrac, tmp_comp, MFInfo(),
                                  a_laps[lev]->Factory());
             laps_tmp[lev].setVal(0.0);
         }
@@ -448,6 +450,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
             m_eb_scal_apply_op->setACoeffs(lev, *a_density[lev]);
         }
 
+        // FIXME? Can we do the solve together now?
         for (int comp = 0; comp < m_incflo->m_ntrac; ++comp) {
             int eta_comp = comp;
 
@@ -470,9 +473,12 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-            amrex::single_level_redistribute(laps_tmp[lev],
-                                             *a_laps[lev], 0, m_incflo->m_ntrac,
+	    amrex::single_level_redistribute(laps_tmp[lev],
+					     *a_laps[lev], 0, m_incflo->m_ntrac,
                                              m_incflo->Geom(lev));
+	    // auto const& bc = m_incflo->get_tracer_bcrec_device_ptr();
+            // m_incflo->redistribute_term(*a_laps[lev], laps_tmp[lev], *a_scalar[lev],
+	    // 				bc, lev);
         }
     }
     else
@@ -533,10 +539,11 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
     if (m_eb_vel_apply_op)
     {
         Vector<MultiFab> divtau_tmp(finest_level+1);
+        int tmp_comp = (m_incflo->m_redistribution_type == "StateRedist") ? 3 : 2;
         for (int lev = 0; lev <= finest_level; ++lev) {
             divtau_tmp[lev].define(a_divtau[lev]->boxArray(),
                                    a_divtau[lev]->DistributionMap(),
-                                   a_divtau[lev]->nComp(), 2, MFInfo(),
+                                   a_divtau[lev]->nComp(), tmp_comp, MFInfo(),
                                    a_divtau[lev]->Factory());
             divtau_tmp[lev].setVal(0.0);
         }
@@ -584,9 +591,12 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-            amrex::single_level_redistribute(divtau_tmp[lev],
+	    amrex::single_level_redistribute(divtau_tmp[lev],
                                              *a_divtau[lev], 0, a_divtau[lev]->nComp(),
                                              m_incflo->Geom(lev));
+            // auto const& bc = m_incflo->get_velocity_bcrec_device_ptr();
+            // m_incflo->redistribute_term(*a_divtau[lev], divtau_tmp[lev], *a_vel[lev],
+	    // 				bc, lev);
         }
     }
     else
