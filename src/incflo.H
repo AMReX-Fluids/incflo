@@ -1,16 +1,12 @@
 #ifndef INCFLO_H_
 
 #include <AMReX_AmrCore.H>
-#include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
-#include <AMReX_iMultiFab.H>
-#include <AMReX_Math.H>
 
 #include <hydro_MacProjector.H>
-#include <hydro_NodalProjector.H>
 
 #ifdef AMREX_USE_EB
-#include <AMReX_EBMultiFabUtil.H>
+#include <AMReX_EBFabFactory.H>
 #endif
 
 #ifdef INCFLO_USE_MOVING_EB
