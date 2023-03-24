@@ -41,6 +41,11 @@ void incflo::MakeEBGeometry(Real cur_time)
         amrex::Print() << "\n Building box geometry." << std::endl;
         make_eb_box(cur_time);
     }
+    else if(geom_type == "hexahedron")
+    {
+        amrex::Print() << "\n Building hexahedron geometry." << std::endl;
+        make_eb_hexahedron(cur_time);
+    }
     else if(geom_type == "plane")
     {
         amrex::Print() << "\n Building plane geometry." << std::endl;

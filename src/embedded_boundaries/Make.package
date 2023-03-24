@@ -3,6 +3,7 @@ CEXE_sources += eb_annulus.cpp
 CEXE_sources += eb_box.cpp
 CEXE_sources += eb_plane.cpp
 CEXE_sources += eb_cylinder.cpp
+CEXE_sources += eb_hexahedron.cpp	
 CEXE_sources += eb_cyl_tuscan.cpp
 CEXE_sources += eb_regular.cpp
 CEXE_sources += eb_sphere.cpp
