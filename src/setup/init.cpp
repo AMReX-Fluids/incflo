@@ -203,11 +203,13 @@ void incflo::ReadParameters ()
 #ifdef AMREX_USE_MOVING_EB
        // Do some checks
        if (m_advection_type != "MOL") {
-           amrex::Abort("Moving EB requires MOL"); }
+           amrex::Abort("Moving EB requires MOL, incflo.advection_type = MOL"); }
        if (m_redistribution_type != "StateRedist") {
-           amrex::Abort("Moving EB requires StateRedist");}
+           amrex::Abort("Moving EB requires StateRedist, incflo.redistribution_type = StateRedist");}
        if (m_advect_momentum != 1) {
-           amrex::Abort("Moving EB requires advecting momentum"); }
+           amrex::Abort("Moving EB requires advecting momentum, incflo.advect_momentum = true"); }
+       if (m_diff_type != DiffusionType::Explicit) {
+           amrex::Abort("Moving EB requires explicit diffusion, incflo.diffusion_type = 0"); }
 
        if (pp_eb_flow.contains("density")) {
            amrex::Abort("Moving EB computes density on EB internally, so cannot specify eb_flow.density"); }
