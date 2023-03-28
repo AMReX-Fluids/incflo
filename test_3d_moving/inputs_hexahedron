@@ -71,8 +71,8 @@ xhi.pressure            =   0.0
 
 # Add cylinder 
 incflo.geometry         = "hexahedron"
-hexahedron.lo           = -0.1 -0.1 -0.2
-hexahedron.hi           =  0.1  0.1  0.2
+hexahedron.lo           = -0.1 -0.1 -0.1
+hexahedron.hi           =  0.1  0.1  0.1
 hexahedron.angle        = 0.785398163 #3 
 
 

@@ -72,7 +72,8 @@ void incflo::make_eb_hexahedron(Real cur_time)
     RealArray lo {AMREX_D_DECL(xlo, ylo, zlo)};
     RealArray hi {AMREX_D_DECL(xhi, yhi, zhi)};
 
-    auto polyhedron = EB2::rotate(EB2::rotate(EB2::BoxIF(lo, hi, inside), angle, dir), angle, dir2);
+//    auto polyhedron = EB2::rotate(EB2::rotate(EB2::BoxIF(lo, hi, inside), angle, dir), angle, dir2);
+    auto polyhedron = EB2::rotate(EB2::BoxIF(lo, hi, inside), angle, dir);
     auto gshop = EB2::makeShop(polyhedron);
 
     // Build index space
