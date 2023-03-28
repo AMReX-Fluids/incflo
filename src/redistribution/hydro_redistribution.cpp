@@ -254,7 +254,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     //scratch(i,j,k,n) = 0.0;
                 }
                 else if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
-                         (vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 1.0) )
+                         (vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 1.0) ||
+                         (vfrac_old(i,j,k) == 1. && !flag(i,j,k).isRegular()))
                 {
                     // Correct all cells that are cut at time n or become cut at time n+1
 
