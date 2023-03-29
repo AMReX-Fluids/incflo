@@ -162,7 +162,7 @@ public:
     void DiffFromExact (int lev, amrex::Geometry& lev_geom, amrex::Real time, amrex::Real dt,
                         amrex::MultiFab& error, int soln_comp, int err_comp) const;
 
-    void compute_strainrate_at_level (int lev,
+    static void compute_strainrate_at_level (int lev,
                                               amrex::MultiFab* strainrate,
                                               amrex::MultiFab* vel,
                                               amrex::Geometry& lev_geom,
@@ -613,7 +613,7 @@ private:
     [[nodiscard]] amrex::FabFactory<amrex::FArrayBox> const&
     Factory (int lev) const noexcept { return *m_factory[lev]; }
 #ifdef AMREX_USE_EB
-    [[nodiscard]] amrex::EBFArrayBoxFactory const&
+    amrex::EBFArrayBoxFactory const&
     EBFactory (int lev) const noexcept {
         return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
     }

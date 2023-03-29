@@ -1,4 +1,5 @@
 #include <incflo.H>
+#include <memory>
 
 // Need this for TagCutCells
 #ifdef AMREX_USE_EB
@@ -205,7 +206,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
                                        nghost_eb_full()},
                                        EBSupport::full);
 #else
-    m_factory[lev].reset(new FArrayBoxFactory());
+    m_factory[lev] = std::make_unique<FArrayBoxFactory>();
 #endif
 
     m_leveldata[lev] = std::make_unique<LevelData>(grids[lev], dmap[lev], *m_factory[lev],
@@ -228,7 +229,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
                       MLMG::Location::FaceCentroid,  // Location of beta
                       MLMG::Location::CellCenter  ); // Location of solution variable phi
 #else
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level)));
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
 #endif
 }
 

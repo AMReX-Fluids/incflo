@@ -52,7 +52,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
                       MLMG::Location::FaceCentroid,  // Location of beta
                       MLMG::Location::CellCenter  ); // Location of solution variable phi
 #else
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level)));
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
 #endif
 }
 
@@ -103,7 +103,7 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
                       MLMG::Location::FaceCentroid,  // Location of beta
                       MLMG::Location::CellCenter  ); // Location of solution variable phi
 #else
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level)));
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
 #endif
 }
 
