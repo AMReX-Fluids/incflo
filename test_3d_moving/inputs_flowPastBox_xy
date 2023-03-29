@@ -71,10 +71,12 @@ xhi.pressure            =   0.0
 
 # Add cylinder 
 incflo.geometry         = "hexahedron"
-hexahedron.lo           = -0.1 -0.1 -0.1
-hexahedron.hi           =  0.1  0.1  0.1
+#hexahedron.lo           = -0.1 -0.1 -0.1
+#hexahedron.hi           =  0.1  0.1  0.1
+hexahedron.lo           = -0.09501 -0.09501 -0.09501
+hexahedron.hi           =  0.09501  0.09501  0.09501
 hexahedron.dir          = 2
-hexahedron.angle        = 0.785398163 #3 
+hexahedron.angle        = 0.785398163397448 #.3 1.5707963267948966 #
 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -99,4 +101,4 @@ tensor_diffusion.verbose  =   1         # Tensor Diffusion
 #               EB FLOW                 #
 #.......................................#
 eb_flow.velocity        = 1.0 0.0 0.0
-eb2.small_volfrac       = 1.0e-6
+eb2.small_volfrac       = 1.0e-1
