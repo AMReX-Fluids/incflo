@@ -136,7 +136,7 @@ void incflo::compute_viscosity_at_level (int /*lev*/,
 
 void incflo::compute_tracer_diff_coeff (Vector<MultiFab*> const& tra_eta, int nghost)
 {
-    for (auto mf : tra_eta) {
+    for (auto *mf : tra_eta) {
         for (int n = 0; n < m_ntrac; ++n) {
             mf->setVal(m_mu_s[n], n, 1, nghost);
         }

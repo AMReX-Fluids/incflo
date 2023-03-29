@@ -6,7 +6,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
                               amrex::DistributionMapping const& dm,
                               amrex::FabFactory<FArrayBox> const& fact,
                               int ntrac, int ng_state,
-                              std::string advection_type, bool implicit_diffusion,
+                              const std::string& advection_type, bool implicit_diffusion,
                               bool use_tensor_correction, bool advect_tracer)
     : velocity  (ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),
       velocity_o(ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),

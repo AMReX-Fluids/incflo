@@ -1,4 +1,5 @@
 #include <incflo.H>
+#include <memory>
 
 using namespace amrex;
 
@@ -91,14 +92,14 @@ incflo::diffuse_velocity(Vector<MultiFab      *> const& vel,
 DiffusionTensorOp*
 incflo::get_diffusion_tensor_op ()
 {
-    if (!m_diffusion_tensor_op) m_diffusion_tensor_op.reset(new DiffusionTensorOp(this));
+    if (!m_diffusion_tensor_op) m_diffusion_tensor_op = std::make_unique<DiffusionTensorOp>(this);
     return m_diffusion_tensor_op.get();
 }
 
 DiffusionScalarOp*
 incflo::get_diffusion_scalar_op ()
 {
-    if (!m_diffusion_scalar_op) m_diffusion_scalar_op.reset(new DiffusionScalarOp(this));
+    if (!m_diffusion_scalar_op) m_diffusion_scalar_op = std::make_unique<DiffusionScalarOp>(this);
     return m_diffusion_scalar_op.get();
 }
 

@@ -1,5 +1,6 @@
 #include <AMReX_BC_TYPES.H>
 #include <incflo.H>
+#include <memory>
 
 using namespace amrex;
 
@@ -116,12 +117,12 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
     if (m_constant_density)
     {
         Real constant_sigma = scaling_factor / m_ro_0;
-        nodal_projector.reset(new Hydro::NodalProjector(vel, constant_sigma,
-                                         Geom(0,finest_level), info));
+        nodal_projector = std::make_unique<Hydro::NodalProjector>(vel, constant_sigma,
+                                         Geom(0,finest_level), info);
     } else
     {
-        nodal_projector.reset(new Hydro::NodalProjector(vel, GetVecOfConstPtrs(sigma),
-                                         Geom(0,finest_level), info));
+        nodal_projector = std::make_unique<Hydro::NodalProjector>(vel, GetVecOfConstPtrs(sigma),
+                                         Geom(0,finest_level), info);
     }
     nodal_projector->setDomainBC(bclo, bchi);
 

@@ -6,7 +6,7 @@
 using namespace amrex;
 
 void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
-                            MultiFab& error, int soln_comp, int err_comp)
+                            MultiFab& error, int soln_comp, int err_comp) const
 {
     auto const& dx = lev_geom.CellSizeArray();
 

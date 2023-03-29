@@ -130,7 +130,7 @@ void incflo::ReadParameters ()
 
         pp.query("ntrac", m_ntrac);
 
-        if (m_ntrac <= 0) m_advect_tracer = 0;
+        if (m_ntrac <= 0) m_advect_tracer = false;
 
         if (m_ntrac < 1) {
             amrex::Abort("We currently require at least one tracer");

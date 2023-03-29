@@ -621,13 +621,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
 	    Box const& bx = mfi.tilebox();
-	    
+
 	    // velocity
 	    auto const& bc_vel = get_velocity_bcrec_device_ptr();
 	    redistribute_term(mfi, *conv_u[lev], dvdt_tmp,
 			      (m_advect_momentum) ? rhovel[lev] : *vel[lev],
 			      bc_vel, lev);
-	    
+
 	    // density
 	    if (!m_constant_density) {
 		auto const& bc_den = get_density_bcrec_device_ptr();
