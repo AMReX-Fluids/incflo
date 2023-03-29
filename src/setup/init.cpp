@@ -209,6 +209,13 @@ void incflo::ReadParameters ()
        if (m_advect_momentum != 1) {
            amrex::Abort("Moving EB requires advecting momentum"); }
 
+       // FIXME - maybe we should pin this number down further. Still allows 0 vel to get to ~1e-10
+       ParmParse pp_eb2("eb2");
+       Real small_volfrac = -1.;
+       pp_eb2.queryAdd("small_volfrac", small_volfrac);
+       if (small_volfrac < 1.e-6)
+           amrex::Abort("Moving EB requires eb2.small_volfrac >= 1.e-6");
+
        if (pp_eb_flow.contains("density")) {
            amrex::Abort("Moving EB computes density on EB internally, so cannot specify eb_flow.density"); }
        if (pp_eb_flow.contains("tracer")) {
@@ -345,26 +352,6 @@ void incflo::InitialProjection()
 {
     BL_PROFILE("incflo::InitialProjection()");
 
-    // *************************************************************************************
-    // Allocate space for the temporary MAC velocities
-    // *************************************************************************************
-    Vector<MultiFab> u_mac_tmp(finest_level+1), v_mac_tmp(finest_level+1), w_mac_tmp(finest_level+1);
-    int ngmac = nghost_mac();
-
-    for (int lev = 0; lev <= finest_level; ++lev) {
-        AMREX_D_TERM(u_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));,
-                     v_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));,
-                     w_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev)););
-        if (ngmac > 0) {
-            AMREX_D_TERM(u_mac_tmp[lev].setBndry(0.0);,
-                         v_mac_tmp[lev].setBndry(0.0);,
-                         w_mac_tmp[lev].setBndry(0.0););
-        }
-    }
-
     Real dummy_dt = 1.0;
     bool incremental = false;
     for (int lev = 0; lev <= finest_level; lev++)
@@ -474,7 +461,7 @@ incflo::InitialRedistribution ()
         ld.velocity.FillBoundary(geom[lev].periodicity());
         ld.density.FillBoundary(geom[lev].periodicity());
         ld.tracer.FillBoundary(geom[lev].periodicity());
+      }
     }
-  }
 }
 #endif
