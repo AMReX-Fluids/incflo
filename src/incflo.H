@@ -272,12 +272,21 @@ public: // for cuda
     void redistribute_term ( amrex::MultiFab& result, amrex::MultiFab& result_tmp,
 			     amrex::MultiFab const& state,
 			     amrex::BCRec const* bc,
-			     int lev);
+			     int lev,
+			     amrex::MultiFab*& vel_eb);
     void redistribute_term ( amrex::MFIter const& mfi,
 			     amrex::MultiFab& result, amrex::MultiFab& result_tmp,
 			     amrex::MultiFab const& state,
 			     amrex::BCRec const* bc,
-			     int lev);
+			     int lev,
+			     amrex::MultiFab*& vel_eb);
+    void redistribute_term ( amrex::MFIter const& mfi,
+			     amrex::Array4<amrex::Real      > const& result,
+			     amrex::Array4<amrex::Real      > const& result_tmp,
+			     amrex::Array4<amrex::Real const> const& state,
+			     amrex::BCRec const* bc,
+			     int lev,
+			     amrex::Array4<amrex::Real const> const& vel_eb);
 #endif
 
     ///////////////////////////////////////////////////////////////////////////

@@ -86,9 +86,12 @@ void incflo::Advance()
 #ifdef INCFLO_USE_MOVING_EB
     for (int lev = 0; lev <= finest_level; lev++)
     {
+// This is needed for vel and tracer provided we continue with the same
+	// strategy of passing back an update rather than a state...
+	
         // FIXME - need some way to make sure target volfrac is consistent between
-        // here and the call in redistribute convective term
-        Real target_volfrac = 0.5;
+        // here and other calls
+        Real target_volfrac = Redistribution::defaults::target_vol_fraction;
         // FOR varible density, we have to take the NU cell's merging neighbor
         // Needs one filled ghost cell. Fills only valid region
         Redistribution::FillNewlyUncovered(m_leveldata[lev]->velocity_o,
@@ -97,8 +100,8 @@ void incflo::Advance()
                                            geom[lev], target_volfrac);
         fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
         // Note: fillpatch pulls any EBFactory info from the coarse level, so
-        // as long as EB stays only on finest level, we're fine, but this probably
-        // won't work otherwise
+        // as long as EB stays contained within the finest level, we're fine,
+	// but this probably won't work otherwise
 
         //FIXME
         // Update in ApplyPredictor assumes new vel is the same as old vel
@@ -123,6 +126,11 @@ void incflo::Advance()
                                                geom[lev], target_volfrac);
             fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
         }
+
+	Redistribution::FillNewlyUncovered(m_leveldata[lev]->gp,
+                                           OldEBFactory(lev), EBFactory(lev),
+                                           *get_velocity_eb()[lev],
+                                           geom[lev], target_volfrac);
 
 // FIXME will we also need to worry about all the pieces of U*, forces, etc???
     }

@@ -74,6 +74,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
 #ifdef INCFLO_USE_MOVING_EB
     // FIXME - would these be good from the corrector step? can we rely on doing a corrector?
+    //   what about initial iterations
     // *************************************************************************************
     // Reset the solvers to work with the new EB
     // *************************************************************************************
@@ -173,7 +174,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                      GetVecOfConstPtrs(tra_eta));
     }
 
-    // **********************************************************************************************
+    // *************************************************************************************
     // Compute the MAC-projected velocities at all levels
     // *************************************************************************************
     bool include_pressure_gradient = !(m_use_mac_phi_in_godunov);
@@ -224,6 +225,18 @@ void incflo::ApplyPredictor (bool incremental_projection)
         for (int lev = 0; lev <= finest_level; lev++)
         {
             auto& ld = *m_leveldata[lev];
+
+#ifdef AMREX_USE_MOVING_EB
+            //
+	    // For moving EB, redistribute and returns full state at new time
+            //
+	    redistribute_term(ld.density, ld.conv_density_o, ld.density_o,
+			      get_density_bcrec_device_ptr(), lev,
+			      get_velocity_eb()[lev]);
+#else
+	    //
+	    // Add advective update that's already been redistributed to get rho^(n+1)
+	    //
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -239,21 +252,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    // For NU cells, recall that we fill rho_old, and then define
-                    // drdt (in redistribution::Apply) in a way so that we may do this...
                     rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
-
-                    // if (j == 5)
-                    //     amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_new(i,j,k) << " / " << drdt(i,j,k) << std::endl;
-
-                    if (m_redistribution_type == "NoRedist") {
-                        if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.) {
-                            rho_new(i,j,k) = rho_new(i,j,k) * vfrac_old(i,j,k) / vfrac_new(i,j,k);
-                        }
-                    }
-                 });
+		});
             } // mfi
-
+#endif
 
             // Fill ghost cells of the new density field so that we can define density_nph
             //      on the valid region grown by 1
@@ -261,9 +263,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
             fillpatch_density(lev, m_t_new[lev], ld.density, ng);
 
 
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
             for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
-                 Box const& gbx = mfi.growntilebox(1);
+                 Box const& bxg1 = mfi.growntilebox(1);
                  Array4<Real  const> const& rho_old  = ld.density_o.const_array(mfi);
                  Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                  Array4<Real>        const& rho_nph  = density_nph_oldeb[lev].array(mfi);
@@ -271,7 +276,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  auto const& vfrac_new = OldEBFactory(lev).getVolFrac().const_array(mfi);
                  auto const& vfrac_old =    EBFactory(lev).getVolFrac().const_array(mfi);
 
-                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                 amrex::ParallelFor(bxg1, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
                      // FIXME - probably want to think more about what to do with rho_n+1/2 here
                      // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
@@ -283,6 +288,38 @@ void incflo::ApplyPredictor (bool incremental_projection)
                      // if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.))
                      //     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl;
                  });
+
+#ifdef AMREX_USE_MOVING_EB
+            //
+	    // Create S^m(rho) and update-hat
+	    //
+                Box const& bx = mfi.tilebox();
+		// Store update-hat here...
+		Array4<Real      > const& drdt_o   = ld.conv_density_o.array(mfi);
+
+		Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
+		FArrayBox update_fab(gbx,1,The_Async_Arena());
+		Array4<Real> const& update = update_fab.array();
+		amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+		{
+		    update(i,j,k) = 0.;
+		});
+
+		// redistribute - own lambda...
+		redistribute_term(mfi, drdt_o, update, rho_old,
+				  get_density_bcrec_device_ptr(), lev,
+				  get_velocity_eb()[lev]->const_array(mfi));
+
+		// Make update-hat
+		// NOt saving S^m(rho) for now, don't think we need it
+		// FIXME - I think this is okay as redistribute only uses tra on bx
+		amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+		{
+		    // Update-hat = S^m(rho^n) - S^m(rho*trac^n - dt A^n)
+		    //            = S^m(rho^n) - rho^(p,n+1)
+		    drdt_o(i,j,k) -= rho_new(i,j,k);
+		});
+#endif
             } // mfi
         } // lev
 
@@ -321,13 +358,49 @@ void incflo::ApplyPredictor (bool incremental_projection)
             for (MFIter mfi(ld.tracer,TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
                 Box const& bx = mfi.tilebox();
+		Array4<Real> const& tra          = ld.tracer.array(mfi);
+                Array4<Real const> const& rho    = ld.density.const_array(mfi);
+                Array4<Real const> const& rho_o  = ld.density_o.const_array(mfi);
+		Array4<Real const> const& dtdt_o  = ld.conv_tracer_o.const_array(mfi);
+		//FIXME? - init will abort if ntrac < 1...
+                Array4<Real const> const& tra_f  = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
+		                                                 : Array4<Real const>{};
+
+#ifdef AMREX_USE_MOVING_EB
+		Array4<Real      > const& tra_o  = ld.tracer_o.array(mfi);
+		Array4<Real const> const& laps_o = (l_ntrac > 0) ? ld.laps_o.const_array(mfi)
+                                                                 : Array4<Real const>{};
+
+                // Redistribute
+		// (rho trac)^new = (rho trac)^old + dt * (
+		//                   div(rho trac u) + div (mu grad trac) + rho * f_t
+
+		// Why not n in parallel for?
+		// FIXME - I need to grow this box -- maybe safer to have 3 mfiters???
+		// incflo_compute_advective... does this same thing...
+		// except update now needs to be temporary, can't overwrite conv
+		Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
+		FArrayBox update_fab(gbx,l_ntrac,The_Async_Arena());
+		Array4<Real> const& update = update_fab.array();
+		
+		amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+		{
+		    for (int n = 0; n < l_ntrac; ++n)
+		    {
+			tra_o(i,j,k,n) = rho_o(i,j,k)*tra_o(i,j,k,n);
+			update(i,j,k,n) = dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n);
+		    }
+		});
+
+		// redistribute - own lambda...
+		redistribute_term(mfi, tra, update, tra_o, get_tracer_bcrec_device_ptr(), lev,
+				  get_velocity_eb()[lev]->const_array(mfi));
+
+                // Don't divide trac/rho yet..
+		
+#else
+
                 Array4<Real const> const& tra_o   = ld.tracer_o.const_array(mfi);
-                Array4<Real const> const& rho_o   = ld.density_o.const_array(mfi);
-                Array4<Real> const& tra           = ld.tracer.array(mfi);
-                Array4<Real const> const& rho     = ld.density.const_array(mfi);
-                Array4<Real const> const& dtdt_o  = ld.conv_tracer_o.const_array(mfi);
-                Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
-                                                                  : Array4<Real const>{};
 
                 if (m_diff_type == DiffusionType::Explicit)
                 {
@@ -377,7 +450,66 @@ void incflo::ApplyPredictor (bool incremental_projection)
                         }
                     });
                 }
+#endif
             } // mfi
+
+#ifdef AMREX_USE_MOVING_EB
+            //
+	    // Create S^m(rho*trac) and update-hat
+	    //
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            for (MFIter mfi(ld.tracer,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                Box const& bx = mfi.tilebox();
+
+		Array4<Real      > const& rhotra_o = ld.tracer_o.array(mfi);
+		Array4<Real      > const& rhotra   = ld.tracer.array(mfi);
+		// Store update-hat here...
+		Array4<Real      > const& dtdt_o   = ld.conv_tracer_o.array(mfi);
+
+		// Why not n in parallel for?
+		// FIXME - I need to grow this box -- maybe safer to have 3 mfiters???
+		// incflo_compute_advective... does this same thing...
+                // Could probably merge this MFIter with above as long as we make
+		// temproary MFs for redistributed update-hat
+		// but then we'd still need a copy, so probably doesn't matter
+		Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
+		FArrayBox update_fab(gbx,l_ntrac,The_Async_Arena());
+		Array4<Real> const& update = update_fab.array();
+		amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+		{
+		    for (int n = 0; n < l_ntrac; ++n)
+		    {
+			update(i,j,k,n) = 0.;
+		    }
+		});
+
+		// redistribute - own lambda...
+		redistribute_term(mfi, dtdt_o, update, rhotra_o,
+				  get_tracer_bcrec_device_ptr(), lev,
+				  get_velocity_eb()[lev]->const_array(mfi));
+
+		// Make update-hat
+		// NOt saving S^m(rho*tra) for now, don't think we need it
+		// FIXME - I think this is okay as redistribute only uses tra on bx
+		Array4<Real const> const& rho      = ld.density.const_array(mfi);
+		amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+		{
+		    for (int n = 0; n < l_ntrac; ++n)
+		    {
+			// Update-hat = S^m(rho*trac^n) - S^m(rho*trac^n - dt(A^n - D^n - f^n))
+			//            = S^m(rho*trac^n) - rhotrac^(p,n+1)
+			dtdt_o(i,j,k,n) -= rhotra(i,j,k,n);
+			
+			// put back trac = rhotrac/rho_new - non-ideal for MEB, but convection
+			// expects just trac...
+			rhotra(i,j,k,n) /= rho(i,j,k); 
+		    }
+		});
+	    } // mfi
+#endif
         } // lev
     } // if (m_advect_tracer)
 
@@ -432,7 +564,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
         for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Box const& bx = mfi.tilebox();
-            Array4<Real> const& vel = ld.velocity.array(mfi);
+            Array4<Real      > const& vel = ld.velocity.array(mfi);
             Array4<Real const> const& dvdt = ld.conv_velocity_o.const_array(mfi);
             Array4<Real const> const& vel_f = vel_forces[lev].const_array(mfi);
             Array4<Real const> const& rho_old  = ld.density_o.const_array(mfi);
@@ -443,7 +575,42 @@ void incflo::ApplyPredictor (bool incremental_projection)
             auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
             auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
+#ifdef AMREX_USE_MOVING_EB
+	    //
+	    // Redistribute
+	    // (rho vel)^new = (rho vel)^old + dt * (
+	    //                   div(rho vel u) + divtau_old + rho * f_t
 
+	    // FIXME - I need to grow this box -- maybe safer to have 3 mfiters???
+	    // incflo_compute_advective... does this same thing...
+	    // except update now needs to be temporary, can't overwrite conv
+	    Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
+	    FArrayBox update_fab(gbx,AMREX_SPACEDIM,The_Async_Arena());
+	    Array4<Real> const& update = update_fab.array();
+		
+	    Array4<Real      > const& vel_o = ld.velocity_o.array(mfi);
+	    Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
+
+	    amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+	    {
+		for (int n = 0; n < AMREX_SPACEDIM; ++n)
+		{
+		    vel_o(i,j,k,n) *= rho_old(i,j,k);
+		    
+		    update(i,j,k,n) = dvdt(i,j,k,n) + divtau_o(i,j,k,n)
+			              + rho_nph(i,j,k)*vel_f(i,j,k,n);
+			                  
+		}
+	    });
+
+	    // redistribute - own lambda...
+	    redistribute_term(mfi, vel, update, vel_o, get_velocity_bcrec_device_ptr(), lev,
+			      get_velocity_eb()[lev]->const_array(mfi));
+
+	    // Don't divide out rho yet..
+		
+#else
+	    
             if (m_diff_type == DiffusionType::Implicit) {
 
                 if (use_tensor_correction)
@@ -558,7 +725,60 @@ void incflo::ApplyPredictor (bool incremental_projection)
                     });
                 }
             }
+#endif
         } // mfi
+
+#ifdef AMREX_USE_MOVING_EB
+	//
+	// Create S^m(rho*trac) and update-hat
+	//
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+	for (MFIter mfi(ld.tracer,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+	{
+	    Box const& bx = mfi.tilebox();
+
+	    Array4<Real      > const& rhovel_o = ld.velocity_o.array(mfi);
+	    Array4<Real      > const& rhovel   = ld.velocity.array(mfi);
+	    // Store update-hat here...
+	    Array4<Real      > const& dvdt_o   = ld.conv_velocity_o.array(mfi);
+
+	    Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
+	    FArrayBox update_fab(gbx,l_ntrac,The_Async_Arena());
+	    Array4<Real> const& update = update_fab.array();
+	    amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+	    {
+		for (int n = 0; n < l_ntrac; ++n)
+		{
+		    update(i,j,k,n) = 0.;
+		}
+	    });
+
+	    // redistribute - own lambda...
+	    redistribute_term(mfi, dvdt_o, update, rhovel_o,
+			      get_velocity_bcrec_device_ptr(), lev,
+			      get_velocity_eb()[lev]->const_array(mfi));
+
+	    // Make update-hat
+	    // NOt saving S^m(rho*vel) for now, don't think we need it
+	    // FIXME - I think this is okay as redistribute only uses vel on bx
+	    Array4<Real const> const& rho      = ld.density.const_array(mfi);
+	    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+	    {
+		for (int n = 0; n < AMREX_SPACEDIM; ++n)
+		{
+		    // Update-hat = S^m(rho*vel^n) - S^m(rho*vel^n - dt(A^n - D^n - f^n))
+		    //            = S^m(rho*vel^n) - rhovel^(p,n+1)
+		    dvdt_o(i,j,k,n) -= rhovel(i,j,k,n);
+			
+		    // put back vel = rhovel/rho_new - non-ideal for MEB, but convection
+		    // & proj expects just vel...
+		    rhovel(i,j,k,n) /= rho(i,j,k); 
+		}
+	    });
+	} // mfi
+#endif
     } // lev
 
     // *************************************************************************************
@@ -585,60 +805,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
     // Need to remake the LevelData for the NodalProjection which computes U^(n+1)
     RemakeWithNewGeometry();
-#endif
 
     // *************************************************************************************
-    // Allocate space for half-time density after we have updated EB
+    // Make half-time density with updated EB
     // *************************************************************************************
     Vector<MultiFab> density_nph_neweb;
     for (int lev = 0; lev <= finest_level; ++lev)
-        density_nph_neweb.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
-
-
-    // *************************************************************************************
-    // Update density^n+1/2 first
-    // *************************************************************************************
-    if (l_constant_density)
     {
-        for (int lev = 0; lev <= finest_level; lev++)
-            MultiFab::Copy(density_nph_neweb[lev], m_leveldata[lev]->density_o, 0, 0, 1, 1);
-    } else {
-        for (int lev = 0; lev <= finest_level; lev++)
-        {
-            auto& ld = *m_leveldata[lev];
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
+        density_nph_neweb.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+	MultiFab::Copy(density_nph_neweb[lev], density_nph_oldeb[lev], 0, 0, 1, 1);
+    }
 #endif
-            for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                Box const& gbx = mfi.growntilebox(1);
-                Array4<Real  const> const& rho_old  = ld.density_o.const_array(mfi);
-                Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
-                Array4<Real>        const& rho_nph  = density_nph_neweb[lev].array(mfi);
-
-                auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
-
-                amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                {
-                    // FIXME? what happens with newly uncovered cells here? how have covered cells in rho_old been set?
-                    // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.){
-                    //  Print()<<"Proj: "<<rho_old(i,j,k)
-                    //         <<" "<<rho_new(i,j,k)<<std::endl;
-                    // }
-
-                    rho_nph(i,j,k) = 0.5 * (rho_old(i,j,k) + rho_new(i,j,k));
-                    if (rho_nph(i,j,k) < 0.0){
-                    // if (i == 34 && j == 46 || i == 29 && j == 17){
-                        amrex::Print() << "Negative Density rho_nph(" << i << ", " << j << "): "
-                                       << rho_nph(i,j,0) << std::endl;
-                        amrex::Print() << "rho_old(" << i << ", " << j << "): " << rho_old(i,j,0) << std::endl;
-                        amrex::Print() << "rho_new(" << i << ", " << j << "): " << rho_new(i,j,0) << std::endl;
-                    }
-                });
-            } // mfi
-        } // lev
-    } // not constant density
 
     // VisMF::Write(m_leveldata[0]->density,"dens");
     // VisMF::Write(density_nph_neweb[0],"rnph");
@@ -650,11 +827,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // count++;
     //if (count > 0) Abort();
 
-    // **********************************************************************************************
+    // *************************************************************************************
     //
     // Project velocity field, update pressure
     //
-    // **********************************************************************************************
+    // *************************************************************************************
     ApplyProjection(GetVecOfConstPtrs(density_nph_neweb),
                     new_time,m_dt,incremental_projection);
 

@@ -74,6 +74,8 @@ void incflo::compute_vel_forces_on_level (int lev,
                     int n = 0; // Potential temperature
 
                     Real rhoinv = Real(1.0)/rho(i,j,k);
+		    // FIXME? Would have to think about this for Moving EB. For now, disallow
+		    // bousinesque during init.
                     Real ft = Real(0.5) * (tra_o(i,j,k,n) + tra_n(i,j,k,n));
 
                     if (include_pressure_gradient)

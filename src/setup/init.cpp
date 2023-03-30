@@ -210,6 +210,8 @@ void incflo::ReadParameters ()
            amrex::Abort("Moving EB requires advecting momentum, incflo.advect_momentum = true"); }
        if (m_diff_type != DiffusionType::Explicit) {
            amrex::Abort("Moving EB requires explicit diffusion, incflo.diffusion_type = 0"); }
+       if (m_use_boussinesq == true) {
+           amrex::Abort("Moving EB does not support boussinesq"); }
 
        if (pp_eb_flow.contains("density")) {
            amrex::Abort("Moving EB computes density on EB internally, so cannot specify eb_flow.density"); }
