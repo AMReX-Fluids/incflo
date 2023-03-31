@@ -730,7 +730,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
 #ifdef AMREX_USE_MOVING_EB
 	//
-	// Create S^m(rho*trac) and update-hat
+	// Create S^m(rho*vel) and update-hat
 	//
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -744,12 +744,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
 	    // Store update-hat here...
 	    Array4<Real      > const& dvdt_o   = ld.conv_velocity_o.array(mfi);
 
-	    Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
-	    FArrayBox update_fab(gbx,l_ntrac,The_Async_Arena());
+	    Box const& gbx = amrex::grow(bx,ld.velocity.nGrow());
+	    FArrayBox update_fab(gbx,AMREX_SPACEDIM,The_Async_Arena());
 	    Array4<Real> const& update = update_fab.array();
 	    amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 	    {
-		for (int n = 0; n < l_ntrac; ++n)
+		for (int n = 0; n < AMREX_SPACEDIM; ++n)
 		{
 		    update(i,j,k,n) = 0.;
 		}
