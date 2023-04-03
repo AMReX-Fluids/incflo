@@ -206,7 +206,7 @@ void incflo::ApplyCorrector()
 		    //           = rho_new  + dt/2 * (drdt_o + drdt)
 		    //FIXME - need to think about sign here! Doesn't conv hold -A???
 		    // Could get rid of update temporary and just use conv
-		    rho_t(i,k,j) = rho_n(i,j,k) + m_half * l_dt * (drdt_o(i,j,k) + drdt(i,j,k));
+		    rho_t(i,j,k) = rho_n(i,j,k) + m_half * l_dt * (drdt_o(i,j,k) + drdt(i,j,k));
 		});
 	    }
 
@@ -323,7 +323,7 @@ void incflo::ApplyCorrector()
 		    // Could get rid of update temporary and just use conv
 		    for ( int n = 0; n < l_ntrac; n++)
 		    {
-			rhotra_t(i,k,j,n) = rho_n(i,j,k)*tra_n(i,j,k,n)
+			rhotra_t(i,j,k,n) = rho_n(i,j,k)*tra_n(i,j,k,n)
                  			    + m_half * l_dt * (dtdt_o(i,j,k) + dtdt(i,j,k,n)
 							       + laps(i,j,k,n) + tra_f(i,j,k,n));
 		    }
@@ -510,7 +510,7 @@ void incflo::ApplyCorrector()
 		// Could get rid of update temporary and just use conv
 		for ( int n = 0; n < AMREX_SPACEDIM; n++)
 		{
-		    rhovel_t(i,k,j,n) = rho_n(i,j,k)*vel_n(i,j,k,n)
+		    rhovel_t(i,j,k,n) = rho_n(i,j,k)*vel_n(i,j,k,n)
 			                + m_half * l_dt * (dvdt_o(i,j,k) + dvdt(i,j,k,n)
 							   + divtau(i,j,k,n) + vel_f(i,j,k,n));
 		}
