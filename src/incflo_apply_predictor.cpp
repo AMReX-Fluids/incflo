@@ -359,7 +359,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
 	    // For moving EB, assemble state for redistribution
 	    //
 	    MultiFab update(grids[lev], dmap[lev], m_ntrac, nghost_state(), MFInfo(), Factory(lev));
-
+	    update.setVal(0.0);
+	    
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -599,7 +600,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
 	// FIXME -- think we only need 3 here, not ng_state...
 	MultiFab update(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_state(),
 			MFInfo(), Factory(lev));
-
+	update.setVal(0.0);
+	
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
