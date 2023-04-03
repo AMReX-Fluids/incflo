@@ -353,6 +353,41 @@ void incflo::ApplyPredictor (bool incremental_projection)
         for (int lev = 0; lev <= finest_level; lev++)
         {
             auto& ld = *m_leveldata[lev];
+
+#ifdef AMREX_USE_MOVING_EB
+	    //
+	    // For moving EB, assemble state for redistribution
+	    //
+	    MultiFab update(grids[lev], dmap[lev], m_ntrac, nghost_state(), MFInfo(), Factory(lev));
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                Box const& bx = mfi.tilebox();
+                Array4<Real> const& update_t     = update.array(mfi);
+                Array4<Real const> const& dtdt_o = ld.conv_tracer_o.const_array(mfi);
+// FIXME - why do we have this test when init.cpp requires at least 1 tracer...
+		Array4<Real const> const& laps_o = (l_ntrac > 0) ? ld.laps_o.const_array(mfi)
+                                                                 : Array4<Real const>{};
+                Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
+                                                                : Array4<Real const>{};
+
+                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+		    // Build update
+		    for ( int n = 0; n < l_ntrac; n++)
+		    {
+			update_t(i,j,k,n) = dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n);
+		    }
+		});
+	    }
+
+	    // Need to ensure that boundaries are consistent
+	    update.FillBoundary(geom[lev].periodicity());
+#endif
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -371,30 +406,26 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		Array4<Real      > const& tra_o  = ld.tracer_o.array(mfi);
 		Array4<Real const> const& laps_o = (l_ntrac > 0) ? ld.laps_o.const_array(mfi)
                                                                  : Array4<Real const>{};
-
+                Array4<Real> const& update_t     = update.array(mfi);
+		
                 // Redistribute
 		// (rho trac)^new = (rho trac)^old + dt * (
 		//                   div(rho trac u) + div (mu grad trac) + rho * f_t
 
-		// Why not n in parallel for?
 		// FIXME - I need to grow this box -- maybe safer to have 3 mfiters???
 		// incflo_compute_advective... does this same thing...
 		// except update now needs to be temporary, can't overwrite conv
 		Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
-		FArrayBox update_fab(gbx,l_ntrac,The_Async_Arena());
-		Array4<Real> const& update = update_fab.array();
-		
 		amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 		{
 		    for (int n = 0; n < l_ntrac; ++n)
 		    {
 			tra_o(i,j,k,n) = rho_o(i,j,k)*tra_o(i,j,k,n);
-			update(i,j,k,n) = dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n);
 		    }
 		});
 
 		// redistribute - own lambda...
-		redistribute_term(mfi, tra, update, tra_o, get_tracer_bcrec_device_ptr(), lev,
+		redistribute_term(mfi, tra, update_t, tra_o, get_tracer_bcrec_device_ptr(), lev,
 				  get_velocity_eb()[lev]->const_array(mfi));
 
                 // Don't divide trac/rho yet..
@@ -478,17 +509,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		// but then we'd still need a copy, so probably doesn't matter
 		Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
 		FArrayBox update_fab(gbx,l_ntrac,The_Async_Arena());
-		Array4<Real> const& update = update_fab.array();
+		Array4<Real> const& zero_arr = update_fab.array();
 		amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 		{
 		    for (int n = 0; n < l_ntrac; ++n)
 		    {
-			update(i,j,k,n) = 0.;
+			zero_arr(i,j,k,n) = 0.;
 		    }
 		});
 
 		// redistribute - own lambda...
-		redistribute_term(mfi, dtdt_o, update, rhotra_o,
+		redistribute_term(mfi, dtdt_o, zero_arr, rhotra_o,
 				  get_tracer_bcrec_device_ptr(), lev,
 				  get_velocity_eb()[lev]->const_array(mfi));
 
@@ -560,6 +591,42 @@ void incflo::ApplyPredictor (bool incremental_projection)
     for (int lev = 0; lev <= finest_level; lev++)
     {
         auto& ld = *m_leveldata[lev];
+
+#ifdef AMREX_USE_MOVING_EB
+	//
+	// For moving EB, assemble update for redistribution
+	//
+	// FIXME -- think we only need 3 here, not ng_state...
+	MultiFab update(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_state(),
+			MFInfo(), Factory(lev));
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+	for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+	{
+	    Box const& bx = mfi.tilebox();
+	    Array4<Real> const& update_v       = update.array(mfi);
+	    Array4<Real const> const& dvdt_o   = ld.conv_velocity_o.const_array(mfi);
+	    Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
+            Array4<Real const> const& vel_f    = vel_forces[lev].const_array(mfi);
+	    Array4<Real const> const& rho_o    = ld.density_o.const_array(mfi);
+	    
+	    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+	    {
+		// Build update
+		for ( int n = 0; n < AMREX_SPACEDIM; n++)
+		{
+		    update_v(i,j,k,n) = dvdt_o(i,j,k,n) + divtau_o(i,j,k,n)
+			                + rho_o(i,j,k)*vel_f(i,j,k,n);
+		}
+	    });
+	}
+
+	// Need to ensure that boundaries are consistent
+	update.FillBoundary(geom[lev].periodicity());
+#endif
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -586,27 +653,19 @@ void incflo::ApplyPredictor (bool incremental_projection)
 	    // FIXME - I need to grow this box -- maybe safer to have 3 mfiters???
 	    // incflo_compute_advective... does this same thing...
 	    // except update now needs to be temporary, can't overwrite conv
-	    Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
-	    FArrayBox update_fab(gbx,AMREX_SPACEDIM,The_Async_Arena());
-	    Array4<Real> const& update = update_fab.array();
-		
 	    Array4<Real      > const& vel_o = ld.velocity_o.array(mfi);
-	    Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
-
+	    Array4<Real> const& update_v     = update.array(mfi);
+	    Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
 	    amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 	    {
 		for (int n = 0; n < AMREX_SPACEDIM; ++n)
 		{
 		    vel_o(i,j,k,n) *= rho_old(i,j,k);
-		    
-		    update(i,j,k,n) = dvdt(i,j,k,n) + divtau_o(i,j,k,n)
-			              + rho_nph(i,j,k)*vel_f(i,j,k,n);
-			                  
 		}
 	    });
 
 	    // redistribute - own lambda...
-	    redistribute_term(mfi, vel, update, vel_o, get_velocity_bcrec_device_ptr(), lev,
+	    redistribute_term(mfi, vel, update_v, vel_o, get_velocity_bcrec_device_ptr(), lev,
 			      get_velocity_eb()[lev]->const_array(mfi));
 
 	    // Don't divide out rho yet..
@@ -748,17 +807,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
 	    Box const& gbx = amrex::grow(bx,ld.velocity.nGrow());
 	    FArrayBox update_fab(gbx,AMREX_SPACEDIM,The_Async_Arena());
-	    Array4<Real> const& update = update_fab.array();
+	    Array4<Real> const& zero_arr = update_fab.array();
 	    amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 	    {
 		for (int n = 0; n < AMREX_SPACEDIM; ++n)
 		{
-		    update(i,j,k,n) = 0.;
+		    zero_arr(i,j,k,n) = 0.;
 		}
 	    });
 
 	    // redistribute - own lambda...
-	    redistribute_term(mfi, dvdt_o, update, rhovel_o,
+	    redistribute_term(mfi, dvdt_o, zero_arr, rhovel_o,
 			      get_velocity_bcrec_device_ptr(), lev,
 			      get_velocity_eb()[lev]->const_array(mfi));
 

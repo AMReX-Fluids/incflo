@@ -449,6 +449,14 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         const EBFArrayBoxFactory* ebfact     = &EBFactory(lev, time);
         auto const& vfrac = ebfact->getVolFrac();
 
+#ifdef AMREX_USE_MOVING_EB
+	// FIXME -- density definitely is using conv this way, but maybe tracer and vel
+	// don't because they have the update temporary in incflo_apply...
+        // Must initialize to zero because not all values may be set, e.g. outside the domain.
+        conv_u[lev]->setVal(0.);
+        conv_r[lev]->setVal(0.);
+        conv_t[lev]->setVal(0.);
+#else
         // //fixme
         // VisMF::Write(vfrac, "vfm");
         // VisMF::Write(ebfact_new->getVolFrac(), "vfn");
@@ -465,6 +473,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         dvdt_tmp.setVal(0.);
         drdt_tmp.setVal(0.);
         dtdt_tmp.setVal(0.);
+#endif
 #endif
 
         Real mult = -1.0;
@@ -679,7 +688,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         } // advect tracer
 
 #ifdef AMREX_USE_EB
-#ifndef AMREX_USE_MOVING_EB
+#ifdef AMREX_USE_MOVING_EB
+	// We need to fill the boundary for later redistribution
+	// Note that this goes with a setVal(0) above to fill vals outside domain
+        conv_u[lev]->FillBoundary(geom[lev].periodicity());
+        conv_r[lev]->FillBoundary(geom[lev].periodicity());
+        conv_t[lev]->FillBoundary(geom[lev].periodicity());
+#else
         //
 	// Only redistribute here if not doing moving EB
 	// Moving EB will redistribute full updated state once at the end
@@ -728,8 +743,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 				  rhotrac[lev], bc_tra, lev,
 				  nullptr);
 	    }
-}
-       } // mfi
+	} // mfi
 #endif
 #endif
     } // lev

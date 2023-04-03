@@ -222,18 +222,20 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                      if (lev_geom.isPeriodic(1)) domain_per_grown.grow(1,1);,
                      if (lev_geom.isPeriodic(2)) domain_per_grown.grow(2,1););
 
-        // At any external Dirichlet domain boundaries we need to set dUdt_in to 0
-        //    in the cells just outside the domain because those values will be used
-        //    in the slope computation in state redistribution.  We assume here that
-        //    the ext_dir values of U_in itself have already been set.
-        if (!domain_per_grown.contains(bxg1))
-            amrex::ParallelFor(bxg1,ncomp,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                if (!domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
-                    dUdt_in(i,j,k,n) = 0.;
-            });
-
+	if ( dUdt_in )
+	{
+	    // At any external Dirichlet domain boundaries we need to set dUdt_in to 0
+	    //    in the cells just outside the domain because those values will be used
+	    //    in the slope computation in state redistribution.  We assume here that
+	    //    the ext_dir values of U_in itself have already been set.
+	    if (!domain_per_grown.contains(bxg1))
+		amrex::ParallelFor(bxg1,ncomp,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+		{
+		    if (!domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
+			dUdt_in(i,j,k,n) = 0.;
+		});
+	}
 
         amrex::Print() << "Start itracker" << std::endl;
 
@@ -315,8 +317,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
                                                      + dt * U_in(i,j,k,n) * delta_divU;
                 }
-                else
-                {
+                else                
+		{
+		    Print()<<"in "<<IntVect(i,j)<<U_in(i,j,k,n)<<std::endl;
+    		    Print()<<"dudt "<<dUdt_in(i,j,k,n)<<std::endl;
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
                 }
             });

@@ -22,7 +22,9 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
                      dm, 1             , 0 , MFInfo(), fact),
       gp        (ba, dm, AMREX_SPACEDIM, 0       , MFInfo(), fact),
       conv_velocity_o(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact),
-      conv_density_o (ba, dm, 1             , 0, MFInfo(), fact),
+// FIXME - think about if we really want to do it this way...
+      // this also probably gives one too many ghost cells (4 vs 3)
+      conv_density_o (ba, dm, 1             , ng_state, MFInfo(), fact),
       conv_tracer_o  (ba, dm, ntrac         , 0, MFInfo(), fact)
 {
     if (advection_type != "MOL") {
