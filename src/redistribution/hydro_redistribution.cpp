@@ -106,7 +106,7 @@ Redistribution::FillNewlyUncovered ( MultiFab& mf,
 }
 
 void Redistribution::Apply ( Box const& bx, int ncomp,
-			     Array4<Real>       const& dUdt_out,
+			     Array4<Real>       const& out,
 			     Array4<Real>       const& dUdt_in,
 			     Array4<Real const> const& U_in,
 			     Array4<Real> const& scratch,
@@ -126,7 +126,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 			     Real target_volfrac,
 			     Array4<Real const> const& update_scale)
 {
-    Apply(bx, ncomp, dUdt_out, dUdt_in, U_in, scratch, flag, flag,
+    Apply(bx, ncomp, out, dUdt_in, U_in, scratch, flag, flag,
 	  AMREX_D_DECL(apx, apy, apz), vfrac,
 	  AMREX_D_DECL(apx, apy, apz), vfrac,
 	  AMREX_D_DECL(fcx, fcy, fcz), ccent,
@@ -138,7 +138,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 }
 
 void Redistribution::Apply ( Box const& bx, int ncomp,
-                             Array4<Real      > const& dUdt_out,
+                             Array4<Real      > const& out,
                              Array4<Real      > const& dUdt_in,
                              Array4<Real const> const& U_in,
                              Array4<Real> const& scratch,
@@ -173,13 +173,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        dUdt_out(i,j,k,n) = 0.;
+        out(i,j,k,n) = 0.;
     });
 
     if (redistribution_type == "FluxRedist")
     {
         int icomp = 0;
-        apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp,
+        apply_flux_redistribution (bx, out, dUdt_in, scratch, icomp, ncomp,
 				   flag_old, vfrac_old, lev_geom);
 
     } else if (redistribution_type == "StateRedist") {
@@ -251,12 +251,27 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             //
             // SRD with stationary EB
             //
-            amrex::ParallelFor(Box(scratch), ncomp,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
-                scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n) / scale;
-            });
+	    if ( dUdt_in )
+	    {
+		// We're working with an update
+		amrex::ParallelFor(Box(scratch), ncomp,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+		{
+		    const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
+		    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n) / scale;
+		});
+	    }
+	    else
+	    {
+		// We're doing a whole state
+		amrex::ParallelFor(Box(scratch), ncomp,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+		{
+		    // FIXME? for this case I think we could do away with scratch and
+		    // just use U_in
+		    scratch(i,j,k,n) = U_in(i,j,k,n);
+		});
+	    }
         }
         else
         {
@@ -280,7 +295,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // For SRD without slopes, shouldn't matter what's in here because
                     // it gets mult by V^n which is zero
                     // But, we need this to be consistent with how we define the update
-                    // (dUdt_out) below and in the application code
+                    // (out) below and in the application code
                     scratch(i,j,k,n) = U_in(i,j,k,n);
                     //scratch(i,j,k,n) = 0.0;
                 }
@@ -343,40 +358,58 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             });
         }
 
-        StateRedistribute(bx, ncomp, dUdt_out, scratch, flag_new, vfrac_old, vfrac_new,
+        StateRedistribute(bx, ncomp, out, scratch, flag_new, vfrac_old, vfrac_new,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
                           itr_const, nrs_const, alpha_const, nbhd_vol_const,
                           cent_hat_const, lev_geom, srd_max_order);
 
-        if ( !vel_eb )
+	//
+	// Only update the values which actually changed -- this makes
+	// the results insensitive to tiling -- otherwise cells that aren't
+	// changed but are in a tile on which StateRedistribute gets called
+	// will have precision-level changes due to adding/subtracting U_in
+	// and multiplying/dividing by dt.   Here we test on whether (i,j,k)
+	// has at least one neighbor and/or whether (i,j,k) is in the
+	// neighborhood of another cell -- if either of those is true the
+	// value may have changed
+        //
+	if ( !vel_eb )
         {
             //
-            // SRD with stationary EB - pass out an update
+            // SRD with stationary EB
             //
-	    amrex::ParallelFor(bx, ncomp,
-	    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-		// Only update the values which actually changed -- this makes
-                // the results insensitive to tiling -- otherwise cells that aren't
-                // changed but are in a tile on which StateRedistribute gets called
-                // will have precision-level changes due to adding/subtracting U_in
-                // and multiplying/dividing by dt.   Here we test on whether (i,j,k)
-                // has at least one neighbor and/or whether (i,j,k) is in the
-                // neighborhood of another cell -- if either of those is true the
-                // value may have changed
-
-                if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)
-                {
-                   const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
-
-                   dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
-
-                }
-                else
-                {
-                   dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
-                }
-            });
+	    if ( dUdt_in )
+	    {
+		// Pass out an update
+		amrex::ParallelFor(bx, ncomp,
+	        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+		{
+		    if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)
+		    {
+			const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
+			
+			out(i,j,k,n) = scale * (out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+			
+		    }
+		    else
+		    {
+			out(i,j,k,n) = dUdt_in(i,j,k,n);
+		    }
+		});
+	    }
+	    else
+	    {
+		// Want to pass out the whole state, so we only need to reset cells that
+		// didn't get SRD changes.
+		amrex::ParallelFor(bx, ncomp,
+	        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+		{
+		    if ( !(itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) )
+		    {
+			out(i,j,k,n) = U_in(i,j,k,n);
+		    }
+		});		
+	    }
 	}
 	else
 	{
@@ -388,7 +421,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             {
                 //fixme
                 // if (i==8  && j==8){
-                //     amrex::Print() << "Pre dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
+                //     amrex::Print() << "Pre out" << IntVect(i,j) << out(i,j,k,n) << std::endl;
                 //     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
                 // }
 
@@ -397,13 +430,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 			|| (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
 			|| (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) ) )
                 {
-		    // Make sure we don't alter cells that didn't participate
-		    dUdt_out(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
+		    // Only need to reset cells that didn't get SRD changes
+		    out(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
                 }
 
                 //FIXME
                 // if (i==0 && j==10)
-                //     amrex::Print() << "Post dUdt_out" << IntVect(i,j) << dUdt_out(i,j,k,n) << std::endl;
+                //     amrex::Print() << "Post out" << IntVect(i,j) << out(i,j,k,n) << std::endl;
 
 	    });
 	}
@@ -413,7 +446,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-                dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
+                out(i,j,k,n) = dUdt_in(i,j,k,n);
             }
         );
 

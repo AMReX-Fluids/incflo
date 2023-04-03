@@ -36,7 +36,7 @@ namespace Redistribution {
     // FIXME - probably would benefit from passing ebfact instead of all the pieces...
 // Everything should eventually come down to calling this function
     void Apply ( amrex::Box const& bx, int ncomp,
-                 amrex::Array4<amrex::Real>       const& dUdt_out,
+                 amrex::Array4<amrex::Real>       const& out,
                  amrex::Array4<amrex::Real>       const& dUdt_in,
                  amrex::Array4<amrex::Real const> const& U_in,
                  amrex::Array4<amrex::Real> const& scratch,
@@ -66,7 +66,7 @@ namespace Redistribution {
 
     // for backwards compatibility
     void Apply ( amrex::Box const& bx, int ncomp,
-                 amrex::Array4<amrex::Real>       const& dUdt_out,
+                 amrex::Array4<amrex::Real>       const& out,
                  amrex::Array4<amrex::Real>       const& dUdt_in,
                  amrex::Array4<amrex::Real const> const& U_in,
                  amrex::Array4<amrex::Real> const& scratch,
@@ -86,7 +86,7 @@ namespace Redistribution {
                  amrex::Real target_volfrac = defaults::target_vol_fraction,
                  amrex::Array4<amrex::Real const> const& update_scale={});
     // {
-    // 	Apply(bx, ncomp, dUdt_out, dUdt_in, U_in, scratch, flag, flag,
+    // 	Apply(bx, ncomp, out, dUdt_in, U_in, scratch, flag, flag,
     // 	      AMREX_D_DECL(apx, apy, apz), vfrac,
     // 	      AMREX_D_DECL(apx, apy, apz), vfrac,
     // 	      AMREX_D_DECL(fcx, fcy, fcz), ccent,
@@ -100,7 +100,7 @@ namespace Redistribution {
     // Overloading in this way doens't work. Get multiple defs during linking...
     //
     // void Apply ( amrex::Box const& bx, int ncomp,
-    //              amrex::Array4<amrex::Real>       const& dUdt_out,
+    //              amrex::Array4<amrex::Real>       const& out,
     //              amrex::Array4<amrex::Real>       const& dUdt_in,
     //              amrex::Array4<amrex::Real const> const& U_in,
     //              amrex::Array4<amrex::Real> const& scratch,
@@ -120,7 +120,7 @@ namespace Redistribution {
     //              amrex::Real target_volfrac = defaults::target_vol_fraction,
     //              amrex::Array4<amrex::Real const> const& update_scale={})
     // {
-    //  // Apply(bx, ncomp, dUdt_out, dUdt_in, U_in, scratch, flag,
+    //  // Apply(bx, ncomp, out, dUdt_in, U_in, scratch, flag,
     //  //       AMREX_D_DECL(apx,apy, apz), vfrac,
     //  //       AMREX_D_DECL(amrex::Array4<amrex::Real const> {},
     //  //                 amrex::Array4<amrex::Real const> {},
@@ -136,7 +136,7 @@ namespace Redistribution {
     // }
 
     // void Apply ( amrex::Box const& bx, int ncomp,
-    //              amrex::Array4<amrex::Real>       const& dUdt_out,
+    //              amrex::Array4<amrex::Real>       const& out,
     //              amrex::Array4<amrex::Real>       const& dUdt_in,
     //              amrex::Array4<amrex::Real const> const& U_in,
     //              amrex::Array4<amrex::Real> const& scratch,
@@ -160,7 +160,7 @@ namespace Redistribution {
     //           amrex::Array4<amrex::Real const> const& bnorm,
     //           amrex::Array4<amrex::Real const> const& barea)
     // {
-    //  // Apply(bx, ncomp, dUdt_out, dUdt_in, U_in, scratch, flag,
+    //  // Apply(bx, ncomp, out, dUdt_in, U_in, scratch, flag,
     //  //       AMREX_D_DECL(apx_old,apy_old, apz_old), vfrac_old,
     //  //       AMREX_D_DECL(apx_new,apy_new, apz_new), vfrac_new,
     //  //       AMREX_D_DECL(fcx,fcy, fcz), ccent,

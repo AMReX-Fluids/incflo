@@ -297,7 +297,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		// Store update-hat here...
 		Array4<Real      > const& drdt_o   = ld.conv_density_o.array(mfi);
 
-		Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
+		Box const& gbx = amrex::grow(bx,ld.density.nGrow());
 		FArrayBox update_fab(gbx,1,The_Async_Arena());
 		Array4<Real> const& update = update_fab.array();
 		amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -318,6 +318,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		    // Update-hat = S^m(rho^n) - S^m(rho*trac^n - dt A^n)
 		    //            = S^m(rho^n) - rho^(p,n+1)
 		    drdt_o(i,j,k) -= rho_new(i,j,k);
+		    drdt_o(i,j,k) /= l_dt;
 		});
 #endif
             } // mfi
@@ -502,6 +503,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 			// Update-hat = S^m(rho*trac^n) - S^m(rho*trac^n - dt(A^n - D^n - f^n))
 			//            = S^m(rho*trac^n) - rhotrac^(p,n+1)
 			dtdt_o(i,j,k,n) -= rhotra(i,j,k,n);
+			dtdt_o(i,j,k,n) /= l_dt;
 			
 			// put back trac = rhotrac/rho_new - non-ideal for MEB, but convection
 			// expects just trac...
@@ -771,6 +773,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		    // Update-hat = S^m(rho*vel^n) - S^m(rho*vel^n - dt(A^n - D^n - f^n))
 		    //            = S^m(rho*vel^n) - rhovel^(p,n+1)
 		    dvdt_o(i,j,k,n) -= rhovel(i,j,k,n);
+		    dvdt_o(i,j,k,n) /= l_dt;
 			
 		    // put back vel = rhovel/rho_new - non-ideal for MEB, but convection
 		    // & proj expects just vel...

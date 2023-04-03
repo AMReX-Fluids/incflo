@@ -91,6 +91,9 @@ incflo::redistribute_term ( MFIter const& mfi,
 	Array4<Real> scratch = scratch_fab.array();
 	Elixir eli_scratch = scratch_fab.elixir();
 
+	// FIXME -- For the case that the update/temporary is null (i.e. we want to
+	// do regular SRD and return full state), I think we don't need this scratch...
+	//
 	// This is scratch space if calling StateRedistribute
 	//  but is used as the weights (here set to 1) if calling
 	//  FluxRedistribute
