@@ -28,7 +28,7 @@ void incflo::make_eb_hexahedron(Real cur_time)
     Vector<Real> boxLo(AMREX_SPACEDIM), boxHi(AMREX_SPACEDIM);
     Real offset = 1.0e-15;
     Real angle = 0.75;
-    Real angle2 = 0.3;
+    Real angle2 = 0.01;
     int dir = 0;
     int dir2 = 1;
 
