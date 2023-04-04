@@ -28,6 +28,7 @@ void incflo::make_eb_hexahedron(Real cur_time)
     Vector<Real> boxLo(AMREX_SPACEDIM), boxHi(AMREX_SPACEDIM);
     Real offset = 1.0e-15;
     Real angle = 0.75;
+    Real angle2 = 0.3;
     int dir = 0;
     int dir2 = 1;
 
@@ -74,8 +75,8 @@ void incflo::make_eb_hexahedron(Real cur_time)
 
     RealArray move {AMREX_D_DECL(vel[0]*cur_time, vel[1]*cur_time, vel[2]*cur_time)};
     
-//    auto polyhedron = EB2::rotate(EB2::rotate(EB2::BoxIF(lo, hi, inside), angle, dir), angle, dir2);
-    auto polyhedron = EB2::translate(EB2::rotate(EB2::BoxIF(lo, hi, inside), angle, dir), move);
+    auto polyhedron = EB2::translate(EB2::rotate(EB2::rotate(EB2::BoxIF(lo, hi, inside), angle, dir), angle2, dir2), move);
+//    auto polyhedron = EB2::translate(EB2::rotate(EB2::BoxIF(lo, hi, inside), angle, dir), move);
     auto gshop = EB2::makeShop(polyhedron);
 
     // Build index space
