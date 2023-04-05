@@ -37,8 +37,8 @@ incflo.advect_tracer    =   false        # Should we update them?
 incflo.mu_s             =   0.0       # Scalar diffusion coefficient
 incflo.diffusion_type = 0
 
-incflo.advect_momentum = true
-incflo.advection_type = MOL
+incflo.advect_momentum       = true
+incflo.advection_type        = "MOL"
 incflo.redistribution_type   =  "StateRedist" 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#

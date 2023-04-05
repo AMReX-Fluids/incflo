@@ -38,8 +38,6 @@ incflo.advect_momentum       = true
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
 
-incflo.godunov_include_diff_in_forcing = false
-
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #

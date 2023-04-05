@@ -30,15 +30,10 @@ incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false        #
 
-incflo.advect_momentum = true
-incflo.advection_type        =  "Godunov" 
+incflo.advect_momentum       = true
 incflo.advection_type        =  "MOL" 
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
-#incflo.redistribution_type   =  "NoRedist" 
-
-incflo.godunov_include_diff_in_forcing = false
-
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
