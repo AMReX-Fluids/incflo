@@ -295,6 +295,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
 	    //
                 Box const& bx = mfi.tilebox();
 		// Store update-hat here...
+		// Recall that this requires that conv has vals outside the domain zeroed
+		// and FillBoundary
 		Array4<Real      > const& drdt_o   = ld.conv_density_o.array(mfi);
 
 		Box const& gbx = amrex::grow(bx,ld.density.nGrow());
@@ -315,13 +317,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		// FIXME - I think this is okay as redistribute only uses tra on bx
 		amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 		{
-		    // Update-hat = S^m(rho^n) - S^m(rho*trac^n - dt A^n)
+		    // Update-hat = S^m(rho^n) - S^m(rho^n - dt A^n)
 		    //            = S^m(rho^n) - rho^(p,n+1)
 		    drdt_o(i,j,k) -= rho_new(i,j,k);
 		    drdt_o(i,j,k) /= l_dt;
 		});
 #endif
             } // mfi
+	    
         } // lev
 
         // Average down solution

@@ -187,7 +187,7 @@ void incflo::ApplyCorrector()
 	    // For moving EB, assemble state for redistribution
 	    //
 	    MultiFab rho_temp(grids[lev], dmap[lev], 1, nghost_state(), MFInfo(), Factory(lev));
-	    MultiFab::Copy(rho_temp, m_leveldata[lev]->density, 0, 0, 1, rho_temp.nGrow());
+	    rho_temp.setVal(0.);
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -212,6 +212,12 @@ void incflo::ApplyCorrector()
 
 	    // Need to ensure that boundaries are consistent
 	    rho_temp.FillBoundary(geom[lev].periodicity());
+
+	    // Fixme
+	    EB_set_covered(rho_temp,0,1,rho_temp.nGrow(),0.);
+	    VisMF::Write(rho_temp,"newrho");
+	    VisMF::Write(ld.conv_density,"drdt_new");
+	    VisMF::Write(ld.conv_density_o,"drdt_old");
 #endif
 
 #ifdef _OPENMP
@@ -257,6 +263,14 @@ void incflo::ApplyCorrector()
                 });
 #endif
             } // mfi
+
+	    // Fixme
+	    EB_set_covered(ld.density,0,1,ld.density.nGrow(),0.);
+	    
+	    rho_temp.minus(ld.density,0,1,0);
+	    VisMF::Write(rho_temp,"rt");
+	    VisMF::Write(ld.density,"rhonn");
+	    Abort();
         } // lev
 
         // Average down solution
@@ -292,7 +306,7 @@ void incflo::ApplyCorrector()
 	    // For moving EB, assemble state for redistribution
 	    //
 	    MultiFab tra_temp(grids[lev], dmap[lev], m_ntrac, nghost_state(), MFInfo(), Factory(lev));
-	    MultiFab::Copy(tra_temp, m_leveldata[lev]->tracer, 0, 0, m_ntrac, tra_temp.nGrow());
+	    tra_temp.setVal(0.);
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -480,8 +494,7 @@ void incflo::ApplyCorrector()
 	//
 	MultiFab vel_temp(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_state(),
 			  MFInfo(), Factory(lev));
-	MultiFab::Copy(vel_temp, m_leveldata[lev]->velocity, 0, 0, AMREX_SPACEDIM,
-		       vel_temp.nGrow());
+	vel_temp.setVal(0.);
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -733,8 +746,8 @@ void incflo::ApplyCorrector()
     }
 
 //FIXME
-    // VisMF::Write(m_leveldata[0]->density,"dcor");
-    // VisMF::Write(m_leveldata[0]->velocity,"vcor");
+    VisMF::Write(m_leveldata[0]->density,"dcor");
+    VisMF::Write(m_leveldata[0]->velocity,"vcor");
 
     // **********************************************************************************************
     //
