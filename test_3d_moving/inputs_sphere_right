@@ -3,15 +3,16 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  0            # Max umber of time steps
+max_step                = 10            # Max umber of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
 incflo.fixed_dt             =   1.e-3       # Use this constant dt if > 0
+
 incflo.do_initial_proj      =   1
-incflo.initial_iterations   =   0
+incflo.initial_iterations   =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
@@ -52,7 +53,7 @@ amr.blocking_factor     =   2
 #              GEOMETRY                 #
 #.......................................#
 geometry.prob_lo        =   0.  0.  0.  # Lo corner coordinates
-geometry.prob_hi        =   3.4 1.6 1.6 # Hi corner coordinates
+geometry.prob_hi        =   34. 16. 16. # Hi corner coordinates
 geometry.is_periodic    =   0   1   1   # Periodicity x y z (0/1)
 
 # Boundary conditions
@@ -66,8 +67,8 @@ xhi.pressure            =   0.0
 incflo.geometry = "sphere"
 
 sphere.internal_flow = false
-sphere.radius = 0.4
-sphere.center = 1.30 0.800 0.80
+sphere.radius = 4.0
+sphere.center = 13.0 8.0 8.0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
@@ -89,3 +90,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 eb_flow.velocity        = 1.0 0.0 0.0
 
+eb2.small_volfrac       = 1.0e-6

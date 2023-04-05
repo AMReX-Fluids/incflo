@@ -10,8 +10,9 @@ steady_state            =  0            # Steady-state solver?
 #         TIME STEP COMPUTATION         #
 #.......................................#
 incflo.fixed_dt             =   1.e-2       # Use this constant dt if > 0
-incflo.do_initial_proj      =   0
-incflo.initial_iterations   =   0
+
+incflo.do_initial_proj      =   1
+incflo.initial_iterations   =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #

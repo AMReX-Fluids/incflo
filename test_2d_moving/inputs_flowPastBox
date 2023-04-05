@@ -11,8 +11,8 @@ steady_state            =   0           # Steady-state solver?
 incflo.fixed_dt         =   -1.0        # Use this constant dt if > 0
 incflo.cfl              =   0.45        # CFL factor
 
-incflo.initial_iterations  = 0
-incflo.do_initial_proj = 1
+incflo.do_initial_proj     = 1
+incflo.initial_iterations  = 1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
