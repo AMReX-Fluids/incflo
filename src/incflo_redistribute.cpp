@@ -104,37 +104,41 @@ incflo::redistribute_term ( MFIter const& mfi,
 	});
 
 #ifdef AMREX_USE_MOVING_EB
-	EBFArrayBoxFactory const& ebfact_old = OldEBFactory(lev);
-	EBCellFlagFab const& flagfab_old         = ebfact_old.getMultiEBCellFlagFab()[mfi];
-	Array4<EBCellFlag const> const& flag_old = flagfab_old.const_array();
-	auto const& vfrac_old = ebfact_old.getVolFrac().const_array(mfi);
-	AMREX_D_TERM(auto const& apx_old = ebfact_old.getAreaFrac()[0]->const_array(mfi);,
-		     auto const& apy_old = ebfact_old.getAreaFrac()[1]->const_array(mfi);,
-		     auto const& apz_old = ebfact_old.getAreaFrac()[2]->const_array(mfi););
-	// For creating the MSRD correction term, so at time n
-        Array4<Real const> const& bnorm = ebfact_old.getBndryNormal().const_array(mfi);
-        Array4<Real const> const& barea = ebfact_old.getBndryArea().const_array(mfi);
-
-
-	Redistribution::Apply(bx, ncomp, result, temporary, state,
-			      scratch, flag_old, flag,
-                              AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
-			      AMREX_D_DECL(apx, apy, apz), vfrac,
-			      AMREX_D_DECL(fcx, fcy, fcz), ccc,
-			      bc, geom[lev], m_dt, m_redistribution_type,
-			      vel_eb, bnorm, barea,
-			      Redistribution::defaults::srd_max_order,
-			      Redistribution::defaults::target_vol_fraction,
-			      Array4<Real const> {});
-
-#else
-	// State redist acts on a state. What would that be for the diffusive term??
-	Redistribution::Apply(bx, ncomp, result, temporary, state,
-			      scratch, flag,
-			      AMREX_D_DECL(apx, apy, apz), vfrac,
-			      AMREX_D_DECL(fcx, fcy, fcz), ccc,
-			      bc, geom[lev], m_dt, m_redistribution_type);
+	if (vel_eb)
+	{
+	    EBFArrayBoxFactory const& ebfact_old = OldEBFactory(lev);
+	    EBCellFlagFab const& flagfab_old         = ebfact_old.getMultiEBCellFlagFab()[mfi];
+	    Array4<EBCellFlag const> const& flag_old = flagfab_old.const_array();
+	    auto const& vfrac_old = ebfact_old.getVolFrac().const_array(mfi);
+	    AMREX_D_TERM(auto const& apx_old = ebfact_old.getAreaFrac()[0]->const_array(mfi);,
+			 auto const& apy_old = ebfact_old.getAreaFrac()[1]->const_array(mfi);,
+			 auto const& apz_old = ebfact_old.getAreaFrac()[2]->const_array(mfi););
+	    // For creating the MSRD correction term, so at time n
+	    Array4<Real const> const& bnorm = ebfact_old.getBndryNormal().const_array(mfi);
+	    Array4<Real const> const& barea = ebfact_old.getBndryArea().const_array(mfi);
+	    
+	    
+	    Redistribution::Apply(bx, ncomp, result, temporary, state,
+				  scratch, flag_old, flag,
+				  AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+				  AMREX_D_DECL(apx, apy, apz), vfrac,
+				  AMREX_D_DECL(fcx, fcy, fcz), ccc,
+				  bc, geom[lev], m_dt, m_redistribution_type,
+				  vel_eb, bnorm, barea,
+				  Redistribution::defaults::srd_max_order,
+				  Redistribution::defaults::target_vol_fraction,
+				  Array4<Real const> {});
+	}
+	else
 #endif
+	{
+	    // State redist acts on a state. What would that be for the diffusive term??
+	    Redistribution::Apply(bx, ncomp, result, temporary, state,
+				  scratch, flag,
+				  AMREX_D_DECL(apx, apy, apz), vfrac,
+				  AMREX_D_DECL(fcx, fcy, fcz), ccc,
+				  bc, geom[lev], m_dt, m_redistribution_type);
+	}
     }
     else
     {
