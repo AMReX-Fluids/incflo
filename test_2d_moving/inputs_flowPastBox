@@ -99,3 +99,4 @@ tensor_diffusion.verbose  =   1         # Tensor Diffusion
 #.......................................#
 eb_flow.velocity        = 1.0 0.0 0.0
 
+eb2.small_volfrac       = 1.0e-6

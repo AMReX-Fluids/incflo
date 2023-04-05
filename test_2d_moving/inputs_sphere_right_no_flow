@@ -90,3 +90,5 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 eb_flow.velocity        = 1.0 0.0 0.0
 eb_flow.density         = 1.0
+
+eb2.small_volfrac       = 1.0e-6
