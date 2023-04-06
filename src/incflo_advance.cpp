@@ -141,7 +141,7 @@ void incflo::Advance()
 
         //FIXME
     // this will overwrite the previous time plotfile
-    // WritePlotFile();
+    WritePlotFile();
     // static int count=0; count++;
     // if (count>44) Abort();
 
