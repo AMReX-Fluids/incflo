@@ -3,13 +3,13 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  20          # Max number of time steps
+max_step                =  10          # Max number of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-incflo.fixed_dt             =   1.e-3       # Use this constant dt if > 0
+incflo.fixed_dt             =   1.e-2       # Use this constant dt if > 0
 
 incflo.do_initial_proj      =   1
 incflo.initial_iterations   =   1
@@ -17,7 +17,7 @@ incflo.initial_iterations   =   1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =   1           # Steps between plot files
+amr.plot_int            =   10          # Steps between plot files
 amr.plt_regtest         =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -30,8 +30,8 @@ incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
-incflo.advect_momentum = 1
-incflo.advection_type        =  "MOL" 
+incflo.advect_momentum       = true
+incflo.advection_type        = "MOL"
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
 
@@ -63,8 +63,8 @@ xhi.pressure            =   0.0
 incflo.geometry = "box"
 box.internal_flow = true
 
-box.Lo =  0.95  -0.20  -0.20  
-box.Hi =  3.80   1.80   1.80   
+box.Lo =  0.95  -0.2  -0.2
+box.Hi =  3.80   1.8   1.8
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
@@ -80,6 +80,9 @@ incflo.ic_p             =   0.0         #
 incflo.verbose            =   1         # incflo itself
 mac_proj.verbose          =   1         # MAC Projector
 nodal_proj.verbose        =   1         # Nodal Projector
+
+nodal_proj.mg_atol = 1.e-12
+nodal_proj.mg_rtol = 1.e-12
 
 #.......................................#
 #               EB FLOW                 #

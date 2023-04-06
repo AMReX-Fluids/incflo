@@ -17,13 +17,13 @@ incflo.initial_iterations   =   1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =   1           # Steps between plot files
+amr.plot_int            =   10          # Steps between plot files
 amr.plt_regtest         =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #
 #.......................................#
-incflo.gravity          =   0.  0.      # Gravitational force (3D)
+incflo.gravity          =   0.  0.  0.  # Gravitational force (3D)
 incflo.ro_0             =   1.          # Reference density 
 
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
@@ -39,7 +39,7 @@ incflo.redistribution_type   =  "StateRedist"
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   34 16       # Grid cells at coarsest AMRlevel
+amr.n_cell              =   34 16 16    # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.max_grid_size_x     =   1024
 amr.max_grid_size_y     =   1024
@@ -49,9 +49,9 @@ amr.blocking_factor     =   2
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
-geometry.prob_lo        =   0.  0.      # Lo corner coordinates
-geometry.prob_hi        =   3.4 1.6     # Hi corner coordinates
-geometry.is_periodic    =   1   0       # Periodicity x y z (0/1)
+geometry.prob_lo        =   0.  0.  0.  # Lo corner coordinates
+geometry.prob_hi        =   3.4 1.6 1.6 # Hi corner coordinates
+geometry.is_periodic    =   1   0   1   # Periodicity x y z (0/1)
 
 # Boundary conditions
 ylo.type                =   "nsw"
@@ -64,14 +64,15 @@ yhi.pressure            =  0.0
 incflo.geometry = "box"
 box.internal_flow = true
 
-box.Lo =  -1.2   0.45  
-box.Hi =  3.80   1.80   
+box.Lo =  -0.2   0.45  -0.2
+box.Hi =  3.80   1.80   3.8
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
 incflo.ic_u             =   0.0         #
 incflo.ic_v             =   2.0         #
+incflo.ic_w             =   0.0         #
 incflo.ic_p             =   0.0         #
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#

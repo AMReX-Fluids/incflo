@@ -9,7 +9,7 @@ steady_state            =  0            # Steady-state solver?
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-#incflo.fixed_dt             =   2.e-3   # Use this constant dt if > 0
+incflo.fixed_dt             =   1.e-2       # Use this constant dt if > 0
 
 incflo.do_initial_proj      =   1
 incflo.initial_iterations   =   1
@@ -17,11 +17,8 @@ incflo.initial_iterations   =   1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =   1           # Steps between plot files
-amr.plt_ccse_regtest    =   0
-amr.plt_vort = 0
-
-amr.check_int = 1
+amr.plot_int            =   10          # Steps between plot files
+amr.plt_regtest         =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #
@@ -33,8 +30,8 @@ incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
-incflo.advection_type        =  "MOL"
 incflo.advect_momentum       = true
+incflo.advection_type        = "MOL"
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
 
@@ -42,7 +39,7 @@ incflo.redistribution_type   =  "StateRedist"
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   34 16  16   # Grid cells at coarsest AMRlevel
+amr.n_cell              =   34 16 16    # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.max_grid_size_x     =   1024
 amr.max_grid_size_y     =   1024
@@ -54,28 +51,28 @@ amr.blocking_factor     =   2
 #.......................................#
 geometry.prob_lo        =   0.  0.  0.  # Lo corner coordinates
 geometry.prob_hi        =   3.4 1.6 1.6 # Hi corner coordinates
-geometry.is_periodic    =   1   1   0   # Periodicity x y z (0/1)
+geometry.is_periodic    =   1   0   1   # Periodicity x y z (0/1)
 
 # Boundary conditions
-zlo.type                =   "nsw"
-zlo.velocity            =   0.0  0.0  0.0
+ylo.type                =   "nsw"
+ylo.velocity            =   0.0  0.0  0.0
 
-zhi.type                =   "mi"
-zhi.velocity            =  0.0  0.0 2.0
+yhi.type                =   "po"
+yhi.pressure            =  0.0
 
 # Add box
 incflo.geometry = "box"
 box.internal_flow = true
 
-box.Lo =  -0.2   -0.2   1.15
-box.Hi =  3.60   3.60   3.60
+box.Lo =  -0.2   0.45  -0.2
+box.Hi =  3.80   1.80   3.8
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
 incflo.ic_u             =   0.0         #
-incflo.ic_v             =   0.0         #
-incflo.ic_w             =   2.0         #
+incflo.ic_v             =   2.0         #
+incflo.ic_w             =   0.0         #
 incflo.ic_p             =   0.0         #
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -85,9 +82,12 @@ incflo.verbose            =   1         # incflo itself
 mac_proj.verbose          =   1         # MAC Projector
 nodal_proj.verbose        =   1         # Nodal Projector
 
+nodal_proj.mg_atol = 1.e-12
+nodal_proj.mg_rtol = 1.e-12
+
 #.......................................#
 #               EB FLOW                 #
 #.......................................#
-eb_flow.velocity        = 0.0  0.0 2.0
+eb_flow.velocity        = 0.0 2.0 0.0
 
 eb2.small_volfrac       = 1.0e-6
