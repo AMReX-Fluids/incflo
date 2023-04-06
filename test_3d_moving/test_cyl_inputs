@@ -1,49 +1,49 @@
 /bin/rm -r plt* chk* out.i*flow
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_left    xhi.velocity=-1.  0. 0. incflo.ic_u=-1.0 eb.flow_velocity=-1. 0. 0. | tee out.iml_coflow
-mv plt00010 plt00010_iml_c
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_left    xhi.velocity= 0.  0. 0. incflo.ic_u=0.0 eb.flow_velocity=-1. 0. 0. | tee out.iml_noflow
-mv plt00010 plt00010_iml_n
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_right   xlo.velocity= 1.  0. 0. incflo.ic_u=1.0 eb.flow_velocity=1. 0. 0. >& out.imr_coflow
-mv plt00010 plt00010_imr_c
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_right   xlo.velocity= 0.  0. 0. incflo.ic_u=0.0 eb.flow_velocity=1. 0. 0. >& out.imr_noflow
-mv plt00010 plt00010_imr_n
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_down    yhi.velocity= 0. -1. 0. incflo.ic_v=-1.0 eb.flow_velocity=0. -1. 0. >& out.imd_coflow
-mv plt00010 plt00010_imd_c
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_down    yhi.velocity= 0.  0. 0. incflo.ic_v=0.0 eb.flow_velocity=0. -1. 0. >& out.imd_noflow
-mv plt00010 plt00010_imd_n
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_up      ylo.velocity= 0.  1. 0. incflo.ic_v=1.0 eb.flow_velocity=0. 1. 0. >& out.imu_coflow
-mv plt00010 plt00010_imu_c
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_up      ylo.velocity= 0.  0. 0. incflo.ic_v=0.0 eb.flow_velocity=0. 1. 0. >& out.imu_noflow
-mv plt00010 plt00010_imu_n
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_back    zhi.velocity= 0.  0. -1. incflo.ic_w=-1.0 eb.flow_velocity=0. 0. -1. >& out.imb_coflow
-mv plt00010 plt00010_imb_c
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_back    zhi.velocity= 0.  0. 0. incflo.ic_w=0.0 eb.flow_velocity=0. 0. -1. >& out.imb_noflow
-mv plt00010 plt00010_imb_n
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_forward zlo.velocity= 0.  0. 1. incflo.ic_w=1.0 eb.flow_velocity=0. 0. 1. >& out.imf_coflow
-mv plt00010 plt00010_imf_c
-./incflo3d.gnu.MPI.EB.ex inputs_cyl_forward zlo.velocity= 0.  0. 0. incflo.ic_w=0.0 eb.flow_velocity=0. 0. 1. >& out.imf_noflow
-mv plt00010 plt00010_imf_n
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_left    xhi.velocity=-1.  0. 0. incflo.ic_u=-1.0 eb.flow_velocity=-1. 0. 0. | tee out.icl_coflow
+mv plt00010 plt00010_icl_c
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_left    xhi.velocity= 0.  0. 0. incflo.ic_u=0.0 eb.flow_velocity=-1. 0. 0. | tee out.icl_noflow
+mv plt00010 plt00010_icl_n
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_right   xlo.velocity= 1.  0. 0. incflo.ic_u=1.0 eb.flow_velocity=1. 0. 0. >& out.icr_coflow
+mv plt00010 plt00010_icr_c
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_right   xlo.velocity= 0.  0. 0. incflo.ic_u=0.0 eb.flow_velocity=1. 0. 0. >& out.icr_noflow
+mv plt00010 plt00010_icr_n
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_down    yhi.velocity= 0. -1. 0. incflo.ic_v=-1.0 eb.flow_velocity=0. -1. 0. >& out.icd_coflow
+mv plt00010 plt00010_icd_c
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_down    yhi.velocity= 0.  0. 0. incflo.ic_v=0.0 eb.flow_velocity=0. -1. 0. >& out.icd_noflow
+mv plt00010 plt00010_icd_n
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_up      ylo.velocity= 0.  1. 0. incflo.ic_v=1.0 eb.flow_velocity=0. 1. 0. >& out.icu_coflow
+mv plt00010 plt00010_icu_c
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_up      ylo.velocity= 0.  0. 0. incflo.ic_v=0.0 eb.flow_velocity=0. 1. 0. >& out.icu_noflow
+mv plt00010 plt00010_icu_n
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_back    zhi.velocity= 0.  0. -1. incflo.ic_w=-1.0 eb.flow_velocity=0. 0. -1. >& out.icb_coflow
+mv plt00010 plt00010_icb_c
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_back    zhi.velocity= 0.  0. 0. incflo.ic_w=0.0 eb.flow_velocity=0. 0. -1. >& out.icb_noflow
+mv plt00010 plt00010_icb_n
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_forward zlo.velocity= 0.  0. 1. incflo.ic_w=1.0 eb.flow_velocity=0. 0. 1. >& out.icf_coflow
+mv plt00010 plt00010_icf_c
+./incflo3d.gnu.MPI.EB.ex inputs_cyl_forward zlo.velocity= 0.  0. 0. incflo.ic_w=0.0 eb.flow_velocity=0. 0. 1. >& out.icf_noflow
+mv plt00010 plt00010_icf_n
 echo "IML COFLOW"
-grep Initial out.iml_coflow | head -4
+grep Initial out.icl_coflow | head -4
 echo "IML NOFLOW"
-grep Initial out.iml_noflow | head -4
+grep Initial out.icl_noflow | head -4
 echo "IMR COFLOW"
-grep Initial out.imr_coflow | head -4
+grep Initial out.icr_coflow | head -4
 echo "IMR NOFLOW"
-grep Initial out.imr_noflow | head -4
+grep Initial out.icr_noflow | head -4
 echo "IMD COFLOW"
-grep Initial out.imd_coflow | head -4
+grep Initial out.icd_coflow | head -4
 echo "IMD NOFLOW"
-grep Initial out.imd_noflow | head -4
+grep Initial out.icd_noflow | head -4
 echo "IMU COFLOW"
-grep Initial out.imu_coflow | head -4
+grep Initial out.icu_coflow | head -4
 echo "IMU NOFLOW"
-grep Initial out.imu_noflow | head -4
+grep Initial out.icu_noflow | head -4
 echo "IMF COFLOW"
-grep Initial out.imf_coflow | head -4
+grep Initial out.icf_coflow | head -4
 echo "IMF NOFLOW"
-grep Initial out.imf_noflow | head -4
+grep Initial out.icf_noflow | head -4
 echo "IMB COFLOW"
-grep Initial out.imb_coflow | head -4
+grep Initial out.icb_coflow | head -4
 echo "IMB NOFLOW"
-grep Initial out.imb_noflow | head -4
+grep Initial out.icb_noflow | head -4

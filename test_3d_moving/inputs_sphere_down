@@ -54,24 +54,24 @@ geometry.prob_hi        =   1.6 3.4 1.6 # Hi corner coordinates
 geometry.is_periodic    =   1   0   1   # Periodicity x y z (0/1)
 
 # Boundary conditions
-ylo.type                =   "mi"
-ylo.velocity            =   0.0  1.0  0.0
+yhi.type                =   "mi"
+yhi.velocity            =   0.0 -1.0  0.0
 
-yhi.type                =   "po"
-yhi.pressure            =   0.0
+ylo.type                =   "po"
+ylo.pressure            =   0.0
 
 # Add box
 incflo.geometry = "sphere"
 
 sphere.internal_flow = false
 sphere.radius = 0.4
-sphere.center = 0.8 1.30 0.80
+sphere.center = 0.8 2.1  0.8 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
 incflo.ic_u             =   0.0         #
-incflo.ic_v             =   1.0         #
+incflo.ic_v             =  -1.0         #
 incflo.ic_w             =   0.0         #
 incflo.ic_p             =   0.0         #
 
@@ -85,6 +85,6 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 #               EB FLOW                 #
 #.......................................#
-eb_flow.velocity        = 0.0 1.0 0.0
+eb_flow.velocity        = 0.0 -1.0 0.0
 
 eb2.small_volfrac       = 1.0e-6

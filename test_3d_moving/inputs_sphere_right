@@ -7,9 +7,9 @@ max_step                = 10            # Max umber of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
-#         TIME STEP COMPUTATION         #
+          TIME STEP COMPUTATION         #
 #.......................................#
-incflo.fixed_dt             =   1.e-3       # Use this constant dt if > 0
+incflo.fixed_dt             =   1.e-2       # Use this constant dt if > 0
 
 incflo.do_initial_proj      =   1
 incflo.initial_iterations   =   1
@@ -17,7 +17,7 @@ incflo.initial_iterations   =   1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =   1           # Steps between plot files
+amr.plot_int            =   10          # Steps between plot files
 amr.plt_regtest         =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -49,7 +49,7 @@ amr.blocking_factor     =   2
 #              GEOMETRY                 #
 #.......................................#
 geometry.prob_lo        =   0.  0.  0.  # Lo corner coordinates
-geometry.prob_hi        =   34. 16. 16. # Hi corner coordinates
+geometry.prob_hi        =   3.4 1.6 1.6 # Hi corner coordinates
 geometry.is_periodic    =   0   1   1   # Periodicity x y z (0/1)
 
 # Boundary conditions
@@ -63,8 +63,8 @@ xhi.pressure            =   0.0
 incflo.geometry = "sphere"
 
 sphere.internal_flow = false
-sphere.radius = 4.0
-sphere.center = 13.0 8.0 8.0
+sphere.radius = 0.4
+sphere.center = 1.3 0.8 0.8
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #

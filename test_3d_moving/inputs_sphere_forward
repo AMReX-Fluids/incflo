@@ -3,15 +3,16 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  1           # Max number of time steps
+max_step                =  0            # Max umber of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
 incflo.fixed_dt             =   1.e-3       # Use this constant dt if > 0
+
 incflo.do_initial_proj      =   1
-incflo.initial_iterations   =   0
+incflo.initial_iterations   =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
@@ -27,19 +28,18 @@ incflo.ro_0             =   1.          # Reference density
 
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
-incflo.constant_density =   true        #
+incflo.constant_density =   false        #
 
-incflo.advection_type        =  "Godunov" 
+incflo.advect_momentum       =  true
+incflo.advection_type        =  "MOL" 
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
-incflo.redistribution_type   =  "NoRedist" 
-
-incflo.godunov_include_diff_in_forcing = false
+#incflo.redistribution_type   =  "NoRedist" 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   34 16 16   # Grid cells at coarsest AMRlevel
+amr.n_cell              =   16 16 34      # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.max_grid_size_x     =   1024
 amr.max_grid_size_y     =   1024
@@ -50,30 +50,29 @@ amr.blocking_factor     =   2
 #              GEOMETRY                 #
 #.......................................#
 geometry.prob_lo        =   0.  0.  0.  # Lo corner coordinates
-geometry.prob_hi        =   3.4 1.6 1.6 # Hi corner coordinates
-geometry.is_periodic    =   0   1   1   # Periodicity x y z (0/1)
+geometry.prob_hi        =   1.6 1.6 3.4 # Hi corner coordinates
+geometry.is_periodic    =   1   1   0   # Periodicity x y z (0/1)
 
 # Boundary conditions
-xlo.type                =   "mi"
-xlo.velocity            =   1.0  0.0  0.0
+zlo.type                =   "mi"
+zlo.velocity            =   0.0  0.0  1.0
 
-xhi.type                =   "po"
-xhi.pressure            =   0.0
+zhi.type                =   "po"
+zhi.pressure            =   0.0
 
 # Add box
-incflo.geometry = "cylinder"
+incflo.geometry = "sphere"
 
-cylinder.internal_flow = false
-cylinder.radius = 0.37
-cylinder.direction = 2
-cylinder.center = 0.8 0.8 0.8
+sphere.internal_flow = false
+sphere.radius = 0.4
+sphere.center = 0.8 0.80 1.30
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.ic_u             =   1.0         #
+incflo.ic_u             =   0.0         #
 incflo.ic_v             =   0.0         #
-incflo.ic_2             =   0.0         #
+incflo.ic_w             =   1.0         #
 incflo.ic_p             =   0.0         #
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -86,4 +85,6 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 #               EB FLOW                 #
 #.......................................#
-eb_flow.velocity        = 1.0 0.0 0.0
+eb_flow.velocity        = 0.0 0.0 1.0
+
+eb2.small_volfrac       = 1.0e-6
