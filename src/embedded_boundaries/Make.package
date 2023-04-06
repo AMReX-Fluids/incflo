@@ -7,6 +7,7 @@ CEXE_sources += eb_hexahedron.cpp
 CEXE_sources += eb_cyl_tuscan.cpp
 CEXE_sources += eb_regular.cpp
 CEXE_sources += eb_sphere.cpp
+CEXE_sources += eb_oscillating_sphere.cpp
 CEXE_sources += eb_stirrer.cpp
 CEXE_sources += eb_chkptfile.cpp
 ifeq ($(DIM), 3)

@@ -46,7 +46,49 @@ incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& eb_vel, int nghost
           GpuArray<amrex::Real,3> eb_vel_comps{0.};
           // Flow is specified as a velocity magnitude
           if ( m_eb_flow.is_mag ) {
-             eb_vel_mag = m_eb_flow.vel_mag;
+              eb_vel_mag = m_eb_flow.vel_mag;
+          } else if ( m_eb_flow.is_frequency) {
+              has_comps = true;
+
+              const auto& frequency = m_eb_flow.frequency;
+              const auto& amplitude = m_eb_flow.amplitude;
+
+              Vector<Real> period(3);
+              Vector<Real> amps(3);
+
+              /*
+                 --- Adjust frequency to period --- 
+                 The idea here is that if the frequency is too small, we just neglect it by 
+                 setting the period to 1 and amplitude to 0.
+               */
+              if (std::abs(frequency[0]) > 1.e-6){
+                  period[0] = 1./frequency[0];
+                  amps[0] = amplitude[0];
+              } else {
+                  period[0] = 1.;
+                  amps[0] = 0.;
+              }
+
+              if (std::abs(frequency[1]) > 1.e-6){
+                  period[1] = 1./frequency[1];
+                  amps[1] = amplitude[1];
+              } else {
+                  period[1] = 1.;
+                  amps[1] = 0.;
+              }
+#if (AMREX_SPACEDIM == 3)    
+              if (std::abs(frequency[2]) > 1.e-6){
+                  period[2] = 1./frequency[2];
+                  amps[2] = amplitude[2];
+              } else {
+                  period[2] = 1.;
+                  amps[2] = 0.;
+              }
+#endif
+
+              AMREX_D_TERM(eb_vel_comps[0] = amps[0] * period[0] * cos(period[0]*time);,
+                      eb_vel_comps[1] = amps[1] * period[1] * cos(period[1]*time);,
+                      eb_vel_comps[2] = amps[2] * period[2] * cos(period[2]*time));
           } else {
              has_comps = true;
              const auto& vels = m_eb_flow.velocity;

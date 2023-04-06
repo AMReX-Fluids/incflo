@@ -184,6 +184,11 @@ void incflo::ReadParameters ()
        } else if (pp_eb_flow.contains("velocity")) {
           m_eb_flow.enabled = true;
           pp_eb_flow.getarr("velocity", m_eb_flow.velocity, 0, AMREX_SPACEDIM);
+       } else if (pp_eb_flow.contains("frequency")) {
+           m_eb_flow.enabled = true;
+           m_eb_flow.is_frequency = true;
+           pp_eb_flow.getarr("frequency", m_eb_flow.frequency, 0, AMREX_SPACEDIM);
+           pp_eb_flow.getarr("amplitude", m_eb_flow.amplitude, 0, AMREX_SPACEDIM); 
        } else if (pp_eb_flow.contains("omega")) {
           m_eb_flow.enabled = true;
           m_eb_flow.is_omega = true;
