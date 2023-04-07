@@ -10,8 +10,9 @@ steady_state            =  0            # Steady-state solver?
 #         TIME STEP COMPUTATION         #
 #.......................................#
 incflo.fixed_dt             =   1.e-2       # Use this constant dt if > 0
-incflo.do_initial_proj      =   0
-incflo.initial_iterations   =   0
+
+incflo.do_initial_proj      =   1
+incflo.initial_iterations   =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
@@ -29,12 +30,10 @@ incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
-incflo.advect_momentum = 1 
-incflo.advection_type        =  "Godunov" 
+incflo.advect_momentum       = true
+incflo.advection_type        = "MOL"
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
-
-incflo.godunov_include_diff_in_forcing = false
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
@@ -100,3 +99,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 eb_flow.velocity        = 2.0 0.0 0.0
 
+eb2.small_volfrac       = 1.0e-6

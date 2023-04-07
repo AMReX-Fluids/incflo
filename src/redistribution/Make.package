@@ -1,3 +1,4 @@
+CEXE_sources += hydro_create_itracker.cpp
 CEXE_sources += hydro_create_itracker_$(DIM)d.cpp
 CEXE_sources += hydro_redistribution.cpp
 CEXE_sources += hydro_state_redistribute.cpp

@@ -317,7 +317,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
-                });
+                 });
             } // mfi
 #endif
 
@@ -391,7 +391,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 });
 #endif
             } // mfi
-
         } // lev
 
         // Average down solution
@@ -465,13 +464,13 @@ void incflo::ApplyPredictor (bool incremental_projection)
             for (MFIter mfi(ld.tracer,TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
                 Box const& bx = mfi.tilebox();
-                Array4<Real> const& tra          = ld.tracer.array(mfi);
-                Array4<Real const> const& rho    = ld.density.const_array(mfi);
+                Array4<Real> const& tra           = ld.tracer.array(mfi);
+                Array4<Real const> const& rho     = ld.density.const_array(mfi);
                 Array4<Real const> const& rho_o  = ld.density_o.const_array(mfi);
                 Array4<Real const> const& dtdt_o  = ld.conv_tracer_o.const_array(mfi);
                 //FIXME? - init will abort if ntrac < 1...
-                Array4<Real const> const& tra_f  = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
-                                                                 : Array4<Real const>{};
+                Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
+                                                                  : Array4<Real const>{};
 
 #ifdef AMREX_USE_MOVING_EB
                 Array4<Real      > const& tra_o  = ld.tracer_o.array(mfi);
@@ -717,7 +716,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
         for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Box const& bx = mfi.tilebox();
-            Array4<Real      > const& vel = ld.velocity.array(mfi);
+            Array4<Real> const& vel = ld.velocity.array(mfi);
             Array4<Real const> const& dvdt = ld.conv_velocity_o.const_array(mfi);
             Array4<Real const> const& vel_f = vel_forces[lev].const_array(mfi);
             Array4<Real const> const& rho_old  = ld.density_o.const_array(mfi);
@@ -839,17 +838,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 if (m_advect_momentum) {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        if (i==16 && j==4)//(vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
-                        {
-                            Print()<<"vel pieces "<<vel(i,j,k,0)
-                                <<" "<<rho_old(i,j,k)
-                                <<" "<<dvdt(i,j,k,0)
-                                <<" "<<rho_nph(i,j,k)
-                                <<" "<<vel_f(i,j,k,0)
-                                <<" "<<divtau_o(i,j,k,0)
-                                <<" "<<rho_new(i,j,k)
-                                <<std::endl;
-                        }
+                        // if (i==16 && j==4)//(vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
+			// {
+                        //     Print()<<"vel pieces "<<vel(i,j,k,0)
+                        //         <<" "<<rho_old(i,j,k)
+                        //         <<" "<<dvdt(i,j,k,0)
+                        //         <<" "<<rho_nph(i,j,k)
+                        //         <<" "<<vel_f(i,j,k,0)
+                        //         <<" "<<divtau_o(i,j,k,0)
+                        //         <<" "<<rho_new(i,j,k)
+                        //         <<std::endl;
+                        // }
 
                         AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                      vel(i,j,k,1) *= rho_old(i,j,k);,

@@ -448,9 +448,12 @@ private:
        bool enabled;
        bool has_normal;
        bool is_mag;
+       bool is_frequency;
        bool is_omega;
        amrex::Real vel_mag;
        amrex::Vector<amrex::Real> velocity;
+       amrex::Vector<amrex::Real> frequency;
+       amrex::Vector<amrex::Real> amplitude;
        amrex::Vector<amrex::Real> omega;
        amrex::Vector<amrex::Real> center_of_rotation;
 
@@ -467,6 +470,7 @@ private:
          : enabled(false)
          , has_normal(false)
          , is_mag(false)
+         , is_frequency(false)
          , is_omega(false)
          , vel_mag(0.)
          , omega(0.)
@@ -891,10 +895,12 @@ private:
     void make_eb_annulus ();
     void make_eb_box (amrex::Real time = 0.0);
     void make_eb_plane (amrex::Real time = 0.0);
-    void make_eb_cylinder ();
+    void make_eb_cylinder (amrex::Real time = 0.0);
+    void make_eb_hexahedron (amrex::Real time = 0.0);
     void make_eb_twocylinders ();
     void make_eb_regular ();
     void make_eb_sphere (amrex::Real time = 0.0);
+    void make_eb_oscillating_sphere (amrex::Real time = 0.0);
     void make_eb_stirrer (amrex::Real time = 0.0);
     void make_eb_spherecube ();
     void make_eb_cyl_tuscan ();

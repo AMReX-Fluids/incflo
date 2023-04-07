@@ -86,8 +86,7 @@ void incflo::Advance()
 #ifdef INCFLO_USE_MOVING_EB
     for (int lev = 0; lev <= finest_level; lev++)
     {
-// This is needed for vel and tracer provided we continue with the same
-        // strategy of passing back an update rather than a state...
+// FIXME - do we still really need this, or do we only need to fill with a computatble value
 
         // FIXME - need some way to make sure target volfrac is consistent between
         // here and other calls

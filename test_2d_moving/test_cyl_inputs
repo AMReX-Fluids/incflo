@@ -1,0 +1,33 @@
+/bin/rm -r plt* chk* out.i*flow
+./incflo2d.gnu.MPI.EB.ex inputs_cyl_left  xhi.velocity=-1.0  0.0  0.0 incflo.ic_u=-1.0 eb.flow_velocity=-1. 0. 0. >& out.icl_coflow
+mv plt00010 plt00010_icl_c
+./incflo2d.gnu.MPI.EB.ex inputs_cyl_left  xhi.velocity= 0.0  0.0  0.0 incflo.ic_u=0.0 eb.flow_velocity=-1. 0. 0. >& out.icl_noflow
+mv plt00010 plt00010_icl_n
+./incflo2d.gnu.MPI.EB.ex inputs_cyl_right xlo.velocity= 1.0  0.0  0.0 incflo.ic_u=1.0 eb.flow_velocity=1. 0. 0. >& out.icr_coflow
+mv plt00010 plt00010_icr_c
+./incflo2d.gnu.MPI.EB.ex inputs_cyl_right xlo.velocity= 0.0  0.0  0.0 incflo.ic_u=0.0 eb.flow_velocity=1. 0. 0. >& out.icr_noflow
+mv plt00010 plt00010_icr_n
+./incflo2d.gnu.MPI.EB.ex inputs_cyl_down  yhi.velocity= 0.0 -1.0  0.0 incflo.ic_v=-1.0 eb.flow_velocity=0. -1. 0. >& out.icd_coflow
+mv plt00010 plt00010_icd_c
+./incflo2d.gnu.MPI.EB.ex inputs_cyl_down  yhi.velocity= 0.0  0.0  0.0 incflo.ic_v=0.0 eb.flow_velocity=0. -1. 0. >& out.icd_noflow
+mv plt00010 plt00010_icd_n
+./incflo2d.gnu.MPI.EB.ex inputs_cyl_up    ylo.velocity= 0.0  1.0  0.0 incflo.ic_v=1.0 eb.flow_velocity=0. 1. 0. >& out.icu_coflow
+mv plt00010 plt00010_icu_y
+./incflo2d.gnu.MPI.EB.ex inputs_cyl_up    ylo.velocity= 0.0  0.0  0.0 incflo.ic_v=0.0 eb.flow_velocity=0. 1. 0. >& out.icu_noflow
+mv plt00010 plt00010_icu_n
+echo "IML COFLOW"
+grep Initial out.icl_coflow | head -4
+echo "IML NOFLOW"
+grep Initial out.icl_noflow | head -4
+echo "IMR COFLOW"
+grep Initial out.icr_coflow | head -4
+echo "IMR NOFLOW"
+grep Initial out.icr_noflow | head -4
+echo "IMD COFLOW"
+grep Initial out.icd_coflow | head -4
+echo "IMD NOFLOW"
+grep Initial out.icd_noflow | head -4
+echo "IMU COFLOW"
+grep Initial out.icu_coflow | head -4
+echo "IMU NOFLOW"
+grep Initial out.icu_noflow | head -4

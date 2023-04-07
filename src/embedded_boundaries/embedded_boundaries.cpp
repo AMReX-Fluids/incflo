@@ -34,12 +34,17 @@ void incflo::MakeEBGeometry(Real cur_time)
     if(geom_type == "cylinder")
     {
     amrex::Print() << "\n Building cylinder geometry." << std::endl;
-        make_eb_cylinder();
+        make_eb_cylinder(cur_time);
     }
     else if(geom_type == "box")
     {
         amrex::Print() << "\n Building box geometry." << std::endl;
         make_eb_box(cur_time);
+    }
+    else if(geom_type == "hexahedron")
+    {
+        amrex::Print() << "\n Building hexahedron geometry." << std::endl;
+        make_eb_hexahedron(cur_time);
     }
     else if(geom_type == "plane")
     {
@@ -72,6 +77,11 @@ void incflo::MakeEBGeometry(Real cur_time)
     {
     amrex::Print() << "\n Building sphere geometry at time " << cur_time << std::endl;
         make_eb_sphere(cur_time);
+    }
+    else if(geom_type == "oscillating_sphere")
+    {
+    amrex::Print() << "\n Building oscillating sphere geometry at time " << cur_time << std::endl;
+        make_eb_oscillating_sphere(cur_time);
     }
     else if(geom_type == "stirrer")
     {
