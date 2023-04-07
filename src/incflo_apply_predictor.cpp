@@ -1,4 +1,7 @@
 #include <incflo.H>
+#ifdef AMREX_USE_MOVING_EB
+#include <hydro_redistribution.H>
+#endif
 
 using namespace amrex;
 //
@@ -76,10 +79,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // FIXME - would these be good from the corrector step? can we rely on doing a corrector?
     //   what about initial iterations
     // *************************************************************************************
-    // Reset the solvers to work with the new EB
+    // Reset the solvers to work with the desired EB
     // *************************************************************************************
-    m_diffusion_tensor_op.reset();
-    m_diffusion_scalar_op.reset();
+    m_diffusion_tensor_op.reset(new DiffusionTensorOp(this, m_cur_time));
+    m_diffusion_scalar_op.reset(new DiffusionScalarOp(this, m_cur_time));
 
     macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
                       MLMG::Location::FaceCentroid,  // Location of mac_vec
@@ -163,7 +166,34 @@ void incflo::ApplyPredictor (bool incremental_projection)
     {
         compute_divtau(get_divtau_old(),get_velocity_old_const(),
                        get_density_old_const(),GetVecOfConstPtrs(vel_eta));
+
+#ifdef AMREX_USE_MOVING_EB
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+        // FIXME - need some way to make sure target volfrac is consistent between
+        // here and other calls
+        Real target_volfrac = Redistribution::defaults::target_vol_fraction;
+        // FOR varible density, we have to take the NU cell's merging neighbor
+        // Needs one filled ghost cell. Fills only valid region
+        Redistribution::FillNewlyUncovered(m_leveldata[lev]->divtau_o,
+                                           OldEBFactory(lev), EBFactory(lev),
+                                           *get_velocity_eb()[lev],
+                                           geom[lev], target_volfrac);
+	// FIXME? Don't think we need to FP because of how we form the update
+        // fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
     }
+#endif
+    }
+    else
+    {
+	for (int lev = 0; lev <= finest_level; lev++)
+	{
+	    m_leveldata[lev]->divtau_o.setVal(0.);
+	}
+   }
+	EB_set_covered(m_leveldata[0]->divtau_o,0.);
+	static int count = 0; count++;
+	VisMF::Write(m_leveldata[0]->divtau_o,"dt"+std::to_string(count));
 
     // *************************************************************************************
     // Compute explicit diffusive terms
@@ -172,6 +202,23 @@ void incflo::ApplyPredictor (bool incremental_projection)
     {
         compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
                      GetVecOfConstPtrs(tra_eta));
+
+#ifdef AMREX_USE_MOVING_EB
+	for (int lev = 0; lev <= finest_level; lev++)
+	{
+	    // FIXME - need some way to make sure target volfrac is consistent between
+	    // here and other calls
+	    Real target_volfrac = Redistribution::defaults::target_vol_fraction;
+	    // FOR varible density, we have to take the NU cell's merging neighbor
+	    // Needs one filled ghost cell. Fills only valid region
+	    Redistribution::FillNewlyUncovered(m_leveldata[lev]->laps_o,
+					       OldEBFactory(lev), EBFactory(lev),
+					       *get_velocity_eb()[lev],
+					       geom[lev], target_volfrac);
+	    // FIXME? Don't think we need to FP because of how we form the update
+	    // fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
+	}
+#endif
     }
 
     // *************************************************************************************
@@ -181,6 +228,23 @@ void incflo::ApplyPredictor (bool incremental_projection)
     compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(),
                        get_density_old_const(), get_tracer_old_const(), get_tracer_new_const(),
                        include_pressure_gradient);
+#ifdef AMREX_USE_MOVING_EB
+	for (int lev = 0; lev <= finest_level; lev++)
+	{
+	    // FIXME - need some way to make sure target volfrac is consistent between
+	    // here and other calls
+	    Real target_volfrac = Redistribution::defaults::target_vol_fraction;
+	    // FOR varible density, we have to take the NU cell's merging neighbor
+	    // Needs one filled ghost cell. Fills only valid region
+	    Redistribution::FillNewlyUncovered(vel_forces[lev],
+					       OldEBFactory(lev), EBFactory(lev),
+					       *get_velocity_eb()[lev],
+					       geom[lev], target_volfrac);
+	    // FIXME? Don't think we need to FP because of how we form the update
+	    // fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
+	}
+#endif
+
 
     //VisMF::Write(m_leveldata[0]->density_o,"do3");
     //amrex::Print() << "density: " << m_leveldata[0]->density_o << std::endl;
@@ -300,17 +364,20 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		Array4<Real      > const& drdt_o   = ld.conv_density_o.array(mfi);
 
 		Box const& gbx = amrex::grow(bx,ld.density.nGrow());
-		FArrayBox update_fab(gbx,1,The_Async_Arena());
+		FArrayBox update_fab(gbx,AMREX_SPACEDIM,The_Async_Arena());
 		Array4<Real> const& update = update_fab.array();
 		amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 		{
-		    update(i,j,k) = 0.;
+		    for ( int n=0; n<AMREX_SPACEDIM; n++) {
+			update(i,j,k,n) = 0.;
+		    }
 		});
 
 		// redistribute - own lambda...
 		redistribute_term(mfi, drdt_o, update, rho_old,
 				  get_density_bcrec_device_ptr(), lev,
-				  get_velocity_eb()[lev]->const_array(mfi));
+				  update);
+//				  get_velocity_eb()[lev]->const_array(mfi));
 
 		// Make update-hat
 		// NOt saving S^m(rho) for now, don't think we need it
@@ -512,11 +579,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		// temproary MFs for redistributed update-hat
 		// but then we'd still need a copy, so probably doesn't matter
 		Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
-		FArrayBox update_fab(gbx,l_ntrac,The_Async_Arena());
+		int ncomp = max(l_ntrac, AMREX_SPACEDIM);
+		FArrayBox update_fab(gbx,ncomp,The_Async_Arena());
 		Array4<Real> const& zero_arr = update_fab.array();
 		amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 		{
-		    for (int n = 0; n < l_ntrac; ++n)
+		    for (int n = 0; n < ncomp; ++n)
 		    {
 			zero_arr(i,j,k,n) = 0.;
 		    }
@@ -525,7 +593,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		// redistribute - own lambda...
 		redistribute_term(mfi, dtdt_o, zero_arr, rhotra_o,
 				  get_tracer_bcrec_device_ptr(), lev,
-				  get_velocity_eb()[lev]->const_array(mfi));
+				  zero_arr);
+//				  get_velocity_eb()[lev]->const_array(mfi));
 
 		// Make update-hat
 		// NOt saving S^m(rho*tra) for now, don't think we need it
@@ -602,7 +671,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 	//
 	// FIXME -- think we only need 3 here, not ng_state...
 	MultiFab update(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_state(),
-			MFInfo(), Factory(lev));
+			MFInfo(), EBFactory(lev, m_cur_time));
 	update.setVal(0.0);
 	
 #ifdef _OPENMP
@@ -630,6 +699,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
 	// Need to ensure that boundaries are consistent
 	update.FillBoundary(geom[lev].periodicity());
+
+	//EB_set_covered(update,0.);
+//	static int count=0; count++;
+	VisMF::Write(update,"vup");
+	VisMF::Write(ld.conv_velocity_o,"dvdtop");
+	VisMF::Write(ld.divtau_o,"divtp");
+	VisMF::Write(vel_forces[lev],"vfp");
+//	if (count ==3 ) Abort(); 
 #endif
 
 #ifdef _OPENMP
@@ -794,6 +871,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
 #endif
         } // mfi
 
+	VisMF::Write(ld.velocity,"1");
+	
 #ifdef AMREX_USE_MOVING_EB
 	//
 	// Create S^m(rho*vel) and update-hat
@@ -824,12 +903,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
 	    // redistribute - own lambda...
 	    redistribute_term(mfi, dvdt_o, zero_arr, rhovel_o,
 			      get_velocity_bcrec_device_ptr(), lev,
-			      get_velocity_eb()[lev]->const_array(mfi));
+			      zero_arr);
+//			      get_velocity_eb()[lev]->const_array(mfi));
 
 	    // Make update-hat
 	    // NOt saving S^m(rho*vel) for now, don't think we need it
 	    // FIXME - I think this is okay as redistribute only uses vel on bx
 	    Array4<Real const> const& rho      = ld.density.const_array(mfi);
+	    Array4<Real const> const& rho_o    = ld.density_o.const_array(mfi);
 	    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
 	    {
 		for (int n = 0; n < AMREX_SPACEDIM; ++n)
@@ -841,10 +922,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
 			
 		    // put back vel = rhovel/rho_new - non-ideal for MEB, but convection
 		    // & proj expects just vel...
-		    rhovel(i,j,k,n) /= rho(i,j,k); 
+		    rhovel(i,j,k,n) /= rho(i,j,k);
+		    rhovel_o(i,j,k,n) /= rho_o(i,j,k); 
 		}
 	    });
 	} // mfi
+	static int count=0; count++;
+	VisMF::Write(ld.velocity,"2_"+std::to_string(count));
+	VisMF::Write(ld.velocity_o,"2o_"+std::to_string(count));
+	//if (count ==3 ) Abort(); 
+
+	
 #endif
     } // lev
 
@@ -884,9 +972,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
     }
 #endif
 
-    // VisMF::Write(m_leveldata[0]->density,"dens");
-    // VisMF::Write(density_nph_neweb[0],"rnph");
-    // VisMF::Write(m_leveldata[0]->velocity,"vel");
+    VisMF::Write(m_leveldata[0]->density,"dens");
+    VisMF::Write(density_nph_neweb[0],"rnph");
+    VisMF::Write(m_leveldata[0]->velocity,"vel");
 
 
     // WritePlotFile();
@@ -899,6 +987,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Project velocity field, update pressure
     //
     // *************************************************************************************
+    if (m_verbose > 1) {
+	Print()<<"Predictor starting nodal projection..."<<std::endl;
+    }
+    
     ApplyProjection(GetVecOfConstPtrs(density_nph_neweb),
                     new_time,m_dt,incremental_projection);
 
