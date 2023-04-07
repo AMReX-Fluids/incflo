@@ -212,6 +212,9 @@ void incflo::ReadParameters ()
            amrex::Abort("Moving EB requires explicit diffusion, incflo.diffusion_type = 0"); }
        if (m_use_boussinesq == true) {
            amrex::Abort("Moving EB does not support boussinesq"); }
+       if (use_tensor_correction) {
+           amrex::Abort("Moving EB not tested with use_tensor_correction; it may work or not");
+       }
 
        if (pp_eb_flow.contains("density")) {
            amrex::Abort("Moving EB computes density on EB internally, so cannot specify eb_flow.density"); }
