@@ -107,7 +107,37 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
                 err(i,j,k,soln_comp) -= exact;
             });
         }
+
+    // Burggraf problem
+    } else if (16 == m_probtype) {
+        for(MFIter mfi(error, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            Box bx = mfi.tilebox();
+
+            // When we enter this routine, this holds the computed solution
+            Array4<Real> const& err = error.array(mfi);
+
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                Real x = Real(i+0.5)*dx[0];
+                Real y = Real(j+0.5)*dx[1];
+
+                Real exact = Real(0.0); // quiet compiler warning
+
+                if (err_comp == AMREX_SPACEDIM || err_comp == AMREX_SPACEDIM+1) {  // pressure
+                    exact = 0.0;
+
+                } else if (err_comp == 0) { // u
+                    exact =  8.0 * (x*x*x*x - 2.0 * x*x*x + x*x) * (4.0*y*y*y - 2.0*y);
+
+                } else if (err_comp == 1) { // v
+                    exact = -8.0 * (4.0*x*x*x - 6.0 * x*x + 2.*x) * (y*y*y*y - y*y);
+                }
+
+                err(i,j,k,soln_comp) -= exact;
+            });
+        }
     } else {
-        amrex::Abort("Currently TGV is the only problem with an exact solution implemented");
+         amrex::Abort("Currently TGV and Burggraf are the only problems with an exact solution implemented");
     }
 }
