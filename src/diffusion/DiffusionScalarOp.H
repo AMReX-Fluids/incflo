@@ -14,6 +14,7 @@ class DiffusionScalarOp
 {
 public:
     DiffusionScalarOp (incflo* a_incflo);
+    DiffusionScalarOp (incflo* a_incflo, amrex::Real time);
 
     void diffuse_scalar (amrex::Vector<amrex::MultiFab*> const& phi,
                          amrex::Vector<amrex::MultiFab*> const& density,
@@ -39,6 +40,7 @@ public:
 private:
 
     void readParameters ();
+    void define (amrex::Real time);
 
     incflo* m_incflo;
 

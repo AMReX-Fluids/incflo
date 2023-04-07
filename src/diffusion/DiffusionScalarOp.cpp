@@ -11,6 +11,17 @@ using namespace amrex;
 DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
     : m_incflo(a_incflo)
 {
+    define(m_incflo->m_cur_time);
+}
+
+DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo, Real time)
+    : m_incflo(a_incflo)
+{
+    define(time);
+}
+
+void DiffusionScalarOp::define (Real time)
+{
     readParameters();
 
     LPInfo info_solve;
@@ -19,11 +30,11 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
     info_apply.setMaxCoarseningLevel(0);
 #ifdef AMREX_USE_EB
     int finest_level = m_incflo->finestLevel();
-    if (!m_incflo->EBFactory(0).isAllRegular())
+    if (!m_incflo->EBFactory(0, time).isAllRegular())
     {
         Vector<EBFArrayBoxFactory const*> ebfact;
         for (int lev = 0; lev <= finest_level; ++lev) {
-            ebfact.push_back(&(m_incflo->EBFactory(lev)));
+            ebfact.push_back(&(m_incflo->EBFactory(lev,time)));
         }
 
         m_eb_scal_solve_op.reset(new MLEBABecLap(m_incflo->Geom(0,finest_level),
@@ -419,10 +430,10 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
     if (m_eb_scal_apply_op)
     {
 #ifndef AMREX_USE_MOVING_EB
-	//
-	// Need a temporary to redistribute this term before potential use in
-	// an implicit solve
-	//
+        //
+        // Need a temporary to redistribute this term before potential use in
+        // an implicit solve
+        //
         Vector<MultiFab> laps_tmp(finest_level+1);
         int tmp_comp = (m_incflo->m_redistribution_type == "StateRedist") ? 3 : 2;
         for (int lev = 0; lev <= finest_level; ++lev) {
@@ -455,7 +466,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 #ifdef AMREX_USE_MOVING_EB
                 laps_comp.emplace_back(*a_laps[lev],amrex::make_alias,comp,1);
 #else
-		laps_comp.emplace_back(laps_tmp[lev],amrex::make_alias,comp,1);
+                laps_comp.emplace_back(laps_tmp[lev],amrex::make_alias,comp,1);
 #endif
                 scalar_comp.emplace_back(*a_scalar[lev],amrex::make_alias,comp,1);
 
@@ -471,22 +482,22 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
         }
 
 #ifdef AMREX_USE_MOVING_EB
-        // 
+        //
         // For moving EB, don't redistribute yet.
-	//
+        //
 #else
         for(int lev = 0; lev <= finest_level; lev++)
         {
-	    // Flux redistribution
-	    amrex::single_level_redistribute(laps_tmp[lev],
-					     *a_laps[lev], 0, m_incflo->m_ntrac,
+            // Flux redistribution
+            amrex::single_level_redistribute(laps_tmp[lev],
+                                             *a_laps[lev], 0, m_incflo->m_ntrac,
                                              m_incflo->Geom(lev));
-	    //
-	    // If we want to allow option of SRD, use incflo::redistribute_term.
-	    //
-	    // auto const& bc = m_incflo->get_tracer_bcrec_device_ptr();
+            //
+            // If we want to allow option of SRD, use incflo::redistribute_term.
+            //
+            // auto const& bc = m_incflo->get_tracer_bcrec_device_ptr();
             // m_incflo->redistribute_term(*a_laps[lev], laps_tmp[lev], *a_scalar[lev],
-	    // 				bc, lev, Array4<Real const>{});
+            //                          bc, lev, Array4<Real const>{});
         }
 #endif
     }
@@ -581,7 +592,7 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 #ifdef AMREX_USE_MOVING_EB
                 divtau_single.emplace_back( *a_divtau[lev],amrex::make_alias,comp,1);
 #else
-		divtau_single.emplace_back(divtau_tmp[lev],amrex::make_alias,comp,1);
+                divtau_single.emplace_back(divtau_tmp[lev],amrex::make_alias,comp,1);
 #endif
                    vel_single.emplace_back(    *a_vel[lev],amrex::make_alias,comp,1);
                 m_eb_vel_apply_op->setLevelBC(lev, &vel_single[lev]);
@@ -597,21 +608,21 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
         }
 
 #ifdef AMREX_USE_MOVING_EB
-        // 
+        //
         // For moving EB, don't redistribute yet.
-	//
+        //
 #else
         for(int lev = 0; lev <= finest_level; lev++)
         {
-	    amrex::single_level_redistribute(divtau_tmp[lev],
+            amrex::single_level_redistribute(divtau_tmp[lev],
                                              *a_divtau[lev], 0, a_divtau[lev]->nComp(),
                                              m_incflo->Geom(lev));
-	    //
-	    // If we want to allow option of SRD, use incflo::redistribute_term.
-	    //
+            //
+            // If we want to allow option of SRD, use incflo::redistribute_term.
+            //
             // auto const& bc = m_incflo->get_velocity_bcrec_device_ptr();
             // m_incflo->redistribute_term(*a_divtau[lev], divtau_tmp[lev], *a_vel[lev],
-	    // 				bc, lev, Array4<Real const>{});
+            //                          bc, lev, Array4<Real const>{});
         }
 #endif
     }

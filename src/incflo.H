@@ -270,23 +270,23 @@ public: // for cuda
                                                   amrex::Vector<amrex::MultiFab const*> const& w_mac));
 
     void redistribute_term ( amrex::MultiFab& result, amrex::MultiFab& result_tmp,
-			     amrex::MultiFab const& state,
-			     amrex::BCRec const* bc,
-			     int lev,
-			     amrex::MultiFab*& vel_eb);
+                             amrex::MultiFab const& state,
+                             amrex::BCRec const* bc,
+                             int lev,
+                             amrex::MultiFab*& vel_eb);
     void redistribute_term ( amrex::MFIter const& mfi,
-			     amrex::MultiFab& result, amrex::MultiFab& result_tmp,
-			     amrex::MultiFab const& state,
-			     amrex::BCRec const* bc,
-			     int lev,
-			     amrex::MultiFab*& vel_eb);
+                             amrex::MultiFab& result, amrex::MultiFab& result_tmp,
+                             amrex::MultiFab const& state,
+                             amrex::BCRec const* bc,
+                             int lev,
+                             amrex::MultiFab*& vel_eb);
     void redistribute_term ( amrex::MFIter const& mfi,
-			     amrex::Array4<amrex::Real      > const& result,
-			     amrex::Array4<amrex::Real      > const& result_tmp,
-			     amrex::Array4<amrex::Real const> const& state,
-			     amrex::BCRec const* bc,
-			     int lev,
-			     amrex::Array4<amrex::Real const> const& vel_eb);
+                             amrex::Array4<amrex::Real      > const& result,
+                             amrex::Array4<amrex::Real      > const& result_tmp,
+                             amrex::Array4<amrex::Real const> const& state,
+                             amrex::BCRec const* bc,
+                             int lev,
+                             amrex::Array4<amrex::Real const> const& vel_eb);
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
@@ -682,6 +682,10 @@ private:
 #else
     amrex::EBFArrayBoxFactory const&
     EBFactory (int lev) const noexcept {
+        return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
+    }
+    // FIXME?  Not sure this is the best way to handle things. DiffusionXXXOp uses this...
+    EBFactory (int lev, amrex::Real /*time*/) const noexcept {
         return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
     }
 #endif
