@@ -205,7 +205,6 @@ void incflo::ApplyCorrector()
             {
                 Box const& bx = mfi.tilebox();
                 Array4<Real> const& rho_t        = rho_temp.array(mfi);
-                Array4<Real> const& rho_n        = ld.density.array(mfi);
                 Array4<Real const> const& drdt_o = ld.conv_density_o.const_array(mfi);
                 Array4<Real const> const& drdt   = ld.conv_density.const_array(mfi);
 
@@ -214,9 +213,11 @@ void incflo::ApplyCorrector()
                     // Build update
                     //   rho_new = rho_pred + dt/2 * (A-hat - A^(n+1))
                     //           = rho_new  + dt/2 * (drdt_o + drdt)
-                    //FIXME - need to think about sign here! Doesn't conv hold -A???
+		    
+                    //FIXME - WOuld need to deal with NewlyCovered cells here, SRD will use this val...
+		    // safest to also deal with NU cells also, although only need something computable
                     // Could get rid of update temporary and just use conv
-                    rho_t(i,j,k) = rho_n(i,j,k) + m_half * l_dt * (drdt_o(i,j,k) + drdt(i,j,k));
+                    rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k));
                 });
             }
 
@@ -247,16 +248,17 @@ void incflo::ApplyCorrector()
                 auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
 #ifdef AMREX_USE_MOVING_EB
-                //
-                // Regular SRD - redistribute and return full state at new time
-                //
-                redistribute_term(mfi, rho_n, Array4<Real> {}, rho_t,
-                                  get_density_bcrec_device_ptr(), lev,
-                                  Array4<Real const> {});
+		//
+		// For moving EB, redistribute and returns full state at new time
+		//
+		redistribute_term(ld.density, ld.conv_density_o, ld.density_o,
+				  get_density_bcrec_device_ptr(), lev,
+				  get_velocity_eb()[lev]);
 
                 // Make half-time rho
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
+		    // FIXME -- need to handle NU
                     rho_nph(i,j,k) = m_half * (rho_o(i,j,k) + rho_n(i,j,k));
                 });
 #else
