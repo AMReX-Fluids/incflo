@@ -12,7 +12,7 @@ using namespace amrex;
  * Function to create a simple cylinder EB.                                     *
  *                                                                              *
  ********************************************************************************/
-void incflo::make_eb_cylinder()
+void incflo::make_eb_cylinder(Real cur_time)
 {
     // Initialise cylinder parameters
     bool inside = true;
@@ -31,8 +31,17 @@ void incflo::make_eb_cylinder()
     pp.query("rotation",   rotation);
     pp.query("rotation_axe",   rotation_axe);
     pp.getarr("center", centervec, 0, 3);
-    Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0], centervec[1], centervec[2])};
 
+    ParmParse eb("eb_flow");
+    Vector<Real> vels(AMREX_SPACEDIM);
+    eb.queryarr("velocity", vels, 0, AMREX_SPACEDIM);
+
+    // Print velocity info:
+    amrex::Print() << "EB Velocity: " << vels[0] << ", " << vels[1] << std::endl;
+
+    Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0] + vels[0]*cur_time,
+                                                       centervec[1] + vels[1]*cur_time,
+                                                       centervec[2] + vels[2]*cur_time)};
     rotation = (rotation/180.)*M_PI;
 
     // Print info about cylinder

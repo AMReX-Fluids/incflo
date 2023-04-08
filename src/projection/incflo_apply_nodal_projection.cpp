@@ -129,8 +129,8 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
     info.setMaxCoarseningLevel(m_nodal_mg_max_coarsening_level);
 
 //fixme
-VisMF::Write(*vel[0],"vp");
-VisMF::Write(sigma[0],"sig");
+// VisMF::Write(*vel[0],"vp");
+// VisMF::Write(sigma[0],"sig");
 
     if (m_constant_density)
     {
@@ -156,6 +156,9 @@ VisMF::Write(*get_velocity_eb()[0],"npveb");
 #endif
 
     nodal_projector->project(m_nodal_mg_rtol, m_nodal_mg_atol);
+
+//fixme
+VisMF::Write(*vel[0],"vpout");
 
     // Define "vel" to be U^{n+1} rather than (U^{n+1}-U^n)
     if (proj_for_small_dt || incremental)

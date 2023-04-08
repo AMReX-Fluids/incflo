@@ -7,6 +7,7 @@ target_sources(incflo
    eb_box.cpp
    eb_plane.cpp
    eb_cylinder.cpp
+   eb_hexahedron.cpp
    eb_cyl_tuscan.cpp
    eb_regular.cpp
    eb_sphere.cpp

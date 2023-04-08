@@ -270,23 +270,23 @@ public: // for cuda
                                                   amrex::Vector<amrex::MultiFab const*> const& w_mac));
 
     void redistribute_term ( amrex::MultiFab& result, amrex::MultiFab& result_tmp,
-			     amrex::MultiFab const& state,
-			     amrex::BCRec const* bc,
-			     int lev,
-			     amrex::MultiFab*& vel_eb);
+                             amrex::MultiFab const& state,
+                             amrex::BCRec const* bc,
+                             int lev,
+                             amrex::MultiFab*& vel_eb);
     void redistribute_term ( amrex::MFIter const& mfi,
-			     amrex::MultiFab& result, amrex::MultiFab& result_tmp,
-			     amrex::MultiFab const& state,
-			     amrex::BCRec const* bc,
-			     int lev,
-			     amrex::MultiFab*& vel_eb);
+                             amrex::MultiFab& result, amrex::MultiFab& result_tmp,
+                             amrex::MultiFab const& state,
+                             amrex::BCRec const* bc,
+                             int lev,
+                             amrex::MultiFab*& vel_eb);
     void redistribute_term ( amrex::MFIter const& mfi,
-			     amrex::Array4<amrex::Real      > const& result,
-			     amrex::Array4<amrex::Real      > const& result_tmp,
-			     amrex::Array4<amrex::Real const> const& state,
-			     amrex::BCRec const* bc,
-			     int lev,
-			     amrex::Array4<amrex::Real const> const& vel_eb);
+                             amrex::Array4<amrex::Real      > const& result,
+                             amrex::Array4<amrex::Real      > const& result_tmp,
+                             amrex::Array4<amrex::Real const> const& state,
+                             amrex::BCRec const* bc,
+                             int lev,
+                             amrex::Array4<amrex::Real const> const& vel_eb);
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
@@ -448,9 +448,12 @@ private:
        bool enabled;
        bool has_normal;
        bool is_mag;
+       bool is_frequency;
        bool is_omega;
        amrex::Real vel_mag;
        amrex::Vector<amrex::Real> velocity;
+       amrex::Vector<amrex::Real> frequency;
+       amrex::Vector<amrex::Real> amplitude;
        amrex::Vector<amrex::Real> omega;
        amrex::Vector<amrex::Real> center_of_rotation;
 
@@ -467,6 +470,7 @@ private:
          : enabled(false)
          , has_normal(false)
          , is_mag(false)
+         , is_frequency(false)
          , is_omega(false)
          , vel_mag(0.)
          , omega(0.)
@@ -684,6 +688,10 @@ private:
     EBFactory (int lev) const noexcept {
         return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
     }
+    // FIXME?  Not sure this is the best way to handle things. DiffusionXXXOp uses this...
+    EBFactory (int lev, amrex::Real /*time*/) const noexcept {
+        return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
+    }
 #endif
 #endif
 
@@ -887,10 +895,12 @@ private:
     void make_eb_annulus ();
     void make_eb_box (amrex::Real time = 0.0);
     void make_eb_plane (amrex::Real time = 0.0);
-    void make_eb_cylinder ();
+    void make_eb_cylinder (amrex::Real time = 0.0);
+    void make_eb_hexahedron (amrex::Real time = 0.0);
     void make_eb_twocylinders ();
     void make_eb_regular ();
     void make_eb_sphere (amrex::Real time = 0.0);
+    void make_eb_oscillating_sphere (amrex::Real time = 0.0);
     void make_eb_stirrer (amrex::Real time = 0.0);
     void make_eb_spherecube ();
     void make_eb_cyl_tuscan ();
