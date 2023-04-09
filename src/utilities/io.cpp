@@ -3,6 +3,12 @@
 #include <AMReX_buildInfo.H>
 #include <incflo.H>
 
+#if (AMREX_SPACEDIM)== 2
+#include <AMReX_EB_LeastSquares_2D_K.H>
+#else
+#include <AMReX_EB_LeastSquares_3D_K.H>
+#endif
+
 using namespace amrex;
 
 namespace { const std::string level_prefix{"Level_"}; }
@@ -652,7 +658,6 @@ void incflo::WritePlotFile()
 
 
 // Copy/Paste drag computation from from drangara
-/*
 void incflo::PrintDragForce() {
    Print() << "PrintDragForce\n";
 
@@ -761,4 +766,4 @@ void incflo::PrintDragForce() {
                                    "barea", "bnrmx", "bnrmy"},
                                   Geom(), m_cur_time, istep, refRatio());
 }
-*/
+
