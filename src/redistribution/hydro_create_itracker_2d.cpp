@@ -304,7 +304,8 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
         Print()<<"cell "<<IntVect(i,j)
                <<"eb_vel "<< vx <<", "<<vy<<std::endl;
         Print()<<"eb_norm "<< nx <<", "<<ny<<std::endl;
-        Abort("Newly uncovered cell nbhd: Direction to merge not well resolved");
+        //Abort("Newly uncovered cell nbhd: Direction to merge not well resolved");
+        Print() << "WARNING: Newly uncovered cell nbhd: Direction to merge not well resolved" << std::endl;
     }
 
     // Select first for EB motion. If that's indeterminate, choose based on EB normal
