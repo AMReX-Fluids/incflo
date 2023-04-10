@@ -54,10 +54,10 @@ geometry.is_periodic    =   1   1   0   # Periodicity x y z (0/1)
 
 # Boundary conditions
 zlo.type                =   "nsw"
-zlo.velocity            =   0.0  0.0  0.0
 
-zhi.type                =  "po"
-zhi.pressure            =  0.0
+zhi.type                =  "mi"
+zhi.velocity            =  0.0  0.0  -2.0
+zhi.density             =  1.0
 
 # Add box
 incflo.geometry = "box"

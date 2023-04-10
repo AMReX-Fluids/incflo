@@ -60,7 +60,7 @@ geometry.is_periodic    =   1   0   1   # Periodicity x y z (0/1)
 
 # Boundary conditions
 ylo.type                =   "mi"
-ylo.velocity            =   0. -1.  0.
+ylo.velocity            =   0.  1.  0.
 ylo.tracer              =   1.
 
 yhi.type                =   "po"
