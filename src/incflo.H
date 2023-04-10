@@ -921,6 +921,7 @@ private:
     void WriteCheckPointFile () const;
     void WritePlotFile ();
     void ReadCheckpointFile ();
+    void PrintDragForce();
 };
 
 #endif
