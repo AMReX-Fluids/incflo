@@ -56,7 +56,7 @@ geometry.is_periodic    =   1   0   1   # Periodicity x y z (0/1)
 ylo.type                =   "nsw"
 
 yhi.type                =  "mi"
-ylo.velocity            =  0.0  -2.0  0.0
+yhi.velocity            =  0.0  -2.0  0.0
 yhi.density             =  1.0
 
 # Add box

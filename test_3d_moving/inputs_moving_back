@@ -56,7 +56,7 @@ geometry.is_periodic    =   1   1   0   # Periodicity x y z (0/1)
 zlo.type                =   "nsw"
 
 zhi.type                =  "mi"
-zlo.velocity            =  0.0  0.0  -2.0
+zhi.velocity            =  0.0  0.0  -2.0
 zhi.density             =  1.0
 
 # Add box
