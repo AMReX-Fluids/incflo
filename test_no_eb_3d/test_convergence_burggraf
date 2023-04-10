@@ -1,0 +1,15 @@
+./incflo3d.gnu.MPI.ex benchmark.burggraf amr.n_cell=   8   8 8 incflo.fixed_dt=0.016 geometry.prob_hi = 1. 1. 1.     >& out.8
+./incflo3d.gnu.MPI.ex benchmark.burggraf amr.n_cell=  16  16 8 incflo.fixed_dt=0.008 geometry.prob_hi = 1. 1. 0.5    >& out.16
+./incflo3d.gnu.MPI.ex benchmark.burggraf amr.n_cell=  32  32 8 incflo.fixed_dt=0.004 geometry.prob_hi = 1. 1. 0.25   >& out.32
+./incflo3d.gnu.MPI.ex benchmark.burggraf amr.n_cell=  64  64 8 incflo.fixed_dt=0.002 geometry.prob_hi = 1. 1. 0.125  >& out.64
+./incflo2d.gnu.MPI.ex benchmark.burggraf amr.n_cell= 128 128 8 incflo.fixed_dt=0.001 geometry.prob_hi = 1. 1. 0.0625 >& out.128
+echo "N=8"
+grep Norm0 out.8 | tail -2
+echo "N=16"
+grep Norm0 out.16 | tail -2
+echo "N=32"
+grep Norm0 out.32 | tail -2
+echo "N=64"
+grep Norm0 out.64 | tail -2
+echo "N=128"
+grep Norm0 out.128 | tail -2
