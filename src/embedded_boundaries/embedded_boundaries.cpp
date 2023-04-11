@@ -78,6 +78,12 @@ void incflo::MakeEBGeometry(Real cur_time)
     amrex::Print() << "\n Building sphere geometry at time " << cur_time << std::endl;
         make_eb_sphere(cur_time);
     }
+    else if(geom_type == "oscillating_cylinder")
+    {
+    amrex::Print() << "\n Building oscillating sphere geometry at time " << cur_time << std::endl;
+        make_eb_oscillating_cylinder(cur_time);
+    }
+
     else if(geom_type == "oscillating_sphere")
     {
     amrex::Print() << "\n Building oscillating sphere geometry at time " << cur_time << std::endl;

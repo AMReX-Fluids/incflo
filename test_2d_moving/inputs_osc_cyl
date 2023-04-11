@@ -3,14 +3,14 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  40            # Max umber of time steps
+max_step                =  64           # Max umber of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-incflo.fixed_dt             =   -1.e-2       # Use this constant dt if > 0
-incflo.cfl                  = 0.45
+incflo.fixed_dt             =  -1.e-2       # Use this constant dt if > 0
+incflo.cfl                  =   0.5
 
 incflo.do_initial_proj      =   1
 incflo.initial_iterations   =   1
@@ -18,7 +18,7 @@ incflo.initial_iterations   =   1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =   1           # Steps between plot files
+amr.plot_int            =   4           # Steps between plot files
 amr.plt_regtest         =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -32,11 +32,9 @@ incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false        #
 
 incflo.advect_momentum       =  true
-incflo.advection_type        =  "Godunov" 
 incflo.advection_type        =  "MOL" 
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
-#incflo.redistribution_type   =  "NoRedist" 
 
 incflo.godunov_include_diff_in_forcing = false
 
@@ -72,7 +70,7 @@ yhi.type                =   "po"
 yhi.pressure            =   0.0
 
 
-# Add box
+# Add oscillating cylinder
 incflo.geometry = "oscillating_sphere"
 
 sphere.internal_flow = false
@@ -96,8 +94,8 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 #               EB FLOW                 #
 #.......................................#
-eb_flow.amplitude        = 5.0e-1 5.0e-1 0.0
-eb_flow.frequency        = 1.0 1.0 0.0
+eb_flow.amplitude        = 0.5 0.0 0.0
+eb_flow.frequency        = 1.0 0.0 0.0
 
 
 eb2.small_volfrac       = 1.0e-6

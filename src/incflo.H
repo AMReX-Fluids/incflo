@@ -900,6 +900,7 @@ private:
     void make_eb_twocylinders ();
     void make_eb_regular ();
     void make_eb_sphere (amrex::Real time = 0.0);
+    void make_eb_oscillating_cylinder (amrex::Real time = 0.0);
     void make_eb_oscillating_sphere (amrex::Real time = 0.0);
     void make_eb_stirrer (amrex::Real time = 0.0);
     void make_eb_spherecube ();

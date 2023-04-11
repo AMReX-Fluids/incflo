@@ -3,14 +3,14 @@ amrex.fpe_trap_invalid = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  40            # Max umber of time steps
+max_step                =  256           # Max umber of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
 incflo.fixed_dt             =   -1.e-2       # Use this constant dt if > 0
-incflo.cfl                  = 0.5
+incflo.cfl                  =    0.5
 
 incflo.do_initial_proj      =   1
 incflo.initial_iterations   =   1
@@ -18,7 +18,7 @@ incflo.initial_iterations   =   1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =   1           # Steps between plot files
+amr.plot_int            =   4           # Steps between plot files
 amr.plt_regtest         =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -32,11 +32,9 @@ incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false        #
 
 incflo.advect_momentum       =  true
-incflo.advection_type        =  "Godunov" 
 incflo.advection_type        =  "MOL" 
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
-#incflo.redistribution_type   =  "NoRedist" 
 
 incflo.godunov_include_diff_in_forcing = false
 
@@ -44,7 +42,7 @@ incflo.godunov_include_diff_in_forcing = false
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   32 32 32    # Grid cells at coarsest AMRlevel
+amr.n_cell              =   32 32 32    # Grid cells at coarsest level
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.max_grid_size_x     =   1024
 amr.max_grid_size_y     =   1024
@@ -54,9 +52,9 @@ amr.blocking_factor     =   2
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
-geometry.prob_lo        =   -1.0  -1.0 -1.0  # Lo corner coordinates
-geometry.prob_hi        =   1.0 1.0 1.0    # Hi corner coordinates
-geometry.is_periodic    =   0   0  0     # Periodicity x y z (0/1)
+geometry.prob_lo        =   -1.0  -1.0  -1.0    # Lo corner coordinates
+geometry.prob_hi        =    1.0   1.0   1.0    # Hi corner coordinates
+geometry.is_periodic    =    0     0     1      # Periodicity x y z (0/1)
 
 # Boundary conditions
 xlo.type                =   "po"
@@ -71,18 +69,13 @@ ylo.pressure            =   0.0  0.0  0.0
 yhi.type                =   "po"
 yhi.pressure            =   0.0
 
-zlo.type                =   "po"
-zlo.pressure            =   0.0  0.0  0.0
+# Add oscillating cylinder
+incflo.geometry = "oscillating_cylinder"
 
-zhi.type                =   "po"
-zhi.pressure            =   0.0
-
-# Add box
-incflo.geometry = "oscillating_sphere"
-
-sphere.internal_flow = false
-sphere.radius = 0.25
-sphere.center = 0.0 0.0 0.0
+cylinder.internal_flow = false
+cylinder.radius = 0.25
+cylinder.direction = 2
+cylinder.center = 0.0 0.0 0.0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
@@ -102,8 +95,8 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 #               EB FLOW                 #
 #.......................................#
-eb_flow.amplitude        = 5.0e-1 5.0e-1 5.0e-1
-eb_flow.frequency        = 1.0 1.0 1.0
+eb_flow.amplitude        = 0.5  0.0  0.0
+eb_flow.frequency        = 1.0  1.0  0.0
 
 
 eb2.small_volfrac       = 1.0e-6
