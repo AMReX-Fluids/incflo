@@ -44,59 +44,59 @@ Redistribution::FillNewlyUncovered ( MultiFab& mf,
         EBCellFlagFab const& flagfab = ebfact_new.getMultiEBCellFlagFab()[mfi];
         if ( flagfab.getType(bx) == FabType::singlevalued)
         {
-        AMREX_D_TERM(Array4<Real const> apx_old = ebfact_old.getAreaFrac()[0]->const_array(mfi);,
-                     Array4<Real const> apy_old = ebfact_old.getAreaFrac()[1]->const_array(mfi);,
-                     Array4<Real const> apz_old = ebfact_old.getAreaFrac()[2]->const_array(mfi););
-        AMREX_D_TERM(Array4<Real const> apx_new = ebfact_new.getAreaFrac()[0]->const_array(mfi);,
-                     Array4<Real const> apy_new = ebfact_new.getAreaFrac()[1]->const_array(mfi);,
-                     Array4<Real const> apz_new = ebfact_new.getAreaFrac()[2]->const_array(mfi););
-        Array4<Real const> vfrac_old = ebfact_old.getVolFrac().const_array(mfi);
-        Array4<Real const> vfrac_new = ebfact_new.getVolFrac().const_array(mfi);
-        Array4<Real const> vel_eb_arr= vel_eb.const_array(mfi);
-        Array4<Real> U_in = mf.array(mfi);
+            AMREX_D_TERM(Array4<Real const> apx_old = ebfact_old.getAreaFrac()[0]->const_array(mfi);,
+                         Array4<Real const> apy_old = ebfact_old.getAreaFrac()[1]->const_array(mfi);,
+                         Array4<Real const> apz_old = ebfact_old.getAreaFrac()[2]->const_array(mfi););
+            AMREX_D_TERM(Array4<Real const> apx_new = ebfact_new.getAreaFrac()[0]->const_array(mfi);,
+                         Array4<Real const> apy_new = ebfact_new.getAreaFrac()[1]->const_array(mfi);,
+                         Array4<Real const> apz_new = ebfact_new.getAreaFrac()[2]->const_array(mfi););
+            Array4<Real const> vfrac_old = ebfact_old.getVolFrac().const_array(mfi);
+            Array4<Real const> vfrac_new = ebfact_new.getVolFrac().const_array(mfi);
+            Array4<Real const> vel_eb_arr= vel_eb.const_array(mfi);
+            Array4<Real> U_in = mf.array(mfi);
 
 
 // FIXME - how big does this box really need to be?
-        // MakeITracker has 4 hard-coded into it, but here we would otherwise only need
-        // 1 ghost cell
-        Box const& gbx = grow(bx,4);
+            // MakeITracker has 4 hard-coded into it, but here we would otherwise only need
+            // 1 ghost cell
+            Box const& gbx = grow(bx,4);
 
-        IArrayBox itracker(gbx,itracker_comp,The_Async_Arena());
-        Array4<int> itr = itracker.array();
+            IArrayBox itracker(gbx,itracker_comp,The_Async_Arena());
+            Array4<int> itr = itracker.array();
 
-        MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
-                         AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
-                     itr, geom, target_volfrac, vel_eb_arr);
+            MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+                             AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
+                         itr, geom, target_volfrac, vel_eb_arr);
 
-        auto map = getCellMap();
+            auto map = getCellMap();
 
-        // Fill only valid region here. This will require FillPatch later...
-        amrex::ParallelFor(Box(bx), mf.nComp(),
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            // Check to see if this cell was covered at time n, but uncovered at n+1
-            if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
+            // Fill only valid region here. This will require FillPatch later...
+            amrex::ParallelFor(Box(bx), mf.nComp(),
+            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-                for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+                // Check to see if this cell was covered at time n, but uncovered at n+1
+                if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
                 {
-                    int ioff = map[0][itr(i,j,k,i_nbor)];
-                    int joff = map[1][itr(i,j,k,i_nbor)];
-                    int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
+                    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+                    {
+                        int ioff = map[0][itr(i,j,k,i_nbor)];
+                        int joff = map[1][itr(i,j,k,i_nbor)];
+                        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
 
-                    // Take the old value of my neighbor as my own
-                    // NOTE this is only right for the case that the newly
-                    // uncovered cell has only one other cell in it's neghborhood.
-                    U_in(i,j,k,n) = U_in(i+ioff,j+joff,k+koff,n);
+                        // Take the old value of my neighbor as my own
+                        // NOTE this is only right for the case that the newly
+                        // uncovered cell has only one other cell in it's neghborhood.
+                        U_in(i,j,k,n) = U_in(i+ioff,j+joff,k+koff,n);
 
-                    // FIXME -- correct fix of parallel OOB error here is that
-                    // we check if we fall in the box...
+                        // FIXME -- correct fix of parallel OOB error here is that
+                        // we check if we fall in the box...
                     amrex::Print() << "Cell  " << Dim3{i,j,k}
-                                   << " newly uncovered, fill with value of neighbor at "
+                                       << " newly uncovered, fill with value of neighbor at "
                                    << Dim3{i+ioff,j+joff,k+koff}
-                                   <<": "<<U_in(i,j,k,n)<< std::endl;
+                                       <<": "<<U_in(i,j,k,n)<< std::endl;
+                    }
                 }
-            }
-        });
+            });
         }
         else if ( !(flagfab.getType(bx) == FabType::regular || flagfab.getType(bx) == FabType::covered) )
         {
@@ -105,13 +105,45 @@ Redistribution::FillNewlyUncovered ( MultiFab& mf,
     } //end mfiter
 }
 
-
 void Redistribution::Apply ( Box const& bx, int ncomp,
-                             Array4<Real      > const& dUdt_out,
-                             Array4<Real      > const& dUdt_in,
+                             Array4<Real>       const& out,
+                             Array4<Real>       const& dUdt_in,
                              Array4<Real const> const& U_in,
                              Array4<Real> const& scratch,
                              Array4<EBCellFlag const> const& flag,
+                             AMREX_D_DECL(Array4<Real const> const& apx,
+                                          Array4<Real const> const& apy,
+                                          Array4<Real const> const& apz),
+                             Array4<Real const> const& vfrac,
+                             AMREX_D_DECL(Array4<Real const> const& fcx,
+                                          Array4<Real const> const& fcy,
+                                          Array4<Real const> const& fcz),
+                             Array4<Real const> const& ccent,
+                             BCRec  const* d_bcrec_ptr,
+                             Geometry const& geom,
+                             Real dt, std::string redistribution_type,
+                             const int max_order,
+                             Real target_volfrac,
+                             Array4<Real const> const& update_scale)
+{
+    Apply(bx, ncomp, out, dUdt_in, U_in, scratch, flag, flag,
+          AMREX_D_DECL(apx, apy, apz), vfrac,
+          AMREX_D_DECL(apx, apy, apz), vfrac,
+          AMREX_D_DECL(fcx, fcy, fcz), ccent,
+          d_bcrec_ptr, geom, dt, redistribution_type,
+          Array4<Real const> {}, // vel_eb
+          Array4<Real const> {}, // bnorm
+          Array4<Real const> {}, // barea, all not needed
+          max_order, target_volfrac, update_scale);
+}
+
+void Redistribution::Apply ( Box const& bx, int ncomp,
+                             Array4<Real      > const& out,
+                             Array4<Real      > const& dUdt_in,
+                             Array4<Real const> const& U_in,
+                             Array4<Real> const& scratch,
+                             Array4<EBCellFlag const> const& flag_old,
+                             Array4<EBCellFlag const> const& flag_new,
                              AMREX_D_DECL(Array4<Real const> const& apx_old,
                                           Array4<Real const> const& apy_old,
                                           Array4<Real const> const& apz_old),
@@ -141,13 +173,14 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        dUdt_out(i,j,k,n) = 0.;
+        out(i,j,k,n) = 0.;
     });
 
     if (redistribution_type == "FluxRedist")
     {
         int icomp = 0;
-        apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp, flag, vfrac_old, lev_geom);
+        apply_flux_redistribution (bx, out, dUdt_in, scratch, icomp, ncomp,
+                                   flag_old, vfrac_old, lev_geom);
 
     } else if (redistribution_type == "StateRedist") {
 
@@ -189,18 +222,20 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                      if (lev_geom.isPeriodic(1)) domain_per_grown.grow(1,1);,
                      if (lev_geom.isPeriodic(2)) domain_per_grown.grow(2,1););
 
-        // At any external Dirichlet domain boundaries we need to set dUdt_in to 0
-        //    in the cells just outside the domain because those values will be used
-        //    in the slope computation in state redistribution.  We assume here that
-        //    the ext_dir values of U_in itself have already been set.
-        if (!domain_per_grown.contains(bxg1))
-            amrex::ParallelFor(bxg1,ncomp,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                if (!domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
-                    dUdt_in(i,j,k,n) = 0.;
-            });
-
+        if ( dUdt_in )
+        {
+            // At any external Dirichlet domain boundaries we need to set dUdt_in to 0
+            //    in the cells just outside the domain because those values will be used
+            //    in the slope computation in state redistribution.  We assume here that
+            //    the ext_dir values of U_in itself have already been set.
+            if (!domain_per_grown.contains(bxg1))
+                amrex::ParallelFor(bxg1,ncomp,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    if (!domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
+                        dUdt_in(i,j,k,n) = 0.;
+                });
+        }
 
         amrex::Print() << "Start itracker" << std::endl;
 
@@ -210,7 +245,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
         amrex::Print() << "Start State Redistribution" << std::endl;
 
-        MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+        MakeStateRedistUtils(bx, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                              lev_geom, target_volfrac);
 
         if ( !vel_eb )
@@ -218,12 +253,28 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             //
             // SRD with stationary EB
             //
+            if ( dUdt_in )
+            {
+                // We're working with an update
             amrex::ParallelFor(Box(scratch), ncomp,
             [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
                 const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
                 scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n) / scale;
             });
+        }
+        else
+        {
+                // We're doing a whole state
+                amrex::ParallelFor(Box(scratch), ncomp,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    // FIXME? for this case I think we could do away with scratch and
+                    // just use U_in
+                    // Also, what about scale?
+                    scratch(i,j,k,n) = U_in(i,j,k,n);
+                });
+            }
         }
         else
         {
@@ -247,15 +298,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // For SRD without slopes, shouldn't matter what's in here because
                     // it gets mult by V^n which is zero
                     // But, we need this to be consistent with how we define the update
-                    // (dUdt_out) below and in the application code
-                    // TODO: Need to create Redistribute::FillNU(), that utilizes itracker
-                    // to put the desired U_in the NU cells at the old time value...
+                    // (out) below and in the application code
                     scratch(i,j,k,n) = U_in(i,j,k,n);
                     //scratch(i,j,k,n) = 0.0;
                 }
                 else if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
                          (vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 1.0) ||
-                         (vfrac_old(i,j,k) == 1. && !flag(i,j,k).isRegular()))
+                         (vfrac_old(i,j,k) == 1. && !flag_old(i,j,k).isRegular()))
                 {
                     // Correct all cells that are cut at time n or become cut at time n+1
 
@@ -264,7 +313,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                     scratch(i,j,k,n) = 0.0;
                     eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
-                                                flag,vfrac_old,bnorm,barea,dxinv);
+                                                flag_old,vfrac_old,bnorm,barea,dxinv);
 
                     Real delta_divU = delta_vol - scratch(i,j,k,n);
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
@@ -313,60 +362,94 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             });
         }
 
-        StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac_old, vfrac_new,
+        StateRedistribute(bx, ncomp, out, scratch, flag_new, vfrac_old, vfrac_new,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
                           itr_const, nrs_const, alpha_const, nbhd_vol_const,
                           cent_hat_const, lev_geom, srd_max_order);
 
-        amrex::ParallelFor(bx, ncomp,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        //
+                // Only update the values which actually changed -- this makes
+                // the results insensitive to tiling -- otherwise cells that aren't
+                // changed but are in a tile on which StateRedistribute gets called
+                // will have precision-level changes due to adding/subtracting U_in
+                // and multiplying/dividing by dt.   Here we test on whether (i,j,k)
+                // has at least one neighbor and/or whether (i,j,k) is in the
+                // neighborhood of another cell -- if either of those is true the
+                // value may have changed
+        //
+        if ( !vel_eb )
         {
-            // Only update the values which actually changed -- this makes
-            // the results insensitive to tiling -- otherwise cells that aren't
-            // changed but are in a tile on which StateRedistribute gets called
-            // will have precision-level changes due to adding/subtracting U_in
-            // and multiplying/dividing by dt.   Here we test on whether (i,j,k)
-            // has at least one neighbor and/or whether (i,j,k) is in the
-            // neighborhood of another cell -- if either of those is true the
-            // value may have changed
-
-            //fixme
-            // if (i==8  && j==8){
-            //     amrex::Print() << "Pre dUdt_out" << Dim3{i,j,k} << dUdt_out(i,j,k,n) << std::endl;
-            //     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
-            // }
-
-            if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.
-                || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
-                || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) )
+            //
+            // SRD with stationary EB
+            //
+            if ( dUdt_in )
             {
-                const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
+                // Pass out an update
+                amrex::ParallelFor(bx, ncomp,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)
+                    {
+                        const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
 
-                // if (i==0 && j==10){
-                //     Print()<<"redist apply update "<<dUdt_out(i,j,k,n)
-                //         <<" "<<U_in(i,j,k,n) <<std::endl;
-                // }
+                        out(i,j,k,n) = scale * (out(i,j,k,n) - U_in(i,j,k,n)) / dt;
 
-                // Now that we give NU cells a U_in value, we can do this for everyone
-                dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+                    }
+                    else
+                    {
+                        out(i,j,k,n) = dUdt_in(i,j,k,n);
+                    }
+                });
             }
             else
             {
-                dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
+                // Want to pass out the whole state, so we only need to reset cells that
+                // didn't get SRD changes.
+                amrex::ParallelFor(bx, ncomp,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    if ( !(itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.) )
+                    {
+                        out(i,j,k,n) = U_in(i,j,k,n);
+                    }
+                });
             }
+        }
+        else
+        {
+            //
+            // MSRD - pass out the full redistributed state.
+            //
+            amrex::ParallelFor(bx, ncomp,
+            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                //fixme
+                // if (i==8  && j==8){
+            //     amrex::Print() << "Pre out" << Dim3{i,j,k} << out(i,j,k,n) << std::endl;
+                //     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
+                // }
 
-            //FIXME
-            // if (i==0 && j==10)
-            //     amrex::Print() << "Post dUdt_out" << Dim3{i,j,k} << dUdt_out(i,j,k,n) << std::endl;
+                // FIXME - could probably make this logic more concise...
+                if ( !( itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.
+                    || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
+                        || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) ) )
+                {
+                    // Only need to reset cells that didn't get SRD changes
+                    out(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
+                }
+
+                //FIXME
+                // if (i==0 && j==10)
+            //     amrex::Print() << "Post out" << Dim3{i,j,k} << out(i,j,k,n) << std::endl;
         });
-
+        }
     } else if (redistribution_type == "NoRedist") {
         Print()<<"No redistribution..."<<std::endl;
 
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
+            out(i,j,k,n) = dUdt_in(i,j,k,n);
         });
 
     } else {
@@ -404,6 +487,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
     Box const& bxg3 = grow(bx,3);
     Box const& bxg4 = grow(bx,4);
 
+// FIXME itracker comp should allow letting go of this #if
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
@@ -448,7 +532,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                  itr, lev_geom, target_volfrac);
 
 
-    MakeStateRedistUtils(bx, flag, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+    MakeStateRedistUtils(bx, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                          lev_geom, target_volfrac);
 
 

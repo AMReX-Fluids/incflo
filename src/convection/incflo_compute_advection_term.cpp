@@ -111,6 +111,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     //    and compute the tracer forcing terms for the first time
     if (m_advection_type != "MOL")
     {
+	// FIXME - do we really need to do this? Didn't it just happen for extrap and MAC??
+	// what's passed in might or might not include gradp. Must recompute here to be sure
+	// Suppose technically could do if (m_use_mac_phi_in_godunov)
         compute_vel_forces(vel_forces, vel, density, tracer, tracer);
 
         if (m_godunov_include_diff_in_forcing)
@@ -446,6 +449,14 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         const EBFArrayBoxFactory* ebfact     = &EBFactory(lev, time);
         auto const& vfrac = ebfact->getVolFrac();
 
+#ifdef AMREX_USE_MOVING_EB
+	// FIXME -- density definitely is using conv this way, but maybe tracer and vel
+	// don't because they have the update temporary in incflo_apply...
+        // Must initialize to zero because not all values may be set, e.g. outside the domain.
+        conv_u[lev]->setVal(0.);
+        conv_r[lev]->setVal(0.);
+        conv_t[lev]->setVal(0.);
+#else
         // //fixme
         // VisMF::Write(vfrac, "vfm");
         // VisMF::Write(ebfact_new->getVolFrac(), "vfn");
@@ -462,6 +473,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         dvdt_tmp.setVal(0.);
         drdt_tmp.setVal(0.);
         dtdt_tmp.setVal(0.);
+#endif
 #endif
 
         Real mult = -1.0;
@@ -497,7 +509,12 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 });
             }
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
+
+#ifdef AMREX_USE_MOVING_EB
+	    auto const& update_arr  = conv_u[lev]->array(mfi);
+#else
             auto const& update_arr  = dvdt_tmp.array(mfi);
+#endif
             if (flagfab.getType(bx) != FabType::covered)
                 HydroUtils::EB_ComputeDivergence(bx, update_arr,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
@@ -557,7 +574,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         if (!m_constant_density)
         {
           int flux_comp = AMREX_SPACEDIM;
-
+//Was this OMP intentionally left off?
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
           for (MFIter mfi(*conv_r[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
@@ -565,9 +585,15 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_EB
             if (m_verbose > 1) { Print()<<"Density advection term..."<<std::endl; }
 
+#ifdef AMREX_USE_MOVING_EB
+	    auto const& update_arr = conv_r[lev]->array(mfi);
+#else
+	    auto const& update_arr = drdt_tmp.array(mfi);
+#endif
+	    
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
             if (flagfab.getType(bx) != FabType::covered)
-                HydroUtils::EB_ComputeDivergence(bx, drdt_tmp.array(mfi),
+                HydroUtils::EB_ComputeDivergence(bx, update_arr,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
@@ -606,13 +632,23 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
           int flux_comp = (m_constant_density) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
 
+//Was this OMP intentionally left off?
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
           for (MFIter mfi(*conv_t[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
 
 #ifdef AMREX_USE_EB
             EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
-            auto const& update_arr  = dtdt_tmp.array(mfi);
+
+#ifdef AMREX_USE_MOVING_EB
+            auto const& update_arr  = conv_t[lev]->array(mfi);
+#else
+	    auto const& update_arr  = dtdt_tmp.array(mfi);
+#endif
+
             if (flagfab.getType(bx) != FabType::covered)
                 HydroUtils::EB_ComputeDivergence(bx, update_arr,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
@@ -651,17 +687,25 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
           } // mfi
         } // advect tracer
 
-        // //fixme
-        // VisMF::Write(dvdt_tmp,"vtmp");
-        // VisMF::Write(drdt_tmp,"rtmp");
-
 #ifdef AMREX_USE_EB
+#ifdef AMREX_USE_MOVING_EB
+	// We need to fill the boundary for later redistribution
+	// Note that this goes with a setVal(0) above to fill vals outside domain
+        conv_u[lev]->FillBoundary(geom[lev].periodicity());
+        conv_r[lev]->FillBoundary(geom[lev].periodicity());
+        conv_t[lev]->FillBoundary(geom[lev].periodicity());
+#else
+        //
+	// Only redistribute here if not doing moving EB
+	// Moving EB will redistribute full updated state once at the end
+        //
+	
         // We only filled these on the valid cells so we fill same-level interior ghost cells here.
         // (We don't need values outside the domain or at a coarser level so we can call just FillBoundary)
         dvdt_tmp.FillBoundary(geom[lev].periodicity());
         drdt_tmp.FillBoundary(geom[lev].periodicity());
         dtdt_tmp.FillBoundary(geom[lev].periodicity());
-        get_velocity_eb()[lev]->FillBoundary(geom[lev].periodicity());
+        //get_velocity_eb()[lev]->FillBoundary(geom[lev].periodicity());
 //fixme
         // VisMF::Write(dvdt_tmp,"vtmp");
         // VisMF::Write(drdt_tmp,"rtmp");
@@ -669,45 +713,38 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Box const& bx = mfi.tilebox();
-            if ( time == m_cur_time )
-            {
-            redistribute_convective_term (bx, mfi,
-                                          (m_advect_momentum) ? rhovel[lev].const_array(mfi) : vel[lev]->const_array(mfi),
-                                          density[lev]->const_array(mfi),
-                                          (m_advect_tracer && (m_ntrac>0)) ? rhotrac[lev].const_array(mfi) : Array4<Real const>{},
-                                          dvdt_tmp.array(mfi),
-                                          drdt_tmp.array(mfi),
-                                          (m_advect_tracer && (m_ntrac>0)) ? dtdt_tmp.array(mfi) : Array4<Real>{},
-                                          conv_u[lev]->array(mfi),
-                                          conv_r[lev]->array(mfi),
-                                          (m_advect_tracer && (m_ntrac>0)) ? conv_t[lev]->array(mfi) : Array4<Real>{},
-                                          m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
-                                              ebfact, ebfact_new,
-                                              m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
-                                              geom[lev], m_dt);
-            }
-            else
-            {
-                // Regular SRD
-                // When we turn SRD slopes on, we need to think more about what we really want to be
-                // redistributing here
-                redistribute_convective_term (bx, mfi,
-                                              (m_advect_momentum) ? rhovel[lev].const_array(mfi) : vel[lev]->const_array(mfi),
-                                              density[lev]->const_array(mfi),
-                                              (m_advect_tracer && (m_ntrac>0)) ? rhotrac[lev].const_array(mfi) : Array4<Real const>{},
-                                              dvdt_tmp.array(mfi),
-                                              drdt_tmp.array(mfi),
-                                              (m_advect_tracer && (m_ntrac>0)) ? dtdt_tmp.array(mfi) : Array4<Real>{},
-                                              conv_u[lev]->array(mfi),
-                                              conv_r[lev]->array(mfi),
-                                              (m_advect_tracer && (m_ntrac>0)) ? conv_t[lev]->array(mfi) : Array4<Real>{},
-                                              m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
-                                              ebfact, ebfact, // FIXME, for now need these the same
-                                              // m_eb_flow.enabled ? get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
-                                              Array4<Real const>{}, // No moving EB here, need a single switch...
-                                              geom[lev], m_dt);
-            }
-       } // mfi
+
+	    // SRD returning an update, not full state
+
+	    // velocity
+	    auto const& bc_vel = get_velocity_bcrec_device_ptr();
+	    redistribute_term(mfi, *conv_u[lev], dvdt_tmp,
+			      (m_advect_momentum) ? rhovel[lev] : *vel[lev],
+			      bc_vel, lev, nullptr);
+	    
+	    // density
+	    if (!m_constant_density) {
+		auto const& bc_den = get_density_bcrec_device_ptr();
+		redistribute_term(mfi, *conv_r[lev], drdt_tmp,
+				  *density[lev], bc_den, lev,
+				  nullptr);
+	    } else {
+		auto const& drdt = conv_r[lev]->array(mfi);
+		amrex::ParallelFor(bx,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+		{
+		    drdt(i,j,k) = 0.;
+		});
+	    }
+
+	    if (m_advect_tracer) {
+		auto const& bc_tra = get_tracer_bcrec_device_ptr();
+		redistribute_term(mfi, *conv_t[lev], dtdt_tmp,
+				  rhotrac[lev], bc_tra, lev,
+				  nullptr);
+	    }
+	} // mfi
+#endif
 #endif
     } // lev
 }

@@ -21,6 +21,7 @@ class incflo;
 class DiffusionTensorOp
 {
 public:
+    DiffusionTensorOp (incflo* a_incflo, amrex::Real time);
     DiffusionTensorOp (incflo* a_incflo);
 
     void diffuse_velocity (amrex::Vector<amrex::MultiFab*> const& velocity,
@@ -36,6 +37,7 @@ public:
 private:
 
     void readParameters ();
+    void define (amrex::Real time);
 
     incflo* m_incflo;
 

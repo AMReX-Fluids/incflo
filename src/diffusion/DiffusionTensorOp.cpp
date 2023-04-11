@@ -11,6 +11,17 @@ using namespace amrex;
 DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
     : m_incflo(a_incflo)
 {
+    define(m_incflo->m_cur_time);
+}
+
+DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo, Real time)
+    : m_incflo(a_incflo)
+{
+    define(time);
+}
+
+void DiffusionTensorOp::define (Real time)
+{
     readParameters();
 
     int finest_level = m_incflo->finestLevel();
@@ -20,11 +31,11 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
     LPInfo info_apply;
     info_apply.setMaxCoarseningLevel(0);
 #ifdef AMREX_USE_EB
-    if (!m_incflo->EBFactory(0).isAllRegular())
+    if (!m_incflo->EBFactory(0, time).isAllRegular())
     {
         Vector<EBFArrayBoxFactory const*> ebfact;
         for (int lev = 0; lev <= finest_level; ++lev) {
-            ebfact.push_back(&(m_incflo->EBFactory(lev)));
+            ebfact.push_back(&(m_incflo->EBFactory(lev,time)));
         }
 
         if (m_incflo->useTensorSolve())
@@ -220,6 +231,8 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
     int finest_level = m_incflo->finestLevel();
 
+    // FIXME? This copy is needed because MLMG::apply(... , const Vector<MF*>&), so
+    // can't pass Vector<MF const*>
     Vector<MultiFab> velocity(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
         velocity[lev].define(a_velocity[lev]->boxArray(),
@@ -232,15 +245,6 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 #ifdef AMREX_USE_EB
     if (m_eb_apply_op)
     {
-        Vector<MultiFab> divtau_tmp(finest_level+1);
-        for (int lev = 0; lev <= finest_level; ++lev) {
-            divtau_tmp[lev].define(a_divtau[lev]->boxArray(),
-                                   a_divtau[lev]->DistributionMap(),
-                                   AMREX_SPACEDIM, 2, MFInfo(),
-                                   a_divtau[lev]->Factory());
-            divtau_tmp[lev].setVal(0.0);
-        }
-
         // We want to return div (mu grad)) phi
         m_eb_apply_op->setScalars(0.0, -1.0);
 
@@ -262,13 +266,45 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
             m_eb_apply_op->setLevelBC(lev, &velocity[lev]);
         }
 
+
+#ifdef AMREX_USE_MOVING_EB
+        //
+        // For moving EB, don't redistribute yet.
+        //
+        MLMG mlmg(*m_eb_apply_op);
+        mlmg.apply(a_divtau, GetVecOfPtrs(velocity));
+
+#else
+        //
+        // Need a temporary to redistribute this term before potential use in
+        // an implicit solve
+        //
+        Vector<MultiFab> divtau_tmp(finest_level+1);
+        int tmp_comp = (m_incflo->m_redistribution_type == "StateRedist") ? 3 : 2;
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            divtau_tmp[lev].define(a_divtau[lev]->boxArray(),
+                                   a_divtau[lev]->DistributionMap(),
+                                   AMREX_SPACEDIM, tmp_comp, MFInfo(),
+                                   a_divtau[lev]->Factory());
+            divtau_tmp[lev].setVal(0.0);
+        }
+
         MLMG mlmg(*m_eb_apply_op);
         mlmg.apply(GetVecOfPtrs(divtau_tmp), GetVecOfPtrs(velocity));
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
+            // Flux redistribution
             amrex::single_level_redistribute( divtau_tmp[lev], *a_divtau[lev], 0, AMREX_SPACEDIM, m_incflo->Geom(lev));
+            //
+            // If we want to allow option of SRD, use incflo::redistribute_term.
+            //
+            // auto const& bc = m_incflo->get_velocity_bcrec_device_ptr();
+            // m_incflo->redistribute_term(*a_divtau[lev], divtau_tmp[lev], *a_velocity[lev],
+            //                          bc, lev, Array4<Real const>{});
         }
+#endif
+
     }
     else
 #endif

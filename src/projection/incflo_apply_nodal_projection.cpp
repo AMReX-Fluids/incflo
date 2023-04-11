@@ -1,4 +1,5 @@
 #include <AMReX_BC_TYPES.H>
+#include <hydro_NodalProjector.H>
 #include <incflo.H>
 
 using namespace amrex;

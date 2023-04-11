@@ -11,7 +11,6 @@ using namespace amrex;
 
 void
 Redistribution::MakeStateRedistUtils ( Box const& bx,
-                                       Array4<EBCellFlag const> const& flag,
                                        Array4<Real const> const& vfrac_old,
                                        Array4<Real const> const& vfrac_new,
                                        Array4<Real const> const& ccent,
@@ -152,7 +151,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (vfrac_new(i,j,k) > 0.0)
+        if (vfrac_new(i,j,k) > 0.0 || vfrac_old(i,j,k) > 0.0)
         //if (!flag(i,j,k).isCovered())
         {
             nbhd_vol(i,j,k)  = alpha(i,j,k,0) * vfrac_new(i,j,k);
@@ -186,7 +185,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg3,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (vfrac_old(i,j,k) > 0.0)
+        if (vfrac_new(i,j,k) > 0.0)
         {
             AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0);,
                          cent_hat(i,j,k,1) = ccent(i,j,k,1);,

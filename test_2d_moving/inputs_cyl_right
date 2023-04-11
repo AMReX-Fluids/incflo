@@ -69,7 +69,7 @@ sphere.center = 0.505 0.800 0.0
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.ic_u             =   0.0         #
+incflo.ic_u             =   1.0         #
 incflo.ic_v             =   0.0         #
 incflo.ic_p             =   0.0         #
 

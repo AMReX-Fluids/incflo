@@ -208,11 +208,18 @@ void incflo::ReadParameters ()
 #ifdef AMREX_USE_MOVING_EB
        // Do some checks
        if (m_advection_type != "MOL") {
-           amrex::Abort("Moving EB requires MOL"); }
+           amrex::Abort("Moving EB requires MOL, incflo.advection_type = MOL"); }
        if (m_redistribution_type != "StateRedist") {
-           amrex::Abort("Moving EB requires StateRedist");}
+           amrex::Abort("Moving EB requires StateRedist, incflo.redistribution_type = StateRedist");}
        if (m_advect_momentum != 1) {
-           amrex::Abort("Moving EB requires advecting momentum"); }
+           amrex::Abort("Moving EB requires advecting momentum, incflo.advect_momentum = true"); }
+       if (m_diff_type != DiffusionType::Explicit) {
+           amrex::Abort("Moving EB requires explicit diffusion, incflo.diffusion_type = 0"); }
+       if (m_use_boussinesq == true) {
+           amrex::Abort("Moving EB does not support boussinesq"); }
+       if (use_tensor_correction) {
+           amrex::Abort("Moving EB not tested with use_tensor_correction; it may work or not");
+       }
 
        // FIXME - maybe we should pin this number down further. Still allows 0 vel to get to ~1e-10
        ParmParse pp_eb2("eb2");

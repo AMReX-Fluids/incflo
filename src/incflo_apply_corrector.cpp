@@ -74,6 +74,16 @@ void incflo::ApplyCorrector()
     // We use the new time value for things computed on the "*" state
     Real new_time = m_cur_time + m_dt;
 
+#ifdef INCFLO_USE_MOVING_EB
+    // FIXME - would these be good from the corrector step? can we rely on doing a corrector?
+    //   what about initial iterations
+    // *************************************************************************************
+    // Reset the solvers to work with the desired EB
+    // *************************************************************************************
+    m_diffusion_tensor_op.reset(new DiffusionTensorOp(this, new_time));
+    m_diffusion_scalar_op.reset(new DiffusionScalarOp(this, new_time));
+#endif
+
     // *************************************************************************************
     // Allocate space for the MAC velocities
     // *************************************************************************************
@@ -181,14 +191,54 @@ void incflo::ApplyCorrector()
         for (int lev = 0; lev <= finest_level; lev++)
         {
             auto& ld = *m_leveldata[lev];
+
+#ifdef AMREX_USE_MOVING_EB
+            //
+            // For moving EB, assemble state for redistribution
+            //
+            MultiFab rho_temp(grids[lev], dmap[lev], 1, nghost_state(), MFInfo(), Factory(lev));
+            rho_temp.setVal(0.);
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
             for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
                 Box const& bx = mfi.tilebox();
-                Array4<Real const> const& rho_o  = ld.density_o.const_array(mfi);
+                Array4<Real> const& rho_t        = rho_temp.array(mfi);
                 Array4<Real> const& rho_n        = ld.density.array(mfi);
+                Array4<Real const> const& drdt_o = ld.conv_density_o.const_array(mfi);
+                Array4<Real const> const& drdt   = ld.conv_density.const_array(mfi);
+
+                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    // Build update
+                    //   rho_new = rho_pred + dt/2 * (A-hat - A^(n+1))
+                    //           = rho_new  + dt/2 * (drdt_o + drdt)
+                    //FIXME - need to think about sign here! Doesn't conv hold -A???
+                    // Could get rid of update temporary and just use conv
+                    rho_t(i,j,k) = rho_n(i,j,k) + m_half * l_dt * (drdt_o(i,j,k) + drdt(i,j,k));
+                });
+            }
+
+            // Need to ensure that boundaries are consistent
+            rho_temp.FillBoundary(geom[lev].periodicity());
+
+            // Fixme
+            // EB_set_covered(rho_temp,0,1,rho_temp.nGrow(),0.);
+            // VisMF::Write(rho_temp,"newrho");
+            // VisMF::Write(ld.conv_density,"drdt_new");
+            // VisMF::Write(ld.conv_density_o,"drdt_old");
+#endif
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                Box const& bx = mfi.tilebox();
+                Array4<Real> const& rho_t        = rho_temp.array(mfi);
+                Array4<Real> const& rho_n        = ld.density.array(mfi);
+                Array4<Real const> const& rho_o  = ld.density_o.const_array(mfi);
                 Array4<Real> const& rho_nph      = density_nph[lev].array(mfi);
                 Array4<Real const> const& drdt_o = ld.conv_density_o.const_array(mfi);
                 Array4<Real const> const& drdt   = ld.conv_density.const_array(mfi);
@@ -196,33 +246,51 @@ void incflo::ApplyCorrector()
                 auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
                 auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
+#ifdef AMREX_USE_MOVING_EB
+                //
+                // Regular SRD - redistribute and return full state at new time
+                //
+                redistribute_term(mfi, rho_n, Array4<Real> {}, rho_t,
+                                  get_density_bcrec_device_ptr(), lev,
+                                  Array4<Real const> {});
+
+                // Make half-time rho
+                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    rho_nph(i,j,k) = m_half * (rho_o(i,j,k) + rho_n(i,j,k));
+                });
+#else
+                //
+                // Add advective update that's already been redistributed to get rho^(n+1)
+                //
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     const Real rho_old = rho_o(i,j,k);
-
                     Real rho_new = rho_old + l_dt * m_half*(drdt(i,j,k)+drdt_o(i,j,k));
-                    rho_nph(i,j,k) = m_half * (rho_old + rho_new);
 
-                    // If filling NU at time n in some way, then the normal
-                    // update should work
                     rho_n  (i,j,k) = rho_new;
-
-
-                    // if (j > 4 && j < 12)
-                    //     amrex::Print() << IntVect(i,j) << " rho_old / rho_new / drdt " << rho_o(i,j,k) << " / " << rho_n(i,j,k) << " / " << drdt(i,j,k) << std::endl;
-
+                    rho_nph(i,j,k) = m_half * (rho_old + rho_new);
                 });
+#endif
             } // mfi
+
+            // Fixme
+            // EB_set_covered(ld.density,0,1,ld.density.nGrow(),0.);
+
+            // rho_temp.minus(ld.density,0,1,0);
+            // VisMF::Write(rho_temp,"rt");
+            // VisMF::Write(ld.density,"rhonn");
+//          Abort();
         } // lev
 
         // Average down solution
         for (int lev = finest_level-1; lev >= 0; --lev) {
 #ifdef AMREX_USE_EB
             amrex::EB_average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
-                                   0, AMREX_SPACEDIM, refRatio(lev));
+                                   0, 1, refRatio(lev));
 #else
             amrex::average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
-                                0, AMREX_SPACEDIM, refRatio(lev));
+                                0, 1, refRatio(lev));
 #endif
         }
     } // not constant density
@@ -243,6 +311,53 @@ void incflo::ApplyCorrector()
         for (int lev = 0; lev <= finest_level; lev++)
         {
             auto& ld = *m_leveldata[lev];
+#ifdef AMREX_USE_MOVING_EB
+            //
+            // For moving EB, assemble state for redistribution
+            //
+            MultiFab tra_temp(grids[lev], dmap[lev], m_ntrac, nghost_state(), MFInfo(), Factory(lev));
+            tra_temp.setVal(0.);
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                Box const& bx = mfi.tilebox();
+                Array4<Real> const& rhotra_t     = tra_temp.array(mfi);
+                Array4<Real> const& tra_n        = ld.tracer.array(mfi);
+//
+                // FIXME?? Note that rho_n has been fully updated and redistributed here
+                // It is not the rho*tra that was used in advection. Is this okay?
+//
+                Array4<Real const> const& rho_n  = ld.density_o.const_array(mfi);
+                Array4<Real const> const& dtdt_o = ld.conv_tracer_o.const_array(mfi);
+                Array4<Real const> const& dtdt   = ld.conv_tracer.const_array(mfi);
+// FIXME - why do we have this test when init.cpp requires at least 1 tracer...
+                Array4<Real const> const& laps   = (l_ntrac > 0) ? ld.laps.const_array(mfi)
+                                                                 : Array4<Real const>{};
+                Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
+                                                                : Array4<Real const>{};
+
+                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    // Build update
+                    //   tra_new = tra_pred + dt/2 * (A-hat - A^(n+1) + D^(n+1))
+                    //           = tra_new  + dt/2 * (drdt_o + drdt + laps)
+                    //FIXME - need to think about sign here! Doesn't conv hold -A???
+                    // Could get rid of update temporary and just use conv
+                    for ( int n = 0; n < l_ntrac; n++)
+                    {
+                        rhotra_t(i,j,k,n) = rho_n(i,j,k)*tra_n(i,j,k,n)
+                                            + m_half * l_dt * (dtdt_o(i,j,k) + dtdt(i,j,k,n)
+                                                               + laps(i,j,k,n) + tra_f(i,j,k,n));
+                    }
+                });
+            }
+
+            // Need to ensure that boundaries are consistent
+            tra_temp.FillBoundary(geom[lev].periodicity());
+#endif
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -257,6 +372,29 @@ void incflo::ApplyCorrector()
                 Array4<Real const> const& dtdt    = ld.conv_tracer.const_array(mfi);
                 Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
                                                                 : Array4<Real const>{};
+
+#ifdef AMREX_USE_MOVING_EB
+                Array4<Real> const& rhotra_t     = tra_temp.array(mfi);
+
+                // Redistribute
+                // (rho trac)^new = (rho trac)^old + dt * (
+                //                   div(rho trac u) + div (mu grad trac) + rho * f_t
+                //
+                redistribute_term(mfi, tra, Array4<Real> {}, rhotra_t,
+                                  get_tracer_bcrec_device_ptr(), lev,
+                                  Array4<Real const> {});
+
+                amrex::ParallelFor(bx,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    for (int n = 0; n < l_ntrac; ++n)
+                    {
+                        tra(i,j,k,n) /= rho(i,j,k);
+                    }
+                });
+#else
+
+                Array4<Real const> const& tra_o   = ld.tracer_o.const_array(mfi);
 
                 if (m_diff_type == DiffusionType::Explicit)
                 {
@@ -311,6 +449,7 @@ void incflo::ApplyCorrector()
                         }
                     });
                 }
+#endif
             } // mfi
         } // lev
     } // if (m_advect_tracer)
@@ -335,10 +474,10 @@ void incflo::ApplyCorrector()
             for (int lev = finest_level-1; lev >= 0; --lev) {
 #ifdef AMREX_USE_EB
                 amrex::EB_average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
-                                       0, AMREX_SPACEDIM, refRatio(lev));
+                                       0, m_ntrac, refRatio(lev));
 #else
                 amrex::average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
-                                    0, AMREX_SPACEDIM, refRatio(lev));
+                                    0, m_ntrac, refRatio(lev));
 #endif
             }
         }
@@ -359,6 +498,59 @@ void incflo::ApplyCorrector()
     {
         auto& ld = *m_leveldata[lev];
 
+#ifdef AMREX_USE_MOVING_EB
+        //
+        // For moving EB, assemble state for redistribution
+        //
+        MultiFab vel_temp(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_state(),
+                          MFInfo(), Factory(lev));
+        vel_temp.setVal(0.);
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            Box const& bx = mfi.tilebox();
+            Array4<Real> const& rhovel_t     = vel_temp.array(mfi);
+            Array4<Real> const& vel_n        = ld.velocity.array(mfi);
+//
+            // FIXME?? Note that rho_n has been fully updated and redistributed here
+            // It is not the rho*vel that was used in advection. Is this okay?
+//
+            Array4<Real const> const& rho_n  = ld.density_o.const_array(mfi);
+            Array4<Real const> const& dvdt_o = ld.conv_velocity_o.const_array(mfi);
+            Array4<Real const> const& dvdt   = ld.conv_velocity.const_array(mfi);
+            Array4<Real const> const& divtau = ld.divtau.const_array(mfi);
+            Array4<Real const> const& vel_f  = vel_forces[lev].const_array(mfi);
+
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                // Build update
+                //   vel_new = vel_pred + dt/2 * (A-hat - A^(n+1) + D^(n+1))
+                //           = vel_new  + dt/2 * (drdt_o + drdt + laps)
+                //FIXME - need to think about sign here! Doesn't conv hold -A???
+                // Could get rid of update temporary and just use conv
+                for ( int n = 0; n < AMREX_SPACEDIM; n++)
+                {
+                    rhovel_t(i,j,k,n) = rho_n(i,j,k)*vel_n(i,j,k,n)
+                                        + m_half * l_dt * (dvdt_o(i,j,k) + dvdt(i,j,k,n)
+                                                           + divtau(i,j,k,n) + vel_f(i,j,k,n));
+                }
+            });
+        }
+
+        // Need to ensure that boundaries are consistent
+        vel_temp.FillBoundary(geom[lev].periodicity());
+
+        // EB_set_covered(vel_temp,0.);
+        // VisMF::Write(vel_temp,"rvt");
+        // VisMF::Write(ld.conv_velocity_o,"dvdto");
+        // VisMF::Write(ld.conv_velocity,"dvdtn");
+        // VisMF::Write(ld.divtau,"divt");
+        // VisMF::Write(vel_forces[lev],"vf");
+
+#endif
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -378,6 +570,24 @@ void incflo::ApplyCorrector()
             auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
             auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
+#ifdef AMREX_USE_MOVING_EB
+            Array4<Real> const& rhovel_t     = vel_temp.array(mfi);
+            //
+            // Redistribute
+            redistribute_term(mfi, vel, Array4<Real>{}, rhovel_t,
+                              get_velocity_bcrec_device_ptr(), lev,
+                              Array4<Real const>{});
+
+            amrex::ParallelFor(bx,
+            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                for (int n = 0; n < AMREX_SPACEDIM; ++n)
+                {
+                    vel(i,j,k,n) /= rho_new(i,j,k);
+                }
+            });
+#else
+
             if (m_diff_type == DiffusionType::Explicit)
             {
                 Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
@@ -386,19 +596,18 @@ void incflo::ApplyCorrector()
                 if (m_advect_momentum) {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        // FIXME - Needs attention for diffusion to work
                         AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
-                                                    m_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0)) );,
-//                                                + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
-//                                                + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
+                                                    m_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0))
+                                                    + m_half*(divtau_o(i,j,k,0)+divtau(i,j,k,0))
+                                                    + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
                                      vel(i,j,k,1) =  rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
-                                                     m_half*(  dvdt_o(i,j,k,1)+  dvdt(i,j,k,1)) );,
-//                                                 + m_half*(divtau_o(i,j,k,1)+divtau(i,j,k,1))
-//                                                 + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
+                                                     m_half*(  dvdt_o(i,j,k,1)+  dvdt(i,j,k,1))
+                                                     + m_half*(divtau_o(i,j,k,1)+divtau(i,j,k,1))
+                                                     + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
                                      vel(i,j,k,2) =  rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
-                                                     m_half*(  dvdt_o(i,j,k,2)+  dvdt(i,j,k,2)) ););
-//                                                 + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
-//                                                 + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
+                                                     m_half*(  dvdt_o(i,j,k,2)+  dvdt(i,j,k,2))
+                                                     + m_half*(divtau_o(i,j,k,2)+divtau(i,j,k,2))
+                                                     + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
                         AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
                                      vel(i,j,k,1) /= rho_new(i,j,k);,
                                      vel(i,j,k,2) /= rho_new(i,j,k););
@@ -529,8 +738,9 @@ void incflo::ApplyCorrector()
                     }
                 }
             }
-        }
-    }
+#endif
+        } // mfi
+    } // lev
 
     // **********************************************************************************************
     //

@@ -1,16 +1,12 @@
 #ifndef INCFLO_H_
 
 #include <AMReX_AmrCore.H>
-#include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
-#include <AMReX_iMultiFab.H>
-#include <AMReX_Math.H>
 
 #include <hydro_MacProjector.H>
-#include <hydro_NodalProjector.H>
 
 #ifdef AMREX_USE_EB
-#include <AMReX_EBMultiFabUtil.H>
+#include <AMReX_EBFabFactory.H>
 #endif
 
 #ifdef INCFLO_USE_MOVING_EB
@@ -144,11 +140,6 @@ public: // for cuda
                                   amrex::Real time);
 
 #ifdef AMREX_USE_EB
-    void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,
-                                     AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
-                                                  amrex::Vector<amrex::MultiFab const*> const& v_mac,
-                                                  amrex::Vector<amrex::MultiFab const*> const& w_mac));
-
     void redistribute_convective_term (amrex::Box const& bx, amrex::MFIter const& mfi,
                                        amrex::Array4<amrex::Real const> const& vel,       // velocity
                                        amrex::Array4<amrex::Real const> const& rho,       // density
@@ -233,7 +224,6 @@ public: // for cuda
     void prob_init_fluid (int lev);
     void prob_set_inflow_velocity (int grid_id, amrex::Orientation ori, amrex::Box const& bx,
                                    amrex::Array4<amrex::Real> const& v, int lev, amrex::Real time);
-    void redistribute_initial_data(amrex::MultiFab& data, std::string redistribution_type);
 
 #include "incflo_prob_I.H"
 #include "incflo_prob_usr_I.H"
@@ -267,6 +257,37 @@ public: // for cuda
                                              amrex::Real time, int nghost);
     virtual void compute_tracer_diff_coeff (amrex::Vector<amrex::MultiFab*> const& tra_eta,
                                             int nghost);
+
+#ifdef AMREX_USE_EB
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    // embedded_boundaries
+    //
+    ///////////////////////////////////////////////////////////////////////////
+    void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,
+                                     AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
+                                                  amrex::Vector<amrex::MultiFab const*> const& v_mac,
+                                                  amrex::Vector<amrex::MultiFab const*> const& w_mac));
+
+    void redistribute_term ( amrex::MultiFab& result, amrex::MultiFab& result_tmp,
+                             amrex::MultiFab const& state,
+                             amrex::BCRec const* bc,
+                             int lev,
+                             amrex::MultiFab*& vel_eb);
+    void redistribute_term ( amrex::MFIter const& mfi,
+                             amrex::MultiFab& result, amrex::MultiFab& result_tmp,
+                             amrex::MultiFab const& state,
+                             amrex::BCRec const* bc,
+                             int lev,
+                             amrex::MultiFab*& vel_eb);
+    void redistribute_term ( amrex::MFIter const& mfi,
+                             amrex::Array4<amrex::Real      > const& result,
+                             amrex::Array4<amrex::Real      > const& result_tmp,
+                             amrex::Array4<amrex::Real const> const& state,
+                             amrex::BCRec const* bc,
+                             int lev,
+                             amrex::Array4<amrex::Real const> const& vel_eb);
+#endif
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -418,9 +439,7 @@ private:
 
 #ifdef AMREX_USE_EB
     std::string m_redistribution_type = "StateRedist";
-#endif
 
-#ifdef AMREX_USE_EB
     // If using Godunov with EB, default to PLM
     bool m_godunov_ppm         = false;
 
@@ -643,7 +662,7 @@ private:
         OldFactory (int lev) const noexcept { return *m_old_factory[lev]; }
 #else
     amrex::FabFactory<amrex::FArrayBox> const&
-        Factory (int lev) const noexcept { return *m_factory[lev]; }
+    Factory (int lev) const noexcept { return *m_factory[lev]; }
 #endif
 
 #ifdef AMREX_USE_EB
@@ -666,8 +685,12 @@ private:
     }
 #else
     amrex::EBFArrayBoxFactory const&
-        EBFactory (int lev) const noexcept {
-            return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
+    EBFactory (int lev) const noexcept {
+        return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
+    }
+    // FIXME?  Not sure this is the best way to handle things. DiffusionXXXOp uses this...
+    EBFactory (int lev, amrex::Real /*time*/) const noexcept {
+        return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
     }
 #endif
 #endif
@@ -906,9 +929,11 @@ private:
     void ReadParameters ();
     void ReadIOParameters ();
     void ResizeArrays (); // Resize arrays to fit (up to) max_level + 1 AMR levels
-    void InitialRedistribution ();
     void InitialProjection ();
     void InitialIterations ();
+#ifdef AMREX_USE_EB
+    void InitialRedistribution ();
+#endif
 
     ///////////////////////////////////////////////////////////////////////////
     //
