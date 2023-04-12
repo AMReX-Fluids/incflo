@@ -348,7 +348,7 @@ void incflo::ApplyCorrector()
                     for ( int n = 0; n < l_ntrac; n++)
                     {
                         rhotra_t(i,j,k,n) = rho_n(i,j,k)*tra_n(i,j,k,n)
-                                            + m_half * l_dt * (dtdt_o(i,j,k) + dtdt(i,j,k,n)
+                                            + m_half * l_dt * (dtdt_o(i,j,k,n) + dtdt(i,j,k,n)
                                                                + laps(i,j,k,n) + tra_f(i,j,k,n));
                     }
                 });
@@ -533,7 +533,7 @@ void incflo::ApplyCorrector()
                 for ( int n = 0; n < AMREX_SPACEDIM; n++)
                 {
                     rhovel_t(i,j,k,n) = rho_n(i,j,k)*vel_n(i,j,k,n)
-                                        + m_half * l_dt * (dvdt_o(i,j,k) + dvdt(i,j,k,n)
+                                        + m_half * l_dt * (dvdt_o(i,j,k,n) + dvdt(i,j,k,n)
                                                            + divtau(i,j,k,n) + vel_f(i,j,k,n));
                 }
             });
