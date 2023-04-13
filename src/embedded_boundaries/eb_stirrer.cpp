@@ -60,7 +60,7 @@ void incflo::make_eb_stirrer(Real time)
     auto stirrer_at_center = EB2::translate(stirrer, {
                                 AMREX_D_DECL(-domain_center_x,-domain_center_y,-domain_center_z)});
 
-    auto rotated_stirrer_at_center = EB2::rotate( 
+    auto rotated_stirrer_at_center = EB2::rotate(
                                         EB2::rotate(
                                            EB2::rotate(
                                               stirrer_at_center, alpha, 2),

@@ -22,7 +22,7 @@ void incflo::make_eb_csg(const std::string& geom_file)
     }
     Array<Real,AMREX_SPACEDIM> scaling_factor;
     AMREX_D_TERM(scaling_factor[0] = scaling_factor_vec[0];,
-                 scaling_factor[1] = scaling_factor_vec[1];, 
+                 scaling_factor[1] = scaling_factor_vec[1];,
                  scaling_factor[2] = scaling_factor_vec[2];);
 
     pp.queryarr("translation", translation_vec, 0, AMREX_SPACEDIM);

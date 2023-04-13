@@ -679,7 +679,7 @@ void incflo::PrintDragForce() {
 
       for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
       {
-         const Box& bx = mfi.validbox();
+         const Box& bx = mfi.tilebox();
          auto const& fact = EBFactory(lev);
          int ncomp = ld.velocity.nComp();
 

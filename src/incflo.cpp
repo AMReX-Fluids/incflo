@@ -59,6 +59,9 @@ void incflo::InitData ()
         // with MakeNewLevelFromScratch.
         InitFromScratch(m_cur_time);
 
+#ifdef AMREX_USE_EB
+        amrex::Print() << "Doing initial projection before initial redistribution "  << std::endl;
+#endif
         if (m_do_initial_proj) {
             InitialProjection();
         }
@@ -68,6 +71,9 @@ void incflo::InitData ()
 #endif
 
         if (m_do_initial_proj) {
+#ifdef AMREX_USE_EB
+        amrex::Print() << "Doing initial projection after initial redistribution "  << std::endl;
+#endif
             InitialProjection();
         }
 

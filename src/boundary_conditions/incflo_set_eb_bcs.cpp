@@ -57,8 +57,8 @@ incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& eb_vel, int nghost
               Vector<Real> amps(3);
 
               /*
-                 --- Adjust frequency to period --- 
-                 The idea here is that if the frequency is too small, we just neglect it by 
+                 --- Adjust frequency to period ---
+                 The idea here is that if the frequency is too small, we just neglect it by
                  setting the period to 1 and amplitude to 0.
                */
               if (std::abs(frequency[0]) > 1.e-6){
@@ -76,7 +76,7 @@ incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& eb_vel, int nghost
                   period[1] = 1.;
                   amps[1] = 0.;
               }
-#if (AMREX_SPACEDIM == 3)    
+#if (AMREX_SPACEDIM == 3)
               if (std::abs(frequency[2]) > 1.e-6){
                   period[2] = 1./frequency[2];
                   amps[2] = amplitude[2];

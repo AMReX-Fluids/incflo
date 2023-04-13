@@ -9,7 +9,7 @@
 Constructing Embedded Boundaries in incflo
 ============================================
 
-Incflo uses AMReX's constructive solid geometry framework defined in the namespace :cpp:`amrex::EB2`. 
+Incflo uses AMReX's constructive solid geometry framework defined in the namespace :cpp:`amrex::EB2`.
 See the `AMReX EB documentation <https://amrex-codes.github.io/amrex/docs_html/EB_Chapter.html>`_ for more details.
 
 Alternatively, the constructive solid geometry can also be constructed using OpenSCAD's CSG file format by installing the :cpp:`csg-eb` library.

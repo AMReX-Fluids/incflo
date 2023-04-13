@@ -61,7 +61,7 @@ void incflo::make_eb_hexahedron(Real cur_time)
     // ylo = ylo + vel[1] * cur_time;
     // yhi = yhi + vel[1] * cur_time;
 
-#if AMREX_SPACEDIM > 2 
+#if AMREX_SPACEDIM > 2
     Real zlo = boxLo[2] + offset;
     Real zhi = boxHi[2] - offset;
 
@@ -74,7 +74,7 @@ void incflo::make_eb_hexahedron(Real cur_time)
     RealArray hi {AMREX_D_DECL(xhi, yhi, zhi)};
 
     RealArray move {AMREX_D_DECL(vel[0]*cur_time, vel[1]*cur_time, vel[2]*cur_time)};
-    
+
     auto polyhedron = EB2::translate(EB2::rotate(EB2::rotate(EB2::BoxIF(lo, hi, inside), angle, dir), angle2, dir2), move);
 //    auto polyhedron = EB2::translate(EB2::rotate(EB2::BoxIF(lo, hi, inside), angle, dir), move);
     auto gshop = EB2::makeShop(polyhedron);

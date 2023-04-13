@@ -40,8 +40,8 @@ void incflo::make_eb_oscillating_cylinder(Real cur_time)
     eb.getarr("amplitude", amplitude, 0, 3);
 
     /*
-       --- Adjust frequency to period --- 
-        The idea here is that if the frequency is too small, we just neglect it by 
+       --- Adjust frequency to period ---
+        The idea here is that if the frequency is too small, we just neglect it by
         setting the period to 1 and amplitude to 0.
     */
     if (std::abs(frequency[0]) > 1.e-6)
@@ -57,7 +57,7 @@ void incflo::make_eb_oscillating_cylinder(Real cur_time)
         period[1] = 1.;
         amplitude[1] = 0.;
     }
-    
+
     if (std::abs(frequency[2]) > 1.e-6)
         period[2] = 1./frequency[2];
     else {
@@ -75,16 +75,16 @@ void incflo::make_eb_oscillating_cylinder(Real cur_time)
 
     // Print frequency and amplitude info
 #if (AMREX_SPACEDIM == 2)
-    amrex::Print() << "EB Frequency: " << frequency[0] << ", " 
+    amrex::Print() << "EB Frequency: " << frequency[0] << ", "
                                        << frequency[1] << std::endl;
-    amrex::Print() << "EB Amplitude: " << amplitude[0] << ", " 
+    amrex::Print() << "EB Amplitude: " << amplitude[0] << ", "
                                        << amplitude[1] << std::endl;
-#else 
-    amrex::Print() << "EB Frequency: " << frequency[0] << ", " 
-                                       << frequency[1] << ", " 
+#else
+    amrex::Print() << "EB Frequency: " << frequency[0] << ", "
+                                       << frequency[1] << ", "
                                        << frequency[2] << std::endl;
-    amrex::Print() << "EB Amplitude: " << amplitude[0] << ", " 
-                                       << amplitude[1] << ", " 
+    amrex::Print() << "EB Amplitude: " << amplitude[0] << ", "
+                                       << amplitude[1] << ", "
                                        << amplitude[2] << std::endl;
 #endif
 
