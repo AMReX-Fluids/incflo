@@ -309,7 +309,8 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
     }
 
     // Select first for EB motion. If that's indeterminate, choose based on EB normal
-    if ( std::abs(vx) > std::abs(vy) || ( vx_eq_vy && std::abs(nx) > std::abs(ny) ) )
+    if ( //std::abs(vx) > std::abs(vy) || ( vx_eq_vy &&
+	( std::abs(nx) > std::abs(ny) ) )
     {
         if (nx > 0)
             itracker(i,j,k,1) = 5;
