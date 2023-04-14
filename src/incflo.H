@@ -908,7 +908,7 @@ private:
     void make_eb_tuscan ();
     void make_eb_chkptfile ();
 #ifdef CSG_EB
-    void make_eb_csg (const std::string& csg_file);
+    void make_eb_csg (const std::string& csg_file, amrex::Real time = 0.0);
 #endif
 #endif
 

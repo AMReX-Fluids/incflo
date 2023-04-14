@@ -106,7 +106,7 @@ void incflo::MakeEBGeometry(Real cur_time)
 #ifdef CSG_EB
     else if(!csg_file.empty()) {
       amrex::Print() << "\n Building geometry from .csg file:  " << csg_file << std::endl;
-      make_eb_csg(csg_file);
+      make_eb_csg(csg_file, cur_time);
     }
 #endif
     else

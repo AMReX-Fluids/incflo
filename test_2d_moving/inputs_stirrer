@@ -70,6 +70,10 @@ yhi.pressure            =   0.0
 # Add box
 incflo.geometry = "stirrer"
 
+# Uncomment below to use CSG
+#incflo.geometry_filename = "stirrer.csg"
+#csg.internal_flow = false
+
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#

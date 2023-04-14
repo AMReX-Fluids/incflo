@@ -66,6 +66,10 @@ sphere.internal_flow = false
 sphere.radius = 0.4
 sphere.center = 1.3 0.8 0.8
 
+# Uncomment below to use CSG
+#incflo.geometry_filename = "sphere_right.csg"
+#csg.internal_flow = false
+
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
