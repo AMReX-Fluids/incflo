@@ -743,7 +743,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
                Gpu::Atomic::Add(&p_dv_drag[lev], cell_drag);
 
 #endif
-            
+
                //drag_sum += 2*nx*gradx_arr(i,j,k,0) + ny*(grady_arr(i,j,k,0) + gradx_arr(i,j,k,1));
             }
          });
@@ -756,7 +756,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
    Gpu::copy(Gpu::deviceToHost, dv_drag.begin(), dv_drag.end(), drag.begin());
 
    // Print to drag history file
-   drag_file << m_cur_time << ", "; 
+   drag_file << m_cur_time << ", ";
    for (int lev = 0; lev <= finest_level; lev++)
    {
       if (lev == finest_level){
@@ -765,7 +765,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
           drag_file << drag[lev] << ", ";
       }
    }
-   
+
 
    Vector<int> istep(finest_level + 1, m_nstep);
    Vector<MultiFab> plotmf(finest_level + 1);

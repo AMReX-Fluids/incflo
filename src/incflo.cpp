@@ -130,7 +130,6 @@ void incflo::Evolve()
     bool do_not_evolve = ((m_max_step == 0) || ((m_stop_time >= 0.) && (m_cur_time > m_stop_time)) ||
                             ((m_stop_time <= 0.) && (m_max_step <= 0))) && !m_steady_state;
 
-    
     // Drag plot
     char name[100];
     std::ofstream prt_drag;
@@ -160,7 +159,7 @@ void incflo::Evolve()
 
         // Advance to time t + dt
         Advance();
-        
+
         if (m_eb_flow_plt_drag_hist){
             PrintDragForce(prt_drag);
         }
