@@ -456,6 +456,9 @@ private:
        amrex::Vector<amrex::Real> amplitude;
        amrex::Vector<amrex::Real> omega;
        amrex::Vector<amrex::Real> center_of_rotation;
+       bool plt_drag;
+       bool plt_drag_hist;
+       int plt_drag_int;
 
        // Normal to exclude EB faces. By default all faces within a specified
        // region will
@@ -480,6 +483,11 @@ private:
        {}
     };
     EBFlow_t m_eb_flow;
+
+    // Drag plt settings
+    int  m_eb_flow_plt_drag_int   = 1;
+    bool m_eb_flow_plt_drag       = false;
+    bool m_eb_flow_plt_drag_hist  = false;
 
     bool m_write_geom_chk = false;
 #else
@@ -947,7 +955,7 @@ private:
     void WriteCheckPointFile () const;
     void WritePlotFile ();
     void ReadCheckpointFile ();
-    void PrintDragForce();
+    void PrintDragForce(std::ofstream &drag_file);
 };
 
 #endif

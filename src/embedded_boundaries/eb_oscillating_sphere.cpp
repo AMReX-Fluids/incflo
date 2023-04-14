@@ -64,9 +64,11 @@ void incflo::make_eb_oscillating_sphere(Real cur_time)
         amplitude[2] = 0.;
     }
 
-    Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0] + amplitude[0]*sin(period[0]*cur_time),
-                                                       centervec[1] + amplitude[1]*sin(period[1]*cur_time),
-                                                       centervec[2] + amplitude[2]*sin(period[2]*cur_time))};
+    Real PI = 3.1415926535897932384;
+
+    Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0] + amplitude[0]+amplitude[0]*cos(2*PI*frequency[0]*cur_time),
+                                                       centervec[1] + amplitude[1]+amplitude[1]*cos(2*PI*frequency[1]*cur_time),
+                                                       centervec[2] + amplitude[2]+amplitude[2]*cos(2*PI*frequency[2]*cur_time))};
 
     // Print frequency and amplitude info
 #if (AMREX_SPACEDIM == 2)

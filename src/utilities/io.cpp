@@ -658,7 +658,7 @@ void incflo::WritePlotFile()
 
 
 // Copy/Paste drag computation from from drangara
-void incflo::PrintDragForce() {
+void incflo::PrintDragForce(std::ofstream &drag_file) {
    Print() << "PrintDragForce\n";
 
    Vector<MultiFab> gradx(finest_level + 1);
@@ -673,9 +673,14 @@ void incflo::PrintDragForce() {
        gradeb[lev].setVal(0.);
    }
 
+   Vector<Real> drag(finest_level + 1, 0.);
+   Gpu::DeviceVector<Real> dv_drag(finest_level + 1, 0.);
+   auto* p_dv_drag = dv_drag.data();
+
    for (int lev = 0; lev <= finest_level; lev++)
    {
       auto& ld = *m_leveldata[lev];
+      auto const& dx = geom[lev].CellSizeArray();
 
       for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
       {
@@ -697,12 +702,14 @@ void incflo::PrintDragForce() {
          Array4<Real const> const& ccent = (fact.getCentroid()).array(mfi);
          Array4<Real const> const& bcent = (fact.getBndryCent()).array(mfi);
          Array4<Real const> const& bnorm = (fact.getBndryNormal()).array(mfi);
+         Array4<Real const> const& barea = (fact.getBndryArea()).array(mfi);
          const FabArray<EBCellFlagFab>* flags = &(fact.getMultiEBCellFlagFab());
          Array4<EBCellFlag const> const& flag = flags->const_array(mfi);
 
 
          bool is_eb_dirichlet = true;
          bool is_eb_inhomog  = true;
+
 
          amrex::ParallelFor(bx, ncomp,
          [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -730,11 +737,35 @@ void incflo::PrintDragForce() {
                                                                         flag,ccent,bcent,
                                                                         nx, ny, is_eb_inhomog);
 
+
+               Real cell_drag = barea(i,j,k)*dx[0]*dx[1]*(2*nx*gradx_arr(i,j,k,0) + ny*(grady_arr(i,j,k,0) + gradx_arr(i,j,k,1)));
+
+               Gpu::Atomic::Add(&p_dv_drag[lev], cell_drag);
+
 #endif
+            
+               //drag_sum += 2*nx*gradx_arr(i,j,k,0) + ny*(grady_arr(i,j,k,0) + gradx_arr(i,j,k,1));
             }
          });
+
+         Gpu::synchronize();
+
       }
    }
+
+   Gpu::copy(Gpu::deviceToHost, dv_drag.begin(), dv_drag.end(), drag.begin());
+
+   // Print to drag history file
+   drag_file << m_cur_time << ", "; 
+   for (int lev = 0; lev <= finest_level; lev++)
+   {
+      if (lev == finest_level){
+          drag_file << drag[lev] << std::endl;
+      } else {
+          drag_file << drag[lev] << ", ";
+      }
+   }
+   
 
    Vector<int> istep(finest_level + 1, m_nstep);
    Vector<MultiFab> plotmf(finest_level + 1);
@@ -761,9 +792,11 @@ void incflo::PrintDragForce() {
    const std::string& pfname = amrex::Concatenate("drag_terms", m_nstep);
 
    // Write the plotfile
-   amrex::WriteMultiLevelPlotfile(pfname, finest_level + 1, GetVecOfConstPtrs(plotmf),
-                                  {"dudx", "dvdx", "dudy", "dvdy", "dudn", "dvdn",
-                                   "barea", "bnrmx", "bnrmy"},
-                                  Geom(), m_cur_time, istep, refRatio());
+   if (m_eb_flow_plt_drag && ((m_nstep % m_eb_flow_plt_drag_int) == 0)){
+       amrex::WriteMultiLevelPlotfile(pfname, finest_level + 1, GetVecOfConstPtrs(plotmf),
+               {"dudx", "dvdx", "dudy", "dvdy", "dudn", "dvdn",
+               "barea", "bnrmx", "bnrmy"},
+               Geom(), m_cur_time, istep, refRatio());
+   }
 }
 

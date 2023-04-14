@@ -86,9 +86,11 @@ incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& eb_vel, int nghost
               }
 #endif
 
-              AMREX_D_TERM(eb_vel_comps[0] = amps[0] * period[0] * cos(period[0]*time);,
-                      eb_vel_comps[1] = amps[1] * period[1] * cos(period[1]*time);,
-                      eb_vel_comps[2] = amps[2] * period[2] * cos(period[2]*time));
+              Real PI = 3.1415926535897932384;
+
+              AMREX_D_TERM(eb_vel_comps[0] = amps[0] * sin(2*PI*frequency[0]*time) * 2 * PI * frequency[0];,
+                           eb_vel_comps[1] = amps[1] * sin(2*PI*frequency[1]*time) * 2 * PI * frequency[1];,
+                           eb_vel_comps[2] = amps[2] * sin(2*PI*frequency[2]*time) * 2 * PI * frequency[2];);
           } else {
              has_comps = true;
              const auto& vels = m_eb_flow.velocity;

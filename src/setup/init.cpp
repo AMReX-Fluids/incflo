@@ -205,6 +205,15 @@ void incflo::ReadParameters ()
           m_eb_flow.normal_tol = tol_deg*M_PI/amrex::Real(180.);
        }
 
+       if (pp_eb_flow.contains("plt_drag")){
+          pp_eb_flow.query("plt_drag", m_eb_flow_plt_drag);
+          pp_eb_flow.query("plt_drag_int", m_eb_flow_plt_drag_int);
+       }
+
+       if (pp_eb_flow.contains("plt_drag_hist")){
+           pp_eb_flow.query("plt_drag_hist", m_eb_flow_plt_drag_hist);
+       }
+
 #ifdef AMREX_USE_MOVING_EB
        // Do some checks
        if (m_advection_type != "MOL") {

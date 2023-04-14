@@ -130,6 +130,18 @@ void incflo::Evolve()
     bool do_not_evolve = ((m_max_step == 0) || ((m_stop_time >= 0.) && (m_cur_time > m_stop_time)) ||
                             ((m_stop_time <= 0.) && (m_max_step <= 0))) && !m_steady_state;
 
+    
+    // Drag plot
+    char name[100];
+    std::ofstream prt_drag;
+    sprintf(name, "drag_history.dat");
+
+    amrex::Print() << "\n\n\nplt_drag_hist:" << m_eb_flow_plt_drag_hist << "\n\n\n" << std::endl;
+    if (m_eb_flow_plt_drag_hist)
+    {
+        prt_drag.open(name);
+    }
+
     while(!do_not_evolve)
     {
         if (m_verbose > 0)
@@ -148,6 +160,11 @@ void incflo::Evolve()
 
         // Advance to time t + dt
         Advance();
+        
+        if (m_eb_flow_plt_drag_hist){
+            PrintDragForce(prt_drag);
+        }
+
         m_nstep++;
         m_cur_time += m_dt;
 
@@ -172,6 +189,10 @@ void incflo::Evolve()
         do_not_evolve = (m_steady_state && SteadyStateReached()) ||
                         ((m_stop_time > 0. && (m_cur_time >= m_stop_time - 1.e-12 * m_dt)) ||
                          (m_max_step >= 0 && m_nstep >= m_max_step));
+    }
+
+    if (m_eb_flow_plt_drag_hist){
+        prt_drag.close();
     }
 
     // Output at the final time
