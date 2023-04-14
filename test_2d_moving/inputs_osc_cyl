@@ -50,24 +50,24 @@ amr.max_grid_size_x     =   1024
 amr.max_grid_size_y     =   1024
 amr.max_grid_size_z     =   1024
 amr.blocking_factor     =   2
-amr.n_error_buff        =   4
+amr.n_error_buf         =   4
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
 geometry.prob_lo        =   -1.0  -1.0  # Lo corner coordinates
-geometry.prob_hi        =   1.0 1.0     # Hi corner coordinates
-geometry.is_periodic    =   0   0       # Periodicity x y z (0/1)
+geometry.prob_hi        =    1.0   1.0  # Hi corner coordinates
+geometry.is_periodic    =    0     0    # Periodicity x y z (0/1)
 
 # Boundary conditions
 xlo.type                =   "po"
-xlo.pressure            =   0.0  0.0  0.0
+xlo.pressure            =   0.0
 
 xhi.type                =   "po"
 xhi.pressure            =   0.0
 
 ylo.type                =   "po"
-ylo.pressure            =   0.0  0.0  0.0
+ylo.pressure            =   0.0
 
 yhi.type                =   "po"
 yhi.pressure            =   0.0
