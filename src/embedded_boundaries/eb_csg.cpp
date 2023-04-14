@@ -25,7 +25,7 @@ void incflo::make_eb_csg(const std::string& geom_file, Real cur_time)
     }
     Array<Real,AMREX_SPACEDIM> scaling_factor;
     AMREX_D_TERM(scaling_factor[0] = scaling_factor_vec[0];,
-                 scaling_factor[1] = scaling_factor_vec[1];, 
+                 scaling_factor[1] = scaling_factor_vec[1];,
                  scaling_factor[2] = scaling_factor_vec[2];);
 
     pp.queryarr("translation", translation_vec, 0, AMREX_SPACEDIM);
@@ -45,7 +45,7 @@ void incflo::make_eb_csg(const std::string& geom_file, Real cur_time)
     Array<Real,AMREX_SPACEDIM> center_of_rotation;
     eb.queryarr("center_of_rotation", center_of_rotation_vec, 0, AMREX_SPACEDIM);
     AMREX_D_TERM(center_of_rotation[0] = center_of_rotation_vec[0];,
-                 center_of_rotation[1] = center_of_rotation_vec[1];, 
+                 center_of_rotation[1] = center_of_rotation_vec[1];,
                  center_of_rotation[2] = center_of_rotation_vec[2];);
 
     amrex::Print() << "\n Building geometry with is_internal_flow:  " << is_internal_flow << std::endl;
@@ -56,15 +56,15 @@ void incflo::make_eb_csg(const std::string& geom_file, Real cur_time)
 
     Array<Real,AMREX_SPACEDIM> to_cor;
     AMREX_D_TERM(to_cor[0] = -center_of_rotation[0];,
-                 to_cor[1] = -center_of_rotation[1];, 
+                 to_cor[1] = -center_of_rotation[1];,
                  to_cor[2] = -center_of_rotation[2];);
 
     auto to_cor_csg_if = EB2::translate(translated_csg_if, to_cor);
 
-    auto rotated_csg_if = EB2::rotate( 
+    auto rotated_csg_if = EB2::rotate(
                            EB2::rotate(
                             EB2::rotate(to_cor_csg_if, alpha, 2),
-                           beta, 1), 
+                           beta, 1),
                           gamma, 0);
 
     auto final_csg_if = EB2::translate(rotated_csg_if, center_of_rotation);
