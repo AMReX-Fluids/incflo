@@ -139,7 +139,7 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
 
     ApplyPredictor();
 
-#if 0
+#if 1
     int my_lev = 0;
     auto const& fact = EBFactory(my_lev);
     Real sum = volWgtSum(my_lev,get_density_new_const()[my_lev],0,fact);
@@ -171,7 +171,7 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
         ApplyCorrector();
     }
 
-#if 0
+#if 1
     // int my_lev = 0;
     // auto const& fact = EBFactory(my_lev);
     sum = volWgtSum(my_lev,get_density_new_const()[my_lev],0,fact);
