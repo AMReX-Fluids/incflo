@@ -693,6 +693,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
          Array4<Real> const& gradeb_arr        = gradeb[lev].array(mfi);
          Array4<const Real> const& phi_arr     = ld.velocity.array(mfi);
          Array4<const Real> const& phi_eb_arr  = get_velocity_eb()[lev]->array(mfi);
+         Array4<const Real> const& p_nd_arr    = ld.p_nd.array(mfi);
 
          Array4<Real const> const& fcx   = (fact.getFaceCent())[0]->const_array(mfi);
          Array4<Real const> const& fcy   = (fact.getFaceCent())[1]->const_array(mfi);
@@ -738,7 +739,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
                                                                         nx, ny, is_eb_inhomog);
 
 
-               Real cell_drag = barea(i,j,k)*dx[0]*dx[1]*(2*nx*gradx_arr(i,j,k,0) + ny*(grady_arr(i,j,k,0) + gradx_arr(i,j,k,1)));
+               Real cell_drag = 1.0e-3 * barea(i,j,k)*(nx*(-p_nd_arr(i,j,k) + 2*gradx_arr(i,j,k,0)) + ny*(grady_arr(i,j,k,0) + gradx_arr(i,j,k,1)));
 
                Gpu::Atomic::Add(&p_dv_drag[lev], cell_drag);
 
