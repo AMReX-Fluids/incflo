@@ -721,14 +721,14 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
                Real ny = bnorm(i,j,k,1);
 #if (AMREX_SPACEDIM == 2)
                gradx_arr(i,j,k,n) = (apx(i,j,k) == 0.0) ? 0.0 :
-                  gradx_arr(i,j,k,n) = amrex::grad_x_of_phi_on_centroids(i,j,k,n,
+                                    amrex::grad_x_of_phi_on_centroids(i,j,k,n,
                                                                       phi_arr,phi_eb_arr,
                                                                       flag,ccent,bcent,
                                                                       yloc_on_xface,
                                                                       is_eb_dirichlet,is_eb_inhomog);
 
                grady_arr(i,j,k,n) = (apy(i,j,k) == 0.0) ? 0.0:
-                  grady_arr(i,j,k,n) = amrex::grad_y_of_phi_on_centroids(i,j,k,n,
+                                    amrex::grad_y_of_phi_on_centroids(i,j,k,n,
                                                                       phi_arr,phi_eb_arr,
                                                                       flag,ccent,bcent,
                                                                       xloc_on_yface,
