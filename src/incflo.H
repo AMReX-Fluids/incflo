@@ -873,7 +873,7 @@ private:
     void copy_from_old_to_new_tracer   (         amrex::IntVect const& ng = amrex::IntVect{0});
     void copy_from_old_to_new_tracer   (int lev, amrex::IntVect const& ng = amrex::IntVect{0});
 
-    void Advance ();
+    void Advance (amrex::Real orig_mass, amrex::Real& prev_mass);
     bool writeNow ();
 
     ///////////////////////////////////////////////////////////////////////////

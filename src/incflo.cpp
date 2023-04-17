@@ -1,4 +1,5 @@
 #include <incflo.H>
+#include <volWgtSum.H>
 
 // Need this for TagCutCells
 #ifdef AMREX_USE_EB
@@ -141,6 +142,20 @@ void incflo::Evolve()
         prt_drag.open(name);
     }
 
+    Real orig_mass, prev_mass;
+    int my_lev = 0;
+    auto const& fact = EBFactory(my_lev);
+    orig_mass = volWgtSum(my_lev,get_density_new_const()[my_lev],0,fact);
+    auto const dx = geom[my_lev].CellSize();
+#if (AMREX_SPACEDIM == 2)
+    orig_mass *= dx[0] * dx[1];
+#elif (AMREX_SPACEDIM == 3)
+    orig_mass *= dx[0] * dx[1] * dx[2];
+#endif
+    prev_mass = orig_mass;
+    amrex::Print() << "Sum of mass at time = " << m_cur_time << " " <<
+                       orig_mass << std::endl;
+
     while(!do_not_evolve)
     {
         if (m_verbose > 0)
@@ -158,7 +173,7 @@ void incflo::Evolve()
         }
 
         // Advance to time t + dt
-        Advance();
+        Advance(orig_mass, prev_mass);
 
         if (m_eb_flow_plt_drag_hist){
             PrintDragForce(prt_drag);
