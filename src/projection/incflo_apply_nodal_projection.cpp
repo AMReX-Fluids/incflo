@@ -110,11 +110,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
            } else {
               set_eb_velocity(lev, time, *get_velocity_eb()[lev],
                   get_velocity_eb()[lev]->nGrow());
-       }
-           set_eb_density(lev, time, *get_density_eb()[lev],
-              get_density_eb()[lev]->nGrow());
-           set_eb_tracer(lev, time, *get_tracer_eb()[lev],
-             get_tracer_eb()[lev]->nGrow());
+           }
         }
 #endif
         vel.push_back(&(m_leveldata[lev]->velocity));
