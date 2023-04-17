@@ -692,9 +692,9 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
 
          Array4<Real const> const& fcx   = (fact.getFaceCent())[0]->const_array(mfi);
          Array4<Real const> const& fcy   = (fact.getFaceCent())[1]->const_array(mfi);
- #if (AMREX_SPACEDIM == 3)
+#if (AMREX_SPACEDIM == 3)
          Array4<Real const> const& fcz   = (fact.getFaceCent())[2]->const_array(mfi);
- #endif
+#endif
         Array4<Real const> const& apx   = (fact.getAreaFrac())[0]->const_array(mfi);
         Array4<Real const> const& apy   = (fact.getAreaFrac())[1]->const_array(mfi);
 #if (AMREX_SPACEDIM == 3)
@@ -760,6 +760,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
          Array4<const Real> const& p_nd_arr    = ld.p_nd.array(mfi);
          Array4<Real> const& gradx_arr         = gradx[lev].array(mfi);
          Array4<Real> const& grady_arr         = grady[lev].array(mfi);
+         Array4<Real> const& gradeb_arr        = gradeb[lev].array(mfi);
          Array4<Real const> const& bnorm = (fact.getBndryNormal()).array(mfi);
          Array4<Real const> const& barea = (fact.getBndryArea()).array(mfi);
          const FabArray<EBCellFlagFab>* flags = &(fact.getMultiEBCellFlagFab());
@@ -825,12 +826,15 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
                //Real cell_drag = 
                //   m_mu*barea(i,j,k)*dx[0]*(-p_nd_arr(i,j,k)*nx + 2*nx*gradx_arr(i,j,k,0) + ny*(grady_arr(i,j,k,0) + gradx_arr(i,j,k,1)));
                
+               //Real cell_drag = 
+               //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
+
                Real cell_drag = 
                   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*dudx + ny*(dudy + dvdx)));
 
                Gpu::Atomic::Add(&p_dv_drag[lev], cell_drag);
-            }
 #endif
+            }
          });
 
          Gpu::synchronize();
