@@ -695,6 +695,11 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
  #if (AMREX_SPACEDIM == 3)
          Array4<Real const> const& fcz   = (fact.getFaceCent())[2]->const_array(mfi);
  #endif
+        Array4<Real const> const& apx   = (fact.getAreaFrac())[0]->const_array(mfi);
+        Array4<Real const> const& apy   = (fact.getAreaFrac())[1]->const_array(mfi);
+#if (AMREX_SPACEDIM == 3)
+        Array4<Real const> const& apz   = (fact.getAreaFrac())[2]->const_array(mfi);
+#endif
          Array4<Real const> const& ccent = (fact.getCentroid()).array(mfi);
          Array4<Real const> const& bcent = (fact.getBndryCent()).array(mfi);
          Array4<Real const> const& bnorm = (fact.getBndryNormal()).array(mfi);
@@ -715,13 +720,15 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
                Real nx = bnorm(i,j,k,0);
                Real ny = bnorm(i,j,k,1);
 #if (AMREX_SPACEDIM == 2)
-               gradx_arr(i,j,k,n) = amrex::grad_x_of_phi_on_centroids(i,j,k,n,
+               gradx_arr(i,j,k,n) = (apx(i,j,k) == 0.0) ? 0.0 :
+                  gradx_arr(i,j,k,n) = amrex::grad_x_of_phi_on_centroids(i,j,k,n,
                                                                       phi_arr,phi_eb_arr,
                                                                       flag,ccent,bcent,
                                                                       yloc_on_xface,
                                                                       is_eb_dirichlet,is_eb_inhomog);
 
-               grady_arr(i,j,k,n) = amrex::grad_y_of_phi_on_centroids(i,j,k,n,
+               grady_arr(i,j,k,n) = (apy(i,j,k) == 0.0) ? 0.0:
+                  grady_arr(i,j,k,n) = amrex::grad_y_of_phi_on_centroids(i,j,k,n,
                                                                       phi_arr,phi_eb_arr,
                                                                       flag,ccent,bcent,
                                                                       xloc_on_yface,
