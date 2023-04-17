@@ -739,7 +739,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
                                                                         nx, ny, is_eb_inhomog);
 
 
-               Real cell_drag = 1.0e-3 * barea(i,j,k)*(nx*(-p_nd_arr(i,j,k) + 2*gradx_arr(i,j,k,0)) + ny*(grady_arr(i,j,k,0) + gradx_arr(i,j,k,1)));
+               Real cell_drag = m_mu * barea(i,j,k)*(nx*(-p_nd_arr(i,j,k) + 2*gradx_arr(i,j,k,0)) + ny*(grady_arr(i,j,k,0) + gradx_arr(i,j,k,1)));
 
                Gpu::Atomic::Add(&p_dv_drag[lev], cell_drag);
 
