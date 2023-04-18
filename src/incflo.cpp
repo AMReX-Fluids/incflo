@@ -1,4 +1,5 @@
 #include <incflo.H>
+#include <volWgtSum.H>
 
 // Need this for TagCutCells
 #ifdef AMREX_USE_EB
@@ -59,6 +60,9 @@ void incflo::InitData ()
         // with MakeNewLevelFromScratch.
         InitFromScratch(m_cur_time);
 
+#ifdef AMREX_USE_EB
+        amrex::Print() << "Doing initial projection before initial redistribution "  << std::endl;
+#endif
         if (m_do_initial_proj) {
             InitialProjection();
         }
@@ -68,6 +72,9 @@ void incflo::InitData ()
 #endif
 
         if (m_do_initial_proj) {
+#ifdef AMREX_USE_EB
+        amrex::Print() << "Doing initial projection after initial redistribution "  << std::endl;
+#endif
             InitialProjection();
         }
 
@@ -124,6 +131,31 @@ void incflo::Evolve()
     bool do_not_evolve = ((m_max_step == 0) || ((m_stop_time >= 0.) && (m_cur_time > m_stop_time)) ||
                             ((m_stop_time <= 0.) && (m_max_step <= 0))) && !m_steady_state;
 
+    // Drag plot
+    char name[100];
+    std::ofstream prt_drag;
+    sprintf(name, "drag_history.dat");
+
+    amrex::Print() << "\n\n\nplt_drag_hist:" << m_eb_flow_plt_drag_hist << "\n\n\n" << std::endl;
+    if (m_eb_flow_plt_drag_hist)
+    {
+        prt_drag.open(name);
+    }
+
+    Real orig_mass, prev_mass;
+    int my_lev = 0;
+    auto const& fact = EBFactory(my_lev);
+    orig_mass = volWgtSum(my_lev,get_density_new_const()[my_lev],0,fact);
+    auto const dx = geom[my_lev].CellSize();
+#if (AMREX_SPACEDIM == 2)
+    orig_mass *= dx[0] * dx[1];
+#elif (AMREX_SPACEDIM == 3)
+    orig_mass *= dx[0] * dx[1] * dx[2];
+#endif
+    prev_mass = orig_mass;
+    amrex::Print() << "Sum of mass at time = " << m_cur_time << " " <<
+                       orig_mass << std::endl;
+
     while(!do_not_evolve)
     {
         if (m_verbose > 0)
@@ -141,7 +173,12 @@ void incflo::Evolve()
         }
 
         // Advance to time t + dt
-        Advance();
+        Advance(orig_mass, prev_mass);
+
+        if (m_eb_flow_plt_drag_hist){
+            PrintDragForce(prt_drag);
+        }
+
         m_nstep++;
         m_cur_time += m_dt;
 
@@ -166,6 +203,10 @@ void incflo::Evolve()
         do_not_evolve = (m_steady_state && SteadyStateReached()) ||
                         ((m_stop_time > 0. && (m_cur_time >= m_stop_time - 1.e-12 * m_dt)) ||
                          (m_max_step >= 0 && m_nstep >= m_max_step));
+    }
+
+    if (m_eb_flow_plt_drag_hist){
+        prt_drag.close();
     }
 
     // Output at the final time

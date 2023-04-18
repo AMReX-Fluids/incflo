@@ -356,12 +356,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         }
                     }
                 }
-
-                //fixme
-                // if (i==8 && j == 8){
-                //  Print().SetPrecision(15);
-                //  amrex::Print() << "adv: " << Dim3{i,j,k} << dUdt_in(i,j,k,n) << std::endl;
-                // }
             });
         }
 

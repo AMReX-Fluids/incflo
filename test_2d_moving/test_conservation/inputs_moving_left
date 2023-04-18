@@ -1,18 +1,24 @@
 amrex.fpe_trap_invalid = 1
 
+fabarray.mfiter_tile_size = 1024 1024 1024
+
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  10            # Max number of time steps
+max_step                =  20            # Max number of time steps
+max_step                =  1             # Max number of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-incflo.fixed_dt             =   1.e-2       # Use this constant dt if > 0
+incflo.fixed_dt        =   0.020
+#incflo.cfl            =   0.5
 
 incflo.do_initial_proj      =   1
 incflo.initial_iterations   =   1
+
+incflo.init_shrink = 1.0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
@@ -31,7 +37,7 @@ incflo.mu               =   0.0         # Dynamic viscosity coefficient
 incflo.constant_density =   false       #
 
 incflo.advect_momentum       = true
-incflo.advection_type        =  "MOL" 
+incflo.advection_type        = "MOL"
 incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
 
@@ -48,48 +54,29 @@ amr.blocking_factor     =   2
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
-geometry.prob_lo        =  -1.7 -0.8 -0.8 # Lo corner coordinates
-geometry.prob_hi        =   1.7  0.8  0.8 # Hi corner coordinates
-geometry.is_periodic    =   0   0   0   # Periodicity x y z (0/1)
+geometry.prob_lo        =   0.  0.  0.  # Lo corner coordinates
+geometry.prob_hi        =   3.4 1.6 1.6 # Hi corner coordinates
+geometry.is_periodic    =   0   1       # Periodicity x y z (0/1)
 
-# Boundary conditions
-xlo.type                =   "po"
-xlo.pressure            =   0.0
+# Boundary conditions -- note xlo is covered
+xlo.type                =   "nsw"
 
-xhi.type                =   "nsw"
-xhi.velocity            =   0.0  0.0  0.0
-
-# would need FOEXTRAP here to avoid using EB covered
-# bc amrex fill routines aren't EB aware
-#ylo.type                =   "nsw"
-#yhi.type                =   "nsw"
-
-# Hack Dirchlet BCs with mass inflow BC
-ylo.type                =   "mi"
-ylo.velocity            =   2.0  0.0  0.0
-
-yhi.type                =   "mi"
-yhi.velocity            =   2.0  0.0  0.0
-
-# Hack Dirchlet BCs with mass inflow BC
-zlo.type                =   "mi"
-zlo.velocity            =   2.0  0.0  0.0
-
-zhi.type                =   "mi"
-zhi.velocity            =   2.0  0.0  0.0
-
+xhi.type                =  "mi"
+xhi.velocity            =   -2.0  0.0  0.0
+xhi.density             = 1.0
 
 # Add box
-incflo.geometry = "plane"
-plane.point = -0.05 0.0 0.
-plane.normal = 1.0 0. 0.
+incflo.geometry = "box"
+box.internal_flow = true
 
+#box.Lo =  0.95  -0.2  -0.2
+box.Lo =  0.92   -0.2  -0.2
+box.Hi =  100.0   1.8   1.8 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
 incflo.ic_u             =  -2.0         #
-incflo.ic_u             =   0.0         #
 incflo.ic_v             =   0.0         #
 incflo.ic_w             =   0.0         #
 incflo.ic_p             =   0.0         #
@@ -106,4 +93,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #.......................................#
 eb_flow.velocity        = -2.0 0.0 0.0
 
-eb2.small_volfrac = 1.e-6
+eb2.small_volfrac       = 1.0e-6

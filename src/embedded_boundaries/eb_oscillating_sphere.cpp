@@ -16,7 +16,7 @@ void incflo::make_eb_oscillating_sphere(Real cur_time)
 {
     amrex::Print() << " " << std::endl;
     amrex::Print() << " Making oscillating sphere geometry: " << std::endl;
-    
+
     // Initialize sphere parameters
     bool inside = true;
     Real radius = 0.0002;
@@ -34,13 +34,13 @@ void incflo::make_eb_oscillating_sphere(Real cur_time)
 
     // Get frequency and amplitude.
     ParmParse eb("eb_flow");
-    
+
     eb.getarr("frequency", frequency, 0, 3);
     eb.getarr("amplitude", amplitude, 0, 3);
-    
+
     /*
-        --- Adjust frequency to period --- 
-        The idea here is that if the frequency is too small, we just neglect it by 
+        --- Adjust frequency to period ---
+        The idea here is that if the frequency is too small, we just neglect it by
         setting the period to 1 and amplitude to 0.
     */
     if (std::abs(frequency[0]) > 1.e-6)
@@ -56,7 +56,7 @@ void incflo::make_eb_oscillating_sphere(Real cur_time)
         period[1] = 1.;
         amplitude[1] = 0.;
     }
-    
+
     if (std::abs(frequency[2]) > 1.e-6)
         period[2] = 1./frequency[2];
     else {
@@ -64,19 +64,21 @@ void incflo::make_eb_oscillating_sphere(Real cur_time)
         amplitude[2] = 0.;
     }
 
-    Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0] + amplitude[0]*sin(period[0]*cur_time),
-                                                       centervec[1] + amplitude[1]*sin(period[1]*cur_time),
-                                                       centervec[2] + amplitude[2]*sin(period[2]*cur_time))};
+    Real PI = 3.1415926535897932384;
+
+    Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0] + amplitude[0]-amplitude[0]*cos(2*PI*frequency[0]*cur_time),
+                                                       centervec[1] + amplitude[1]-amplitude[1]*cos(2*PI*frequency[1]*cur_time),
+                                                       centervec[2] + amplitude[2]-amplitude[2]*cos(2*PI*frequency[2]*cur_time))};
 
     // Print frequency and amplitude info
 #if (AMREX_SPACEDIM == 2)
     amrex::Print() << "EB Frequency: " << frequency[0] << ", " << frequency[1] << std::endl;
     amrex::Print() << "EB Amplitude: " << amplitude[0] << ", " << amplitude[1] << std::endl;
-#else 
+#else
     amrex::Print() << "EB Frequency: " << frequency[0] << ", " << frequency[1] << ", " << frequency[2] << std::endl;
     amrex::Print() << "EB Amplitude: " << amplitude[0] << ", " << amplitude[1] << ", " << amplitude[2] << std::endl;
 #endif
-     
+
    // Print info about the sphere
    amrex::Print() << " " << std::endl;
    amrex::Print() << " Internal Flow: " << inside << std::endl;
@@ -85,7 +87,7 @@ void incflo::make_eb_oscillating_sphere(Real cur_time)
    amrex::Print() << " Center: " << center[0] << ", " << center[1] << std::endl;
 #else
    amrex::Print() << " Center: " << center[0] << ", " << center[1] << ", " << center[2] << std::endl;
-#endif 
+#endif
 
     // Build the sphere implicit function
     EB2::SphereIF my_sphere(radius, center, inside);

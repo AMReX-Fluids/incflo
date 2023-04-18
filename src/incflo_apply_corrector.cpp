@@ -248,11 +248,11 @@ void incflo::ApplyCorrector()
                 auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
 #ifdef AMREX_USE_MOVING_EB
-		//
+                //
 		// For moving EB, redistribute and returns full state at new time
-		//
+                //
 		redistribute_term(mfi, rho_n, rho_t, rho_o,
-				  get_density_bcrec_device_ptr(), lev,
+                                  get_density_bcrec_device_ptr(), lev,
 				  get_velocity_eb()[lev]->const_array(mfi));
 
                 // Make half-time rho
@@ -520,7 +520,7 @@ void incflo::ApplyCorrector()
             Array4<Real const> const& dvdt_o = ld.conv_velocity_o.const_array(mfi);
             Array4<Real const> const& dvdt   = ld.conv_velocity.const_array(mfi);
             Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
-	    Array4<Real const> const& divtau = ld.divtau.const_array(mfi);
+            Array4<Real const> const& divtau = ld.divtau.const_array(mfi);
             Array4<Real const> const& vel_f  = vel_forces[lev].const_array(mfi);
 
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -562,8 +562,8 @@ void incflo::ApplyCorrector()
         for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             Box const& bx = mfi.tilebox();
-            Array4<Real      > const& vel    = ld.velocity.array(mfi);
-            Array4<Real const> const& vel_o  = ld.velocity_o.const_array(mfi);
+            Array4<Real> const& vel = ld.velocity.array(mfi);
+            Array4<Real const> const& vel_o = ld.velocity_o.const_array(mfi);
             Array4<Real const> const& rho_old  = ld.density_o.const_array(mfi);
             Array4<Real const> const& rho_new  = ld.density.const_array(mfi);
 

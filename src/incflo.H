@@ -456,6 +456,9 @@ private:
        amrex::Vector<amrex::Real> amplitude;
        amrex::Vector<amrex::Real> omega;
        amrex::Vector<amrex::Real> center_of_rotation;
+       bool plt_drag;
+       bool plt_drag_hist;
+       int plt_drag_int;
 
        // Normal to exclude EB faces. By default all faces within a specified
        // region will
@@ -480,6 +483,11 @@ private:
        {}
     };
     EBFlow_t m_eb_flow;
+
+    // Drag plt settings
+    int  m_eb_flow_plt_drag_int   = 1;
+    bool m_eb_flow_plt_drag       = false;
+    bool m_eb_flow_plt_drag_hist  = false;
 
     bool m_write_geom_chk = false;
 #else
@@ -865,7 +873,7 @@ private:
     void copy_from_old_to_new_tracer   (         amrex::IntVect const& ng = amrex::IntVect{0});
     void copy_from_old_to_new_tracer   (int lev, amrex::IntVect const& ng = amrex::IntVect{0});
 
-    void Advance ();
+    void Advance (amrex::Real orig_mass, amrex::Real& prev_mass);
     bool writeNow ();
 
     ///////////////////////////////////////////////////////////////////////////
@@ -900,6 +908,7 @@ private:
     void make_eb_twocylinders ();
     void make_eb_regular ();
     void make_eb_sphere (amrex::Real time = 0.0);
+    void make_eb_oscillating_cylinder (amrex::Real time = 0.0);
     void make_eb_oscillating_sphere (amrex::Real time = 0.0);
     void make_eb_stirrer (amrex::Real time = 0.0);
     void make_eb_spherecube ();
@@ -907,7 +916,7 @@ private:
     void make_eb_tuscan ();
     void make_eb_chkptfile ();
 #ifdef CSG_EB
-    void make_eb_csg (const std::string& csg_file);
+    void make_eb_csg (const std::string& csg_file, amrex::Real time = 0.0);
 #endif
 #endif
 
@@ -946,6 +955,7 @@ private:
     void WriteCheckPointFile () const;
     void WritePlotFile ();
     void ReadCheckpointFile ();
+    void PrintDragForce(std::ofstream &drag_file);
 };
 
 #endif

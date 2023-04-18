@@ -3,6 +3,12 @@
 #include <AMReX_buildInfo.H>
 #include <incflo.H>
 
+#if (AMREX_SPACEDIM)== 2
+#include <AMReX_EB_LeastSquares_2D_K.H>
+#else
+#include <AMReX_EB_LeastSquares_3D_K.H>
+#endif
+
 using namespace amrex;
 
 namespace { const std::string level_prefix{"Level_"}; }
@@ -649,3 +655,238 @@ void incflo::WritePlotFile()
                                    pltscaVarsName, Geom(), m_cur_time, istep, refRatio());
     WriteJobInfo(plotfilename);
 }
+
+
+// Copy/Paste drag computation from from drangara
+void incflo::PrintDragForce(std::ofstream &drag_file) {
+   Print() << "PrintDragForce\n";
+
+   Vector<MultiFab> gradx(finest_level + 1);
+   Vector<MultiFab> grady(finest_level + 1);
+   Vector<MultiFab> gradeb(finest_level + 1);
+   for (int lev = 0; lev <= finest_level; ++lev) {
+       gradx[lev].define(grids[lev], dmap[lev], 2, 0, MFInfo(), Factory(lev));
+       grady[lev].define(grids[lev], dmap[lev], 2, 0, MFInfo(), Factory(lev));
+       gradeb[lev].define(grids[lev], dmap[lev], 2, 0, MFInfo(), Factory(lev));
+       gradx[lev].setVal(0.);
+       grady[lev].setVal(0.);
+       gradeb[lev].setVal(0.);
+   }
+
+   for (int lev = 0; lev <= finest_level; lev++)
+   {
+      auto& ld = *m_leveldata[lev];
+      auto const& dx = geom[lev].CellSizeArray();
+
+      for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+      {
+         const Box& bx = mfi.tilebox();
+         auto const& fact = EBFactory(lev);
+         int ncomp = ld.velocity.nComp();
+
+         Array4<Real> const& gradx_arr         = gradx[lev].array(mfi);
+         Array4<Real> const& grady_arr         = grady[lev].array(mfi);
+         Array4<Real> const& gradeb_arr        = gradeb[lev].array(mfi);
+         Array4<const Real> const& phi_arr     = ld.velocity.array(mfi);
+         Array4<const Real> const& phi_eb_arr  = get_velocity_eb()[lev]->array(mfi);
+
+         Array4<Real const> const& fcx   = (fact.getFaceCent())[0]->const_array(mfi);
+         Array4<Real const> const& fcy   = (fact.getFaceCent())[1]->const_array(mfi);
+#if (AMREX_SPACEDIM == 3)
+         Array4<Real const> const& fcz   = (fact.getFaceCent())[2]->const_array(mfi);
+#endif
+        Array4<Real const> const& apx   = (fact.getAreaFrac())[0]->const_array(mfi);
+        Array4<Real const> const& apy   = (fact.getAreaFrac())[1]->const_array(mfi);
+#if (AMREX_SPACEDIM == 3)
+        Array4<Real const> const& apz   = (fact.getAreaFrac())[2]->const_array(mfi);
+#endif
+         Array4<Real const> const& ccent = (fact.getCentroid()).array(mfi);
+         Array4<Real const> const& bcent = (fact.getBndryCent()).array(mfi);
+         Array4<Real const> const& bnorm = (fact.getBndryNormal()).array(mfi);
+         const FabArray<EBCellFlagFab>* flags = &(fact.getMultiEBCellFlagFab());
+         Array4<EBCellFlag const> const& flag = flags->const_array(mfi);
+
+
+         bool is_eb_dirichlet = true;
+         bool is_eb_inhomog  = true;
+
+
+         amrex::ParallelFor(bx, ncomp,
+         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+         {
+            if (flag(i,j,k).isSingleValued()) {
+               Real yloc_on_xface = fcx(i,j,k,0);
+               Real xloc_on_yface = fcy(i,j,k,0);
+               Real nx = bnorm(i,j,k,0);
+               Real ny = bnorm(i,j,k,1);
+#if (AMREX_SPACEDIM == 2)
+               gradx_arr(i,j,k,n) = (apx(i,j,k) == 0.0) ? 0.0 :
+                                    amrex::grad_x_of_phi_on_centroids(i,j,k,n,
+                                                                      phi_arr,phi_eb_arr,
+                                                                      flag,ccent,bcent,
+                                                                      yloc_on_xface,
+                                                                      is_eb_dirichlet,is_eb_inhomog);
+
+               grady_arr(i,j,k,n) = (apy(i,j,k) == 0.0) ? 0.0 :
+                                    amrex::grad_y_of_phi_on_centroids(i,j,k,n,
+                                                                      phi_arr,phi_eb_arr,
+                                                                      flag,ccent,bcent,
+                                                                      xloc_on_yface,
+                                                                      is_eb_dirichlet,is_eb_inhomog);
+
+               gradeb_arr(i,j,k,n) = amrex::grad_eb_of_phi_on_centroids(i,j,k,n,
+                                                                        phi_arr,phi_eb_arr,
+                                                                        flag,ccent,bcent,
+                                                                        nx, ny, is_eb_inhomog);
+
+#endif
+            }
+         });
+      }
+   }
+
+   Vector<Real> drag(finest_level + 1, 0.);
+   Gpu::DeviceVector<Real> dv_drag(finest_level + 1, 0.);
+   auto* p_dv_drag = dv_drag.data();
+   for (int lev = 0; lev <= finest_level; lev++)
+   {
+      auto& ld = *m_leveldata[lev];
+      auto const& dx = geom[lev].CellSizeArray();
+
+      for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+      {
+         const Box& bx = mfi.validbox();
+         auto const& fact = EBFactory(lev);
+
+         Array4<const Real> const& p_nd_arr    = ld.p_nd.array(mfi);
+         Array4<Real> const& gradx_arr         = gradx[lev].array(mfi);
+         Array4<Real> const& grady_arr         = grady[lev].array(mfi);
+         Array4<Real> const& gradeb_arr        = gradeb[lev].array(mfi);
+         Array4<Real const> const& bnorm = (fact.getBndryNormal()).array(mfi);
+         Array4<Real const> const& barea = (fact.getBndryArea()).array(mfi);
+         const FabArray<EBCellFlagFab>* flags = &(fact.getMultiEBCellFlagFab());
+         Array4<EBCellFlag const> const& flag = flags->const_array(mfi);
+
+         Array4<const Real> const& phi_arr     = ld.velocity.array(mfi);
+         
+         amrex::ParallelFor(bx,
+         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+         {
+            Real nx = bnorm(i,j,k,0);
+            Real ny = bnorm(i,j,k,1);
+            Real dudx = 0.;
+            Real dudy = 0.;
+            Real dvdx = 0.;
+            Real pavg = 0.;
+            Real pcnt = 0;
+
+            if (flag(i,j,k).isSingleValued()) {
+
+                
+                if (flag(i+1,j,k).isCovered()){
+                    dudx = (phi_arr(i,j,k,0) - phi_arr(i-1,j,k,0))/dx[0];
+                } else {
+                    dudx = (phi_arr(i+1,j,k,0) - phi_arr(i,j,k,0))/dx[0];
+                }
+                
+                if (flag(i,j+1,k).isCovered()){
+                    dudy = (phi_arr(i,j,k,0) - phi_arr(i,j-1,k,0))/dx[1];
+                } else {
+                    dudy = (phi_arr(i,j+1,k,0) - phi_arr(i,j,k,0))/dx[1];
+                }
+
+                if (flag(i+1,j,k).isCovered()){
+                    dvdx = (phi_arr(i,j,k,1) - phi_arr(i-1,j,k,1))/dx[0];
+                } else {
+                    dvdx = (phi_arr(i+1,j,k,1) - phi_arr(i,j,k,1))/dx[0];
+                }
+                
+                if (!flag(i-1,j-1,k).isCovered()){
+                    pavg += p_nd_arr(i,j,k);
+                    pcnt += 1.;
+                }
+
+                if (!flag(i-1,j+1,k).isCovered()){
+                    pavg += p_nd_arr(i,j+1,k);
+                    pcnt += 1.;
+                }
+                     
+                if (!flag(i+1,j-1,k).isCovered()){
+                    pavg += p_nd_arr(i+1,j,k);
+                    pcnt += 1.;
+                }
+
+                if (!flag(i+1,j+1,k).isCovered()){
+                    pavg += p_nd_arr(i+1,j+1,k);
+                    pcnt += 1.;
+                }
+
+                pavg = pavg/pcnt;
+
+#if (AMREX_SPACEDIM == 2)
+               //Real cell_drag = 
+               //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*gradx_arr(i,j,k,0)/dx[0] + ny*(grady_arr(i,j,k,0)/dx[1] + gradx_arr(i,j,k,1)/dx[0])));
+               
+               Real cell_drag = 
+                  barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
+
+               //Real cell_drag = 
+               //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*dudx + ny*(dudy + dvdx)));
+
+               Gpu::Atomic::Add(&p_dv_drag[lev], cell_drag);
+#endif
+            }
+         });
+
+         Gpu::synchronize();
+
+      }
+   }
+
+   Gpu::copy(Gpu::deviceToHost, dv_drag.begin(), dv_drag.end(), drag.begin());
+
+   // Print to drag history file
+   drag_file << m_cur_time << ", ";
+   for (int lev = 0; lev <= finest_level; lev++)
+   {
+      if (lev == finest_level){
+          drag_file << drag[lev] << std::endl;
+      } else {
+          drag_file << drag[lev] << ", ";
+      }
+   }
+
+
+   Vector<int> istep(finest_level + 1, m_nstep);
+   Vector<MultiFab> plotmf(finest_level + 1);
+
+   for (int lev = 0; lev <= finest_level; lev++)
+   {
+      auto const& fact = EBFactory(lev);
+#if (AMREX_SPACEDIM == 2)
+      plotmf[lev].define(grids[lev],dmap[lev],9,0);
+      MultiFab::Copy(plotmf[lev], gradx[lev], 0, 0, 2, 0);
+      MultiFab::Copy(plotmf[lev], grady[lev], 0, 2, 2, 0);
+      MultiFab::Copy(plotmf[lev], gradeb[lev], 0, 4, 2, 0);
+      {
+         MultiFab temp_mf = fact.getBndryArea().ToMultiFab(0.0, 0.0);
+         MultiFab::Copy(plotmf[lev], temp_mf, 0, 6, 1, 0);
+      }
+      {
+         MultiFab temp_mf = fact.getBndryNormal().ToMultiFab(0.0, 0.0);
+         MultiFab::Copy(plotmf[lev], temp_mf, 0, 7, 2, 0);
+      }
+#endif
+   }
+
+   const std::string& pfname = amrex::Concatenate("drag_terms", m_nstep);
+
+   // Write the plotfile
+   if (m_eb_flow_plt_drag && ((m_nstep % m_eb_flow_plt_drag_int) == 0)){
+       amrex::WriteMultiLevelPlotfile(pfname, finest_level + 1, GetVecOfConstPtrs(plotmf),
+               {"dudx", "dvdx", "dudy", "dvdy", "dudn", "dvdn",
+               "barea", "bnrmx", "bnrmy"},
+               Geom(), m_cur_time, istep, refRatio());
+   }
+}
+

@@ -758,7 +758,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         // if (i==16 && j==4)//(vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
-			// {
+            // {
                         //     Print()<<"vel pieces "<<vel(i,j,k,0)
                         //         <<" "<<rho_old(i,j,k)
                         //         <<" "<<dvdt(i,j,k,0)

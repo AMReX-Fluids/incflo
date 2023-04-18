@@ -188,7 +188,7 @@ void incflo::ReadParameters ()
            m_eb_flow.enabled = true;
            m_eb_flow.is_frequency = true;
            pp_eb_flow.getarr("frequency", m_eb_flow.frequency, 0, AMREX_SPACEDIM);
-           pp_eb_flow.getarr("amplitude", m_eb_flow.amplitude, 0, AMREX_SPACEDIM); 
+           pp_eb_flow.getarr("amplitude", m_eb_flow.amplitude, 0, AMREX_SPACEDIM);
        } else if (pp_eb_flow.contains("omega")) {
           m_eb_flow.enabled = true;
           m_eb_flow.is_omega = true;
@@ -203,6 +203,15 @@ void incflo::ReadParameters ()
           amrex::Real tol_deg(0.);
           pp_eb_flow.query("normal_tol", tol_deg);
           m_eb_flow.normal_tol = tol_deg*M_PI/amrex::Real(180.);
+       }
+
+       if (pp_eb_flow.contains("plt_drag")){
+          pp_eb_flow.query("plt_drag", m_eb_flow_plt_drag);
+          pp_eb_flow.query("plt_drag_int", m_eb_flow_plt_drag_int);
+       }
+
+       if (pp_eb_flow.contains("plt_drag_hist")){
+           pp_eb_flow.query("plt_drag_hist", m_eb_flow_plt_drag_hist);
        }
 
 #ifdef AMREX_USE_MOVING_EB
@@ -419,7 +428,7 @@ incflo::InitialRedistribution ()
 
         for (MFIter mfi(ld.density,TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
-            const Box& bx = mfi.validbox();
+            const Box& bx = mfi.tilebox();
             auto const& fact = EBFactory(lev);
 
             EBCellFlagFab const& flagfab = fact.getMultiEBCellFlagFab()[mfi];

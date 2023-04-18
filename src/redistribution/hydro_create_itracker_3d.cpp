@@ -582,12 +582,13 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int k,
         Print()<<"cell "<<IntVect(i,j,k)
                <<"eb_vel  "<< vx <<", "<<vy <<", "<<vz<<std::endl;
         Print()<<"eb_norm "<< nx <<", "<<ny <<", "<<nz<<std::endl;
-        Abort("Newly uncovered cell nbhd: Direction to merge not well resolved");
+        //Abort("Newly uncovered cell nbhd: Direction to merge not well resolved");
+        Print() << "WARNING: Newly uncovered cell nbhd: Direction to merge not well resolved" << std::endl;
     }
 
     // Select first for EB motion. If that's indeterminate, choose based on EB normal
     // x-component of normal is greatest
-    if ( (std::abs(vx) > std::abs(vy) && std::abs(vx) > std::abs(vz)) ||
+    if ( //(std::abs(vx) > std::abs(vy) && std::abs(vx) > std::abs(vz)) ||
          (std::abs(nx) > std::abs(ny) && std::abs(nx) > std::abs(nz)) )
     {
         if (nx > 0)
@@ -596,7 +597,7 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int k,
             itracker(i,j,k,1) = 4;
 
         // y-component of normal is greatest
-    } else if ( (std::abs(vy) >= std::abs(vx) && std::abs(vy) > std::abs(vz)) ||
+    } else if ( //(std::abs(vy) >= std::abs(vx) && std::abs(vy) > std::abs(vz)) ||
                 (std::abs(ny) >= std::abs(nx) && std::abs(ny) > std::abs(nz)) )
     {
         if (ny > 0)

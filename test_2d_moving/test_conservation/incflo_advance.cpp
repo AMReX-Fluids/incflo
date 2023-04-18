@@ -51,7 +51,6 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
         }
     }
 
-
 #ifdef INCFLO_USE_MOVING_EB
     // **********************************************************************************************
     //
@@ -140,11 +139,25 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
 
     ApplyPredictor();
 
-        //FIXME
-    // this will overwrite the previous time plotfile
-    // WritePlotFile();
-    // static int count=0; count++;
-    // if (count>44) Abort();
+#if 1
+    int my_lev = 0;
+    auto const& fact = EBFactory(my_lev);
+    Real sum = volWgtSum(my_lev,get_density_new_const()[my_lev],0,fact);
+
+    auto const dx = geom[my_lev].CellSize();
+#if (AMREX_SPACEDIM == 2)
+    sum *= dx[0] * dx[1];
+#elif (AMREX_SPACEDIM == 3)
+    sum *= dx[0] * dx[1] * dx[2];
+#endif
+
+    amrex::Print() << "Pred:Sum of mass at time = " << m_cur_time+m_dt << " " << sum << " " << std::endl;
+//  amrex::Print() << "Change over time divided by time and area " << (sum - orig_mass) / (m_cur_time+m_dt) / 1.6 <<
+//                    " using " << sum << " " << orig_mass << " " << m_cur_time+m_dt << std::endl;
+    amrex::Print() << "Pred:Change over time in last time step divided by time and area " << (sum - prev_mass) / m_dt / 1.6 <<
+                      " using " << sum << " " << prev_mass << " " << m_dt << std::endl;
+
+#endif
 
     if (m_advection_type == "MOL") {
         for (int lev = 0; lev <= finest_level; ++lev) {
@@ -155,22 +168,28 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
             }
         }
 
-    //     //FIXME
-    // // this will overwrite the previous time plotfile
-    // WritePlotFile();
-    // static int count=0; count++;
-    // //if (count>2) Abort();
-
         ApplyCorrector();
     }
 
-#if 0
-    // This sums over all levels
-    if (m_test_tracer_conservation) {
-        Real sum = volumeWeightedSum(get_tracer_new_const(),0,geom,ref_ratio);
-        amrex::Print() << "Sum tracer volume wgt2 = " << m_cur_time+m_dt << " " <<
-                           sum << std::endl;
-    }
+#if 1
+    // int my_lev = 0;
+    // auto const& fact = EBFactory(my_lev);
+    sum = volWgtSum(my_lev,get_density_new_const()[my_lev],0,fact);
+
+    // auto const dx = geom[my_lev].CellSize();
+#if (AMREX_SPACEDIM == 2)
+    sum *= dx[0] * dx[1];
+#elif (AMREX_SPACEDIM == 3)
+    sum *= dx[0] * dx[1] * dx[2];
+#endif
+
+    amrex::Print() << "Corr:Sum of mass at time = " << m_cur_time+m_dt << " " << sum << " " << std::endl;
+//  amrex::Print() << "Change over time divided by time and area " << (sum - orig_mass) / (m_cur_time+m_dt) / 1.6 <<
+//                    " using " << sum << " " << orig_mass << " " << m_cur_time+m_dt << std::endl;
+    amrex::Print() << "Corr:Change over time in last time step divided by time and area " << (sum - prev_mass) / m_dt / 1.6 <<
+                      " using " << sum << " " << prev_mass << " " << m_dt << std::endl;
+
+    prev_mass = sum;
 #endif
 
     // Stop timing current time step

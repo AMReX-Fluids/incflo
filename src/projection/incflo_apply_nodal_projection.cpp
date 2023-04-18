@@ -106,21 +106,17 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
         if (m_eb_flow.enabled && !incremental) {
            if (m_eb_flow.is_omega) {
               set_eb_velocity_for_rotation(lev, time, *get_velocity_eb()[lev],
-					   get_velocity_eb()[lev]->nGrow());
+                       get_velocity_eb()[lev]->nGrow());
            } else {
               set_eb_velocity(lev, time, *get_velocity_eb()[lev],
-			      get_velocity_eb()[lev]->nGrow());
-	   }
-           set_eb_density(lev, time, *get_density_eb()[lev],
-			  get_density_eb()[lev]->nGrow());
-           set_eb_tracer(lev, time, *get_tracer_eb()[lev],
-			 get_tracer_eb()[lev]->nGrow());
+                  get_velocity_eb()[lev]->nGrow());
+           }
         }
 #endif
         vel.push_back(&(m_leveldata[lev]->velocity));
         vel[lev]->setBndry(0.0);
         if (!proj_for_small_dt && !incremental) {
-	    Print()<<"Setting inflow velocity..."<<std::endl;
+        Print()<<"Setting inflow velocity..."<<std::endl;
             set_inflow_velocity(lev, time, *vel[lev], 1);
         }
     }
@@ -150,15 +146,9 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
           nodal_projector->getLinOp().setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
        }
     }
-
-//FIXME
-VisMF::Write(*get_velocity_eb()[0],"npveb");
 #endif
 
     nodal_projector->project(m_nodal_mg_rtol, m_nodal_mg_atol);
-
-//fixme
-VisMF::Write(*vel[0],"vpout");
 
     // Define "vel" to be U^{n+1} rather than (U^{n+1}-U^n)
     if (proj_for_small_dt || incremental)

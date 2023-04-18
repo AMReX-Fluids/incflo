@@ -54,10 +54,10 @@ geometry.is_periodic    =   0   0   1   # Periodicity x y z (0/1)
 
 # Boundary conditions
 xlo.type                =   "mi"
-xlo.velocity            =   1.0  1.0  0.0
+xlo.velocity            =   0.0  0.0  0.0
 
 ylo.type                =   "mi"
-ylo.velocity            =   1.0  1.0  0.0
+ylo.velocity            =   0.0  0.0  0.0
 
 xhi.type                =   "po"
 xhi.pressure            =   0.0
@@ -65,18 +65,19 @@ xhi.pressure            =   0.0
 yhi.type                =   "po"
 yhi.pressure            =   0.0
 
-# Add box
-incflo.geometry = "sphere"
+# Add cylinder 
+incflo.geometry         = "cylinder"
+cylinder.internal_flow  = false
+cylinder.radius         = 0.4
+cylinder.direction      = 2
+cylinder.center         = 0.805 0.80 1.7 
 
-sphere.internal_flow = false
-sphere.radius = 0.4
-sphere.center = 0.805 0.80  0.0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.ic_u             =   1.0         #
-incflo.ic_v             =   1.0         #
+incflo.ic_u             =   0.0         #
+incflo.ic_v             =   0.0         #
 incflo.ic_p             =   0.0         #
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -92,3 +93,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 eb_flow.velocity        = 1.0 1.0 0.0
 
 eb2.small_volfrac       = 1.0e-6
+
