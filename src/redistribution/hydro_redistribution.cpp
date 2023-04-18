@@ -309,15 +309,18 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // Correct all cells that are cut at time n or become cut at time n+1
 
                     Real delta_vol = vfrac_new(i,j,k) - vfrac_old(i,j,k);
-                    delta_vol /= ( dt * vfrac_old(i,j,k) );
+                    // delta_vol /= ( dt * vfrac_old(i,j,k) );
+		    delta_vol /= vfrac_old(i,j,k);
 
-                    scratch(i,j,k,n) = 0.0;
-                    eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
-                                                flag_old,vfrac_old,bnorm,barea,dxinv);
+		    // This part already bundled in with dUdt_in
+                    // scratch(i,j,k,n) = 0.0;
+                    // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
+                    //                             flag_old,vfrac_old,bnorm,barea,dxinv);
 
-                    Real delta_divU = delta_vol - scratch(i,j,k,n);
+                    // Real delta_divU = delta_vol - scratch(i,j,k,n);
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
-                                                     + dt * U_in(i,j,k,n) * delta_divU;
+			                             + U_in(i,j,k,n) * delta_vol;
+                                                     // + dt * U_in(i,j,k,n) * delta_divU;
                 }
                 else
                 {

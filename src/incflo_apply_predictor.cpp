@@ -278,6 +278,20 @@ void incflo::ApplyPredictor (bool incremental_projection)
     Real l_dt = m_dt;
     bool l_constant_density = m_constant_density;
 
+#ifdef AMREX_USE_MOVING_EB
+    // Update EB velocity to new time for use in redistribution
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+	if (m_eb_flow.is_omega) {
+	    set_eb_velocity_for_rotation(lev, new_time, *get_velocity_eb()[lev],
+					 get_velocity_eb()[lev]->nGrow());
+	} else {
+	    set_eb_velocity(lev, new_time, *get_velocity_eb()[lev],
+			    get_velocity_eb()[lev]->nGrow());
+	}
+    }
+#endif
+    
     // *************************************************************************************
     // Update density first
     // *************************************************************************************
@@ -630,7 +644,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 	    //
 	    // Redistribute
 	    // (rho vel)^new = (rho vel)^old + dt * (
-	    //                   div(rho vel u) + divtau_old + rho * f_t
+	    //                   div(rho vel u) + divtau_old + rho * f_t )
 
 	    // FIXME - I need to grow this box -- maybe safer to have 3 mfiters???
 	    // incflo_compute_advective... does this same thing...

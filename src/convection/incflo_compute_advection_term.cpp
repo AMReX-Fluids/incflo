@@ -522,19 +522,19 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac.const_array(mfi), num_comp, geom[lev],
                                                  mult, fluxes_are_area_weighted,
-#ifdef AMREX_USE_MOVING_EB
-// Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
-// any d/dt terms (e.g transverse)
-                                                 // For corrector, we include the contribution from EB
-                                                 Array4<Real const>{},
-                                                 Array4<Real const>{},
-#else
+// #ifdef AMREX_USE_MOVING_EB
+// // Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
+// // any d/dt terms (e.g transverse)
+//                                                  Array4<Real const>{},
+//                                                  Array4<Real const>{},
+// #else
+						 // Allow this to compute the "advective correction"
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
                                                  ( m_advect_momentum  ? rhovel_eb.const_array() : get_velocity_eb()[lev]->const_array(mfi))
                                                  : Array4<Real const>{},
-#endif
+//#endif
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
@@ -598,17 +598,17 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                               flux_z[lev].const_array(mfi,flux_comp)),
                                                  vfrac.const_array(mfi), 1, geom[lev], mult,
                                                  fluxes_are_area_weighted,
-#ifdef AMREX_USE_MOVING_EB
-// Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
-// any d/dt terms (e.g transverse)
-                                                 Array4<Real const>{},
-                                                 Array4<Real const>{},
-#else
+// #ifdef AMREX_USE_MOVING_EB
+// // Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
+// // any d/dt terms (e.g transverse)
+//                                                  Array4<Real const>{},
+//                                                  Array4<Real const>{},
+// #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
                                                     get_density_eb()[lev]->const_array(mfi) : Array4<Real const>{},
-#endif
+//#endif
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
@@ -656,18 +656,17 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  vfrac.const_array(mfi), m_ntrac, geom[lev], mult,
                                                  fluxes_are_area_weighted,
 
-#ifdef AMREX_USE_MOVING_EB
-// Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
-// any d/dt terms (e.g transverse)
-                                                 // this didn't help with corrector
-                                                 Array4<Real const>{},
-                                                 Array4<Real const>{}, 
-#else
+// #ifdef AMREX_USE_MOVING_EB
+// // Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
+// // any d/dt terms (e.g transverse)
+//                                                  Array4<Real const>{},
+//                                                  Array4<Real const>{}, 
+// #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
                                                     get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
-#endif
+//#endif
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
@@ -690,6 +689,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_MOVING_EB
 	// We need to fill the boundary for later redistribution
 	// Note that this goes with a setVal(0) above to fill vals outside domain
+// FIXME - don;t think conv has any ghost cells....
         conv_u[lev]->FillBoundary(geom[lev].periodicity());
         conv_r[lev]->FillBoundary(geom[lev].periodicity());
         conv_t[lev]->FillBoundary(geom[lev].periodicity());
