@@ -41,17 +41,11 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
         {
             divtau.define  (ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
             divtau_o.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
-// FIXME MSRD needs this to prevent uninitialized val in divtau/laps (like from covered region)
-	    // there's a better way to handle this though...
-	    divtau.setVal(0.0);
-	    divtau_o.setVal(0.0);
         }
         if (!implicit_diffusion && advect_tracer)
         {
             laps.define  (ba, dm, ntrac, 0, MFInfo(), fact);
             laps_o.define(ba, dm, ntrac, 0, MFInfo(), fact);
-	    laps.setVal(0.0);
-	    laps_o.setVal(0.0);
         }
     }
 }
