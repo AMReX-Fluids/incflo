@@ -288,7 +288,7 @@ public: // for cuda
                              amrex::BCRec const* bc,
                              int lev,
                              amrex::Array4<amrex::Real const> const& vel_eb_old,
-			     amrex::Array4<amrex::Real const> const& vel_eb_new);
+                             amrex::Array4<amrex::Real const> const& vel_eb_new);
 #endif
 
     ///////////////////////////////////////////////////////////////////////////

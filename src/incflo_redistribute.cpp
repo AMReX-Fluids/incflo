@@ -7,11 +7,11 @@ using namespace amrex;
 
 void
 incflo::redistribute_term ( MultiFab& result,
-			    MultiFab& temporary, // Saves doing a MF::copy. does this matter???
-			    MultiFab const& state,
-			    BCRec const* bc, // this is bc for the state (needed for SRD slopes)
-			    int lev,
-			    MultiFab*& vel_eb)
+                            MultiFab& temporary, // Saves doing a MF::copy. does this matter???
+                            MultiFab const& state,
+                            BCRec const* bc, // this is bc for the state (needed for SRD slopes)
+                            int lev,
+                            MultiFab*& vel_eb)
 {
     // ************************************************************************
     // Redistribute result_tmp and pass out result
@@ -25,12 +25,12 @@ incflo::redistribute_term ( MultiFab& result,
 #endif
     for (MFIter mfi(state,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
-	Array4<Real      > out       = result.array(mfi);
-	Array4<Real      > tmp       = temporary.array(mfi);
-	Array4<Real const> state_arr = state.const_array(mfi);
-	Array4<Real const> v_eb      = (vel_eb) ? vel_eb->const_array(mfi) : Array4<Real const> {};
+        Array4<Real      > out       = result.array(mfi);
+        Array4<Real      > tmp       = temporary.array(mfi);
+        Array4<Real const> state_arr = state.const_array(mfi);
+        Array4<Real const> v_eb      = (vel_eb) ? vel_eb->const_array(mfi) : Array4<Real const> {};
 
-	redistribute_term(mfi, out, tmp, state_arr, bc, lev, v_eb, Array4<Real const>{});
+        redistribute_term(mfi, out, tmp, state_arr, bc, lev, v_eb, Array4<Real const>{});
     }
 }
 
@@ -54,7 +54,7 @@ incflo::redistribute_term ( MFIter const& mfi,
                             BCRec const* bc, // this is bc for the state (needed for SRD slopes)
                             int lev,
                             Array4<Real const > const& vel_eb_old,
-			    Array4<Real const > const& vel_eb_new)
+                            Array4<Real const > const& vel_eb_new)
 {
     AMREX_ASSERT(result.nComp() == state.nComp());
 
@@ -117,10 +117,10 @@ incflo::redistribute_term ( MFIter const& mfi,
             Array4<Real const> const& bnorm_old = ebfact_old.getBndryNormal().const_array(mfi);
             Array4<Real const> const& barea_old = ebfact_old.getBndryArea().const_array(mfi);
 
-	    Array4<Real const> const& bnorm_new = (vel_eb_new) ? ebfact.getBndryNormal().const_array(mfi)
-		                                               : Array4<Real const> {};
-	    Array4<Real const> const& barea_new = (vel_eb_new) ? ebfact.getBndryArea().const_array(mfi)
-		                                               : Array4<Real const> {};
+            Array4<Real const> const& bnorm_new = (vel_eb_new) ? ebfact.getBndryNormal().const_array(mfi)
+                                                               : Array4<Real const> {};
+            Array4<Real const> const& barea_new = (vel_eb_new) ? ebfact.getBndryArea().const_array(mfi)
+                                                               : Array4<Real const> {};
 
             Redistribution::Apply(bx, ncomp, result, temporary, state,
                                   scratch, flag_old, flag,
@@ -129,7 +129,7 @@ incflo::redistribute_term ( MFIter const& mfi,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc, geom[lev], m_dt, m_redistribution_type,
                                   vel_eb_old, bnorm_old, barea_old,
-				  vel_eb_new, bnorm_new, barea_new,
+                                  vel_eb_new, bnorm_new, barea_new,
                                   Redistribution::defaults::srd_max_order,
                                   Redistribution::defaults::target_vol_fraction,
                                   Array4<Real const> {});

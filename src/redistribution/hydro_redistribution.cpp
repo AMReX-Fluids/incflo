@@ -132,7 +132,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
           AMREX_D_DECL(apx, apy, apz), vfrac,
           AMREX_D_DECL(fcx, fcy, fcz), ccent,
           d_bcrec_ptr, geom, dt, redistribution_type,
-          Array4<Real const> {}, // vel_eb_old 
+          Array4<Real const> {}, // vel_eb_old
           Array4<Real const> {}, // bnorm_old
           Array4<Real const> {}, // barea_old, all not needed
           Array4<Real const> {}, // vel_eb
@@ -246,7 +246,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
         amrex::Print() << "Start itracker" << std::endl;
 
-	// FIXME - think about if this still needs v_eb and whether old or new...
+        // FIXME - think about if this still needs v_eb and whether old or new...
         MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                          AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
                      itr, lev_geom, target_volfrac, vel_eb_new);
@@ -322,23 +322,23 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // scratch(i,j,k,n) = 0.0;
                     // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
                     //                             flag_old,vfrac_old,bnorm,barea,dxinv);
-		    Real Ueb_dot_an =
-			AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
-				     + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
-				     + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
-		    Ueb_dot_an *= barea_old(i,j,k);
+                    Real Ueb_dot_an =
+                        AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
+                                     + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
+                                     + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
+                    Ueb_dot_an *= barea_old(i,j,k);
 
-		    if ( vel_eb_new ) {
-			Real Ueb_dot_an_new =
-			    AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
-					 + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
-					 + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
-			Ueb_dot_an_new *= barea_new(i,j,k);
+                    if ( vel_eb_new ) {
+                        Real Ueb_dot_an_new =
+                            AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
+                                         + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
+                                         + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
+                        Ueb_dot_an_new *= barea_new(i,j,k);
 
-			Ueb_dot_an = Real(0.5) * (Ueb_dot_an + Ueb_dot_an_new);
-		    }
+                        Ueb_dot_an = Real(0.5) * (Ueb_dot_an + Ueb_dot_an_new);
+                    }
 
-		    Ueb_dot_an /= vfrac_old(i,j,k);
+                    Ueb_dot_an /= vfrac_old(i,j,k);
 
 
                     Real delta_divU = delta_vol - Ueb_dot_an;
@@ -410,14 +410,14 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                           cent_hat_const, lev_geom, srd_max_order);
 
         //
-	// Only update the values which actually changed -- this makes
-	// the results insensitive to tiling -- otherwise cells that aren't
-	// changed but are in a tile on which StateRedistribute gets called
-	// will have precision-level changes due to adding/subtracting U_in
-	// and multiplying/dividing by dt.   Here we test on whether (i,j,k)
-	// has at least one neighbor and/or whether (i,j,k) is in the
-	// neighborhood of another cell -- if either of those is true the
-	// value may have changed
+        // Only update the values which actually changed -- this makes
+        // the results insensitive to tiling -- otherwise cells that aren't
+        // changed but are in a tile on which StateRedistribute gets called
+        // will have precision-level changes due to adding/subtracting U_in
+        // and multiplying/dividing by dt.   Here we test on whether (i,j,k)
+        // has at least one neighbor and/or whether (i,j,k) is in the
+        // neighborhood of another cell -- if either of those is true the
+        // value may have changed
         //
         if ( !vel_eb_old )
         {
