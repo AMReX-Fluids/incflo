@@ -251,10 +251,11 @@ void incflo::ApplyCorrector()
             rho_temp.FillBoundary(geom[lev].periodicity());
 
             // Fixme
-            EB_set_covered(rho_temp,0,1,rho_temp.nGrow(),0.);
-            VisMF::Write(rho_temp,"newrho");
-            VisMF::Write(ld.conv_density,"drdt_new");
-            VisMF::Write(ld.conv_density_o,"drdt_old");
+	    // Setting rho EB covered to zero can cause problems down the line bc we use 1/rho
+            // EB_set_covered(rho_temp,0,1,rho_temp.nGrow(),0.);
+            // VisMF::Write(rho_temp,"newrho");
+            // VisMF::Write(ld.conv_density,"drdt_new");
+            // VisMF::Write(ld.conv_density_o,"drdt_old");
 #endif
 
 #ifdef _OPENMP
@@ -303,11 +304,10 @@ void incflo::ApplyCorrector()
             } // mfi
 
             // Fixme
-            EB_set_covered(ld.density,0,1,ld.density.nGrow(),0.);
-
-            rho_temp.minus(ld.density,0,1,0);
-            VisMF::Write(rho_temp,"rt");
-            VisMF::Write(ld.density,"rhonn");
+            // EB_set_covered(ld.density,0,1,ld.density.nGrow(),0.);
+            // rho_temp.minus(ld.density,0,1,0);
+            // VisMF::Write(rho_temp,"rt");
+            // VisMF::Write(ld.density,"rhonn");
             //Abort();
         } // lev
 
