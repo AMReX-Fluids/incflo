@@ -21,11 +21,11 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
       p_nd      (amrex::convert(ba,IntVect::TheNodeVector()),
                      dm, 1             , 0 , MFInfo(), fact),
       gp        (ba, dm, AMREX_SPACEDIM, 0       , MFInfo(), fact),
-      conv_velocity_o(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact),
+      conv_velocity_o(ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),
 // FIXME - think about if we really want to do it this way...
       // this also probably gives one too many ghost cells (4 vs 3)
       conv_density_o (ba, dm, 1             , ng_state, MFInfo(), fact),
-      conv_tracer_o  (ba, dm, ntrac         , 0, MFInfo(), fact)
+      conv_tracer_o  (ba, dm, ntrac         , ng_state, MFInfo(), fact)
 {
     if (advection_type != "MOL") {
         divtau_o.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
@@ -33,19 +33,25 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
             laps_o.define(ba, dm, ntrac, 0, MFInfo(), fact);
         }
     } else {
-        conv_velocity.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
-        conv_density.define (ba, dm, 1             , 0, MFInfo(), fact);
-        conv_tracer.define (ba, dm, ntrac         , 0, MFInfo(), fact);
+        conv_velocity.define(ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact);
+        conv_density.define (ba, dm, 1             , ng_state, MFInfo(), fact);
+        conv_tracer.define (ba, dm, ntrac         , ng_state, MFInfo(), fact);
 
         if (!implicit_diffusion || use_tensor_correction)
         {
             divtau.define  (ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
             divtau_o.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
+// FIXME MSRD needs this to prevent uninitialized val in divtau/laps (like from covered region)
+	    // there's a better way to handle this though...
+	    divtau.setVal(0.0);
+	    divtau_o.setVal(0.0);
         }
         if (!implicit_diffusion && advect_tracer)
         {
             laps.define  (ba, dm, ntrac, 0, MFInfo(), fact);
             laps_o.define(ba, dm, ntrac, 0, MFInfo(), fact);
+	    laps.setVal(0.0);
+	    laps_o.setVal(0.0);
         }
     }
 }

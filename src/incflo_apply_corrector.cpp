@@ -82,6 +82,18 @@ void incflo::ApplyCorrector()
     // *************************************************************************************
     m_diffusion_tensor_op.reset(new DiffusionTensorOp(this, new_time));
     m_diffusion_scalar_op.reset(new DiffusionScalarOp(this, new_time));
+
+// vel on EB got reset in nodal projection
+    //all these get set in makeNewGeom...
+// #ifdef AMREX_USE_EB
+//    if (m_eb_flow.enabled) {
+	for (int lev = 0; lev <= finest_level; ++lev) {
+	    set_eb_density(lev, m_cur_time, *get_density_eb()[lev], 1);
+	    //set_eb_tracer(lev, new_time, *get_tracer_eb()[lev], 1);
+	}
+//     }
+// #endif
+
 #endif
 
     // *************************************************************************************
@@ -160,15 +172,22 @@ void incflo::ApplyCorrector()
                       new_time, 1);
     compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
 
+    Print()<<"Computed visc. Now onto diffusive terms ..."<<std::endl;
+
+// FIXME - need to probably fill covered cells or something in diffterms, bc they trip
+    // amrex.trap_fpe_invalid...
+    
     // Here we create divtau of the (n+1,*) state that was computed in the predictor;
     //      we use this laps only if DiffusionType::Explicit
     if ( (m_diff_type == DiffusionType::Explicit) || use_tensor_correction )
     {
+	Print()<<"Computing divtau new..."<<std::endl;
         compute_divtau(get_divtau_new(), get_velocity_new_const(),
                        get_density_new_const(), GetVecOfConstPtrs(vel_eta));
     }
 
     if (m_advect_tracer && m_diff_type == DiffusionType::Explicit) {
+	Print()<<"Computing laps new..."<<std::endl;
         compute_laps(get_laps_new(), get_tracer_new_const(),
                      get_density_new_const(), GetVecOfConstPtrs(tra_eta));
     }
@@ -208,6 +227,9 @@ void incflo::ApplyCorrector()
                 Array4<Real const> const& drdt_o = ld.conv_density_o.const_array(mfi);
                 Array4<Real const> const& drdt   = ld.conv_density.const_array(mfi);
 
+		auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
+		auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+		
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     // Build update
@@ -217,7 +239,11 @@ void incflo::ApplyCorrector()
                     //FIXME - WOuld need to deal with NewlyCovered cells here, SRD will use this val...
 		    // safest to also deal with NU cells also, although only need something computable
                     // Could get rid of update temporary and just use conv
-                    rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k));
+		    if ( vfrac_old(i,j,k) != 0.0 ) {
+			rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k)*vfrac_new(i,j,k)/vfrac_old(i,j,k));
+		    } else {
+			rho_t(i,j,k) = 0;
+		    }
                 });
             }
 
@@ -225,10 +251,10 @@ void incflo::ApplyCorrector()
             rho_temp.FillBoundary(geom[lev].periodicity());
 
             // Fixme
-            // EB_set_covered(rho_temp,0,1,rho_temp.nGrow(),0.);
-            // VisMF::Write(rho_temp,"newrho");
-            // VisMF::Write(ld.conv_density,"drdt_new");
-            // VisMF::Write(ld.conv_density_o,"drdt_old");
+            EB_set_covered(rho_temp,0,1,rho_temp.nGrow(),0.);
+            VisMF::Write(rho_temp,"newrho");
+            VisMF::Write(ld.conv_density,"drdt_new");
+            VisMF::Write(ld.conv_density_o,"drdt_old");
 #endif
 
 #ifdef _OPENMP
@@ -277,12 +303,12 @@ void incflo::ApplyCorrector()
             } // mfi
 
             // Fixme
-            // EB_set_covered(ld.density,0,1,ld.density.nGrow(),0.);
+            EB_set_covered(ld.density,0,1,ld.density.nGrow(),0.);
 
-            // rho_temp.minus(ld.density,0,1,0);
-            // VisMF::Write(rho_temp,"rt");
-            // VisMF::Write(ld.density,"rhonn");
-//          Abort();
+            rho_temp.minus(ld.density,0,1,0);
+            VisMF::Write(rho_temp,"rt");
+            VisMF::Write(ld.density,"rhonn");
+	    //Abort();
         } // lev
 
         // Average down solution
@@ -317,6 +343,9 @@ void incflo::ApplyCorrector()
         {
             auto& ld = *m_leveldata[lev];
 #ifdef AMREX_USE_MOVING_EB
+	    // FIXME shoudl just work, but still need to test it
+	Print()<<"Advecting tracer, not yet tested with moving EB ...\n"<<std::endl;
+	Abort();
             //
             // For moving EB, assemble state for redistribution
             //
@@ -351,10 +380,9 @@ void incflo::ApplyCorrector()
                     // Could get rid of update temporary and just use conv
                     for ( int n = 0; n < l_ntrac; n++)
                     {
-                        tra_o(i,j,k,n) = rho_o(i,j,k)*tra_o(i,j,k,n);
 			rhotra_t(i,j,k,n) = m_half * l_dt * (  dtdt_o(i,j,k,n) + dtdt(i,j,k,n)
-                                                             + laps(i,j,k,n) + laps_o(i,j,k,n)
-							     + tra_f(i,j,k,n));
+							       + laps(i,j,k,n) + laps_o(i,j,k,n)
+							       + tra_f(i,j,k,n));
                     }
                 });
             }
@@ -391,6 +419,7 @@ void incflo::ApplyCorrector()
                     for (int n = 0; n < l_ntrac; ++n)
                     {
                         tra(i,j,k,n) /= rho(i,j,k);
+			//FIXME? Do we need to put tra_old back also?
                     }
                 });
 #else
@@ -563,7 +592,8 @@ void incflo::ApplyCorrector()
         {
             Box const& bx = mfi.tilebox();
             Array4<Real> const& vel = ld.velocity.array(mfi);
-            Array4<Real const> const& vel_o = ld.velocity_o.const_array(mfi);
+            Array4<Real> const& vel_o = ld.velocity_o.array(mfi);
+//	    Array4<Real const> const& vel_o = ld.velocity_o.const_array(mfi);
             Array4<Real const> const& rho_old  = ld.density_o.const_array(mfi);
             Array4<Real const> const& rho_new  = ld.density.const_array(mfi);
 
@@ -581,6 +611,8 @@ void incflo::ApplyCorrector()
                 for (int n = 0; n < AMREX_SPACEDIM; ++n)
                 {
                     vel(i,j,k,n) /= rho_new(i,j,k);
+		    // FIXME? maybe we don't really need to bother with this...
+		    vel_o(i,j,k,n) /= rho_old(i,j,k);
                 }
             });
 #else
@@ -760,6 +792,13 @@ void incflo::ApplyCorrector()
 
         Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
         diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
+    }
+    else
+    {
+        for (int lev = 0; lev <= finest_level; ++lev)
+        {
+	    EB_set_covered(m_leveldata[lev]->velocity, 1.e45);
+	}
     }
 
 //FIXME

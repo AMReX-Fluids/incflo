@@ -360,6 +360,22 @@ void incflo::InitialIterations ()
     {
         if (m_verbose) amrex::Print() << "\n In initial_iterations: iter = " << iter << "\n";
 
+	// FIXME - maybe this should go in ApplyPred vs here & Advance ...
+#ifdef AMREX_USE_EB
+    if (m_eb_flow.enabled) {
+       for (int lev = 0; lev <= finest_level; ++lev) {
+         if (m_eb_flow.is_omega) {
+            set_eb_velocity_for_rotation(lev, m_t_old[lev], *get_velocity_eb()[lev], 1);
+         } else {
+            set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb()[lev], 1);
+         }
+         set_eb_density(lev, m_t_old[lev], *get_density_eb()[lev], 1);
+         set_eb_tracer(lev, m_t_old[lev], *get_tracer_eb()[lev], 1);
+       }
+    }
+#endif
+
+
         ApplyPredictor(true);
 
         copy_from_old_to_new_velocity();

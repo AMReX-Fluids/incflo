@@ -90,9 +90,9 @@ Redistribution::FillNewlyUncovered ( MultiFab& mf,
 
                         // FIXME -- correct fix of parallel OOB error here is that
                         // we check if we fall in the box...
-                    amrex::Print() << "Cell  " << Dim3{i,j,k}
+                        amrex::Print() << "Cell  " << Dim3{i,j,k}
                                        << " newly uncovered, fill with value of neighbor at "
-                                   << Dim3{i+ioff,j+joff,k+koff}
+                                       << Dim3{i+ioff,j+joff,k+koff}
                                        <<": "<<U_in(i,j,k,n)<< std::endl;
                     }
                 }
@@ -311,7 +311,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     Real delta_vol = vfrac_new(i,j,k) - vfrac_old(i,j,k);
                     // delta_vol /= ( dt * vfrac_old(i,j,k) );
 		    delta_vol /= vfrac_old(i,j,k);
-
+		    // if ( vfrac_new(i,j,k) == 1. ){
+		    // 	delta_vol /= 2.0
+		    // }
+		    
 		    // This part already bundled in with dUdt_in
                     // scratch(i,j,k,n) = 0.0;
                     // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
@@ -352,7 +355,29 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k+koff);
                             // NOTE this correction is only right for the case that the newly
                             // uncovered cell has only one other cell in it's neghborhood.
-                            scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol;
+
+			    // -eb_div * U_in *dt
+			    // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
+			    //                             flag_old,vfrac_old,bnorm,barea,dxinv);
+			    //{
+				Real Ueb_dot_n =
+				    AMREX_D_TERM(  vel_eb(i,j,k,0)*bnorm(i,j,k,0) * dxinv[0],
+						 + vel_eb(i,j,k,1)*bnorm(i,j,k,1) * dxinv[1],
+						 + vel_eb(i,j,k,2)*bnorm(i,j,k,2) * dxinv[2] );
+			    
+				Real kappa_a = dt * Ueb_dot_n * barea(i,j,k) // / vfrac_new(i,j,k)
+				    / vfrac_old(i+ioff,j+joff,k+koff);
+
+				if ( j==8){
+				    Print()<<"\nMSRD corrections...\n"
+					   <<vel_eb(i,j,k,0)<<" "<<vel_eb(i,j,k,1)<<"\n"
+					   <<bnorm(i,j,k,0)<<" "<<bnorm(i,j,k,1)<<"\n"
+					   <<delta_vol<<" "<<kappa_a<<" "<<dUdt_in(i,j,k,n)
+					   <<std::endl;
+				}
+//}
+			    scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol
+				- dt * dUdt_in(i,j,k,n) ;
                         }
                     }
                 }

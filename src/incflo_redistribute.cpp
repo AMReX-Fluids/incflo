@@ -114,8 +114,10 @@ incflo::redistribute_term ( MFIter const& mfi,
              auto const& apy_old = ebfact_old.getAreaFrac()[1]->const_array(mfi);,
              auto const& apz_old = ebfact_old.getAreaFrac()[2]->const_array(mfi););
         // For creating the MSRD correction term, so at time n
-        Array4<Real const> const& bnorm = ebfact_old.getBndryNormal().const_array(mfi);
-        Array4<Real const> const& barea = ebfact_old.getBndryArea().const_array(mfi);
+	// now only needed for newly uncovered correction, so time n+1
+	// (other advective corrections are bundled into conv
+        Array4<Real const> const& bnorm = ebfact.getBndryNormal().const_array(mfi);
+        Array4<Real const> const& barea = ebfact.getBndryArea().const_array(mfi);
 
 
         Redistribution::Apply(bx, ncomp, result, temporary, state,

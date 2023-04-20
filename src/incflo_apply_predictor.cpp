@@ -482,6 +482,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		    for (int n = 0; n < l_ntrac; ++n)
 		    {
 			tra(i,j,k,n) /= rho(i,j,k);
+			tra_o(i,j,k,n) /= rho_o(i,j,k);
 		    }
 		});
 #else
@@ -670,6 +671,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 		for (int n = 0; n < AMREX_SPACEDIM; ++n)
 		{
 		    vel(i,j,k,n) /= rho_new(i,j,k);
+		    vel_o(i,j,k,n) /= rho_old(i,j,k);
 		}
 	    });
 #else
@@ -832,8 +834,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // VisMF::Write(density_nph_neweb[0],"rnph");
     // VisMF::Write(m_leveldata[0]->velocity,"vel");
 
-
-    // WritePlotFile();
+    std::string save = m_plot_file;
+    m_plot_file = "pred";
+    WritePlotFile();
+    m_plot_file = save;
     // static int count = 0;
     // count++;
     //if (count > 0) Abort();

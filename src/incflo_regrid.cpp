@@ -160,10 +160,12 @@ void incflo::RemakeWithNewGeometry ()
                            m_advect_tracer));
 
         MultiFab::Copy(new_leveldata->conv_velocity_o , m_leveldata[lev]->conv_velocity_o,0,0,AMREX_SPACEDIM,0);
-        MultiFab::Copy(new_leveldata->conv_density_o , m_leveldata[lev]->conv_density_o,0,0,1,0);
         MultiFab::Copy(new_leveldata->conv_velocity , m_leveldata[lev]->conv_velocity,0,0,AMREX_SPACEDIM,0);
+        MultiFab::Copy(new_leveldata->conv_density_o , m_leveldata[lev]->conv_density_o,0,0,1,0);
         MultiFab::Copy(new_leveldata->conv_density , m_leveldata[lev]->conv_density,0,0,1,0);
 
+        new_leveldata->conv_velocity_o.FillBoundary(geom[lev].periodicity());
+	new_leveldata->conv_density_o.FillBoundary(geom[lev].periodicity());
 
         Real old_time = m_cur_time;
         Real new_time = m_cur_time + m_dt;
@@ -192,7 +194,7 @@ void incflo::RemakeWithNewGeometry ()
         EB_set_covered( new_leveldata->velocity_o, 1.e45);
         EB_set_covered( new_leveldata->density   , 1.e45);
         EB_set_covered( new_leveldata->density_o , 1.e45);
-        if (m_ntrac > 0) {
+        if (m_ntrac > 0 && m_advect_tracer) {
             EB_set_covered( new_leveldata->tracer    , 1.e45);
             EB_set_covered( new_leveldata->tracer_o  , 1.e45);
         }
