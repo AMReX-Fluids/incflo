@@ -25,25 +25,13 @@ incflo::redistribute_term ( MultiFab& result,
 #endif
     for (MFIter mfi(state,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
-        redistribute_term(mfi, result, temporary, state, bc, lev, vel_eb);
+	Array4<Real      > out       = result.array(mfi);
+	Array4<Real      > tmp       = temporary.array(mfi);
+	Array4<Real const> state_arr = state.const_array(mfi);
+	Array4<Real const> v_eb      = (vel_eb) ? vel_eb->const_array(mfi) : Array4<Real const> {};
+
+	redistribute_term(mfi, out, tmp, state_arr, bc, lev, v_eb, Array4<Real const>{});
     }
-}
-
-void
-incflo::redistribute_term ( MFIter const& mfi,
-                            MultiFab& result,
-                            MultiFab& temporary,
-                            MultiFab const& state,
-                            BCRec const* bc, // this is bc for the state (needed for SRD slopes)
-                            int lev,
-                            MultiFab*& vel_eb)
-{
-    Array4<Real      > out       = result.array(mfi);
-    Array4<Real      > tmp       = temporary.array(mfi);
-    Array4<Real const> state_arr = state.const_array(mfi);
-    Array4<Real const> v_eb      = (vel_eb) ? vel_eb->const_array(mfi) : Array4<Real const> {};
-
-    redistribute_term(mfi, out, tmp, state_arr, bc, lev, v_eb);
 }
 
 void
@@ -54,6 +42,19 @@ incflo::redistribute_term ( MFIter const& mfi,
                             BCRec const* bc, // this is bc for the state (needed for SRD slopes)
                             int lev,
                             Array4<Real const > const& vel_eb)
+{
+    redistribute_term(mfi, result, temporary, state, bc, lev, vel_eb, Array4<Real const>{});
+}
+
+void
+incflo::redistribute_term ( MFIter const& mfi,
+                            Array4<Real       > const& result,
+                            Array4<Real       > const& temporary,
+                            Array4<Real const > const& state,
+                            BCRec const* bc, // this is bc for the state (needed for SRD slopes)
+                            int lev,
+                            Array4<Real const > const& vel_eb_old,
+			    Array4<Real const > const& vel_eb_new)
 {
     AMREX_ASSERT(result.nComp() == state.nComp());
 
@@ -104,7 +105,7 @@ incflo::redistribute_term ( MFIter const& mfi,
         });
 
 #ifdef AMREX_USE_MOVING_EB
-        if (vel_eb)
+        if (vel_eb_old)
         {
             EBFArrayBoxFactory const& ebfact_old = OldEBFactory(lev);
             EBCellFlagFab const& flagfab_old         = ebfact_old.getMultiEBCellFlagFab()[mfi];
@@ -113,11 +114,13 @@ incflo::redistribute_term ( MFIter const& mfi,
             AMREX_D_TERM(auto const& apx_old = ebfact_old.getAreaFrac()[0]->const_array(mfi);,
                          auto const& apy_old = ebfact_old.getAreaFrac()[1]->const_array(mfi);,
                          auto const& apz_old = ebfact_old.getAreaFrac()[2]->const_array(mfi););
-            // For creating the MSRD correction term, so at time n
-            // Need to think about how to do this...
-            Array4<Real const> const& bnorm = ebfact_old.getBndryNormal().const_array(mfi);
-            Array4<Real const> const& barea = ebfact_old.getBndryArea().const_array(mfi);
+            Array4<Real const> const& bnorm_old = ebfact_old.getBndryNormal().const_array(mfi);
+            Array4<Real const> const& barea_old = ebfact_old.getBndryArea().const_array(mfi);
 
+	    Array4<Real const> const& bnorm_new = (vel_eb_new) ? ebfact.getBndryNormal().const_array(mfi)
+		                                               : Array4<Real const> {};
+	    Array4<Real const> const& barea_new = (vel_eb_new) ? ebfact.getBndryArea().const_array(mfi)
+		                                               : Array4<Real const> {};
 
             Redistribution::Apply(bx, ncomp, result, temporary, state,
                                   scratch, flag_old, flag,
@@ -125,7 +128,8 @@ incflo::redistribute_term ( MFIter const& mfi,
                                   AMREX_D_DECL(apx, apy, apz), vfrac,
                                   AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                   bc, geom[lev], m_dt, m_redistribution_type,
-                                  vel_eb, bnorm, barea,
+                                  vel_eb_old, bnorm_old, barea_old,
+				  vel_eb_new, bnorm_new, barea_new,
                                   Redistribution::defaults::srd_max_order,
                                   Redistribution::defaults::target_vol_fraction,
                                   Array4<Real const> {});

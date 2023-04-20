@@ -132,6 +132,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
           AMREX_D_DECL(apx, apy, apz), vfrac,
           AMREX_D_DECL(fcx, fcy, fcz), ccent,
           d_bcrec_ptr, geom, dt, redistribution_type,
+          Array4<Real const> {}, // vel_eb_old 
+          Array4<Real const> {}, // bnorm_old
+          Array4<Real const> {}, // barea_old, all not needed
           Array4<Real const> {}, // vel_eb
           Array4<Real const> {}, // bnorm
           Array4<Real const> {}, // barea, all not needed
@@ -160,9 +163,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              amrex::BCRec  const* d_bcrec_ptr,
                              Geometry const& lev_geom, Real dt,
                              std::string redistribution_type,
-                             Array4<Real const> const& vel_eb,
-                             Array4<Real const> const& bnorm,
-                             Array4<Real const> const& barea,
+                             Array4<Real const> const& vel_eb_old,
+                             Array4<Real const> const& bnorm_old,
+                             Array4<Real const> const& barea_old,
+                             Array4<Real const> const& vel_eb_new,
+                             Array4<Real const> const& bnorm_new,
+                             Array4<Real const> const& barea_new,
                              const int srd_max_order,
                              amrex::Real target_volfrac,
                              Array4<Real const> const& srd_update_scale)
@@ -240,16 +246,17 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
         amrex::Print() << "Start itracker" << std::endl;
 
+	// FIXME - think about if this still needs v_eb and whether old or new...
         MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
                          AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
-                     itr, lev_geom, target_volfrac, vel_eb);
+                     itr, lev_geom, target_volfrac, vel_eb_new);
 
         amrex::Print() << "Start State Redistribution" << std::endl;
 
         MakeStateRedistUtils(bx, vfrac_old, vfrac_new, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                              lev_geom, target_volfrac);
 
-        if ( !vel_eb )
+        if ( !vel_eb_old )
         {
             //
             // SRD with stationary EB
@@ -310,21 +317,33 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // Correct all cells that are cut at time n or become cut at time n+1
 
                     Real delta_vol = vfrac_new(i,j,k) - vfrac_old(i,j,k);
-                    // delta_vol /= ( dt * vfrac_old(i,j,k) );
-                    delta_vol /= vfrac_old(i,j,k);
-                    // if ( vfrac_new(i,j,k) == 1. ){
-                    //  delta_vol /= 2.0
-                    // }
+                    delta_vol /= ( dt * vfrac_old(i,j,k) );
 
-                    // This part already bundled in with dUdt_in
                     // scratch(i,j,k,n) = 0.0;
                     // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
                     //                             flag_old,vfrac_old,bnorm,barea,dxinv);
+		    Real Ueb_dot_an =
+			AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
+				     + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
+				     + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
+		    Ueb_dot_an *= barea_old(i,j,k);
 
-                    // Real delta_divU = delta_vol - scratch(i,j,k,n);
+		    if ( vel_eb_new ) {
+			Real Ueb_dot_an_new =
+			    AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
+					 + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
+					 + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
+			Ueb_dot_an_new *= barea_new(i,j,k);
+
+			Ueb_dot_an = Real(0.5) * (Ueb_dot_an + Ueb_dot_an_new);
+		    }
+
+		    Ueb_dot_an /= vfrac_old(i,j,k);
+
+
+                    Real delta_divU = delta_vol - Ueb_dot_an;
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
-                                                     + U_in(i,j,k,n) * delta_vol;
-                                                     // + dt * U_in(i,j,k,n) * delta_divU;
+                                                     + dt * U_in(i,j,k,n) * delta_divU;
                 }
                 else
                 {
@@ -361,22 +380,22 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
                             //                             flag_old,vfrac_old,bnorm,barea,dxinv);
                             //{
-                                Real Ueb_dot_n =
-                                    AMREX_D_TERM(  vel_eb(i,j,k,0)*bnorm(i,j,k,0) * dxinv[0],
-                                                 + vel_eb(i,j,k,1)*bnorm(i,j,k,1) * dxinv[1],
-                                                 + vel_eb(i,j,k,2)*bnorm(i,j,k,2) * dxinv[2] );
+//                                 Real Ueb_dot_n =
+//                                     AMREX_D_TERM(  vel_eb(i,j,k,0)*bnorm(i,j,k,0) * dxinv[0],
+//                                                  + vel_eb(i,j,k,1)*bnorm(i,j,k,1) * dxinv[1],
+//                                                  + vel_eb(i,j,k,2)*bnorm(i,j,k,2) * dxinv[2] );
 
-                                Real kappa_a = dt * Ueb_dot_n * barea(i,j,k) // / vfrac_new(i,j,k)
-                                    / vfrac_old(i+ioff,j+joff,k+koff);
+//                                 Real kappa_a = dt * Ueb_dot_n * barea(i,j,k) // / vfrac_new(i,j,k)
+//                                     / vfrac_old(i+ioff,j+joff,k+koff);
 
-                                if ( j==8){
-                                    Print()<<"\nMSRD corrections...\n"
-                                           <<vel_eb(i,j,k,0)<<" "<<vel_eb(i,j,k,1)<<"\n"
-                                           <<bnorm(i,j,k,0)<<" "<<bnorm(i,j,k,1)<<"\n"
-                                           <<delta_vol<<" "<<kappa_a<<" "<<dUdt_in(i,j,k,n)
-                                           <<std::endl;
-                                }
-//}
+//                                 if ( j==8){
+//                                     Print()<<"\nMSRD corrections...\n"
+//                                            <<vel_eb(i,j,k,0)<<" "<<vel_eb(i,j,k,1)<<"\n"
+//                                            <<bnorm(i,j,k,0)<<" "<<bnorm(i,j,k,1)<<"\n"
+//                                            <<delta_vol<<" "<<kappa_a<<" "<<dUdt_in(i,j,k,n)
+//                                            <<std::endl;
+//                                 }
+// //}
                             scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol
                                 - dt * dUdt_in(i,j,k,n) ;
                         }
@@ -391,16 +410,16 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                           cent_hat_const, lev_geom, srd_max_order);
 
         //
-                // Only update the values which actually changed -- this makes
-                // the results insensitive to tiling -- otherwise cells that aren't
-                // changed but are in a tile on which StateRedistribute gets called
-                // will have precision-level changes due to adding/subtracting U_in
-                // and multiplying/dividing by dt.   Here we test on whether (i,j,k)
-                // has at least one neighbor and/or whether (i,j,k) is in the
-                // neighborhood of another cell -- if either of those is true the
-                // value may have changed
+	// Only update the values which actually changed -- this makes
+	// the results insensitive to tiling -- otherwise cells that aren't
+	// changed but are in a tile on which StateRedistribute gets called
+	// will have precision-level changes due to adding/subtracting U_in
+	// and multiplying/dividing by dt.   Here we test on whether (i,j,k)
+	// has at least one neighbor and/or whether (i,j,k) is in the
+	// neighborhood of another cell -- if either of those is true the
+	// value may have changed
         //
-        if ( !vel_eb )
+        if ( !vel_eb_old )
         {
             //
             // SRD with stationary EB
