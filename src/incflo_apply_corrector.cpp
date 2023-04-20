@@ -87,10 +87,10 @@ void incflo::ApplyCorrector()
     //all these get set in makeNewGeom...
 // #ifdef AMREX_USE_EB
 //    if (m_eb_flow.enabled) {
-	for (int lev = 0; lev <= finest_level; ++lev) {
-	    set_eb_density(lev, m_cur_time, *get_density_eb()[lev], 1);
-	    //set_eb_tracer(lev, new_time, *get_tracer_eb()[lev], 1);
-	}
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            set_eb_density(lev, m_cur_time, *get_density_eb()[lev], 1);
+            //set_eb_tracer(lev, new_time, *get_tracer_eb()[lev], 1);
+        }
 //     }
 // #endif
 
@@ -176,18 +176,18 @@ void incflo::ApplyCorrector()
 
 // FIXME - need to probably fill covered cells or something in diffterms, bc they trip
     // amrex.trap_fpe_invalid...
-    
+
     // Here we create divtau of the (n+1,*) state that was computed in the predictor;
     //      we use this laps only if DiffusionType::Explicit
     if ( (m_diff_type == DiffusionType::Explicit) || use_tensor_correction )
     {
-	Print()<<"Computing divtau new..."<<std::endl;
+        Print()<<"Computing divtau new..."<<std::endl;
         compute_divtau(get_divtau_new(), get_velocity_new_const(),
                        get_density_new_const(), GetVecOfConstPtrs(vel_eta));
     }
 
     if (m_advect_tracer && m_diff_type == DiffusionType::Explicit) {
-	Print()<<"Computing laps new..."<<std::endl;
+        Print()<<"Computing laps new..."<<std::endl;
         compute_laps(get_laps_new(), get_tracer_new_const(),
                      get_density_new_const(), GetVecOfConstPtrs(tra_eta));
     }
@@ -227,23 +227,23 @@ void incflo::ApplyCorrector()
                 Array4<Real const> const& drdt_o = ld.conv_density_o.const_array(mfi);
                 Array4<Real const> const& drdt   = ld.conv_density.const_array(mfi);
 
-		auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
-		auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-		
+                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
+                auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     // Build update
                     //   rho_new = rho_pred + dt/2 * (A^n + A^(n+1))
                     //           = rho_new  + dt/2 * (drdt_o + drdt)
-		    
+
                     //FIXME - WOuld need to deal with NewlyCovered cells here, SRD will use this val...
-		    // safest to also deal with NU cells also, although only need something computable
+                    // safest to also deal with NU cells also, although only need something computable
                     // Could get rid of update temporary and just use conv
-		    if ( vfrac_old(i,j,k) != 0.0 ) {
-			rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k)*vfrac_new(i,j,k)/vfrac_old(i,j,k));
-		    } else {
-			rho_t(i,j,k) = 0;
-		    }
+                    if ( vfrac_old(i,j,k) != 0.0 ) {
+                        rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k)*vfrac_new(i,j,k)/vfrac_old(i,j,k));
+                    } else {
+                        rho_t(i,j,k) = 0;
+                    }
                 });
             }
 
@@ -275,16 +275,16 @@ void incflo::ApplyCorrector()
 
 #ifdef AMREX_USE_MOVING_EB
                 //
-		// For moving EB, redistribute and returns full state at new time
+                // For moving EB, redistribute and returns full state at new time
                 //
-		redistribute_term(mfi, rho_n, rho_t, rho_o,
+                redistribute_term(mfi, rho_n, rho_t, rho_o,
                                   get_density_bcrec_device_ptr(), lev,
-				  get_velocity_eb()[lev]->const_array(mfi));
+                                  get_velocity_eb()[lev]->const_array(mfi));
 
                 // Make half-time rho
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-		    // FIXME -- need to handle NU?
+                    // FIXME -- need to handle NU?
                     rho_nph(i,j,k) = m_half * (rho_o(i,j,k) + rho_n(i,j,k));
                 });
 #else
@@ -308,7 +308,7 @@ void incflo::ApplyCorrector()
             rho_temp.minus(ld.density,0,1,0);
             VisMF::Write(rho_temp,"rt");
             VisMF::Write(ld.density,"rhonn");
-	    //Abort();
+            //Abort();
         } // lev
 
         // Average down solution
@@ -343,9 +343,9 @@ void incflo::ApplyCorrector()
         {
             auto& ld = *m_leveldata[lev];
 #ifdef AMREX_USE_MOVING_EB
-	    // FIXME shoudl just work, but still need to test it
-	Print()<<"Advecting tracer, not yet tested with moving EB ...\n"<<std::endl;
-	Abort();
+            // FIXME shoudl just work, but still need to test it
+        Print()<<"Advecting tracer, not yet tested with moving EB ...\n"<<std::endl;
+        Abort();
             //
             // For moving EB, assemble state for redistribution
             //
@@ -358,7 +358,7 @@ void incflo::ApplyCorrector()
             {
                 Box const& bx = mfi.tilebox();
                 Array4<Real> const& rhotra_t     = tra_temp.array(mfi);
-		Array4<Real> const& tra_o        = ld.tracer_o.array(mfi);
+                Array4<Real> const& tra_o        = ld.tracer_o.array(mfi);
                 Array4<Real> const& tra_n        = ld.tracer.array(mfi);
                 Array4<Real const> const& rho_o  = ld.density_o.const_array(mfi);
                 Array4<Real const> const& dtdt_o = ld.conv_tracer_o.const_array(mfi);
@@ -380,9 +380,9 @@ void incflo::ApplyCorrector()
                     // Could get rid of update temporary and just use conv
                     for ( int n = 0; n < l_ntrac; n++)
                     {
-			rhotra_t(i,j,k,n) = m_half * l_dt * (  dtdt_o(i,j,k,n) + dtdt(i,j,k,n)
-							       + laps(i,j,k,n) + laps_o(i,j,k,n)
-							       + tra_f(i,j,k,n));
+                        rhotra_t(i,j,k,n) = m_half * l_dt * (  dtdt_o(i,j,k,n) + dtdt(i,j,k,n)
+                                                               + laps(i,j,k,n) + laps_o(i,j,k,n)
+                                                               + tra_f(i,j,k,n));
                     }
                 });
             }
@@ -409,8 +409,8 @@ void incflo::ApplyCorrector()
                 // (rho trac)^new = (rho trac)^old + dt * (
                 //                   div(rho trac u) + div (mu grad trac) + rho * f_t
                 //
-		redistribute_term(mfi, tra, rhotra_t, tra_o, get_tracer_bcrec_device_ptr(),
-				  lev, get_velocity_eb()[lev]->const_array(mfi));
+                redistribute_term(mfi, tra, rhotra_t, tra_o, get_tracer_bcrec_device_ptr(),
+                                  lev, get_velocity_eb()[lev]->const_array(mfi));
 
 
                 amrex::ParallelFor(bx,
@@ -419,7 +419,7 @@ void incflo::ApplyCorrector()
                     for (int n = 0; n < l_ntrac; ++n)
                     {
                         tra(i,j,k,n) /= rho(i,j,k);
-			//FIXME? Do we need to put tra_old back also?
+                        //FIXME? Do we need to put tra_old back also?
                     }
                 });
 #else
@@ -512,6 +512,12 @@ void incflo::ApplyCorrector()
                                     0, m_ntrac, refRatio(lev));
 #endif
             }
+            //FIXME -- not sure this is needed. Try commenting and running with amrex.fpe_trap_invalid = 1
+            // Make sure covered cells have something computable in them (i.e. not NAN or INF)
+            for (int lev = 0; lev <= finest_level; ++lev)
+            {
+                EB_set_covered(m_leveldata[lev]->tracer, 1.e45);
+            }
         }
     } // if (m_advect_tracer)
 
@@ -559,16 +565,16 @@ void incflo::ApplyCorrector()
                 //           = vel_new  + dt/2 * (drdt_o + drdt + laps)
                 for ( int n = 0; n < AMREX_SPACEDIM; n++)
                 {
-		    // Print()<<Dim3{i,j,k}<<"Vel update pieces ...\n"
-		    // 	   <<dvdt_o(i,j,k,n)<< " "<<dvdt(i,j,k,n)<<"\n"
-		    // 	//<<divtau_o(i,j,k,n)<< " "<<divtau(i,j,k,n)<<"\n"
-		    // 	   <<vel_f(i,j,k,n)<<std::endl;
-		    // FIXME!!! There's a problem with divtau. Needs to be initialized to zero
-		    // or check if mu = 0 before using?
+                    // Print()<<Dim3{i,j,k}<<"Vel update pieces ...\n"
+                    //     <<dvdt_o(i,j,k,n)<< " "<<dvdt(i,j,k,n)<<"\n"
+                    //  //<<divtau_o(i,j,k,n)<< " "<<divtau(i,j,k,n)<<"\n"
+                    //     <<vel_f(i,j,k,n)<<std::endl;
+                    // FIXME!!! There's a problem with divtau. Needs to be initialized to zero
+                    // or check if mu = 0 before using?
                     vel_o(i,j,k,n) = rho_o(i,j,k)*vel_o(i,j,k,n);
-		    rhovel_t(i,j,k,n) = m_half * l_dt * (  dvdt_o(i,j,k,n) + dvdt(i,j,k,n)
-							   //+ divtau_o(i,j,k,n) + divtau(i,j,k,n)
-							 + vel_f(i,j,k,n));
+                    rhovel_t(i,j,k,n) = m_half * l_dt * (  dvdt_o(i,j,k,n) + dvdt(i,j,k,n)
+                                                           //+ divtau_o(i,j,k,n) + divtau(i,j,k,n)
+                                                         + vel_f(i,j,k,n));
                 }
             });
         }
@@ -593,7 +599,7 @@ void incflo::ApplyCorrector()
             Box const& bx = mfi.tilebox();
             Array4<Real> const& vel = ld.velocity.array(mfi);
             Array4<Real> const& vel_o = ld.velocity_o.array(mfi);
-//	    Array4<Real const> const& vel_o = ld.velocity_o.const_array(mfi);
+//          Array4<Real const> const& vel_o = ld.velocity_o.const_array(mfi);
             Array4<Real const> const& rho_old  = ld.density_o.const_array(mfi);
             Array4<Real const> const& rho_new  = ld.density.const_array(mfi);
 
@@ -601,9 +607,9 @@ void incflo::ApplyCorrector()
             Array4<Real> const& rhovel_t     = vel_temp.array(mfi);
             //
             // Redistribute
-	    // redistribute - own lambda...
-	    redistribute_term(mfi, vel, rhovel_t, vel_o, get_velocity_bcrec_device_ptr(),
-			      lev, get_velocity_eb()[lev]->const_array(mfi));
+            // redistribute - own lambda...
+            redistribute_term(mfi, vel, rhovel_t, vel_o, get_velocity_bcrec_device_ptr(),
+                              lev, get_velocity_eb()[lev]->const_array(mfi));
 
             amrex::ParallelFor(bx,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -611,8 +617,8 @@ void incflo::ApplyCorrector()
                 for (int n = 0; n < AMREX_SPACEDIM; ++n)
                 {
                     vel(i,j,k,n) /= rho_new(i,j,k);
-		    // FIXME? maybe we don't really need to bother with this...
-		    vel_o(i,j,k,n) /= rho_old(i,j,k);
+                    // FIXME? maybe we don't really need to bother with this...
+                    vel_o(i,j,k,n) /= rho_old(i,j,k);
                 }
             });
 #else
@@ -795,10 +801,23 @@ void incflo::ApplyCorrector()
     }
     else
     {
+        // FIXME - not sure if this is needed or not. Test with multilevel run. ... Probably
+        // the Nodal proj will do this average down for us...
+        // Need to average down tracer since the diffusion solver didn't do it for us.
+//         for (int lev = finest_level-1; lev >= 0; --lev) {
+// #ifdef AMREX_USE_EB
+//             amrex::EB_average_down(m_leveldata[lev+1]->velocity, m_leveldata[lev]->velocity,
+//                                    0, AMREX_SPACEDIM, refRatio(lev));
+// #else
+//             amrex::average_down(m_leveldata[lev+1]->velocity, m_leveldata[lev]->velocity,
+//                                 0, AMREX_SPACEDIM, refRatio(lev));
+// #endif
+//         }
+        // Make sure covered cells have something computable in them (i.e. not NAN or INF)
         for (int lev = 0; lev <= finest_level; ++lev)
         {
-	    EB_set_covered(m_leveldata[lev]->velocity, 1.e45);
-	}
+            EB_set_covered(m_leveldata[lev]->velocity, 1.e45);
+        }
     }
 
 //FIXME
