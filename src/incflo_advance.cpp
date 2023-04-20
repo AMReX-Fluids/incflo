@@ -64,27 +64,8 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
     // Create the time n+1 geometry and associated Factories
     MakeNewEBGeometry(m_t_new[0]);
     MakeFactoryWithNewGeometry();
-#endif
 
-    // FIXME - don;t know that we need this here. Shouldn't this be good from the
-    // last time step? -- that's only true for moving EB probably
-    // Also, need this to fill eb_vel for 1st time step with MEB
-#ifdef AMREX_USE_EB
-    if (m_eb_flow.enabled) {
-       for (int lev = 0; lev <= finest_level; ++lev) {
-         if (m_eb_flow.is_omega) {
-            set_eb_velocity_for_rotation(lev, m_t_old[lev], *get_velocity_eb()[lev], 1);
-         } else {
-            set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb()[lev], 1);
-         }
-         set_eb_density(lev, m_t_old[lev], *get_density_eb()[lev], 1);
-         set_eb_tracer(lev, m_t_old[lev], *get_tracer_eb()[lev], 1);
-       }
-    }
-#endif
-
-
-#ifdef INCFLO_USE_MOVING_EB
+    // FIXME -- Can we use something simplier here now??
     for (int lev = 0; lev <= finest_level; lev++)
     {
 // FIXME - do we still really need this, or do we only need to fill with a computatble value
