@@ -12,15 +12,16 @@
 using namespace amrex;
 
 namespace {
-        // For Normal Merging, we assume that in 2D a cell will need at most 3 neighbors to
-        //   merge with. We use the first component of this for the number of neighbors, so
-        //   4 comps needed.
-        // For Central Merging, we include all surrounding cells, so in 2D, 9 comps needed.
-        // For Moving EB, we have to allow for more then just Normal Merging (due to covering/
-        //   uncovering reciprocity), so just allow for the max for now.
+    // For Normal Merging, we assume that in 2D a cell will need at most 3 neighbors to
+    //   merge with. We use the first component of this for the number of neighbors, so
+    //   4 comps needed.
+    // For Central Merging, we include all surrounding cells, so in 2D, 9 comps needed.
+    // For Moving EB, we have to allow for more then just Normal Merging (due to covering/
+    //   uncovering reciprocity), so just allow for the max for now.
 //
-        // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
-        //    use the first component of this for the number of neighbors
+// FIXME --
+// We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
+    //    use the first component of this for the number of neighbors
     constexpr int itracker_comp = (AMREX_SPACEDIM < 3 ) ? 9 : 8;
 }
 
@@ -310,19 +311,19 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                     Real delta_vol = vfrac_new(i,j,k) - vfrac_old(i,j,k);
                     // delta_vol /= ( dt * vfrac_old(i,j,k) );
-		    delta_vol /= vfrac_old(i,j,k);
-		    // if ( vfrac_new(i,j,k) == 1. ){
-		    // 	delta_vol /= 2.0
-		    // }
-		    
-		    // This part already bundled in with dUdt_in
+                    delta_vol /= vfrac_old(i,j,k);
+                    // if ( vfrac_new(i,j,k) == 1. ){
+                    //  delta_vol /= 2.0
+                    // }
+
+                    // This part already bundled in with dUdt_in
                     // scratch(i,j,k,n) = 0.0;
                     // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
                     //                             flag_old,vfrac_old,bnorm,barea,dxinv);
 
                     // Real delta_divU = delta_vol - scratch(i,j,k,n);
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
-			                             + U_in(i,j,k,n) * delta_vol;
+                                                     + U_in(i,j,k,n) * delta_vol;
                                                      // + dt * U_in(i,j,k,n) * delta_divU;
                 }
                 else
@@ -356,28 +357,28 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             // NOTE this correction is only right for the case that the newly
                             // uncovered cell has only one other cell in it's neghborhood.
 
-			    // -eb_div * U_in *dt
-			    // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
-			    //                             flag_old,vfrac_old,bnorm,barea,dxinv);
-			    //{
-				Real Ueb_dot_n =
-				    AMREX_D_TERM(  vel_eb(i,j,k,0)*bnorm(i,j,k,0) * dxinv[0],
-						 + vel_eb(i,j,k,1)*bnorm(i,j,k,1) * dxinv[1],
-						 + vel_eb(i,j,k,2)*bnorm(i,j,k,2) * dxinv[2] );
-			    
-				Real kappa_a = dt * Ueb_dot_n * barea(i,j,k) // / vfrac_new(i,j,k)
-				    / vfrac_old(i+ioff,j+joff,k+koff);
+                            // -eb_div * U_in *dt
+                            // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
+                            //                             flag_old,vfrac_old,bnorm,barea,dxinv);
+                            //{
+                                Real Ueb_dot_n =
+                                    AMREX_D_TERM(  vel_eb(i,j,k,0)*bnorm(i,j,k,0) * dxinv[0],
+                                                 + vel_eb(i,j,k,1)*bnorm(i,j,k,1) * dxinv[1],
+                                                 + vel_eb(i,j,k,2)*bnorm(i,j,k,2) * dxinv[2] );
 
-				if ( j==8){
-				    Print()<<"\nMSRD corrections...\n"
-					   <<vel_eb(i,j,k,0)<<" "<<vel_eb(i,j,k,1)<<"\n"
-					   <<bnorm(i,j,k,0)<<" "<<bnorm(i,j,k,1)<<"\n"
-					   <<delta_vol<<" "<<kappa_a<<" "<<dUdt_in(i,j,k,n)
-					   <<std::endl;
-				}
+                                Real kappa_a = dt * Ueb_dot_n * barea(i,j,k) // / vfrac_new(i,j,k)
+                                    / vfrac_old(i+ioff,j+joff,k+koff);
+
+                                if ( j==8){
+                                    Print()<<"\nMSRD corrections...\n"
+                                           <<vel_eb(i,j,k,0)<<" "<<vel_eb(i,j,k,1)<<"\n"
+                                           <<bnorm(i,j,k,0)<<" "<<bnorm(i,j,k,1)<<"\n"
+                                           <<delta_vol<<" "<<kappa_a<<" "<<dUdt_in(i,j,k,n)
+                                           <<std::endl;
+                                }
 //}
-			    scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol
-				- dt * dUdt_in(i,j,k,n) ;
+                            scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol
+                                - dt * dUdt_in(i,j,k,n) ;
                         }
                     }
                 }
@@ -447,7 +448,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             {
                 //fixme
                 // if (i==8  && j==8){
-            //     amrex::Print() << "Pre out" << Dim3{i,j,k} << out(i,j,k,n) << std::endl;
+                //     amrex::Print() << "Pre out" << Dim3{i,j,k} << out(i,j,k,n) << std::endl;
                 //     amrex::Print() << "U_in: " << U_in(i,j,k,n) << std::endl;
                 // }
 
@@ -462,7 +463,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                 //FIXME
                 // if (i==0 && j==10)
-            //     amrex::Print() << "Post out" << Dim3{i,j,k} << out(i,j,k,n) << std::endl;
+                //     amrex::Print() << "Post out" << Dim3{i,j,k} << out(i,j,k,n) << std::endl;
         });
         }
     } else if (redistribution_type == "NoRedist") {
