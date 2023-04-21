@@ -103,6 +103,9 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
     Vector<MultiFab*> vel;
     for (int lev = 0; lev <= finest_level; ++lev) {
 #ifdef AMREX_USE_EB
+        // for MEB, we already set these in RemakeWithNewGeom...
+        // but for initial proj we still need this call
+//#ifndef AMREX_USE_MOVING_EB
         if (m_eb_flow.enabled && !incremental) {
            if (m_eb_flow.is_omega) {
               set_eb_velocity_for_rotation(lev, time, *get_velocity_eb()[lev],
@@ -112,6 +115,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
                   get_velocity_eb()[lev]->nGrow());
            }
         }
+//#endif
 #endif
         vel.push_back(&(m_leveldata[lev]->velocity));
         vel[lev]->setBndry(0.0);
@@ -143,7 +147,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
 #ifdef AMREX_USE_EB
     if (m_eb_flow.enabled && !incremental) {
        for(int lev = 0; lev <= finest_level; ++lev) {
-          nodal_projector->getLinOp().setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
+          nodal_projector->getLinOp().setEBInflowVelocity(lev, *get_velocity_eb(time)[lev]);
        }
     }
 #endif

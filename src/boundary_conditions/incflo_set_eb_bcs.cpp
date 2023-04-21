@@ -11,10 +11,19 @@ using namespace amrex;
 void
 incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& eb_vel, int nghost)
 {
-    Geometry const& gm = Geom(lev);
+    Geometry const&  gm = Geom(lev);
+    const auto& factory = EBFactory(lev, time);
+
+#ifdef AMREX_USE_MOVING_EB
+    if ( !eb_vel.ok() ) {
+        // We hadn't made the new time factory when leveldata was created, so we
+        // define the new time container here
+        eb_vel.define(m_leveldata[lev]->velocity.boxArray(), m_leveldata[lev]->velocity.DistributionMap(),
+                      AMREX_SPACEDIM, nghost_state(), MFInfo(), factory);
+    }
+#endif
     eb_vel.setVal(0.);
 
-    const auto& factory =    EBFactory(lev, time);
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())

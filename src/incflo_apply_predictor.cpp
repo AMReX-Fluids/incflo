@@ -292,20 +292,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
     Real l_dt = m_dt;
     bool l_constant_density = m_constant_density;
 
-#ifdef AMREX_USE_MOVING_EB
-    // Update EB velocity to new time for use in redistribution
-    for (int lev = 0; lev <= finest_level; lev++)
-    {
-        if (m_eb_flow.is_omega) {
-            set_eb_velocity_for_rotation(lev, new_time, *get_velocity_eb()[lev],
-                                         get_velocity_eb()[lev]->nGrow());
-        } else {
-            set_eb_velocity(lev, new_time, *get_velocity_eb()[lev],
-                            get_velocity_eb()[lev]->nGrow());
-        }
-    }
-#endif
-
     // *************************************************************************************
     // Update density first
     // *************************************************************************************
@@ -622,6 +608,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
             Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
             Array4<Real const> const& vel_f    = vel_forces[lev].const_array(mfi);
             Array4<Real const> const& rho_o    = ld.density_o.const_array(mfi);
+            Array4<Real      > const& vel_o = ld.velocity_o.array(mfi);
 
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
@@ -630,12 +617,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 {
                     update_v(i,j,k,n) = dvdt_o(i,j,k,n) + divtau_o(i,j,k,n)
                                         + rho_o(i,j,k)*vel_f(i,j,k,n);
+                    vel_o(i,j,k,n) *= rho_o(i,j,k);
                 }
             });
         }
 
         // Need to ensure that boundaries are consistent
         update.FillBoundary(geom[lev].periodicity());
+        ld.velocity_o.FillBoundary(geom[lev].periodicity());
 #endif
 
 #ifdef _OPENMP
@@ -663,24 +652,25 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
             // FIXME - I need to grow this box -- maybe safer to have 3 mfiters???
             // incflo_compute_advective... does this same thing...
-            // except update now needs to be temporary, can't overwrite conv
             Array4<Real      > const& vel_o = ld.velocity_o.array(mfi);
             Array4<Real> const& update_v     = update.array(mfi);
             Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
-            amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-            {
-                for (int n = 0; n < AMREX_SPACEDIM; ++n)
-                {
-                    vel_o(i,j,k,n) *= rho_old(i,j,k);
-                }
-            });
+            // FIXME Can't do this. ghost cell could get mult by rho twice! see previous comment
+// ALso need to check on tracer ...
+            // amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            // {
+            //     for (int n = 0; n < AMREX_SPACEDIM; ++n)
+            //     {
+            //         vel_o(i,j,k,n) *= rho_old(i,j,k);
+            //     }
+            // });
 
             // redistribute - own lambda...
             redistribute_term(mfi, vel, update_v, vel_o, get_velocity_bcrec_device_ptr(),
                               lev, get_velocity_eb()[lev]->const_array(mfi));
 
 
-            amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 for (int n = 0; n < AMREX_SPACEDIM; ++n)
                 {
@@ -844,9 +834,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
     }
 #endif
 
-    // VisMF::Write(m_leveldata[0]->density,"dens");
+     VisMF::Write(m_leveldata[0]->density,"dens");
     // VisMF::Write(density_nph_neweb[0],"rnph");
-    // VisMF::Write(m_leveldata[0]->velocity,"vel");
+     VisMF::Write(m_leveldata[0]->velocity,"vel");
 
     std::string save = m_plot_file;
     m_plot_file = "pred";

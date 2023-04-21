@@ -326,19 +326,20 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
                                      + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
                                      + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
-                    Ueb_dot_an *= barea_old(i,j,k);
+                    Ueb_dot_an *= barea_old(i,j,k)/vfrac_old(i,j,k);
 
                     if ( vel_eb_new ) {
                         Real Ueb_dot_an_new =
                             AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
                                          + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
                                          + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
-                        Ueb_dot_an_new *= barea_new(i,j,k);
+                        Ueb_dot_an_new *= barea_new(i,j,k)/vfrac_new(i,j,k);
 
                         Ueb_dot_an = Real(0.5) * (Ueb_dot_an + Ueb_dot_an_new);
+
                     }
 
-                    Ueb_dot_an /= vfrac_old(i,j,k);
+                    //Ueb_dot_an /= vfrac_old(i,j,k);
 
 
                     Real delta_divU = delta_vol - Ueb_dot_an;
@@ -396,8 +397,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 //                                            <<std::endl;
 //                                 }
 // //}
-                            scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol
-                                - dt * dUdt_in(i,j,k,n) ;
+                            scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol;
+//                                - dt * dUdt_in(i,j,k,n) ;
                         }
                     }
                 }

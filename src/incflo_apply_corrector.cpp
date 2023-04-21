@@ -83,14 +83,13 @@ void incflo::ApplyCorrector()
     m_diffusion_tensor_op.reset(new DiffusionTensorOp(this, new_time));
     m_diffusion_scalar_op.reset(new DiffusionScalarOp(this, new_time));
 
-// vel on EB got reset in nodal projection
-    //all these get set in makeNewGeom...
+    //all these get set in makeNewGeom at end of predictor
 // #ifdef AMREX_USE_EB
 //    if (m_eb_flow.enabled) {
-        for (int lev = 0; lev <= finest_level; ++lev) {
-            set_eb_density(lev, m_cur_time, *get_density_eb()[lev], 1);
-            //set_eb_tracer(lev, new_time, *get_tracer_eb()[lev], 1);
-        }
+        // for (int lev = 0; lev <= finest_level; ++lev) {
+        //     set_eb_density(lev, m_cur_time, *get_density_eb()[lev], 1);
+        //     //set_eb_tracer(lev, new_time, *get_tracer_eb()[lev], 1);
+        // }
 //     }
 // #endif
 
@@ -240,7 +239,7 @@ void incflo::ApplyCorrector()
                     // safest to also deal with NU cells also, although only need something computable
                     // Could get rid of update temporary and just use conv
                     if ( vfrac_old(i,j,k) != 0.0 ) {
-                        rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k)*vfrac_new(i,j,k)/vfrac_old(i,j,k));
+                        rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k)); //*vfrac_new(i,j,k)/vfrac_old(i,j,k));
                     } else {
                         rho_t(i,j,k) = 0;
                     }
@@ -250,9 +249,9 @@ void incflo::ApplyCorrector()
             // Need to ensure that boundaries are consistent
             rho_temp.FillBoundary(geom[lev].periodicity());
 // rho_old should already have boundary filled and we don't alter it, so shouldn't need FB here...
-	    
+
             // Fixme
-	    // Setting rho EB covered to zero can cause problems down the line bc we use 1/rho
+            // Setting rho EB covered to zero can cause problems down the line bc we use 1/rho
             // EB_set_covered(rho_temp,0,1,rho_temp.nGrow(),0.);
             // VisMF::Write(rho_temp,"newrho");
             // VisMF::Write(ld.conv_density,"drdt_new");
@@ -281,7 +280,8 @@ void incflo::ApplyCorrector()
                 //
                 redistribute_term(mfi, rho_n, rho_t, rho_o,
                                   get_density_bcrec_device_ptr(), lev,
-                                  get_velocity_eb()[lev]->const_array(mfi));
+                                  get_velocity_eb(m_cur_time)[lev]->const_array(mfi),
+                                  get_velocity_eb(new_time)[lev]->const_array(mfi));
 
                 // Make half-time rho
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -294,7 +294,7 @@ void incflo::ApplyCorrector()
                 // Add advective update that's already been redistributed to get rho^(n+1)
                 //
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                {
+m                {
                     const Real rho_old = rho_o(i,j,k);
                     Real rho_new = rho_old + l_dt * m_half*(drdt(i,j,k)+drdt_o(i,j,k));
 
@@ -390,7 +390,7 @@ void incflo::ApplyCorrector()
 
             // Need to ensure that boundaries are consistent
             tra_temp.FillBoundary(geom[lev].periodicity());
-	    ld.tracer_o.FillBoundary(geom[lev].periodicity());
+            ld.tracer_o.FillBoundary(geom[lev].periodicity());
 #endif
 
 #ifdef _OPENMP
@@ -412,8 +412,8 @@ void incflo::ApplyCorrector()
                 //                   div(rho trac u) + div (mu grad trac) + rho * f_t
                 //
                 redistribute_term(mfi, tra, rhotra_t, tra_o, get_tracer_bcrec_device_ptr(),
-                                  lev, get_velocity_eb()[lev]->const_array(mfi));
-
+                                  lev, get_velocity_eb(m_cur_time)[lev]->const_array(mfi),
+                                  get_velocity_eb(new_time)[lev]->const_array(mfi));
 
                 amrex::ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -545,6 +545,7 @@ void incflo::ApplyCorrector()
         MultiFab vel_temp(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_state(),
                           MFInfo(), Factory(lev));
         vel_temp.setVal(0.);
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -560,8 +561,8 @@ void incflo::ApplyCorrector()
             Array4<Real const> const& divtau = ld.divtau.const_array(mfi);
             Array4<Real const> const& vel_f  = vel_forces[lev].const_array(mfi);
 
-	    auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-	    auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
+            auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+            auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
@@ -577,26 +578,31 @@ void incflo::ApplyCorrector()
                     // FIXME!!! There's a problem with divtau. Needs to be initialized to zero
                     // or check if mu = 0 before using?
                     vel_o(i,j,k,n) = rho_o(i,j,k)*vel_o(i,j,k,n);
-		    if ( vfrac_old(i,j,k) != 0. ){
-			rhovel_t(i,j,k,n) = m_half * l_dt * (  dvdt_o(i,j,k,n)
-							       + dvdt(i,j,k,n)*vfrac_new(i,j,k)/vfrac_old(i,j,k)
-							       + divtau_o(i,j,k,n) + divtau(i,j,k,n)
-							       + vel_f(i,j,k,n) );
-		    } else {
-			rhovel_t(i,j,k,n) = 0.;
-		    }
+                    if ( vfrac_old(i,j,k) != 0. ){
+                        // Print()<<"dvdt_o "<<dvdt_o(i,j,k,n)<<std::endl
+                        //        <<"dvdt "<<dvdt(i,j,k,n)<<std::endl
+                        //        <<"divtau_o "<<divtau_o(i,j,k,n)<<std::endl
+                        //        <<"divtau "<<divtau(i,j,k,n)<<std::endl
+                        //        <<"force "<<vel_f(i,j,k,n)<<std::endl;
+                        rhovel_t(i,j,k,n) = m_half * l_dt * (  dvdt_o(i,j,k,n)
+                                                               + dvdt(i,j,k,n) //*vfrac_new(i,j,k)/vfrac_old(i,j,k)
+                                                               + divtau_o(i,j,k,n) + divtau(i,j,k,n)
+                                                               + vel_f(i,j,k,n) );
+                    } else {
+                        rhovel_t(i,j,k,n) = 0.;
+                    }
                 }
             });
         }
 
         // Need to ensure that boundaries are consistent
         vel_temp.FillBoundary(geom[lev].periodicity());
-	ld.velocity_o.FillBoundary(geom[lev].periodicity());
+        ld.velocity_o.FillBoundary(geom[lev].periodicity());
 
         // EB_set_covered(vel_temp,0.);
         // VisMF::Write(vel_temp,"rvt");
         // VisMF::Write(ld.velocity_o,"vo");
-	// VisMF::Write(ld.conv_velocity_o,"dvdto");
+        // VisMF::Write(ld.conv_velocity_o,"dvdto");
         // VisMF::Write(ld.conv_velocity,"dvdtn");
         // VisMF::Write(ld.divtau,"divt");
         // VisMF::Write(vel_forces[lev],"vf");
@@ -621,7 +627,8 @@ void incflo::ApplyCorrector()
             // Redistribute
             // redistribute - own lambda...
             redistribute_term(mfi, vel, rhovel_t, vel_o, get_velocity_bcrec_device_ptr(),
-                              lev, get_velocity_eb()[lev]->const_array(mfi));
+                              lev, get_velocity_eb(m_cur_time)[lev]->const_array(mfi),
+                              get_velocity_eb(new_time)[lev]->const_array(mfi));
 
             amrex::ParallelFor(bx,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept

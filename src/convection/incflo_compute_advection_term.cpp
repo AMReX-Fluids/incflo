@@ -529,6 +529,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 // any d/dt terms (e.g transverse)
                                                  Array4<Real const>{},
                                                  Array4<Real const>{},
+                                                 // uncomment to add cc * Ueb_dot_an_eb/vfrac; and comment in hydro_reditribution
+                                                 // get_velocity_eb(time)[lev]->const_array(mfi),
+                                                 // rhovel_eb.const_array(),
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -604,6 +607,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 // any d/dt terms (e.g transverse)
                                                  Array4<Real const>{},
                                                  Array4<Real const>{},
+                                                 // to add cc * Ueb_dot_an_eb/vfrac
+                                                 // get_velocity_eb(time)[lev]->const_array(mfi),
+                                                 // get_density_eb()[lev]->const_array(mfi),
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -662,6 +668,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 // any d/dt terms (e.g transverse)
                                                  Array4<Real const>{},
                                                  Array4<Real const>{},
+                                                 // uncomment to add cc * Ueb_dot_an_eb/vfrac; and comment in hydro_reditribution
+                                                 // get_velocity_eb(time)[lev]->const_array(mfi),
+                                                 // get_tracer_eb()[lev]->const_array(mfi),
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -691,6 +700,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         // We need to fill the boundary for later redistribution
         // Note that this goes with a setVal(0) above to fill vals outside domain
 // FIXME - don;t think conv has any ghost cells....
+        EB_set_covered(*conv_u[lev],0.0);
+        EB_set_covered(*conv_r[lev],0.0);
+        EB_set_covered(*conv_t[lev],0.0);
         conv_u[lev]->FillBoundary(geom[lev].periodicity());
         conv_r[lev]->FillBoundary(geom[lev].periodicity());
         conv_t[lev]->FillBoundary(geom[lev].periodicity());

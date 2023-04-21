@@ -353,12 +353,22 @@ incflo::writeNow()
     return write_now;
 }
 
+// FIXME - this will break non moving EB....
 Vector<MultiFab*> incflo::get_velocity_eb () noexcept
+{
+    return get_velocity_eb(m_cur_time);
+}
+
+Vector<MultiFab*> incflo::get_velocity_eb (Real time) noexcept
 {
     Vector<MultiFab*> r;
     r.reserve(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
-        r.push_back(&(m_leveldata[lev]->velocity_eb));
+        if ( time == m_cur_time ) {
+            r.push_back(&(m_leveldata[lev]->velocity_eb_o));
+        } else {
+            r.push_back(&(m_leveldata[lev]->velocity_eb));
+        }
     }
     return r;
 }

@@ -585,7 +585,10 @@ private:
         // cell-centered multifabs
         amrex::MultiFab velocity;
         amrex::MultiFab velocity_o;
+        amrex::MultiFab velocity_eb_o;
+#ifdef AMREX_USE_MOVING_EB
         amrex::MultiFab velocity_eb;
+#endif
         amrex::MultiFab density;
         amrex::MultiFab density_eb;
         amrex::MultiFab density_o;
@@ -775,6 +778,7 @@ private:
     amrex::Vector<amrex::MultiFab*> get_velocity_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_velocity_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_velocity_eb () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_velocity_eb (amrex::Real time) noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_eb () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_eb () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_old () noexcept;
