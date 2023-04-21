@@ -69,8 +69,8 @@ xhi.density             = 1.0
 incflo.geometry = "box"
 box.internal_flow = true
 
-#box.Lo =  0.95  -0.2  -0.2
-box.Lo =  0.92   -0.2  -0.2
+box.Lo =  0.95  -0.2  -0.2
+#box.Lo =  0.92   -0.2  -0.2
 box.Hi =  100.0   1.8   1.8 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
