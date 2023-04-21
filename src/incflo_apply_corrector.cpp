@@ -86,10 +86,15 @@ void incflo::ApplyCorrector()
     //all these get set in makeNewGeom at end of predictor
 // #ifdef AMREX_USE_EB
 //    if (m_eb_flow.enabled) {
-        // for (int lev = 0; lev <= finest_level; ++lev) {
-        //     set_eb_density(lev, m_cur_time, *get_density_eb()[lev], 1);
-        //     //set_eb_tracer(lev, new_time, *get_tracer_eb()[lev], 1);
-        // }
+        for (int lev = 0; lev <= finest_level; ++lev) {
+	    // FIXME - for the corrector to work, we need the EB density to match with val during pred
+	    // and it seems that value needs to be time N cell average, or perhaps linearly extrapolated
+	    // value (InitialRedistribution changes the density, and so hacking in 3.4 only works if we
+	    // comment the InitialRedsit, but then in the next timestep we don;t conserve for either pred
+	    // or corr...)
+            set_eb_density(lev, m_cur_time, *get_density_eb()[lev], 1);
+            //set_eb_tracer(lev, new_time, *get_tracer_eb()[lev], 1);
+        }
 //     }
 // #endif
 
@@ -235,11 +240,10 @@ void incflo::ApplyCorrector()
                     //   rho_new = rho_pred + dt/2 * (A^n + A^(n+1))
                     //           = rho_new  + dt/2 * (drdt_o + drdt)
 
-                    //FIXME - WOuld need to deal with NewlyCovered cells here, SRD will use this val...
-                    // safest to also deal with NU cells also, although only need something computable
-                    // Could get rid of update temporary and just use conv
+                    //FIXME - I think this will just work for NU and NC since we init conv to zero.
                     if ( vfrac_old(i,j,k) != 0.0 ) {
-                        rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k)); //*vfrac_new(i,j,k)/vfrac_old(i,j,k));
+			// FIXME - for this corrector to work, we need the EB density to match with val during pred...
+                        rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k)*vfrac_new(i,j,k)/vfrac_old(i,j,k));
                     } else {
                         rho_t(i,j,k) = 0;
                     }
@@ -575,8 +579,7 @@ m                {
                     //     <<dvdt_o(i,j,k,n)<< " "<<dvdt(i,j,k,n)<<"\n"
                     //  //<<divtau_o(i,j,k,n)<< " "<<divtau(i,j,k,n)<<"\n"
                     //     <<vel_f(i,j,k,n)<<std::endl;
-                    // FIXME!!! There's a problem with divtau. Needs to be initialized to zero
-                    // or check if mu = 0 before using?
+                    // FIXME! make sure tracer does equivalent...
                     vel_o(i,j,k,n) = rho_o(i,j,k)*vel_o(i,j,k,n);
                     if ( vfrac_old(i,j,k) != 0. ){
                         // Print()<<"dvdt_o "<<dvdt_o(i,j,k,n)<<std::endl
@@ -585,7 +588,7 @@ m                {
                         //        <<"divtau "<<divtau(i,j,k,n)<<std::endl
                         //        <<"force "<<vel_f(i,j,k,n)<<std::endl;
                         rhovel_t(i,j,k,n) = m_half * l_dt * (  dvdt_o(i,j,k,n)
-                                                               + dvdt(i,j,k,n) //*vfrac_new(i,j,k)/vfrac_old(i,j,k)
+                                                               + dvdt(i,j,k,n)*vfrac_new(i,j,k)/vfrac_old(i,j,k)
                                                                + divtau_o(i,j,k,n) + divtau(i,j,k,n)
                                                                + vel_f(i,j,k,n) );
                     } else {
@@ -606,7 +609,7 @@ m                {
         // VisMF::Write(ld.conv_velocity,"dvdtn");
         // VisMF::Write(ld.divtau,"divt");
         // VisMF::Write(vel_forces[lev],"vf");
-
+	//VisMF::Write(*get_velocity_eb(new_time)[lev],"ebv");
 #endif
 
 #ifdef _OPENMP
