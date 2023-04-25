@@ -79,12 +79,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
     if (m_eb_flow.enabled) {
        for (int lev = 0; lev <= finest_level; ++lev) {
          if (m_eb_flow.is_omega) {
-            set_eb_velocity_for_rotation(lev, m_t_old[lev], *get_velocity_eb()[lev], 1);
+             set_eb_velocity_for_rotation(lev, m_t_old[lev], *get_velocity_eb(m_cur_time)[lev],
+                                          get_velocity_eb(m_cur_time)[lev]->nGrow());
          } else {
-            set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb()[lev], 1);
+             set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb(m_cur_time)[lev],
+                             get_velocity_eb(m_cur_time)[lev]->nGrow());
          }
-         set_eb_density(lev, m_t_old[lev], *get_density_eb()[lev], 1);
-         set_eb_tracer(lev, m_t_old[lev], *get_tracer_eb()[lev], 1);
+         set_eb_density(lev, m_t_old[lev], *get_density_eb()[lev],
+                        get_density_eb()[lev]->nGrow());
+         set_eb_tracer(lev, m_t_old[lev], *get_tracer_eb()[lev],
+                       get_tracer_eb()[lev]->nGrow());
        }
     }
 

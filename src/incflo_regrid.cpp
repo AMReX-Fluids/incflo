@@ -161,21 +161,25 @@ void incflo::RemakeWithNewGeometry ()
 
         // We call this from the predictor, so haven't put anything in these new time
         // containers yet
-        MultiFab::Copy(new_leveldata->conv_velocity_o , m_leveldata[lev]->conv_velocity_o,0,0,AMREX_SPACEDIM,0);
+        MultiFab::Copy(new_leveldata->conv_velocity_o , m_leveldata[lev]->conv_velocity_o,
+                       0,0,AMREX_SPACEDIM,m_leveldata[lev]->conv_velocity_o.nGrow());
         //MultiFab::Copy(new_leveldata->conv_velocity , m_leveldata[lev]->conv_velocity,0,0,AMREX_SPACEDIM,0);
-        MultiFab::Copy(new_leveldata->conv_density_o , m_leveldata[lev]->conv_density_o,0,0,1,0);
+        MultiFab::Copy(new_leveldata->conv_density_o , m_leveldata[lev]->conv_density_o,
+                       0,0,1,m_leveldata[lev]->conv_density_o.nGrow());
         //MultiFab::Copy(new_leveldata->conv_density , m_leveldata[lev]->conv_density,0,0,1,0);
 
+        // FIXME - the diffusive containers are only defined in certain circumstances...
         MultiFab::Copy(new_leveldata->divtau_o , m_leveldata[lev]->divtau_o,0,0,AMREX_SPACEDIM,0);
         //MultiFab::Copy(new_leveldata->divtau , m_leveldata[lev]->divtau,0,0,AMREX_SPACEDIM,0);
 // laps is only defined if m_advect_tracer??
         //MultiFab::Copy(new_leveldata->laps_o , m_leveldata[lev]->laps_o,0,0,m_ntrac,0);
         //MultiFab::Copy(new_leveldata->laps , m_leveldata[lev]->laps,0,0,m_ntrac,0);
 
-        new_leveldata->conv_velocity_o.FillBoundary(geom[lev].periodicity());
-        new_leveldata->conv_density_o.FillBoundary(geom[lev].periodicity());
-        new_leveldata->divtau_o.FillBoundary(geom[lev].periodicity());
-        new_leveldata->laps_o.FillBoundary(geom[lev].periodicity());
+        // FIXME - Why FB when I could just copy the filled ghosts?
+        // new_leveldata->conv_velocity_o.FillBoundary(geom[lev].periodicity());
+        // new_leveldata->conv_density_o.FillBoundary(geom[lev].periodicity());
+        // new_leveldata->divtau_o.FillBoundary(geom[lev].periodicity());
+        // new_leveldata->laps_o.FillBoundary(geom[lev].periodicity());
 
         Real old_time = m_cur_time;
         Real new_time = m_cur_time + m_dt;
@@ -217,19 +221,29 @@ void incflo::RemakeWithNewGeometry ()
         m_leveldata[lev] = std::move(new_leveldata);
 
 #ifdef AMREX_USE_MOVING_EB
+        // FIXME? Is this the right place to update eb_vals?
+        // Is it better to recompute old or copy?
         if (m_eb_flow.enabled)
         {
             if (m_verbose >0) { Print()<<"Updating the eb_velocity..."<<std::endl; }
 
             if (m_eb_flow.is_omega) {
+                set_eb_velocity_for_rotation(lev, m_t_old[lev], *get_velocity_eb(old_time)[lev],
+                                             get_velocity_eb(old_time)[lev]->nGrow());
                 set_eb_velocity_for_rotation(lev, m_t_new[lev], *get_velocity_eb(new_time)[lev],
                                              get_velocity_eb(new_time)[lev]->nGrow());
             } else {
+                set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb(old_time)[lev],
+                                get_velocity_eb(old_time)[lev]->nGrow());
                 set_eb_velocity(lev, m_t_new[lev], *get_velocity_eb(new_time)[lev],
                                 get_velocity_eb(new_time)[lev]->nGrow());
             }
+            set_eb_density(lev, m_t_old[lev], *get_density_eb()[lev],
+                           get_density_eb()[lev]->nGrow());
             set_eb_density(lev, m_t_new[lev], *get_density_eb()[lev],
                            get_density_eb()[lev]->nGrow());
+            set_eb_tracer(lev, m_t_old[lev], *get_tracer_eb()[lev],
+                          get_tracer_eb()[lev]->nGrow());
             set_eb_tracer(lev, m_t_new[lev], *get_tracer_eb()[lev],
                           get_tracer_eb()[lev]->nGrow());
         }

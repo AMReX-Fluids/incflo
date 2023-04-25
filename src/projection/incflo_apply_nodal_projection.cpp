@@ -108,11 +108,11 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
 //#ifndef AMREX_USE_MOVING_EB
         if (m_eb_flow.enabled && !incremental) {
            if (m_eb_flow.is_omega) {
-              set_eb_velocity_for_rotation(lev, time, *get_velocity_eb()[lev],
-                       get_velocity_eb()[lev]->nGrow());
+              set_eb_velocity_for_rotation(lev, time, *get_velocity_eb(time)[lev],
+                                           get_velocity_eb()[lev]->nGrow());
            } else {
-              set_eb_velocity(lev, time, *get_velocity_eb()[lev],
-                  get_velocity_eb()[lev]->nGrow());
+              set_eb_velocity(lev, time, *get_velocity_eb(time)[lev],
+                              get_velocity_eb()[lev]->nGrow());
            }
         }
 //#endif
