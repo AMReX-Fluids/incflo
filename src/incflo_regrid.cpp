@@ -201,8 +201,8 @@ void incflo::RemakeWithNewGeometry ()
         fillpatch_gradp(lev, old_time, new_leveldata->gp, 0);
         new_leveldata->p_nd.setVal(0.0);
 
-#if 1
-        // This should be okay to do...
+#if 0
+        // Don't do this. Newly covered cell gets into calculation...
         // Let's fill the newly covered cells with 1e45 to be different
         EB_set_covered( new_leveldata->velocity  , 1.e45);
         EB_set_covered( new_leveldata->velocity_o, 1.e45);
