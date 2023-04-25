@@ -664,14 +664,19 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
    Vector<MultiFab> gradx(finest_level + 1);
    Vector<MultiFab> grady(finest_level + 1);
    Vector<MultiFab> gradeb(finest_level + 1);
+   Vector<MultiFab> p_cc(finest_level + 1);
+
    for (int lev = 0; lev <= finest_level; ++lev) {
        gradx[lev].define(grids[lev], dmap[lev], 2, 0, MFInfo(), Factory(lev));
        grady[lev].define(grids[lev], dmap[lev], 2, 0, MFInfo(), Factory(lev));
        gradeb[lev].define(grids[lev], dmap[lev], 2, 0, MFInfo(), Factory(lev));
+       p_cc[lev].define(grids[lev], dmap[lev], 1, 0, MFInfo(), Factory(lev));
        gradx[lev].setVal(0.);
        grady[lev].setVal(0.);
        gradeb[lev].setVal(0.);
+       p_cc[lev].setVal(0.);
    }
+
 
    for (int lev = 0; lev <= finest_level; lev++)
    {
@@ -695,10 +700,10 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
 #if (AMREX_SPACEDIM == 3)
          Array4<Real const> const& fcz   = (fact.getFaceCent())[2]->const_array(mfi);
 #endif
-        Array4<Real const> const& apx   = (fact.getAreaFrac())[0]->const_array(mfi);
-        Array4<Real const> const& apy   = (fact.getAreaFrac())[1]->const_array(mfi);
+         Array4<Real const> const& apx   = (fact.getAreaFrac())[0]->const_array(mfi);
+         Array4<Real const> const& apy   = (fact.getAreaFrac())[1]->const_array(mfi);
 #if (AMREX_SPACEDIM == 3)
-        Array4<Real const> const& apz   = (fact.getAreaFrac())[2]->const_array(mfi);
+         Array4<Real const> const& apz   = (fact.getAreaFrac())[2]->const_array(mfi);
 #endif
          Array4<Real const> const& ccent = (fact.getCentroid()).array(mfi);
          Array4<Real const> const& bcent = (fact.getBndryCent()).array(mfi);
@@ -752,6 +757,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
    {
       auto& ld = *m_leveldata[lev];
       auto const& dx = geom[lev].CellSizeArray();
+      amrex::average_node_to_cellcenter(p_cc[lev], 0, ld.p_nd, 0, 1, 0);
 
       for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
       {
@@ -759,6 +765,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
          auto const& fact = EBFactory(lev);
 
          Array4<const Real> const& p_nd_arr    = ld.p_nd.array(mfi);
+         Array4<const Real> const& p_cc_arr    = p_cc[lev].array(mfi);
          Array4<Real> const& gradx_arr         = gradx[lev].array(mfi);
          Array4<Real> const& grady_arr         = grady[lev].array(mfi);
          Array4<Real> const& gradeb_arr        = gradeb[lev].array(mfi);
@@ -774,16 +781,16 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
          {
             Real nx = bnorm(i,j,k,0);
             Real ny = bnorm(i,j,k,1);
-            Real dudx = 0.;
-            Real dudy = 0.;
-            Real dvdx = 0.;
-            Real pavg = 0.;
-            Real pcnt = 0;
+            //Real dudx = 0.;
+            //Real dudy = 0.;
+            //Real dvdx = 0.;
+            //Real pavg = 0.;
+            //Real pcnt = 0;
 
             if (flag(i,j,k).isSingleValued()) {
 
                 
-                if (flag(i+1,j,k).isCovered()){
+                /*if (flag(i+1,j,k).isCovered()){
                     dudx = (phi_arr(i,j,k,0) - phi_arr(i-1,j,k,0))/dx[0];
                 } else {
                     dudx = (phi_arr(i+1,j,k,0) - phi_arr(i,j,k,0))/dx[0];
@@ -821,14 +828,17 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
                     pcnt += 1.;
                 }
 
-                pavg = pavg/pcnt;
+                pavg = pavg/pcnt;*/
 
 #if (AMREX_SPACEDIM == 2)
                //Real cell_drag = 
                //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*gradx_arr(i,j,k,0)/dx[0] + ny*(grady_arr(i,j,k,0)/dx[1] + gradx_arr(i,j,k,1)/dx[0])));
                
                Real cell_drag = 
-                  barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
+                  barea(i,j,k)*dx[0]*(-p_cc_arr(i,j,k)*nx + m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
+
+               //Real cell_drag = 
+               //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
 
                //Real cell_drag = 
                //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*dudx + ny*(dudy + dvdx)));
@@ -864,7 +874,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
    {
       auto const& fact = EBFactory(lev);
 #if (AMREX_SPACEDIM == 2)
-      plotmf[lev].define(grids[lev],dmap[lev],9,0);
+      plotmf[lev].define(grids[lev],dmap[lev],10,0);
       MultiFab::Copy(plotmf[lev], gradx[lev], 0, 0, 2, 0);
       MultiFab::Copy(plotmf[lev], grady[lev], 0, 2, 2, 0);
       MultiFab::Copy(plotmf[lev], gradeb[lev], 0, 4, 2, 0);
@@ -876,6 +886,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
          MultiFab temp_mf = fact.getBndryNormal().ToMultiFab(0.0, 0.0);
          MultiFab::Copy(plotmf[lev], temp_mf, 0, 7, 2, 0);
       }
+      MultiFab::Copy(plotmf[lev], p_cc[lev], 0, 9, 1, 0);
 #endif
    }
 
@@ -885,7 +896,7 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
    if (m_eb_flow_plt_drag && ((m_nstep % m_eb_flow_plt_drag_int) == 0)){
        amrex::WriteMultiLevelPlotfile(pfname, finest_level + 1, GetVecOfConstPtrs(plotmf),
                {"dudx", "dvdx", "dudy", "dvdy", "dudn", "dvdn",
-               "barea", "bnrmx", "bnrmy"},
+                "barea", "bnrmx", "bnrmy", "p_cc"},
                Geom(), m_cur_time, istep, refRatio());
    }
 }
