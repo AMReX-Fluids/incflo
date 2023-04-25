@@ -48,7 +48,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
             laps_o.define(ba, dm, ntrac, 0, MFInfo(), fact);
         }
 #ifdef AMREX_USE_MOVING_EB
-        velocity_eb(ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),
+        velocity_eb.define(ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact);
 #endif
     }
 }
