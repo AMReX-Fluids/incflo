@@ -751,8 +751,17 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
    }
 
    Vector<Real> drag(finest_level + 1, 0.);
+   Vector<Real> p_term(finest_level + 1, 0.);
+   Vector<Real> v_term(finest_level + 1, 0.);
+   
    Gpu::DeviceVector<Real> dv_drag(finest_level + 1, 0.);
+   Gpu::DeviceVector<Real> dv_p_term(finest_level + 1, 0.);
+   Gpu::DeviceVector<Real> dv_v_term(finest_level + 1, 0.);
+   
    auto* p_dv_drag = dv_drag.data();
+   auto* p_dv_p_term = dv_p_term.data();
+   auto* p_dv_v_term = dv_v_term.data();
+
    for (int lev = 0; lev <= finest_level; lev++)
    {
       auto& ld = *m_leveldata[lev];
@@ -834,8 +843,14 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
                //Real cell_drag = 
                //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*gradx_arr(i,j,k,0)/dx[0] + ny*(grady_arr(i,j,k,0)/dx[1] + gradx_arr(i,j,k,1)/dx[0])));
                
-               Real cell_drag = 
-                  barea(i,j,k)*dx[0]*(-p_cc_arr(i,j,k)*nx + m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
+               //Real cell_drag = 
+               //   barea(i,j,k)*dx[0]*(-p_cc_arr(i,j,k)*nx + m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
+               Real cell_p_term = 
+                  barea(i,j,k)*dx[0]*(-p_cc_arr(i,j,k)*nx);
+               Real cell_v_term = 
+                  barea(i,j,k)*(                      m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
+               
+               Real cell_drag = cell_p_term + cell_v_term;
 
                //Real cell_drag = 
                //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
@@ -844,6 +859,8 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
                //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*dudx + ny*(dudy + dvdx)));
 
                Gpu::Atomic::Add(&p_dv_drag[lev], cell_drag);
+               Gpu::Atomic::Add(&p_dv_p_term[lev], cell_p_term);
+               Gpu::Atomic::Add(&p_dv_v_term[lev], cell_v_term);
 #endif
             }
          });
@@ -854,15 +871,15 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
    }
 
    Gpu::copy(Gpu::deviceToHost, dv_drag.begin(), dv_drag.end(), drag.begin());
+   Gpu::copy(Gpu::deviceToHost, dv_p_term.begin(), dv_p_term.end(), p_term.begin());
+   Gpu::copy(Gpu::deviceToHost, dv_v_term.begin(), dv_v_term.end(), v_term.begin());
 
    // Print to drag history file
    drag_file << m_cur_time << ", ";
    for (int lev = 0; lev <= finest_level; lev++)
    {
       if (lev == finest_level){
-          drag_file << drag[lev] << std::endl;
-      } else {
-          drag_file << drag[lev] << ", ";
+          drag_file << drag[lev] << ", " << p_term[lev] << ", " << v_term[lev] << std::endl;
       }
    }
 
