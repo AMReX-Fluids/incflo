@@ -133,7 +133,7 @@ namespace Redistribution {
                               amrex::BCRec  const* d_bcrec_ptr,
                               amrex::Geometry& geom, std::string redistribution_type,
                               const int srd_max_order = defaults::srd_max_order,
-                              amrex::Real target_volfrac = 1.0);
+                              amrex::Real target_volfrac = defaults::target_vol_fraction);
 
     void StateRedistribute ( amrex::Box const& bx, int ncomp,
                              amrex::Array4<amrex::Real> const& dUdt_out,
