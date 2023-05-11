@@ -35,7 +35,10 @@ void incflo::prob_init_fluid (int lev)
             Array4<Real> den_arr = ld.density.array(mfi);
             amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                den_arr(i,j,k) = 1.0 + 0.1 * static_cast<Real>(33-i);
+                den_arr(i,j,k) = 1.0 + 0.1 * static_cast<Real>(23-i);
+		if ( den_arr(i,j,k) < 1.0 ){
+		    den_arr(i,j,k) = 1.0;
+		}
                 if (j == 3) amrex::Print() << "DEN " << i << " " << den_arr(i,j,k) << std::endl;
             });
 
