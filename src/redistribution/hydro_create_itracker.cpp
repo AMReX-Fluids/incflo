@@ -101,28 +101,31 @@ Redistribution::MakeITracker ( Box const& bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         // We check for cut-cells in the new geometry
-        if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < 1.0) && vfrac_old(i,j,k) > 0.0)
+        // if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < target_volfrac) && vfrac_old(i,j,k) > 0.0)
+	if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < 1.0) && vfrac_old(i,j,k) > 0.0)
         {
             normalMerging(i, j, k,
                           AMREX_D_DECL(apx_new, apy_new, apz_new),
                           vfrac_new, itracker,
                           lev_geom, target_volfrac);
         }
-        else if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < 1.0) && vfrac_old(i,j,k) == 0.0)
+	// Given the CFL restriction of MOL, it will always be the case that NU cells
+	// will get a neighbor for default target_volfrac of 0.5
+        else if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < target_volfrac) && vfrac_old(i,j,k) == 0.0)
         {
             // For now, require that newly uncovered cells only have one other cell in it's nbhd
-            // FIXME, unsure of target_volfrac here...
             newlyUncoveredNbhd(i, j, k,
                                AMREX_D_DECL(apx_new, apy_new, apz_new),
                                vfrac_new, vel_eb, itracker,
-                               lev_geom, 0.5);
+                               lev_geom, target_volfrac);
         }
         else if ( vfrac_old(i,j,k) > 0.0 && vfrac_new(i,j,k) == 0.0)
         {
             // Create a nbhd for cells that become covered...
             // vfrac is only for checking volume of nbhd
             // Probably don't need target_volfrac to match with general case,
-            // only need to put this in one cell???
+            // FIXME? This could result in a NC cell including other NC cells in nbhd depending
+	    // target_volfrac
             normalMerging(i, j, k,
                           AMREX_D_DECL(apx_old, apy_old, apz_old),
                           vfrac_new, itracker,
@@ -224,7 +227,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if(k==8){
+        //if(k==8){
         if (itracker(i,j,k) > 0)
         {
             amrex::Print() << "Cell " << Dim3{i,j,k} << " is merged with: ";
@@ -246,7 +249,7 @@ Redistribution::MakeITracker ( Box const& bx,
 
             amrex::Print() << std::endl;
         }
-        }
+        //}
     });
     amrex::Print() << std::endl;
 #endif

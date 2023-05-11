@@ -244,6 +244,8 @@ void incflo::ApplyCorrector()
                     if ( vfrac_old(i,j,k) != 0.0 ) {
 			// FIXME - for this corrector to work, we need the EB density to match with val during pred...
                         rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k)*vfrac_new(i,j,k)/vfrac_old(i,j,k));
+                    } else if (vfrac_new(i,j,k) > 0.0) {
+                        rho_t(i,j,k) = drdt(i,j,k);
                     } else {
                         rho_t(i,j,k) = 0;
                     }
@@ -591,6 +593,8 @@ m                {
                                                                + dvdt(i,j,k,n)*vfrac_new(i,j,k)/vfrac_old(i,j,k)
                                                                + divtau_o(i,j,k,n) + divtau(i,j,k,n)
                                                                + vel_f(i,j,k,n) );
+                    } else if (vfrac_new(i,j,k) > 0.0) {
+                        rhovel_t(i,j,k,n) = dvdt(i,j,k,n);
                     } else {
                         rhovel_t(i,j,k,n) = 0.;
                     }

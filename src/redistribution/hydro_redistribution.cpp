@@ -322,30 +322,46 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // scratch(i,j,k,n) = 0.0;
                     // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
                     //                             flag_old,vfrac_old,bnorm,barea,dxinv);
-                    // Real Ueb_dot_an =
-                    //     AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
-                    //                  + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
-                    //                  + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
-                    // Ueb_dot_an *= barea_old(i,j,k)/vfrac_old(i,j,k);
 
-                    // if ( vel_eb_new ) {
-                    //     Real Ueb_dot_an_new =
-                    //         AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
-                    //                      + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
-                    //                      + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
-                    //     Ueb_dot_an_new *= barea_new(i,j,k)/vfrac_new(i,j,k);
+                    // Maybe we need to think of this correction as associated with the pred
+                    // so for covering/uncovering we still need the full term and not half?
+                    Real Ueb_dot_an =
+                        AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
+                                     + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
+                                     + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
+                    Ueb_dot_an *= barea_old(i,j,k); ///vfrac_old(i,j,k);
 
-                    //     Ueb_dot_an = Real(0.5) * (Ueb_dot_an + Ueb_dot_an_new);
+                    if ( vel_eb_new && vfrac_new(i,j,k) > 0. ) {
+                        Real Ueb_dot_an_new =
+                            AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
+                                         + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
+                                         + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
+                        Ueb_dot_an_new *= barea_new(i,j,k); ///vfrac_new(i,j,k);
 
+                        Ueb_dot_an = Real(0.5) * (Ueb_dot_an + Ueb_dot_an_new);
+
+                    }
+
+		    // This will undo volume scaling that happens later in forming q-hat
+                    Ueb_dot_an /= vfrac_old(i,j,k);
+
+
+                    Real delta_divU = delta_vol - Ueb_dot_an;
+                    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
+		    // FIXME - for now, comment delta-divU correction. This should be
+		    // zero in 1D anyway.
+                                                     // + U_in(i,j,k,n) * delta_vol
+                                                     // - dt * Real(3.45) * Ueb_dot_an;
+                                                     //+ dt * U_in(i,j,k,n) * delta_divU;
+
+                    // if ( i==9 && j==8) {
+                    //     Print()<<"Uhat : "<<scratch(i,j,k,n)<<std::endl
+                    //            <<"Redist Pieces : "
+                    //            <<U_in(i,j,k,n)+dt*dUdt_in(i,j,k,n)<<" "
+                    //            <<delta_divU<<" "
+                    //            <<Ueb_dot_an<<" "
+                    //            <<delta_vol<<std::endl;
                     // }
-
-                    // //Ueb_dot_an /= vfrac_old(i,j,k);
-
-
-                    // Real delta_divU = delta_vol - Ueb_dot_an;
-                    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
-                                                     + dt * U_in(i,j,k,n) * delta_vol;
-//                                                     + dt * U_in(i,j,k,n) * delta_divU;
                 }
                 else
                 {
@@ -382,33 +398,38 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
                             //                             flag_old,vfrac_old,bnorm,barea,dxinv);
 
-// 			    Real kappa_a = 0.;
-// 			    if ( vel_eb_new) {
-// 				Print()<<"Computing kappa "<<Dim3{i,j,k}<<n<<" from "
-// 				       <<vel_eb_new(i,j,k,0)<<" "
-// 				       <<bnorm_new(i,j,k,0)<<" "
-// 				       <<barea_new(i,j,k)<<" "
-// 				       <<out(i,j,k,n)<<" "
-// 				       <<std::endl;
-//                                 Real Ueb_dot_n =
-//                                     AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
-//                                                  + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
-//                                                  + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
+                            Real kappa_a = 0.;
+                            if ( vel_eb_new) {
+                                // Print()<<"Computing kappa "<<Dim3{i,j,k}<<n<<" from "
+                                //        <<vel_eb_new(i,j,k,0)<<" "
+                                //        <<bnorm_new(i,j,k,0)<<" "
+                                //        <<barea_new(i,j,k)<<" "
+                                //        <<out(i,j,k,n)<<" "
+                                //        <<std::endl;
+                                Real Ueb_dot_n =
+                                    AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
+                                                 + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
+                                                 + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
 
-//                                 kappa_a = Real(0.5) * dt * Ueb_dot_n * barea_new(i,j,k) * U_in(i+ioff,j+joff,k+koff,n) / vfrac_new(i,j,k)
-//                                     / vfrac_old(i+ioff,j+joff,k+koff);
+                                kappa_a = Real(0.5) * dt * Ueb_dot_n * barea_new(i,j,k) * U_in(i+ioff,j+joff,k+koff,n)
+                                    / vfrac_old(i+ioff,j+joff,k+koff);
 
-// //                                 if ( j==8){
-// //                                     Print()<<"\nMSRD corrections...\n"
-// //                                            <<vel_eb(i,j,k,0)<<" "<<vel_eb(i,j,k,1)<<"\n"
-// //                                            <<bnorm(i,j,k,0)<<" "<<bnorm(i,j,k,1)<<"\n"
-// //                                            <<delta_vol<<" "<<kappa_a<<" "<<dUdt_in(i,j,k,n)
-// //                                            <<std::endl;
-// 			    }
+//                                 if ( j==8){
+//                                     Print()<<"\nMSRD corrections...\n"
+//                                            <<vel_eb(i,j,k,0)<<" "<<vel_eb(i,j,k,1)<<"\n"
+//                                            <<bnorm(i,j,k,0)<<" "<<bnorm(i,j,k,1)<<"\n"
+//                                            <<delta_vol<<" "<<kappa_a<<" "<<dUdt_in(i,j,k,n)
+//                                            <<std::endl;
 
-// 			    Print()<<"kappa "<<kappa_a<<std::endl; 
-                            scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol;
-				//- kappa_a;
+//FIXME new way to try to account for flux into newly uncovered cell.
+				// This is needed for conservation, but the result still isn't right.
+				if (j==8) Print()<<"NU An+1 "<<dUdt_in(i,j,k,n)<<std::endl;
+				scratch(i+ioff,j+joff,k+koff,n) += Real(0.5) * dt * dUdt_in(i,j,k,n) * vfrac_new(i,j,k)/vfrac_old(i+ioff,j+joff,k+koff);
+			    }
+
+                            // Print()<<"kappa "<<kappa_a<<" "<<delta_vol*U_in(i+ioff,j+joff,k+koff,n)<<std::endl;
+                            //scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol;
+                            //     - kappa_a;
                         }
                     }
                 }
@@ -485,7 +506,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 // FIXME - could probably make this logic more concise...
                 if ( !( itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.
                     || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
-                        || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) ) )
+                    || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) ) )
                 {
                     // Only need to reset cells that didn't get SRD changes
                     out(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);

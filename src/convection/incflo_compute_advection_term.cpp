@@ -527,11 +527,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_MOVING_EB
 // Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
 // any d/dt terms (e.g transverse)
-                                                 // Array4<Real const>{},
-                                                 // Array4<Real const>{},
+                                                 Array4<Real const>{},
+                                                 Array4<Real const>{},
                                                  // uncomment to add cc * Ueb_dot_an_eb/vfrac; and comment in hydro_reditribution
-                                                 get_velocity_eb(time)[lev]->const_array(mfi),
-                                                 rhovel_eb.const_array(),
+                                                 // get_velocity_eb(time)[lev]->const_array(mfi),
+                                                 // rhovel_eb.const_array(),
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -605,11 +605,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_MOVING_EB
 // Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
 // any d/dt terms (e.g transverse)
-                                                 // Array4<Real const>{},
-                                                 // Array4<Real const>{},
+                                                 Array4<Real const>{},
+                                                 Array4<Real const>{},
                                                  // to add cc * Ueb_dot_an_eb/vfrac
-                                                 get_velocity_eb(time)[lev]->const_array(mfi),
-                                                 get_density_eb()[lev]->const_array(mfi),
+                                                 // get_velocity_eb(time)[lev]->const_array(mfi),
+                                                 // get_density_eb()[lev]->const_array(mfi),
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
@@ -666,11 +666,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_MOVING_EB
 // Don't flux through moving EB. EB velocity in computing edgestates/fluxes only serves to prohibit using
 // any d/dt terms (e.g transverse)
-                                                 // Array4<Real const>{},
-                                                 // Array4<Real const>{},
+                                                 Array4<Real const>{},
+                                                 Array4<Real const>{},
                                                  // uncomment to add cc * Ueb_dot_an_eb/vfrac; and comment in hydro_reditribution
-                                                 get_velocity_eb(time)[lev]->const_array(mfi),
-                                                 get_tracer_eb()[lev]->const_array(mfi),
+                                                 // get_velocity_eb(time)[lev]->const_array(mfi),
+                                                 // get_tracer_eb()[lev]->const_array(mfi),
 #else
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
