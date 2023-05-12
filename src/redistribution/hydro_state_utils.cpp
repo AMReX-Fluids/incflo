@@ -119,8 +119,8 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
             }
 
             if (itracker(i,j,k,0) > 0)
-                //alpha(i,j,k,1) = (target_vol - vfrac_new(i,j,k)) / vol_of_nbors;
-                alpha(i,j,k,1) = 1.;
+                alpha(i,j,k,1) = std::max(target_vol - vfrac_new(i,j,k), 0.0) / vol_of_nbors;
+                //alpha(i,j,k,1) = 1.;
 
         } else {
             nbhd_vol(i,j,k) = 0.;
