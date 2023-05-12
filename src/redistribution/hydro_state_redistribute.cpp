@@ -169,7 +169,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
                 for (int n = 0; n < ncomp; n++)
                 {
-                    if (0) // For now, no slopes. ( vfrac_new(i,j,k) > 0.0) // Create neighborhood polynomial
+                    if ( vfrac_new(i,j,k) > 0.0) // Create neighborhood polynomial
                     {
                         bool extdir_ilo = (d_bcrec_ptr[n].lo(0) == amrex::BCType::ext_dir ||
                                            d_bcrec_ptr[n].lo(0) == amrex::BCType::hoextrap);
@@ -313,6 +313,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             if ( i==9 && j==8) {
                 Print()<<"U_in : "<<U_in(i,j,k,n)<<std::endl;
                 Print()<<"soln hat : "<<soln_hat(i,j,k,n)<<std::endl;
+                Print()<<"alpha, beta : "<<alpha(i,j,k,0)<<" "<<alpha(i,j,k,1)<<std::endl;
+                Print()<<"nrs : "<<nrs(i,j,k)<<std::endl;
                 Print()<<"Uout : "<<U_out(i,j,k,n)<<std::endl;
             }
 
