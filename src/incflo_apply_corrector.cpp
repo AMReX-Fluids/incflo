@@ -589,10 +589,11 @@ m                {
                         //        <<"divtau_o "<<divtau_o(i,j,k,n)<<std::endl
                         //        <<"divtau "<<divtau(i,j,k,n)<<std::endl
                         //        <<"force "<<vel_f(i,j,k,n)<<std::endl;
-                        rhovel_t(i,j,k,n) = m_half * l_dt * (  dvdt_o(i,j,k,n)
-                                                               + dvdt(i,j,k,n)*vfrac_new(i,j,k)/vfrac_old(i,j,k)
-                                                               + divtau_o(i,j,k,n) + divtau(i,j,k,n)
-                                                               + vel_f(i,j,k,n) );
+                        rhovel_t(i,j,k,n) = m_half * (  dvdt_o(i,j,k,n)
+                                                        + dvdt(i,j,k,n)*vfrac_new(i,j,k)/vfrac_old(i,j,k)
+                                                        // FIXME - need to adjust vol scaling on divtau
+                                                        + divtau_o(i,j,k,n) + divtau(i,j,k,n)
+                                                        + vel_f(i,j,k,n) );
                     } else if (vfrac_new(i,j,k) > 0.0) {
                         rhovel_t(i,j,k,n) = dvdt(i,j,k,n);
                     } else {
