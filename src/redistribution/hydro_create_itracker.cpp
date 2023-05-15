@@ -167,17 +167,17 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::Print() << std::endl;
 #endif
 
-    // Check uncovered and covered cells, make sure the neighbors also include them.
-    amrex::ParallelFor(Box(itracker),
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if ( (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.0 ) // Newly uncovered
-             //|| (vfrac_new(i,j,k) == 0. && vfrac_old(i,j,k) > 0.0) // Newly covered Cells
-	    )
-        {
-            enforceReciprocity(i, j, k, itracker);
-        }
-    });
+    // // Check uncovered and covered cells, make sure the neighbors also include them.
+    // amrex::ParallelFor(Box(itracker),
+    // [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    // {
+    //     if ( (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.0 ) // Newly uncovered
+    //          //|| (vfrac_new(i,j,k) == 0. && vfrac_old(i,j,k) > 0.0) // Newly covered Cells
+    // 	    )
+    //     {
+    //         enforceReciprocity(i, j, k, itracker);
+    //     }
+    // });
 
 #if 0
     amrex::Print() << "Check for all covered cells." << std::endl;
