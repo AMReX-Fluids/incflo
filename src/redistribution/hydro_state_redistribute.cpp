@@ -137,12 +137,18 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
                 }
             }
-            if (nbhd_vol(i,j,k) < 1e-14 ){
+            if (nbhd_vol(i,j,k) < 1e-14 &&
+                !(std::abs(alpha(i,j,k,0)) < 1e-14 && std::abs(alpha(i,j,k,1)) < 1e-14) )
+            {
                 amrex::Print() << "NBVOL " << Dim3{i,j,k} << " " <<  nbhd_vol(i,j,k) << std::endl;
                 Abort();
             }
             for (int n = 0; n < ncomp; n++)  {
-                soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
+                if (nbhd_vol(i,j,k) < 1e-14 ){
+                    soln_hat(i,j,k,n) = Real(0.0);
+                } else {
+                    soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
+                }
             }
         }
     });
@@ -169,7 +175,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
                 for (int n = 0; n < ncomp; n++)
                 {
-                    if ( vfrac_new(i,j,k) > 0.0) // Create neighborhood polynomial
+                    if (0) //( vfrac_new(i,j,k) > 0.0) // Create neighborhood polynomial
                     {
                         bool extdir_ilo = (d_bcrec_ptr[n].lo(0) == amrex::BCType::ext_dir ||
                                            d_bcrec_ptr[n].lo(0) == amrex::BCType::hoextrap);
