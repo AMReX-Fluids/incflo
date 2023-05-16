@@ -137,7 +137,7 @@ incflo::compute_MAC_projected_velocities (
           //
           // Pass EB flow BC into MAC, no RHS correction
           //
-          macproj->setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
+          macproj->setEBInflowVelocity(lev, *get_velocity_eb(time)[lev]);
        }
     }
 #endif
