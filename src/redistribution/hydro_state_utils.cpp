@@ -77,7 +77,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
         // Everyone is in their own neighborhood at least
         nrs(i,j,k) = 1.;
         alpha(i,j,k,0) = 1.;
-        alpha(i,j,k,1) = 1.;
+        alpha(i,j,k,1) = 0.;
     });
 
     // nrs captures how many neighborhoods (r,s) is in
@@ -118,9 +118,15 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
                 vol_of_nbors += vfrac_new(r,s,t);
             }
 
-            if (itracker(i,j,k,0) > 0)
-                alpha(i,j,k,1) = std::max(target_vol - vfrac_new(i,j,k), 0.0) / vol_of_nbors;
-                //alpha(i,j,k,1) = 1.;
+            if (itracker(i,j,k,0) > 0) {
+                if ( vfrac_old(i,j,k) > 0. ) {
+                    alpha(i,j,k,1) = std::max(target_vol - vfrac_new(i,j,k), 0.0) / vol_of_nbors;
+                    //alpha(i,j,k,1) = 1.;
+                } else {
+                    //alpha(i,j,k,1) = std::max(target_vol - vfrac_new(i,j,k), 0.0) / vol_of_nbors;
+                    alpha(i,j,k,1) = Real(2.0);
+                }
+            }
 
         } else {
             nbhd_vol(i,j,k) = 0.;
