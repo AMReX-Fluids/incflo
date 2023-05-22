@@ -347,21 +347,23 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
 
                     Real delta_divU = delta_vol - Ueb_dot_an;
-                    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
+                    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
 		    // FIXME - for now, comment delta-divU correction. This should be
 		    // zero in 1D anyway.
                                                      // + U_in(i,j,k,n) * delta_vol
                                                      // - dt * Real(3.45) * Ueb_dot_an;
-                                                     //+ dt * U_in(i,j,k,n) * delta_divU;
+                                                     + dt * U_in(i,j,k,n) * delta_divU;
 
-                    // if ( i==9 && j==8) {
-                    //     Print()<<"Uhat : "<<scratch(i,j,k,n)<<std::endl
-                    //            <<"Redist Pieces : "
-                    //            <<U_in(i,j,k,n)+dt*dUdt_in(i,j,k,n)<<" "
-                    //            <<delta_divU<<" "
-                    //            <<Ueb_dot_an<<" "
-                    //            <<delta_vol<<std::endl;
-                    // }
+                    if ( (i==15 || i==16) && (j==11 || j==12) && n==0 ) {
+                        Print()<<Dim3{i,j,k}<<" Uhat : "<<scratch(i,j,k,n) //<<std::endl;
+                               // <<"Redist Pieces : "
+			       <<" "<<U_in(i,j,k,n)
+			       <<" "<<dUdt_in(i,j,k,n)*vfrac_old(i,j,k)<<" "
+                               <<delta_divU<<" "
+                               // <<Ueb_dot_an<<" "
+                               // <<delta_vol
+			       <<std::endl;
+                    }
                 }
                 else
                 {
@@ -422,14 +424,14 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 //                                            <<std::endl;
 
 //FIXME new way to try to account for flux into newly uncovered cell.
-				// This is needed for conservation, but the result still isn't right.
-				if (j==8) Print()<<"NU An+1 "<<dUdt_in(i,j,k,n)<<std::endl;
+				// This is needed for conservation
+				//if (j==8) Print()<<"NU An+1 "<<dUdt_in(i,j,k,n)<<std::endl;
 				scratch(i+ioff,j+joff,k+koff,n) += Real(0.5) * dt * dUdt_in(i,j,k,n) * vfrac_new(i,j,k)/vfrac_old(i+ioff,j+joff,k+koff);
 			    }
 
                             // Print()<<"kappa "<<kappa_a<<" "<<delta_vol*U_in(i+ioff,j+joff,k+koff,n)<<std::endl;
-                            //scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol;
-                            //     - kappa_a;
+                            scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol
+				                               - kappa_a;
                         }
                     }
                 }
@@ -505,8 +507,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                 // FIXME - could probably make this logic more concise...
                 if ( !( itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.
-                    || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
-                    || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) ) )
+                       || (vfrac_new(i,j,k) < 1. && vfrac_new(i,j,k) > 0.)
+                       || (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) == 1.) ) )
                 {
                     // Only need to reset cells that didn't get SRD changes
                     out(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
