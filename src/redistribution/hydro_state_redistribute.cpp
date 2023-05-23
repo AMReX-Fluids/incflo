@@ -145,7 +145,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             }
             for (int n = 0; n < ncomp; n++)  {
                 if (nbhd_vol(i,j,k) < 1e-14 ){
-                    soln_hat(i,j,k,n) = Real(0.0);
+                    soln_hat(i,j,k,n) = U_in(i,j,k,n) * vfrac_old(i,j,k)/vfrac_new(i,j,k);
                 } else {
                     soln_hat(i,j,k,n) /= nbhd_vol(i,j,k);
                 }
@@ -153,42 +153,10 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         }
     });
 
-    // FIXME - hack for NU cell, where it's merging partner winds up with Q-hat=0
-    // For now, we use the NU Q-hat for making slopes...
-    FArrayBox    ssoln_hat_fab (bxg3,ncomp,The_Async_Arena());
-    Array4<Real> slope_soln_hat = ssoln_hat_fab.array();
-
-    amrex::ParallelFor(bxg3,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        for (int n = 0; n < ncomp; n++)
-        {
-            slope_soln_hat(i,j,k,n) = soln_hat(i,j,k,n);
-        }
-    });
-    amrex::ParallelFor(bxg3,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if ( vfrac_old(i,j,k) == 0. && vfrac_new(i,j,k) > 0. ) {
-            // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-            {
-                int r = i+imap[itracker(i,j,k,i_nbor)];
-                int s = j+jmap[itracker(i,j,k,i_nbor)];
-                int t = k+kmap[itracker(i,j,k,i_nbor)];
-
-                if (domain_per_grown.contains(IntVect(AMREX_D_DECL(r,s,t))))
-                {
-                    for (int n = 0; n < ncomp; n++)
-                    {
-                        slope_soln_hat(r,s,t,n) = soln_hat(i,j,k,n);
-                    }
-                }
-            }
-        }
-    });
-    //////
-
+    // static int count=0; count++;
+    // std::ofstream qhat;
+    // qhat.open("qhat"+std::to_string(count));
+    // ssoln_hat_fab.writeOn(qhat);
 
     amrex::ParallelFor(bxg1,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
