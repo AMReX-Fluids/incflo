@@ -241,7 +241,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         if (nx*ny*nz == 1)
                             // Compute slope using 3x3x3 stencil
                             slopes_eb =
-                                amrex_calc_slopes_extdir_eb(i,j,k,n,slope_soln_hat,cent_hat,vfrac_new,
+                                amrex_calc_slopes_extdir_eb(i,j,k,n,soln_hat,cent_hat,vfrac_new,
                                                             AMREX_D_DECL(fcx,fcy,fcz),flag,
                                                             AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
                                                             AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
@@ -253,7 +253,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                             // Compute slope using grown stencil (no larger than 5x5x5)
                             slopes_eb =
                                 amrex_calc_slopes_extdir_eb_grown(i,j,k,n,AMREX_D_DECL(nx,ny,nz),
-                                                                  slope_soln_hat,cent_hat,vfrac_new,
+                                                                  soln_hat,cent_hat,vfrac_new,
                                                                   AMREX_D_DECL(fcx,fcy,fcz),flag,
                                                                   AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
                                                                   AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
