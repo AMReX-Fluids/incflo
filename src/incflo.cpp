@@ -136,16 +136,22 @@ void incflo::Evolve()
     std::ofstream prt_drag;
     sprintf(name, "drag_history.dat");
 
+#ifdef INCFLO_USE_MOVING_EB
     amrex::Print() << "\n\n\nplt_drag_hist:" << m_eb_flow_plt_drag_hist << "\n\n\n" << std::endl;
     if (m_eb_flow_plt_drag_hist)
     {
         prt_drag.open(name);
     }
+#endif
 
     Real orig_mass, prev_mass;
     int my_lev = 0;
+#ifdef AMREX_USE_EB
     auto const& fact = EBFactory(my_lev);
     orig_mass = volWgtSum(my_lev,get_density_new_const()[my_lev],0,fact);
+#else
+    orig_mass = volWgtSum(my_lev,get_density_new_const()[my_lev],0);
+#endif
     auto const dx = geom[my_lev].CellSize();
 #if (AMREX_SPACEDIM == 2)
     orig_mass *= dx[0] * dx[1];
@@ -175,9 +181,11 @@ void incflo::Evolve()
         // Advance to time t + dt
         Advance(orig_mass, prev_mass);
 
+#ifdef INCFLO_USE_MOVING_EB
         if (m_eb_flow_plt_drag_hist){
             PrintDragForce(prt_drag);
         }
+#endif
 
         m_nstep++;
         m_cur_time += m_dt;
@@ -205,9 +213,11 @@ void incflo::Evolve()
                          (m_max_step >= 0 && m_nstep >= m_max_step));
     }
 
+#ifdef INCFLO_USE_MOVING_EB
     if (m_eb_flow_plt_drag_hist){
         prt_drag.close();
     }
+#endif
 
     // Output at the final time
     if( m_check_int > 0 && m_nstep != m_last_chk) {
@@ -248,7 +258,6 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
     SetDistributionMap(lev, new_dmap);
 
 #ifdef AMREX_USE_EB
-
 #ifdef INCFLO_USE_MOVING_EB
     // For initialization, we only need one EB, but we need to fill both old and new
     // EBFactory containers.
@@ -359,6 +368,7 @@ Vector<MultiFab*> incflo::get_velocity_eb () noexcept
     return get_velocity_eb(m_cur_time);
 }
 
+#ifdef INCFLO_USE_MOVING_EB
 Vector<MultiFab*> incflo::get_velocity_eb (Real time) noexcept
 {
     Vector<MultiFab*> r;
@@ -392,6 +402,7 @@ Vector<MultiFab*> incflo::get_tracer_eb () noexcept
     }
     return r;
 }
+#endif
 
 Vector<MultiFab*> incflo::get_velocity_old () noexcept
 {

@@ -72,6 +72,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
     constexpr Real m_half = Real(0.5);
 
+    amrex::Print() << "\n ****** Start Predictor *********** \n" << std::endl;
+
     // We use the new time value for things computed on the "*" state
     Real new_time = m_cur_time + m_dt;
 
@@ -121,12 +123,21 @@ void incflo::ApplyPredictor (bool incremental_projection)
     int ngmac = nghost_mac();
 
     for (int lev = 0; lev <= finest_level; ++lev) {
+#ifdef INCFLO_USE_MOVING_EB
         AMREX_D_TERM(u_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
                           1, ngmac, MFInfo(), OldFactory(lev));,
                      v_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
                           1, ngmac, MFInfo(), OldFactory(lev));,
                      w_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
                           1, ngmac, MFInfo(), OldFactory(lev)););
+#else
+        AMREX_D_TERM(u_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev));,
+                     v_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev));,
+                     w_mac[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev)););
+#endif
         // do we still want to do this now that we always call a FillPatch (and all ghost cells get filled)?
         if (ngmac > 0) {
             AMREX_D_TERM(u_mac[lev].setBndry(0.0);,
@@ -139,7 +150,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     Vector<MultiFab> density_nph_oldeb;
     for (int lev = 0; lev <= finest_level; ++lev)
+#ifdef INCFLO_USE_MOVING_EB
         density_nph_oldeb.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), OldFactory(lev));
+#else
+        density_nph_oldeb.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+#endif
 
     // *************************************************************************************
     // Forcing terms
@@ -152,9 +167,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Allocate space for the forcing terms
     // *************************************************************************************
     for (int lev = 0; lev <= finest_level; ++lev) {
+#ifdef INCFLO_USE_MOVING_EB
         vel_forces.emplace_back(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_force(),
                                 MFInfo(), OldFactory(lev));
-
         if (m_advect_tracer) {
             tra_forces.emplace_back(grids[lev], dmap[lev], m_ntrac, nghost_force(),
                                     MFInfo(), OldFactory(lev));
@@ -163,6 +178,18 @@ void incflo::ApplyPredictor (bool incremental_projection)
         if (m_advect_tracer) {
             tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, 1, MFInfo(), OldFactory(lev));
         }
+#else
+        vel_forces.emplace_back(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_force(),
+                                MFInfo(), Factory(lev));
+        if (m_advect_tracer) {
+            tra_forces.emplace_back(grids[lev], dmap[lev], m_ntrac, nghost_force(),
+                                    MFInfo(), Factory(lev));
+        }
+        vel_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+        if (m_advect_tracer) {
+            tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, 1, MFInfo(), Factory(lev));
+        }
+#endif
     }
 
     // *************************************************************************************
@@ -329,9 +356,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real> const& rho_new       = ld.density.array(mfi);
                 Array4<Real const> const& drdt    = ld.conv_density_o.const_array(mfi);
 
-                auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
-
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     rho_new(i,j,k) =  rho_o(i,j,k) + l_dt * drdt(i,j,k);
@@ -354,9 +378,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  Array4<Real  const> const& rho_old  = ld.density_o.const_array(mfi);
                  Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                  Array4<Real>        const& rho_nph  = density_nph_oldeb[lev].array(mfi);
-
-                 auto const& vfrac_new = OldEBFactory(lev).getVolFrac().const_array(mfi);
-                 auto const& vfrac_old =    EBFactory(lev).getVolFrac().const_array(mfi);
 
                  amrex::ParallelFor(bxg1, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
@@ -644,10 +665,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
             Array4<Real const> const& rho_new  = ld.density.const_array(mfi);
             Array4<Real const> const& rho_nph  = density_nph_oldeb[lev].array(mfi);
 
-            // FIXME for debugging
-            auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-            auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
-
 #ifdef AMREX_USE_MOVING_EB
             //
             // Redistribute
@@ -660,7 +677,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
             Array4<Real> const& update_v     = update.array(mfi);
             Box const& gbx = amrex::grow(bx,ld.tracer.nGrow());
             // FIXME Can't do this. ghost cell could get mult by rho twice! see previous comment
-// ALso need to check on tracer ...
+            // Also need to check on tracer ...
             // amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             // {
             //     for (int n = 0; n < AMREX_SPACEDIM; ++n)
@@ -767,18 +784,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 if (m_advect_momentum) {
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        // if (i==16 && j==4)//(vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k)>0.0 ){
-            // {
-                        //     Print()<<"vel pieces "<<vel(i,j,k,0)
-                        //         <<" "<<rho_old(i,j,k)
-                        //         <<" "<<dvdt(i,j,k,0)
-                        //         <<" "<<rho_nph(i,j,k)
-                        //         <<" "<<vel_f(i,j,k,0)
-                        //         <<" "<<divtau_o(i,j,k,0)
-                        //         <<" "<<rho_new(i,j,k)
-                        //         <<std::endl;
-                        // }
-
                         AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                      vel(i,j,k,1) *= rho_old(i,j,k);,
                                      vel(i,j,k,2) *= rho_old(i,j,k););
@@ -838,14 +843,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
     }
 #endif
 
-     VisMF::Write(m_leveldata[0]->density,"dens");
+    // VisMF::Write(m_leveldata[0]->density,"dens");
     // VisMF::Write(density_nph_neweb[0],"rnph");
-     VisMF::Write(m_leveldata[0]->velocity,"vel");
+    // VisMF::Write(m_leveldata[0]->velocity,"vel");
 
-    std::string save = m_plot_file;
-    m_plot_file = "pred";
-    WritePlotFile();
-    m_plot_file = save;
+    // std::string save = m_plot_file;
+    // m_plot_file = "pred";
+    // WritePlotFile();
+    // m_plot_file = save;
     // static int count = 0;
     // count++;
     //if (count > 0) Abort();
@@ -855,11 +860,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Project velocity field, update pressure
     //
     // *************************************************************************************
+#ifdef INCFLO_USE_MOVING_EB
     ApplyProjection(GetVecOfConstPtrs(density_nph_neweb),
                     new_time,m_dt,incremental_projection);
+#else
+    ApplyProjection(GetVecOfConstPtrs(density_nph_oldeb),
+                    new_time,m_dt,incremental_projection);
+#endif
 
     // static int count = 0;
     // count++;
     // if (count > 2) Abort();
 
+    amrex::Print() << "\n ******  End Predictor *********** \n" << std::endl;
 }

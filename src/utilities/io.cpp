@@ -3,10 +3,12 @@
 #include <AMReX_buildInfo.H>
 #include <incflo.H>
 
-#if (AMREX_SPACEDIM)== 2
+#ifdef AMREX_USE_EB
+#if (AMREX_SPACEDIM == 2)
 #include <AMReX_EB_LeastSquares_2D_K.H>
 #else
 #include <AMReX_EB_LeastSquares_3D_K.H>
+#endif
 #endif
 
 using namespace amrex;

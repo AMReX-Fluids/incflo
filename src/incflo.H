@@ -619,11 +619,15 @@ private:
 
     amrex::Vector<std::unique_ptr<LevelData> > m_leveldata;
 
+#ifdef AMREX_USE_EB
 #ifdef INCFLO_USE_MOVING_EB
     amrex::Vector< std::unique_ptr<amrex::EBFArrayBoxFactory> > m_old_factory;
     amrex::Vector< std::unique_ptr<amrex::EBFArrayBoxFactory> > m_new_factory;
 #else
     amrex::Vector<std::unique_ptr<amrex::EBFArrayBoxFactory> > m_factory;
+#endif
+#else
+    amrex::Vector<std::unique_ptr<amrex::FArrayBoxFactory> > m_factory;
 #endif
 
     enum struct BC {

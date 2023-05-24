@@ -69,6 +69,8 @@ void incflo::ApplyCorrector()
 {
     BL_PROFILE("incflo::ApplyCorrector");
 
+    amrex::Print() << "\n ****** Start Corrector *********** \n" << std::endl;
+
     constexpr Real m_half = Real(0.5);
 
     // We use the new time value for things computed on the "*" state
@@ -867,4 +869,6 @@ m                {
     //                           AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
     //                           GetVecOfConstPtrs(w_mac)));
 #endif
+
+    amrex::Print() << "\n ******  End Corrector *********** \n" << std::endl;
 }

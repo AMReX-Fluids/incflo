@@ -123,8 +123,12 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
 
 #if 1
     int my_lev = 0;
+#ifdef AMREX_USE_EB
     auto const& fact = EBFactory(my_lev);
     Real sum = volWgtSum(my_lev,get_density_new_const()[my_lev],0,fact);
+#else
+    Real sum = volWgtSum(my_lev,get_density_new_const()[my_lev],0);
+#endif
 
     auto const dx = geom[my_lev].CellSize();
 #if (AMREX_SPACEDIM == 2)
@@ -160,11 +164,12 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
     }
 
 #if 1
-    // int my_lev = 0;
-    // auto const& fact = EBFactory(my_lev);
+#ifdef AMREX_USE_EB
     sum = volWgtSum(my_lev,get_density_new_const()[my_lev],0,fact);
+#else
+    sum = volWgtSum(my_lev,get_density_new_const()[my_lev],0);
+#endif
 
-    // auto const dx = geom[my_lev].CellSize();
 #if (AMREX_SPACEDIM == 2)
     sum *= dx[0] * dx[1];
 #elif (AMREX_SPACEDIM == 3)
