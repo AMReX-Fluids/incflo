@@ -303,12 +303,11 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             {
                 if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
                 {
-                    // For SRD without slopes, shouldn't matter what's in here because
+                    // For SRD without slopes, it shouldn't matter what's in here because
                     // it gets mult by V^n which is zero
                     // But, we need this to be consistent with how we define the update
                     // (out) below and in the application code
                     scratch(i,j,k,n) = U_in(i,j,k,n);
-                    //scratch(i,j,k,n) = 0.0;
                 }
                 else if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
                          (vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 1.0) ||
@@ -319,12 +318,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     Real delta_vol = vfrac_new(i,j,k) - vfrac_old(i,j,k);
                     delta_vol /= ( dt * vfrac_old(i,j,k) );
 
-                    // scratch(i,j,k,n) = 0.0;
-                    // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
-                    //                             flag_old,vfrac_old,bnorm,barea,dxinv);
-
-                    // Maybe we need to think of this correction as associated with the pred
-                    // so for covering/uncovering we still need the full term and not half?
                     Real Ueb_dot_an =
                         AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
                                      + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
@@ -339,31 +332,19 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         Ueb_dot_an_new *= barea_new(i,j,k); ///vfrac_new(i,j,k);
 
                         Ueb_dot_an = Real(0.5) * (Ueb_dot_an + Ueb_dot_an_new);
-
                     }
 
 		    // This will undo volume scaling that happens later in forming q-hat
                     Ueb_dot_an /= vfrac_old(i,j,k);
 
-
-                    Real delta_divU = delta_vol - Ueb_dot_an;
-                    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
-		    // FIXME - for now, comment delta-divU correction. This should be
-		    // zero in 1D anyway.
-                                                     // + U_in(i,j,k,n) * delta_vol
-                                                     // - dt * Real(3.45) * Ueb_dot_an;
-                                                     + dt * U_in(i,j,k,n) * delta_divU;
-
-                    if ( (i==15 || i==16) && (j==11 || j==12) && n==0 ) {
-                        Print()<<Dim3{i,j,k}<<" Uhat : "<<scratch(i,j,k,n) //<<std::endl;
-                               // <<"Redist Pieces : "
-			       <<" "<<U_in(i,j,k,n)
-			       <<" "<<dUdt_in(i,j,k,n)*vfrac_old(i,j,k)<<" "
-                               <<delta_divU<<" "
-                               // <<Ueb_dot_an<<" "
-                               // <<delta_vol
-			       <<std::endl;
+                    // We only use the delta_divU correction if the cell is not full at old time 
+                    // and not covered at new time, i.e. only when the cell starts and ends as a cut cell
+                    Real delta_divU = 0.;
+                    if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) > 0.) {
+                        delta_divU = delta_vol - Ueb_dot_an;
                     }
+                    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
+                                                     + dt * U_in(i,j,k,n) * delta_divU;
                 }
                 else
                 {
