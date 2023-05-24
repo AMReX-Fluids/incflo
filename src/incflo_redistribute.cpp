@@ -150,7 +150,9 @@ incflo::redistribute_term ( MFIter const& mfi,
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            result(i,j,k,n) = state(i,j,k,n);
+	    //FIXME -- Need to check and make sure this is always how we want to
+	    // use this...
+            result(i,j,k,n) = state(i,j,k,n) + m_dt * temporary(i,j,k,n);
         });
     }
 }
