@@ -39,6 +39,9 @@ void incflo::prob_init_fluid (int lev)
 		if ( den_arr(i,j,k) < 1.0 ){
 		    den_arr(i,j,k) = 1.0;
 		}
+		if ( i < 9 ) {
+		    den_arr(i,j,k) = 2.45; //1.0 + 0.1 * static_cast<Real>(23-9);
+		}
                 if (j == 3) amrex::Print() << "DEN " << i << " " << den_arr(i,j,k) << std::endl;
             });
 
