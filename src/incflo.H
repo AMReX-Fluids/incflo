@@ -721,7 +721,7 @@ private:
         }
 #endif
         {
-            return (m_advection_type != "MOL") ? 3 : 2;
+            return 3;
         }
     }
 
