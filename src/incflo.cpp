@@ -68,7 +68,9 @@ void incflo::InitData ()
         }
 
 #ifdef AMREX_USE_EB
-        InitialRedistribution();
+        if (!EBFactory(0).isAllRegular()) {
+            InitialRedistribution();
+        }
 #endif
 
         if (m_do_initial_proj) {
