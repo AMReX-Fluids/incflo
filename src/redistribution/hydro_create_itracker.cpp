@@ -101,8 +101,7 @@ Redistribution::MakeITracker ( Box const& bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         // We check for cut-cells in the new geometry
-        // if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < target_volfrac) && vfrac_old(i,j,k) > 0.0)
-	if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < 1.0) && vfrac_old(i,j,k) > 0.0)
+        if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < target_volfrac) && vfrac_old(i,j,k) > 0.0)
         {
             normalMerging(i, j, k,
                           AMREX_D_DECL(apx_new, apy_new, apz_new),
