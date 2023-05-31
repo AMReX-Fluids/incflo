@@ -64,58 +64,6 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
     // Create the time n+1 geometry and associated Factories
     MakeNewEBGeometry(m_t_new[0]);
     MakeFactoryWithNewGeometry();
-
-    // FIXME -- Can we use something simplier here now??
-    for (int lev = 0; lev <= finest_level; lev++)
-    {
-// FIXME - do we still really need this, or do we only need to fill with a computatble value
-
-        // FIXME - need some way to make sure target volfrac is consistent between
-        // here and other calls
-        Real target_volfrac = Redistribution::defaults::target_vol_fraction;
-        // FOR varible density, we have to take the NU cell's merging neighbor
-        // Needs one filled ghost cell. Fills only valid region
-        Redistribution::FillNewlyUncovered(m_leveldata[lev]->velocity_o,
-                                           OldEBFactory(lev), EBFactory(lev),
-                                           *get_velocity_eb()[lev],
-                                           geom[lev], target_volfrac);
-        fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
-        // Note: fillpatch pulls any EBFactory info from the coarse level, so
-        // as long as EB stays contained within the finest level, we're fine,
-        // but this probably won't work otherwise
-
-        //FIXME
-        // Update in ApplyPredictor assumes new vel is the same as old vel
-        // Should think about whether to change ApplyPredictor, do this or
-        // do a copy of vel_old
-        Redistribution::FillNewlyUncovered(m_leveldata[lev]->velocity,
-                                           OldEBFactory(lev), EBFactory(lev),
-                                           *get_velocity_eb()[lev],
-                                           geom[lev], target_volfrac);
-        fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity, ng);
-
-        Redistribution::FillNewlyUncovered(m_leveldata[lev]->density_o,
-                                           OldEBFactory(lev), EBFactory(lev),
-                                           *get_velocity_eb()[lev],
-                                           geom[lev], target_volfrac);
-        fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
-
-        if (m_ntrac > 0) {
-            Redistribution::FillNewlyUncovered(m_leveldata[lev]->tracer_o,
-                                               OldEBFactory(lev), EBFactory(lev),
-                                               *get_velocity_eb()[lev],
-                                               geom[lev], target_volfrac);
-            fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
-        }
-
-        Redistribution::FillNewlyUncovered(m_leveldata[lev]->gp,
-                                           OldEBFactory(lev), EBFactory(lev),
-                                           *get_velocity_eb()[lev],
-                                           geom[lev], target_volfrac);
-
-// FIXME will we also need to worry about all the pieces of U*, forces, etc???
-        // this should be done in pred/corr
-    }
 #endif
 
 
