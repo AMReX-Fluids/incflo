@@ -230,7 +230,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 }
                 else if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
                          (vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 1.0) ||
-                         (vfrac_old(i,j,k) == 1. && !flag_old(i,j,k).isRegular()))
+                         (vfrac_old(i,j,k) == 1. &&
+                          (!flag_old(i,j,k).isRegular() || !flag_new(i,j,k).isRegular()) ))
                 {
                     // Correct all cells that are cut at time n or become cut at time n+1
 
@@ -243,7 +244,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                                      + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
                     Ueb_dot_an *= barea_old(i,j,k); ///vfrac_old(i,j,k);
 
-                    if ( vel_eb_new && vfrac_new(i,j,k) > 0. ) {
+                    if ( vel_eb_new ) {
                         Real Ueb_dot_an_new =
                             AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
                                          + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
@@ -253,10 +254,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         Ueb_dot_an = Real(0.5) * (Ueb_dot_an + Ueb_dot_an_new);
                     }
 
-		    // This will undo volume scaling that happens later in forming q-hat
+                    // This will undo volume scaling that happens later in forming q-hat
                     Ueb_dot_an /= vfrac_old(i,j,k);
 
-                    // We only use the delta_divU correction if the cell is not full at old time 
+                    // We only use the delta_divU correction if the cell is not full at old time
                     // and not covered at new time, i.e. only when the cell starts and ends as a cut cell
                     Real delta_divU = 0.;
                     if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) > 0.) {
@@ -264,6 +265,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     }
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
                                                      + dt * U_in(i,j,k,n) * delta_divU;
+                    // if (j==8 && (i==9 || i==10) ) {
+                    //     Print()<<"DELTA_DIVU "<<i<<": "<<delta_vol<<" "<<Ueb_dot_an<<std::endl;
+                    // }
+
                 }
                 else
                 {
@@ -323,15 +328,14 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 //                                            <<delta_vol<<" "<<kappa_a<<" "<<dUdt_in(i,j,k,n)
 //                                            <<std::endl;
 
-//FIXME new way to try to account for flux into newly uncovered cell.
-				// This is needed for conservation
-				//if (j==8) Print()<<"NU An+1 "<<dUdt_in(i,j,k,n)<<std::endl;
-				scratch(i+ioff,j+joff,k+koff,n) += Real(0.5) * dt * dUdt_in(i,j,k,n) * vfrac_new(i,j,k)/vfrac_old(i+ioff,j+joff,k+koff);
-			    }
+                                // Account for flux into newly uncovered cell (needed for conservation)
+                                //if (j==8) Print()<<"NU An+1 "<<dUdt_in(i,j,k,n)<<std::endl;
+                                scratch(i+ioff,j+joff,k+koff,n) += Real(0.5) * dt * dUdt_in(i,j,k,n) * vfrac_new(i,j,k)/vfrac_old(i+ioff,j+joff,k+koff);
+                            }
 
                             // Print()<<"kappa "<<kappa_a<<" "<<delta_vol*U_in(i+ioff,j+joff,k+koff,n)<<std::endl;
                             scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol
-				                               - kappa_a;
+                                                               - kappa_a;
                         }
                     }
                 }
