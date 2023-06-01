@@ -279,9 +279,6 @@ void incflo::ApplyCorrector()
                 Array4<Real const> const& drdt_o = ld.conv_density_o.const_array(mfi);
                 Array4<Real const> const& drdt   = ld.conv_density.const_array(mfi);
 
-                auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-                auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
-
 #ifdef AMREX_USE_MOVING_EB
                 //
                 // For moving EB, redistribute and returns full state at new time
