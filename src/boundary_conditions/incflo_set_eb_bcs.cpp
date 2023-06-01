@@ -141,7 +141,7 @@ incflo::set_eb_velocity (int lev, amrex::Real time, MultiFab& eb_vel, int nghost
      // We make sure to only fill "nghost" ghost cells so we don't accidentally
      // over-write good ghost cell values with unfilled ghost cell values
      IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
-     eb_vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
+     eb_vel.FillBoundary(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }
 
 void
@@ -210,7 +210,7 @@ incflo::set_eb_velocity_for_rotation (int lev, amrex::Real time, MultiFab& eb_ve
      // We make sure to only fill "nghost" ghost cells so we don't accidentally
      // over-write good ghost cell values with unfilled ghost cell values
      IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
-     eb_vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
+     eb_vel.FillBoundary(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }
 
 void

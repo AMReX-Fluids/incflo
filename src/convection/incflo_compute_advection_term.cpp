@@ -222,10 +222,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                      u[2] = w_mac[lev];);
 
         // // CEG fixme
-        VisMF::Write(*u_mac[0],"umac");
-        VisMF::Write(*v_mac[0],"vmac");
-        VisMF::Write(*vel[0],"va");
-        VisMF::Write(*density[0],"ra");
+        // VisMF::Write(*u_mac[0],"umac");
+        // VisMF::Write(*v_mac[0],"vmac");
+        // VisMF::Write(*vel[0],"va");
+        // VisMF::Write(*density[0],"ra");
 
 #ifdef AMREX_USE_EB
         const auto& ebfact_old = OldEBFactory(lev);
@@ -478,8 +478,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         Real mult = -1.0;
 
-        VisMF::Write(*get_velocity_eb()[lev],"veb");
-        VisMF::Write(*get_density_eb()[lev],"deb");
+        // VisMF::Write(*get_velocity_eb()[lev],"veb");
+        // VisMF::Write(*get_density_eb()[lev],"deb");
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
