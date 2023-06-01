@@ -53,7 +53,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
 
 #ifdef AMREX_USE_EB
         if (!vel.isAllRegular()) {
-            auto const& flag = EBFactory(lev).getMultiEBCellFlagFab();
+            auto const& flag = EBFactory(lev, m_cur_time).getMultiEBCellFlagFab();
             conv_lev = amrex::ReduceMax(vel, flag, 0,
                        [=] AMREX_GPU_HOST_DEVICE (Box const& b,
                                                   Array4<Real const> const& v,

@@ -25,7 +25,7 @@ void incflo::fillpatch_velocity (int lev, Real time, MultiFab& vel, int ng)
         PhysBCFunct<GpuBndryFuncFab<IncfloVelFill> > fphysbc
             (geom[lev], bcrec, IncfloVelFill{m_probtype, m_bc_velocity});
 #ifdef AMREX_USE_EB
-        Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
+        Interpolater* mapper = (EBFactory(0, time).isAllRegular()) ?
             (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
 #else
         Interpolater* mapper = &cell_cons_interp;
@@ -60,7 +60,7 @@ void incflo::fillpatch_density (int lev, Real time, MultiFab& density, int ng)
         PhysBCFunct<GpuBndryFuncFab<IncfloDenFill> > fphysbc
             (geom[lev], bcrec, IncfloDenFill{m_probtype, m_bc_density});
 #ifdef AMREX_USE_EB
-        Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
+        Interpolater* mapper = (EBFactory(0,time).isAllRegular()) ?
             (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
 #else
         Interpolater* mapper = &cell_cons_interp;
@@ -96,7 +96,7 @@ void incflo::fillpatch_tracer (int lev, Real time, MultiFab& tracer, int ng)
         PhysBCFunct<GpuBndryFuncFab<IncfloTracFill> > fphysbc
             (geom[lev], bcrec, IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d});
 #ifdef AMREX_USE_EB
-        Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
+        Interpolater* mapper = (EBFactory(0,time).isAllRegular()) ?
             (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
 #else
         Interpolater* mapper = &cell_cons_interp;
@@ -129,7 +129,7 @@ void incflo::fillpatch_gradp (int lev, Real time, MultiFab& gp, int ng)
         PhysBCFunct<GpuBndryFuncFab<IncfloForFill> > fphysbc
             (geom[lev], bcrec, IncfloForFill{m_probtype});
 #ifdef AMREX_USE_EB
-        Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
+        Interpolater* mapper = (EBFactory(0,time).isAllRegular()) ?
             (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
 #else
         Interpolater* mapper = &cell_cons_interp;
@@ -180,7 +180,7 @@ void incflo::fillcoarsepatch_velocity (int lev, Real time, MultiFab& vel, int ng
     PhysBCFunct<GpuBndryFuncFab<IncfloVelFill> > fphysbc
         (geom[lev], bcrec, IncfloVelFill{m_probtype, m_bc_velocity});
 #ifdef AMREX_USE_EB
-    Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
+    Interpolater* mapper = (EBFactory(0,time).isAllRegular()) ?
         (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
 #else
     Interpolater* mapper = &cell_cons_interp;
@@ -200,7 +200,7 @@ void incflo::fillcoarsepatch_density (int lev, Real time, MultiFab& density, int
     PhysBCFunct<GpuBndryFuncFab<IncfloDenFill> > fphysbc
         (geom[lev], bcrec, IncfloDenFill{m_probtype, m_bc_density});
 #ifdef AMREX_USE_EB
-    Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
+    Interpolater* mapper = (EBFactory(0,time).isAllRegular()) ?
         (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
 #else
     Interpolater* mapper = &cell_cons_interp;
@@ -222,7 +222,7 @@ void incflo::fillcoarsepatch_tracer (int lev, Real time, MultiFab& tracer, int n
     PhysBCFunct<GpuBndryFuncFab<IncfloTracFill> > fphysbc
         (geom[lev], bcrec, IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d});
 #ifdef AMREX_USE_EB
-    Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
+    Interpolater* mapper = (EBFactory(0,time).isAllRegular()) ?
         (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
 #else
     Interpolater* mapper = &cell_cons_interp;
@@ -242,7 +242,7 @@ void incflo::fillcoarsepatch_gradp (int lev, Real time, MultiFab& gp, int ng)
     PhysBCFunct<GpuBndryFuncFab<IncfloForFill> > fphysbc
         (geom[lev], bcrec, IncfloForFill{m_probtype});
 #ifdef AMREX_USE_EB
-    Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
+    Interpolater* mapper = (EBFactory(0,time).isAllRegular()) ?
         (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
 #else
     Interpolater* mapper = &cell_cons_interp;
