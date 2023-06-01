@@ -257,16 +257,15 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // This will undo volume scaling that happens later in forming q-hat
                     Ueb_dot_an /= vfrac_old(i,j,k);
 
-                    // We only use the delta_divU correction if the cell is not full at old time
-                    // and not covered at new time, i.e. only when the cell starts and ends as a cut cell
-                    Real delta_divU = 0.;
-                    if (vfrac_old(i,j,k) < 1. && vfrac_new(i,j,k) > 0.) {
-                        delta_divU = delta_vol - Ueb_dot_an;
-                    }
+                    Real delta_divU = delta_vol - Ueb_dot_an;
+
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
-                                                     + dt * U_in(i,j,k,n) * delta_divU;
+                        + dt * delta_divU;
+                        //+ dt * U_in(i,j,k,n) * delta_divU;
+
                     // if (j==8 && (i==9 || i==10) ) {
                     //     Print()<<"DELTA_DIVU "<<i<<": "<<delta_vol<<" "<<Ueb_dot_an<<std::endl;
+                    //  Print()<<U_in(i,j,k,n)<<std::endl;
                     // }
 
                 }
@@ -297,7 +296,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             //                << " newly uncovered, correct neighbor at "
                             //                << Dim3{i+ioff,j+joff,k+koff} << std::endl;
 
-                            Real delta_vol = vfrac_new(i,j,k) / vfrac_old(i+ioff,j+joff,k+koff);
+                            Real delta_vol = vfrac_new(i,j,k) / (dt*vfrac_old(i+ioff,j+joff,k+koff));
                             // NOTE this correction is only right for the case that the newly
                             // uncovered cell has only one other cell in it's neghborhood.
 
@@ -318,8 +317,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                                                  + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
                                                  + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
 
-                                kappa_a = Real(0.5) * dt * Ueb_dot_n * barea_new(i,j,k) * U_in(i+ioff,j+joff,k+koff,n)
-                                    / vfrac_old(i+ioff,j+joff,k+koff);
+                                kappa_a = Real(0.5) * Ueb_dot_n * barea_new(i,j,k) /
+                                     vfrac_old(i+ioff,j+joff,k+koff);
 
 //                                 if ( j==8){
 //                                     Print()<<"\nMSRD corrections...\n"
@@ -334,8 +333,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             }
 
                             // Print()<<"kappa "<<kappa_a<<" "<<delta_vol*U_in(i+ioff,j+joff,k+koff,n)<<std::endl;
-                            scratch(i+ioff,j+joff,k+koff,n) += U_in(i+ioff,j+joff,k+koff,n) * delta_vol
-                                                               - kappa_a;
+                            scratch(i+ioff,j+joff,k+koff,n) += dt*(delta_vol - kappa_a);
+                            // U_in(i+ioff,j+joff,k+koff,n) * dt*(delta_vol - kappa_a);
                         }
                     }
                 }
