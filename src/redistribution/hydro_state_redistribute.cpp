@@ -89,6 +89,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     Box const& bxg1 = amrex::grow(bx,1);
     Box const& bxg2 = amrex::grow(bx,2);
     Box const& bxg3 = amrex::grow(bx,3);
+    Box const& bxg4 = amrex::grow(bx,4);
 
     Box domain_per_grown = domain;
     if (is_periodic_x) domain_per_grown.grow(0,2);
@@ -155,7 +156,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
     // FIXME - hack for NU cell, where it's merging partner winds up with Q-hat=0
     // For now, we use the NU Q-hat for making slopes...
-    FArrayBox    ssoln_hat_fab (bxg3,ncomp,The_Async_Arena());
+    FArrayBox    ssoln_hat_fab (bxg4,ncomp,The_Async_Arena());
     Array4<Real> slope_soln_hat = ssoln_hat_fab.array();
 
     amrex::ParallelFor(bxg3,
