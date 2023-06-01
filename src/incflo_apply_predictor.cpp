@@ -327,19 +327,21 @@ void incflo::ApplyPredictor (bool incremental_projection)
             for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
                  Box const& bxg1 = mfi.growntilebox(1);
-                 Array4<Real  const> const& rho_old  = ld.density_o.const_array(mfi);
+                 Array4<Real       > const& rho_old  = ld.density_o.array(mfi);
                  Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                  Array4<Real>        const& rho_nph  = density_nph_oldeb[lev].array(mfi);
+                 auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+                 auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
                  amrex::ParallelFor(bxg1, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
                      // FIXME - probably want to think more about what to do with rho_n+1/2 here
-                     // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-                     // {
-                     //          rho_nph(i,j,k) = rho_new(i,j,k);
-                     // } else {
-                         rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
-                     // }
+                     if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+                     {
+                         rho_old(i,j,k) = rho_new(i,j,k);
+                     }
+                     rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
+
                      // if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.))
                      //     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl;
                  });
@@ -758,6 +760,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 #endif
         } // mfi
     } // lev
+
 
     // *************************************************************************************
     // Solve diffusion equation for u* but using eta_old at old time
