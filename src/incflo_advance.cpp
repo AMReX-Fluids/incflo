@@ -14,14 +14,19 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
     // Start timing current time step
     Real strt_step = static_cast<Real>(ParallelDescriptor::second());
 
+    // Set new and old time to correctly use in fillpatching
+    for(int lev = 0; lev <= finest_level; lev++)
+    {
+        m_t_old[lev] = m_cur_time;
+        m_t_new[lev] = m_cur_time + m_dt;
+    }
+
 #ifdef INCFLO_USE_MOVING_EB
     // **********************************************************************************************
     //
     // Update the moving geometry and arrays
     //
     // **********************************************************************************************
-
-//    VisMF::Write(m_leveldata[0]->density_o,"do1");
 
     // Create the time n+1 geometry and associated Factories.
     // This moves m_old_factory to point to the correct EB.
@@ -34,13 +39,6 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
     int initialisation = 0;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
     ComputeDt(initialisation, explicit_diffusion);
-
-    // Set new and old time to correctly use in fillpatching
-    for(int lev = 0; lev <= finest_level; lev++)
-    {
-        m_t_old[lev] = m_cur_time;
-        m_t_new[lev] = m_cur_time + m_dt;
-    }
 
     if (m_verbose > 0)
     {
