@@ -14,6 +14,22 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
     // Start timing current time step
     Real strt_step = static_cast<Real>(ParallelDescriptor::second());
 
+#ifdef INCFLO_USE_MOVING_EB
+    // **********************************************************************************************
+    //
+    // Update the moving geometry and arrays
+    //
+    // **********************************************************************************************
+
+//    VisMF::Write(m_leveldata[0]->density_o,"do1");
+
+    // Create the time n+1 geometry and associated Factories.
+    // This moves m_old_factory to point to the correct EB.
+    MakeNewEBGeometry(m_t_new[0]);
+    MakeFactoryWithNewGeometry();
+#endif
+
+
     // Compute time step size
     int initialisation = 0;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
@@ -50,21 +66,6 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
             fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
         }
     }
-
-
-#ifdef INCFLO_USE_MOVING_EB
-    // **********************************************************************************************
-    //
-    // Update the moving geometry and arrays
-    //
-    // **********************************************************************************************
-
-//    VisMF::Write(m_leveldata[0]->density_o,"do1");
-
-    // Create the time n+1 geometry and associated Factories
-    MakeNewEBGeometry(m_t_new[0]);
-    MakeFactoryWithNewGeometry();
-#endif
 
 
     ApplyPredictor();
