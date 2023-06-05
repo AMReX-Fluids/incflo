@@ -156,6 +156,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
     // FIXME - hack for NU cell, where it's merging partner winds up with Q-hat=0
     // For now, we use the NU Q-hat for making slopes...
+    // An equally valid solution may be to set Q-hat=(V^n/V^n+1)U-hat above
+    // but this didn't work as expected because Q-hat=0 is better for limiting. See below...
     FArrayBox    ssoln_hat_fab (bxg4,ncomp,The_Async_Arena());
     Array4<Real> slope_soln_hat = ssoln_hat_fab.array();
 
@@ -294,6 +296,11 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                                                                   AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                                                   max_order);
                         }
+
+                        // Using slope_soln_hat (i.e. NU nbor is not zero) in limiting provides a
+                        // "less good looking" solution, in that the
+                        // NU cell and it's merging partner have the same/very similar val, vs. maintaining
+                        // profile if we use 0...
 
                         // We do the limiting separately because this limiter limits the slope based on the values
                         //    extrapolated to the cell centroid (cent_hat) locations - unlike the limiter in amrex
