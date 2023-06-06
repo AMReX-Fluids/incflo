@@ -498,6 +498,9 @@ private:
 #ifdef INCFLO_USE_MOVING_EB
     amrex::EB2::IndexSpace const* m_eb_new = nullptr;
     amrex::EB2::IndexSpace const* m_eb_old = nullptr;
+//FIXME - should these be unique_ptr?
+    // std::unique_ptr<amrex::EB2::IndexSpace> m_eb_new;
+    // std::unique_ptr<amrex::EB2::IndexSpace> m_eb_old;
 #endif
 
     // If using Godunov, default to including viscous/diffusive

@@ -14,11 +14,29 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
     // Start timing current time step
     Real strt_step = static_cast<Real>(ParallelDescriptor::second());
 
+#ifdef INCFLO_USE_MOVING_EB
+    // Point to the correct EB & Factory for current time
+    EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(m_eb_old));
+    m_eb_old = m_eb_new;
+
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+        m_old_factory[lev] = std::move(m_new_factory[lev]);
+    }
+#endif
+
+
+    // Compute time step size
+    int initialisation = 0;
+    bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
+    ComputeDt(initialisation, explicit_diffusion);
+
     // Set new and old time to correctly use in fillpatching
     for(int lev = 0; lev <= finest_level; lev++)
     {
         m_t_old[lev] = m_cur_time;
         m_t_new[lev] = m_cur_time + m_dt;
+	Print()<<"ADVANCE times : "<<m_t_old[lev]<<" "<<m_t_new[lev]<<std::endl;
     }
 
 #ifdef INCFLO_USE_MOVING_EB
@@ -33,12 +51,6 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
     MakeNewEBGeometry(m_t_new[0]);
     MakeFactoryWithNewGeometry();
 #endif
-
-
-    // Compute time step size
-    int initialisation = 0;
-    bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
-    ComputeDt(initialisation, explicit_diffusion);
 
     if (m_verbose > 0)
     {
@@ -100,12 +112,6 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
                 fillpatch_tracer(lev, m_t_new[lev], m_leveldata[lev]->tracer, ng);
             }
         }
-
-    //     //FIXME
-    // // this will overwrite the previous time plotfile
-    // WritePlotFile();
-    // static int count=0; count++;
-    // //if (count>2) Abort();
 
         ApplyCorrector();
     }

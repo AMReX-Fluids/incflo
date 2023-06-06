@@ -114,13 +114,8 @@ void incflo::MakeFactoryWithNewGeometry ()
         amrex::Print() << "Updating Factory with new geometry" << std::endl;
     }
 
-    // This has been called at the beginning of the timestep
-    // MakeNewEBGeometry(time);
-
     for (int lev = 0; lev <= finest_level; lev++)
     {
-        m_old_factory[lev] = std::move(m_new_factory[lev]);
-
         m_new_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
                                               {nghost_eb_basic(),
                                                nghost_eb_volume(),
@@ -138,20 +133,8 @@ void incflo::RemakeWithNewGeometry ()
         amrex::Print() << "Remaking with new geometry" << std::endl;
     }
 
-    // This has been called at the beginning of the timestep
-    // MakeNewGeometry(time);
-
     for (int lev = 0; lev <= finest_level; lev++)
     {
-        // This is now done in MakeFactoryWithNewGeometry
-        // m_old_factory[lev] = std::move(m_new_factory[lev]);
-
-        // m_new_factory[lev] = makeEBFabFactory(m_eb_new, geom[lev], grids[lev], dmap[lev],
-        //                                       {nghost_eb_basic(),
-        //                                        nghost_eb_volume(),
-        //                                        nghost_eb_full()},
-        //                                       EBSupport::full);
-
         std::unique_ptr<LevelData> new_leveldata
             (new LevelData(grids[lev], dmap[lev], *m_new_factory[lev], m_ntrac, nghost_state(),
                            m_advection_type,
@@ -184,6 +167,9 @@ void incflo::RemakeWithNewGeometry ()
         Real old_time = m_cur_time;
         Real new_time = m_cur_time + m_dt;
 
+
+// FIXME? Why FP here when we could just copy? Are ghost cells good? Are they needed?
+
         // FIXME? fillpatch uses m_leveldata (potentially old EB) under the covers,
         // and eb_cell_cons interpolator which pulls EB info from the coarse level
         // If we always call on level 0 first and go to finer, then it's probably okay...
@@ -195,6 +181,7 @@ void incflo::RemakeWithNewGeometry ()
             fillpatch_tracer(lev, old_time, new_leveldata->tracer_o, nghost_state());
             fillpatch_tracer(lev, new_time, new_leveldata->tracer, nghost_state());
         }
+
 
         // time is really a dummy variable here, since we only carry one gradp (at
         // time n-1/2).

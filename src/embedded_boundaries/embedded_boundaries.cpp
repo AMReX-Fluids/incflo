@@ -127,13 +127,9 @@ void incflo::MakeEBGeometry(Real cur_time)
 #ifdef INCFLO_USE_MOVING_EB
 void incflo::MakeNewEBGeometry (Real time)
 {
-    // Erase old EB
-    EB2::IndexSpace::erase(const_cast<EB2::IndexSpace*>(m_eb_old));
-
     // Build a new EB
     MakeEBGeometry(time);
-
-    m_eb_old = m_eb_new;
+    //FIXME? do we need to check that m_eb_new is not creating memory leak?
     m_eb_new = &(EB2::IndexSpace::top());
 
     EB2::IndexSpace::push(const_cast<EB2::IndexSpace*>(m_eb_new));
