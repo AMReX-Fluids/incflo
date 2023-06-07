@@ -96,11 +96,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     // redistribution_type = "FluxRedist"      // flux_redistribute
     // redistribution_type = "StateRedist";    // (weighted) state redistribute
 
-    amrex::ParallelFor(bx,ncomp,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        out(i,j,k,n) = 0.;
-    });
+//FIXME - For now, use the data in out
+    // amrex::ParallelFor(bx,ncomp,
+    // [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+    // {
+    //     out(i,j,k,n) = 0.;
+    // });
 
     if (redistribution_type == "FluxRedist")
     {
@@ -222,51 +223,75 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             {
                 if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
                 {
+                    // Newly Uncovered cells:
                     // For SRD without slopes, it shouldn't matter what's in here because
                     // it gets mult by V^n which is zero
-                    // But, we need this to be consistent with how we define the update
-                    // (out) below and in the application code
                     scratch(i,j,k,n) = U_in(i,j,k,n);
                 }
-                else if ((vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
-                         (vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 1.0) ||
+                else if ( (vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
                          (vfrac_old(i,j,k) == 1. &&
                           (!flag_old(i,j,k).isRegular() || !flag_new(i,j,k).isRegular()) ))
                 {
                     // Correct all cells that are cut at time n or become cut at time n+1
+                    Real delta_divU = 0.0;
+                    Real Ueb_dot_an = 0.0;
+                    Real delta_vol = (vfrac_new(i,j,k) - vfrac_old(i,j,k))/dt;
+                    Real eps = 1.e-14;
 
-                    Real delta_vol = vfrac_new(i,j,k) - vfrac_old(i,j,k);
-                    delta_vol /= ( dt * vfrac_old(i,j,k) );
+                    if (!flag_old(i,j,k).isRegular() && !flag_new(i,j,k).isCovered()
+                        && delta_vol > eps )
+                    {
+                        Ueb_dot_an =
+                            AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
+                                           + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
+                                           + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
+                        Ueb_dot_an *= barea_old(i,j,k);
 
-                    Real Ueb_dot_an =
-                        AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
-                                     + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
-                                     + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
-                    Ueb_dot_an *= barea_old(i,j,k); ///vfrac_old(i,j,k);
+                        delta_divU = (delta_vol - Ueb_dot_an) * U_in(i,j,k,n);
+                    }
 
-                    if ( vel_eb_new ) {
+                    // For the Corrector step
+                    if (!flag_new(i,j,k).isRegular() && !flag_new(i,j,k).isCovered() &&
+                        delta_vol > eps && vel_eb_new)
+                    {
                         Real Ueb_dot_an_new =
                             AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
                                          + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
                                          + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
                         Ueb_dot_an_new *= barea_new(i,j,k); ///vfrac_new(i,j,k);
 
-                        Ueb_dot_an = Real(0.5) * (Ueb_dot_an + Ueb_dot_an_new);
+                        if ( flag_old(i,j,k).isRegular() ){
+                            delta_divU = 0.5 * (U_in(i,j,k,n) + out(i,j,k,n)) * delta_vol
+                                - 0.5 * out(i,j,k,n) * Ueb_dot_an_new;
+
+                             if (j==8 && (i==9 || i==10) ) {
+                            //if (j==12 && (i==15 || i==16) ) {
+                                Print()<<"IR DELTA DIVU "<<delta_vol
+                                       <<" "<<Ueb_dot_an_new
+                                       <<" "<<out(i,j,k,n)
+                                       <<" "<<delta_divU
+                                       <<std::endl;
+                            }
+                             Abort("This not yet tested...");
+                        } else {
+                            delta_divU = Real(0.5) * (delta_divU
+                                                      + out(i,j,k,n) * (delta_vol - Ueb_dot_an_new));
+                        }
                     }
 
                     // This will undo volume scaling that happens later in forming q-hat
-                    Ueb_dot_an /= vfrac_old(i,j,k);
-
-                    Real delta_divU = delta_vol - Ueb_dot_an;
+                    delta_divU /= vfrac_old(i,j,k);
 
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
                         + dt * delta_divU;
                         //+ dt * U_in(i,j,k,n) * delta_divU;
 
-                    // if (j==8 && (i==9 || i==10) ) {
-                    //     Print()<<"DELTA_DIVU "<<i<<": "<<delta_vol<<" "<<Ueb_dot_an<<std::endl;
-                    //  Print()<<U_in(i,j,k,n)<<std::endl;
-                    // }
+                    if (j==8 && (i==9 || i==10) ) {
+                        //if (j==12 && (i==15 || i==16) ) {
+                        Print()<<"DELTA_DIVU "<<i<<": "<<delta_vol<<" "<<Ueb_dot_an
+                               <<" "<<delta_divU<<std::endl;
+                     Print()<<U_in(i,j,k,n)<<std::endl;
+                    }
 
                 }
                 else
@@ -296,7 +321,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             //                << " newly uncovered, correct neighbor at "
                             //                << Dim3{i+ioff,j+joff,k+koff} << std::endl;
 
-                            Real delta_vol = vfrac_new(i,j,k) / (dt*vfrac_old(i+ioff,j+joff,k+koff));
+                            Real delta_vol = vfrac_new(i,j,k) * U_in(i+ioff,j+joff,k+koff,n)
+                                / (dt*vfrac_old(i+ioff,j+joff,k+koff));
                             // NOTE this correction is only right for the case that the newly
                             // uncovered cell has only one other cell in it's neghborhood.
 
@@ -317,7 +343,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                                                  + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
                                                  + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
 
-                                kappa_a = Real(0.5) * Ueb_dot_n * barea_new(i,j,k) /
+                                kappa_a = Real(0.5) * Ueb_dot_n * barea_new(i,j,k) * out(i,j,k,n)/
                                      vfrac_old(i+ioff,j+joff,k+koff);
 
 //                                 if ( j==8){
@@ -340,6 +366,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 }
             });
         }
+
+        //FIXME - For now, use the data in out, need to zero here
+    amrex::ParallelFor(bx,ncomp,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+    {
+        out(i,j,k,n) = 0.;
+    });
 
         StateRedistribute(bx, ncomp, out, scratch, flag_new, vfrac_old, vfrac_new,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
