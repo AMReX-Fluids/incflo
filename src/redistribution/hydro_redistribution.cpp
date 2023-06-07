@@ -251,7 +251,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     }
 
                     // For the Corrector step
-                    if (!flag_new(i,j,k).isRegular() && !flag_new(i,j,k).isCovered() &&
+                    if (!flag_new(i,j,k).isCovered() &&
                         delta_vol > eps && vel_eb_new)
                     {
                         Real Ueb_dot_an_new =
@@ -321,8 +321,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             //                << " newly uncovered, correct neighbor at "
                             //                << Dim3{i+ioff,j+joff,k+koff} << std::endl;
 
-                            Real delta_vol = vfrac_new(i,j,k) * U_in(i+ioff,j+joff,k+koff,n)
-                                / (dt*vfrac_old(i+ioff,j+joff,k+koff));
+                            Real delta_vol = vfrac_new(i,j,k) / dt;
+                            Real delta_divU = delta_vol * U_in(i+ioff,j+joff,k+koff,n);
+
                             // NOTE this correction is only right for the case that the newly
                             // uncovered cell has only one other cell in it's neghborhood.
 
@@ -330,7 +331,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             // eb_add_divergence_from_flow(i,j,k,n,scratch,vel_eb,
                             //                             flag_old,vfrac_old,bnorm,barea,dxinv);
 
-                            Real kappa_a = 0.;
                             if ( vel_eb_new) {
                                 // Print()<<"Computing kappa "<<Dim3{i,j,k}<<n<<" from "
                                 //        <<vel_eb_new(i,j,k,0)<<" "
@@ -343,9 +343,11 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                                                  + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
                                                  + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
 
-                                kappa_a = Real(0.5) * Ueb_dot_n * barea_new(i,j,k) * out(i,j,k,n)/
-                                     vfrac_old(i+ioff,j+joff,k+koff);
+                                Real kappa_a =  Ueb_dot_n * barea_new(i,j,k);
 
+				delta_divU = 0.5*(delta_divU + 
+						  out(i+ioff,j+joff,k+koff,n) * (delta_vol - kappa_a));
+				
 //                                 if ( j==8){
 //                                     Print()<<"\nMSRD corrections...\n"
 //                                            <<vel_eb(i,j,k,0)<<" "<<vel_eb(i,j,k,1)<<"\n"
@@ -359,7 +361,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             }
 
                             // Print()<<"kappa "<<kappa_a<<" "<<delta_vol*U_in(i+ioff,j+joff,k+koff,n)<<std::endl;
-                            scratch(i+ioff,j+joff,k+koff,n) += dt*(delta_vol - kappa_a);
+                            scratch(i+ioff,j+joff,k+koff,n) += dt*delta_divU/vfrac_old(i+ioff,j+joff,k+koff);
                             // U_in(i+ioff,j+joff,k+koff,n) * dt*(delta_vol - kappa_a);
                         }
                     }
