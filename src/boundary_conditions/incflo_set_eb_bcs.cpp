@@ -283,7 +283,7 @@ incflo::set_eb_density (int lev, amrex::Real time, MultiFab& eb_density, int ngh
      // We make sure to only fill "nghost" ghost cells so we don't accidentally
      // over-write good ghost cell values with unfilled ghost cell values
      IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
-     eb_density.EnforcePeriodicity(0,1,ng_vect,gm.periodicity());
+     eb_density.FillBoundary(0,1,ng_vect,gm.periodicity());
 }
 
 void
@@ -368,7 +368,7 @@ incflo::set_eb_tracer (int lev, amrex::Real time, MultiFab& eb_tracer, int nghos
      // We make sure to only fill "nghost" ghost cells so we don't accidentally
      // over-write good ghost cell values with unfilled ghost cell values
      IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
-     eb_tracer.EnforcePeriodicity(0,m_ntrac,ng_vect,gm.periodicity());
+     eb_tracer.FillBoundary(0,m_ntrac,ng_vect,gm.periodicity());
 }
 
 #endif
