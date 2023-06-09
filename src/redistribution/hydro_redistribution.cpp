@@ -309,10 +309,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                                                  + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
                                                  + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
 
-                                Real kappa_a =  Ueb_dot_n * barea_new(i,j,k);
+                                Ueb_dot_n *= barea_new(i,j,k);
 
 				delta_divU = 0.5*(delta_divU + 
-						  out(i+ioff,j+joff,k+koff,n) * (delta_vol - kappa_a));
+						  out(i,j,k,n) * (delta_vol - Ueb_dot_n));
 				
                                 // Account for flux into newly uncovered cell (needed for conservation)
                                 scratch(i+ioff,j+joff,k+koff,n) += Real(0.5) * dt * dUdt_in(i,j,k,n)
