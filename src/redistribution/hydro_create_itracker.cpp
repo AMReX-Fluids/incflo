@@ -108,8 +108,8 @@ Redistribution::MakeITracker ( Box const& bx,
                           vfrac_new, itracker,
                           lev_geom, target_volfrac);
         }
-	// Given the CFL restriction of MOL, it will always be the case that NU cells
-	// will get a neighbor for default target_volfrac of 0.5
+        // Given the CFL restriction of MOL, it will always be the case that NU cells
+        // will get a neighbor for default target_volfrac of 0.5
         else if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < target_volfrac) && vfrac_old(i,j,k) == 0.0)
         {
             // For now, require that newly uncovered cells only have one other cell in it's nbhd
@@ -124,7 +124,7 @@ Redistribution::MakeITracker ( Box const& bx,
             // vfrac is only for checking volume of nbhd
             // Probably don't need target_volfrac to match with general case,
             // FIXME? This could result in a NC cell including other NC cells in nbhd depending
-	    // target_volfrac
+            // target_volfrac
             normalMerging(i, j, k,
                           AMREX_D_DECL(apx_old, apy_old, apz_old),
                           vfrac_new, itracker,

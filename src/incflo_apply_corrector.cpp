@@ -256,14 +256,8 @@ void incflo::ApplyCorrector()
 
             // Need to ensure that boundaries are consistent
             rho_temp.FillBoundary(geom[lev].periodicity());
-// rho_old should already have boundary filled and we don't alter it, so shouldn't need FB here...
+            // rho_old should already have boundary filled, so shouldn't need FB here...
 
-            // Fixme
-            // Setting rho EB covered to zero can cause problems down the line bc we use 1/rho
-            // EB_set_covered(rho_temp,0,1,rho_temp.nGrow(),0.);
-            // VisMF::Write(rho_temp,"newrho");
-            // VisMF::Write(ld.conv_density,"drdt_new");
-            // VisMF::Write(ld.conv_density_o,"drdt_old");
 #endif
 
 #ifdef _OPENMP
@@ -576,18 +570,9 @@ m                {
                 //           = vel_new  + dt/2 * (drdt_o + drdt + laps)
                 for ( int n = 0; n < AMREX_SPACEDIM; n++)
                 {
-                    // Print()<<Dim3{i,j,k}<<"Vel update pieces ...\n"
-                    //     <<dvdt_o(i,j,k,n)<< " "<<dvdt(i,j,k,n)<<"\n"
-                    //  //<<divtau_o(i,j,k,n)<< " "<<divtau(i,j,k,n)<<"\n"
-                    //     <<vel_f(i,j,k,n)<<std::endl;
                     // FIXME! make sure tracer does equivalent...
                     vel_o(i,j,k,n) = rho_o(i,j,k)*vel_o(i,j,k,n);
                     if ( vfrac_old(i,j,k) != 0. ){
-                        // Print()<<"dvdt_o "<<dvdt_o(i,j,k,n)<<std::endl
-                        //        <<"dvdt "<<dvdt(i,j,k,n)<<std::endl
-                        //        <<"divtau_o "<<divtau_o(i,j,k,n)<<std::endl
-                        //        <<"divtau "<<divtau(i,j,k,n)<<std::endl
-                        //        <<"force "<<vel_f(i,j,k,n)<<std::endl;
                         rhovel_t(i,j,k,n) = m_half * (  dvdt_o(i,j,k,n)
                                                         + dvdt(i,j,k,n)*vfrac_new(i,j,k)/vfrac_old(i,j,k)
                                                         // FIXME - need to adjust vol scaling on divtau
@@ -827,18 +812,6 @@ m                {
     }
     else
     {
-        // FIXME - not sure if this is needed or not. Test with multilevel run. ... Probably
-        // the Nodal proj will do this average down for us...
-        // Need to average down tracer since the diffusion solver didn't do it for us.
-//         for (int lev = finest_level-1; lev >= 0; --lev) {
-// #ifdef AMREX_USE_EB
-//             amrex::EB_average_down(m_leveldata[lev+1]->velocity, m_leveldata[lev]->velocity,
-//                                    0, AMREX_SPACEDIM, refRatio(lev));
-// #else
-//             amrex::average_down(m_leveldata[lev+1]->velocity, m_leveldata[lev]->velocity,
-//                                 0, AMREX_SPACEDIM, refRatio(lev));
-// #endif
-//         }
         // Make sure covered cells have something computable in them (i.e. not NAN or INF)
         for (int lev = 0; lev <= finest_level; ++lev)
         {
@@ -846,9 +819,6 @@ m                {
         }
     }
 
-//FIXME
-     // VisMF::Write(m_leveldata[0]->density,"dcor");
-     // VisMF::Write(m_leveldata[0]->velocity,"vcor");
 
     // **********************************************************************************************
     //

@@ -362,14 +362,6 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         }
         else
         {
-            if ( i==9 && j==8) {
-                Print()<<"U_in : "<<U_in(i,j,k,n)<<std::endl;
-                Print()<<"soln hat : "<<soln_hat(i,j,k,n)<<std::endl;
-                Print()<<"alpha, beta : "<<alpha(i,j,k,0)<<" "<<alpha(i,j,k,1)<<std::endl;
-                Print()<<"nrs : "<<nrs(i,j,k)<<std::endl;
-                Print()<<"Uout : "<<U_out(i,j,k,n)<<std::endl;
-            }
-
             U_out(i,j,k,n) = 1.e40;
         }
     });
