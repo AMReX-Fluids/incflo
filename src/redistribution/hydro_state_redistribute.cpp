@@ -215,7 +215,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
                 for (int n = 0; n < ncomp; n++)
                 {
-                    if ( vfrac_new(i,j,k) > 0.0) // Create neighborhood polynomial
+                    if ( 0 ) //vfrac_new(i,j,k) > 0.0) // Create neighborhood polynomial
                     {
                         bool extdir_ilo = (d_bcrec_ptr[n].lo(0) == amrex::BCType::ext_dir ||
                                            d_bcrec_ptr[n].lo(0) == amrex::BCType::hoextrap);
