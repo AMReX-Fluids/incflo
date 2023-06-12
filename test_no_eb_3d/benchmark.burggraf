@@ -1,0 +1,77 @@
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+# This problem, and scaling results for it, are described in the paper
+# Application of High-Order Compact Difference Scheme in the 
+#   Computation of Incompressible Wall-Bounded Turbulent Flows
+# by Ruifeng Hu, Limin Wang, Ping Wang, Yan Wang and Xiaojing Zheng,
+# available at https://www.mdpi.com/2079-3197/6/2/31
+# 
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#            SIMULATION STOP            #
+#.......................................#
+stop_time               =   5.          # Max (simulated) time to evolve
+amr.max_level           =   0           # Max AMR level in hierarchy 
+
+incflo.probtype         = 16
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#            INPUT AND OUTPUT           #
+#.......................................#
+amr.plot_int            =   1000        # Steps between plot files
+amr.check_int           =  -1           # Steps between checkpoint files
+amr.restart             =   ""          # Checkpoint to restart from 
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#               PHYSICS                 #
+#.......................................#
+incflo.gravity          =   0.  0.  0.  # Gravitational force (3D)
+incflo.ro_0             =   1.          # Reference density 
+incflo.constant_density =   1
+
+incflo.diffusion_type   = 1
+
+incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
+incflo.mu               =   0.01        # Dynamic viscosity coefficient
+incflo.mu               =   1.0         # Dynamic viscosity coefficient
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#        ADAPTIVE MESH REFINEMENT       #
+#.......................................#
+amr.n_cell              =     8   8     # Grid cells at coarsest AMRlevel
+incflo.fixed_dt         =   0.01        # 
+
+amr.n_cell              =    64  64     # Grid cells at coarsest AMRlevel
+incflo.fixed_dt         =   0.002       # 0.9 * 1/128
+
+amr.n_cell              =   128 128     # Grid cells at coarsest AMRlevel
+incflo.fixed_dt         =   0.001       # 0.9 * 1/128
+
+amr.n_cell              =    32  32     # Grid cells at coarsest AMRlevel
+incflo.fixed_dt         =   0.004       # 0.9 * 1/128
+
+amr.n_cell              =    16  16     # Grid cells at coarsest AMRlevel
+incflo.fixed_dt         =   0.008       # 0.9 * 1/128
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#              GEOMETRY                 #
+#.......................................#
+geometry.prob_lo        =   0.  0.  0.  # Lo corner coordinates
+geometry.prob_hi        =   1.  1.  1.  # Hi corner coordinates
+geometry.is_periodic    =   0   0   1   # Periodicity x y z (0/1)
+
+# Boundary conditions
+xlo.type                =   "nsw"
+xhi.type                =   "nsw"
+ylo.type                =   "nsw"
+yhi.type                =   "nsw"
+yhi.velocity            =   1.  0.  0. 
+
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#              VERBOSITY                #
+#.......................................#
+incflo.verbose          =   1           # incflo_level
+mac_proj.verbose        =   0           # MAC Projector
+nodal_proj.verbose      =   0           # Nodal Projector
+
+amr.plt_ccse_regtest    =   1
+amr.plt_error_u         =   1
+amr.plt_error_v         =   1

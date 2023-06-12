@@ -4,16 +4,14 @@ TOP = ..
 
 EBASE = incflo
 
-BL_NO_FORT = TRUE
-
 DIM = 3
 
 PRECISION  = DOUBLE
 
 TINY_PROFILE = FALSE
 
-DEBUG      = FALSE
 DEBUG      = TRUE
+DEBUG      = FALSE
 
 COMP	   = gnu
 
@@ -22,8 +20,10 @@ USE_OMP    = FALSE
 USE_CUDA   = FALSE
 
 USE_HYPRE = FALSE
+BL_NO_FORT = TRUE
 
 USE_EB = TRUE
-USE_MOVING_EB = TRUE
+
+USE_CSG = FALSE
 
 include ../src/Make.incflo

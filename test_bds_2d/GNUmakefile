@@ -4,7 +4,7 @@ TOP = ..
 
 EBASE = incflo
 
-DIM = 3
+DIM = 2
 
 PRECISION  = DOUBLE
 
@@ -23,7 +23,5 @@ USE_HYPRE = FALSE
 BL_NO_FORT = TRUE
 
 USE_EB = FALSE
-
-USE_CSG = FALSE
 
 include ../src/Make.incflo

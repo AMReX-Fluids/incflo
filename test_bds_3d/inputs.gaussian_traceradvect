@@ -1,0 +1,69 @@
+amrex.fpe_trap_invalid=1                # hav a trap to catch a bug
+incflo.probtype         =  15
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#            SIMULATION STOP            #
+#.......................................#
+stop_time               =   1.0         # Max (simulated) time to evolve
+max_step                =   1000         # Max number of time steps
+steady_state            =   0           # Steady-state solver?
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#            INPUT AND OUTPUT           #
+#.......................................#
+amr.check_int           =   -1          # Steps between checkpoint files
+amr.restart             =   ""          # Checkpoint to restart from
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#               PHYSICS                 #
+#.......................................#
+incflo.mu               =   0.0       # Dynamic viscosity coefficient
+incflo.mu_s             =   0.0       # Scalar diffusion coefficient mu (mu = rho * nu)
+incflo.diffusion_type        = 0             # 0 = Explicit, 1 = Crank-Nicolson, 2 = Implicit
+incflo.constant_density = true
+incflo.advect_tracer    = true
+incflo.advect_momentum  = false
+incflo.advection_type   = "BDS"
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#        ADAPTIVE MESH REFINEMENT       #
+#.......................................#
+
+amr.n_cell              =   64 64 64    # Grid cells at coarsest AMRlevel
+amr.max_grid_size       =   32 32 32    # Max grid size at AMR levels
+incflo.fixed_dt = 0.01
+amr.plot_int            =    100
+
+#amr.n_cell              =   128 128 128 # Grid cells at coarsest AMRlevel
+#amr.max_grid_size       =   64 64 64    # Max grid size at AMR levels
+#incflo.fixed_dt = 0.005
+#amr.plot_int            =    200
+
+#amr.n_cell              =   256 256 256 # Grid cells at coarsest AMRlevel
+#amr.max_grid_size       =   128 128 128 # Max grid size at AMR levels
+#incflo.fixed_dt = 0.0025
+#amr.plot_int            =    400
+
+amr.max_level           =   0
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#              GEOMETRY                 #
+#.......................................#
+geometry.prob_lo        =  0.  0.  0.   # Lo corner coordinates
+geometry.prob_hi        =  1.0 1.0 1.0  # Hi corner coordinates
+geometry.is_periodic    =   1   1   1   # Periodicity x y z (0/1)
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#          NUMERICAL PARAMETERS         #
+#.......................................#
+mac_proj.mg_rtol             = 1.e-12
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#              VERBOSITY                #
+#.......................................#
+incflo.verbose               =   2           # incflo_level
+mac_proj.verbose             =   1           # MAC Projector
+nodal_proj.verbose           =   1           # Nodal Projector
+scalar_diffusion.verbose     =   1           # Diffusion
+scalar_diffusion.mg_verbose  =   1           # Diffusion
+tensor_diffusion.verbose     =   1           # Diffusion
+tensor_diffusion.mg_verbose  =   1           # Diffusion
+#¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
+#              OUTPUT                   #
+#.......................................#
+amr.plt_ccse_regtest    =  1
+amr.plt_vort            =  1
