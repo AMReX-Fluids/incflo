@@ -23,7 +23,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
                                                                     nghost_eb_full()},
                                                                     EBSupport::full);
 #else
-    std::unique_ptr<EBFabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
+    std::unique_ptr<FabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
 #endif
 
     std::unique_ptr<LevelData> new_leveldata

@@ -515,10 +515,10 @@ void incflo::ApplyCorrector()
             }
             //FIXME -- not sure this is needed. Try commenting and running with amrex.fpe_trap_invalid = 1
             // Make sure covered cells have something computable in them (i.e. not NAN or INF)
-            for (int lev = 0; lev <= finest_level; ++lev)
-            {
-                EB_set_covered(m_leveldata[lev]->tracer, 1.e45);
-            }
+            // for (int lev = 0; lev <= finest_level; ++lev)
+            // {
+            //     EB_set_covered(m_leveldata[lev]->tracer, 1.e45);
+            // }
         }
     } // if (m_advect_tracer)
 
@@ -813,10 +813,11 @@ void incflo::ApplyCorrector()
     else
     {
         // Make sure covered cells have something computable in them (i.e. not NAN or INF)
-        for (int lev = 0; lev <= finest_level; ++lev)
-        {
-            EB_set_covered(m_leveldata[lev]->velocity, 1.e45);
-        }
+	// Question is if divtau has set EBcovered or not
+        // for (int lev = 0; lev <= finest_level; ++lev)
+        // {
+        //     EB_set_covered(m_leveldata[lev]->velocity, 1.e45);
+        // }
     }
 
 

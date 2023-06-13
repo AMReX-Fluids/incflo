@@ -628,7 +628,7 @@ private:
     amrex::Vector<std::unique_ptr<amrex::EBFArrayBoxFactory> > m_factory;
 #endif
 #else
-    amrex::Vector<std::unique_ptr<amrex::FArrayBoxFactory> > m_factory;
+    amrex::Vector<std::unique_ptr<amrex::FabFactory<amrex::FArrayBox> > > m_factory;
 #endif
 
     enum struct BC {
@@ -971,7 +971,9 @@ private:
     void WriteCheckPointFile () const;
     void WritePlotFile ();
     void ReadCheckpointFile ();
+#ifdef AMREX_USE_EB
     void PrintDragForce(std::ofstream &drag_file);
+#endif
 };
 
 #endif

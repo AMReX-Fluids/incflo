@@ -241,7 +241,7 @@ incflo::ApplyProjection (Vector<MultiFab const*> density,
 }
 
 // Make a new level from scratch using provided BoxArray and DistributionMapping.
-// Only used during initialization.
+// Only used during initialization (so also during ReadCheckpointFile).
 // overrides the pure virtual function in AmrCore
 void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_grids,
                                       const DistributionMapping& new_dmap)
@@ -274,30 +274,34 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
                                            nghost_eb_volume(),
                                            nghost_eb_full()},
                                           EBSupport::full);
-
-    m_leveldata[lev].reset(new LevelData(grids[lev], dmap[lev], *m_new_factory[lev],
-                                         m_ntrac, nghost_state(),
-                                         m_advection_type,
-                                         m_diff_type==DiffusionType::Implicit,
-                                         use_tensor_correction,
-                                         m_advect_tracer));
 #else
+    // Stationary EB
     m_factory[lev] = makeEBFabFactory(geom[lev], grids[lev], dmap[lev],
                                       {nghost_eb_basic(),
                                        nghost_eb_volume(),
                                        nghost_eb_full()},
                                       EBSupport::full);
+#endif
+#else
+    // No EB
+    m_factory[lev] = std::make_unique<FArrayBoxFactory>();
+#endif
 
-    m_leveldata[lev].reset(new LevelData(grids[lev], dmap[lev], *m_factory[lev],
+#ifdef AMREX_USE_MOVING_EB
+    // new and old factory are the same at this point...
+    m_leveldata[lev] = std::make_unique<LevelData>(grids[lev], dmap[lev], *m_new_factory[lev],
                                          m_ntrac, nghost_state(),
                                          m_advection_type,
                                          m_diff_type==DiffusionType::Implicit,
-                                         use_tensor_correction,
-                                         m_advect_tracer));
-#endif
-
+                                           use_tensor_correction,
+                                         m_advect_tracer);
 #else
-    m_factory[lev].reset(new FArrayBoxFactory());
+    m_leveldata[lev] = std::make_unique<LevelData>(grids[lev], dmap[lev], *m_factory[lev],
+                                         m_ntrac, nghost_state(),
+                                         m_advection_type,
+                                         m_diff_type==DiffusionType::Implicit,
+                                           use_tensor_correction,
+                                         m_advect_tracer);
 #endif
 
     m_t_new[lev] = time;

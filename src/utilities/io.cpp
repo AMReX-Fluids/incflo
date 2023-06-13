@@ -192,13 +192,6 @@ void incflo::ReadCheckpointFile()
                                   Geom(lev).isPeriodic()));
     }
 
-#ifdef AMREX_USE_MOVING_EB
-    if ( m_verbose > 1 ) { Print()<<"Making new geometry at time "<<m_cur_time<<std::endl; }
-    // Create new EB geometry at the current time.
-    // MakeNewLevelFromScratch() will build EBFabFactories
-    MakeNewEBGeometry(m_cur_time);
-#endif
-
     for(int lev = 0; lev <= finest_level; ++lev)
     {
         // read in level 'lev' BoxArray from Header
@@ -658,9 +651,10 @@ void incflo::WritePlotFile()
     WriteJobInfo(plotfilename);
 }
 
-
+#ifdef AMREX_USE_EB
 // Copy/Paste drag computation from from drangara
-void incflo::PrintDragForce(std::ofstream &drag_file) {
+void incflo::PrintDragForce(std::ofstream &drag_file)
+{
    Print() << "PrintDragForce\n";
 
    Vector<MultiFab> gradx(finest_level + 1);
@@ -891,4 +885,4 @@ void incflo::PrintDragForce(std::ofstream &drag_file) {
                Geom(), m_cur_time, istep, refRatio());
    }
 }
-
+#endif

@@ -5,8 +5,8 @@
  *
  */
 
-#ifndef IAMR_REDISTRIBUTION_H_
-#define IAMR_REDISTRIBUTION_H_
+#ifndef REDISTRIBUTION_H_
+#define REDISTRIBUTION_H_
 
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_MultiCutFab.H>
