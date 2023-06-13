@@ -266,7 +266,6 @@ void incflo::ApplyCorrector()
             for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
             {
                 Box const& bx = mfi.tilebox();
-                Array4<Real> const& rho_t        = rho_temp.array(mfi);
                 Array4<Real> const& rho_n        = ld.density.array(mfi);
                 Array4<Real const> const& rho_o  = ld.density_o.const_array(mfi);
                 Array4<Real> const& rho_nph      = density_nph[lev].array(mfi);
@@ -274,6 +273,7 @@ void incflo::ApplyCorrector()
                 Array4<Real const> const& drdt   = ld.conv_density.const_array(mfi);
 
 #ifdef AMREX_USE_MOVING_EB
+                Array4<Real> const& rho_t        = rho_temp.array(mfi);
                 //
                 // For moving EB, redistribute and returns full state at new time
                 //
@@ -293,7 +293,7 @@ void incflo::ApplyCorrector()
                 // Add advective update that's already been redistributed to get rho^(n+1)
                 //
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-m                {
+                {
                     const Real rho_old = rho_o(i,j,k);
                     Real rho_new = rho_old + l_dt * m_half*(drdt(i,j,k)+drdt_o(i,j,k));
 

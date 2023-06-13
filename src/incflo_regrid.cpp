@@ -106,6 +106,7 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 #endif
 }
 
+#ifdef AMREX_USE_MOVING_EB
 void incflo::MakeFactoryWithNewGeometry ()
 {
     BL_PROFILE("incflo::MakeFactoryWithNewGeometry()");
@@ -244,6 +245,7 @@ void incflo::RemakeWithNewGeometry ()
                                               MLMG::Location::CellCenter  ) ); // Location of solution variable phi
     }
 }
+#endif
 
 // Delete level data
 // overrides the pure virtual function in AmrCore

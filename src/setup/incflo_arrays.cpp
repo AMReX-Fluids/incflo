@@ -23,6 +23,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
       gp        (ba, dm, AMREX_SPACEDIM, 0       , MFInfo(), fact),
       conv_velocity_o(ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),
 // FIXME - think about if we really want to do it this way...
+      // only moving EB needs conv ghost cells
       // this also probably gives one too many ghost cells (4 vs 3)
       conv_density_o (ba, dm, 1             , ng_state, MFInfo(), fact),
       conv_tracer_o  (ba, dm, ntrac         , ng_state, MFInfo(), fact)

@@ -706,7 +706,8 @@ private:
     EBFactory (int lev) const noexcept {
         return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
     }
-    // FIXME?  Not sure this is the best way to handle things. DiffusionXXXOp uses this...
+
+    amrex::EBFArrayBoxFactory const&
     EBFactory (int lev, amrex::Real /*time*/) const noexcept {
         return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
     }
@@ -782,10 +783,6 @@ private:
 
     amrex::Vector<amrex::MultiFab*> get_velocity_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_velocity_new () noexcept;
-    amrex::Vector<amrex::MultiFab*> get_velocity_eb () noexcept;
-    amrex::Vector<amrex::MultiFab*> get_velocity_eb (amrex::Real time) noexcept;
-    amrex::Vector<amrex::MultiFab*> get_density_eb () noexcept;
-    amrex::Vector<amrex::MultiFab*> get_tracer_eb () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_old () noexcept;
@@ -806,15 +803,23 @@ private:
     //
     amrex::Vector<amrex::MultiFab const*> get_velocity_old_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_velocity_new_const () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_velocity_eb () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_density_eb () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_tracer_eb () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_density_old_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_density_new_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_tracer_old_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_tracer_new_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_vel_forces_const () const noexcept;
     amrex::Vector<amrex::MultiFab const*> get_tra_forces_const () const noexcept;
+
+#ifdef AMREX_USE_EB
+    amrex::Vector<amrex::MultiFab*> get_velocity_eb () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_velocity_eb (amrex::Real time) noexcept;
+    amrex::Vector<amrex::MultiFab*> get_density_eb () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_tracer_eb () noexcept;
+
+    amrex::Vector<amrex::MultiFab const*> get_velocity_eb () const noexcept;
+    amrex::Vector<amrex::MultiFab const*> get_density_eb () const noexcept;
+    amrex::Vector<amrex::MultiFab const*> get_tracer_eb () const noexcept;
+#endif
 
     amrex::Vector<int> const& get_velocity_iconserv () const noexcept { return m_iconserv_velocity; }
     amrex::Vector<int> const& get_density_iconserv () const noexcept { return m_iconserv_density; }

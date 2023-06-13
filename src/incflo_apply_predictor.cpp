@@ -330,6 +330,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  Array4<Real       > const& rho_old  = ld.density_o.array(mfi);
                  Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                  Array4<Real>        const& rho_nph  = density_nph_oldeb[lev].array(mfi);
+#ifdef AMREX_USE_MOVING_EB
                  auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
                  auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
@@ -341,10 +342,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
                          rho_old(i,j,k) = rho_new(i,j,k);
                      }
                      rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
-
-                     // if ((vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1.))
-                     //     amrex::Print() << "rho" << IntVect(i,j) << ": " << rho_new(i,j,0) << std::endl;
                  });
+#else
+                 amrex::ParallelFor(bxg1, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                 {
+                     rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
+                 });
+
+#endif
             } // mfi
 
         } // lev

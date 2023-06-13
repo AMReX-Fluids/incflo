@@ -228,15 +228,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         // VisMF::Write(*density[0],"ra");
 
 #ifdef AMREX_USE_EB
-        const auto& ebfact_old = OldEBFactory(lev);
-        const auto& ebfact_new =    EBFactory(lev);
         const auto& ebfact =    EBFactory(lev, time);
 
-        if (!ebfact_old.isAllRegular()) {
-            // NOTE this divu is not relevant for MSRD
+        if (!ebfact.isAllRegular()) {
+            // NOTE this divu is not relevant for moving EB.
             // It's used for non-conservative adjustment (but MSRD is always conservative)
             // and in EBGod in 3D for corner-coupling (but flow through EB doesn't use any
-            // transverse or CC (aka d/dt) terms)
+            // transverse or CC (aka d/dt terms)
             if (m_eb_flow.enabled) {
                 amrex::EB_computeDivergence(divu[lev],u,geom[lev],true,*get_velocity_eb()[lev]);
             } else {
@@ -444,8 +442,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     for (int lev = 0; lev <= finest_level; ++lev)
     {
 #ifdef AMREX_USE_EB
-        // FIXME - need to think about how to make this work for not Moving EB
-        const EBFArrayBoxFactory* ebfact_new = &EBFactory(lev, m_cur_time+m_dt);
         const EBFArrayBoxFactory* ebfact     = &EBFactory(lev, time);
         auto const& vfrac = ebfact->getVolFrac();
 
@@ -457,10 +453,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         conv_r[lev]->setVal(0.);
         conv_t[lev]->setVal(0.);
 #else
-        // //fixme
-        // VisMF::Write(vfrac, "vfm");
-        // VisMF::Write(ebfact_new->getVolFrac(), "vfn");
-        // VisMF::Write(*get_velocity_eb()[0], "veb");
 
         // MSRD updates are really associated to the EB at both times...
         // Don't think it actaully matters what time this factory is at though.
@@ -478,8 +470,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         Real mult = -1.0;
 
-        // VisMF::Write(*get_velocity_eb()[lev],"veb");
-        // VisMF::Write(*get_density_eb()[lev],"deb");
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -699,7 +689,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #ifdef AMREX_USE_MOVING_EB
         // We need to fill the boundary for later redistribution
         // Note that this goes with a setVal(0) above to fill vals outside domain
-// FIXME - don;t think conv has any ghost cells....
         EB_set_covered(*conv_u[lev],0.0);
         EB_set_covered(*conv_r[lev],0.0);
         EB_set_covered(*conv_t[lev],0.0);
@@ -718,9 +707,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         drdt_tmp.FillBoundary(geom[lev].periodicity());
         dtdt_tmp.FillBoundary(geom[lev].periodicity());
         //get_velocity_eb()[lev]->FillBoundary(geom[lev].periodicity());
-//fixme
-        // VisMF::Write(dvdt_tmp,"vtmp");
-        // VisMF::Write(drdt_tmp,"rtmp");
 
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
@@ -730,16 +716,16 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
             // velocity
             auto const& bc_vel = get_velocity_bcrec_device_ptr();
-            redistribute_term(mfi, *conv_u[lev], dvdt_tmp,
-                              (m_advect_momentum) ? rhovel[lev] : *vel[lev],
-                              bc_vel, lev, nullptr);
+            redistribute_term(mfi, conv_u[lev]->array(mfi), dvdt_tmp.array(mfi),
+                              (m_advect_momentum) ? rhovel[lev].array(mfi) : vel[lev]->array(mfi),
+                              bc_vel, lev, Array4<Real const>{});
 
             // density
             if (!m_constant_density) {
                 auto const& bc_den = get_density_bcrec_device_ptr();
-                redistribute_term(mfi, *conv_r[lev], drdt_tmp,
-                                  *density[lev], bc_den, lev,
-                                  nullptr);
+                redistribute_term(mfi, conv_r[lev]->array(mfi), drdt_tmp.array(mfi),
+                                  density[lev]->array(mfi), bc_den, lev,
+                                  Array4<Real const>{});
             } else {
                 auto const& drdt = conv_r[lev]->array(mfi);
                 amrex::ParallelFor(bx,
@@ -751,9 +737,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
             if (m_advect_tracer) {
                 auto const& bc_tra = get_tracer_bcrec_device_ptr();
-                redistribute_term(mfi, *conv_t[lev], dtdt_tmp,
-                                  rhotrac[lev], bc_tra, lev,
-                                  nullptr);
+                redistribute_term(mfi, conv_t[lev]->array(mfi), dtdt_tmp.array(mfi),
+                                  rhotrac[lev].array(mfi), bc_tra, lev,
+                                  Array4<Real const>{});
             }
         } // mfi
 #endif
