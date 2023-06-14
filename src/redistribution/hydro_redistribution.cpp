@@ -91,10 +91,10 @@ Redistribution::FillNewlyUncovered ( MultiFab& mf,
 
                         // FIXME -- correct fix of parallel OOB error here is that
                         // we check if we fall in the box...
-                        amrex::Print() << "Cell  " << Dim3{i,j,k}
-                                       << " newly uncovered, fill with value of neighbor at "
-                                       << Dim3{i+ioff,j+joff,k+koff}
-                                       <<": "<<U_in(i,j,k,n)<< std::endl;
+                        // amrex::Print() << "Cell  " << Dim3{i,j,k}
+                        //                << " newly uncovered, fill with value of neighbor at "
+                        //                << Dim3{i+ioff,j+joff,k+koff}
+                        //                <<": "<<U_in(i,j,k,n)<< std::endl;
                     }
                 }
             });
