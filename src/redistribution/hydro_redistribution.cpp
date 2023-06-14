@@ -216,6 +216,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             // FIXME - for now, don't allow scaling with MSRD.
             AMREX_ALWAYS_ASSERT(!srd_update_scale);
 
+	    Real eps = 1.e-14;
+	    
             amrex::ParallelFor(Box(scratch), ncomp,
             [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
@@ -234,10 +236,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     Real delta_divU = 0.0;
                     Real Ueb_dot_an = 0.0;
                     Real delta_vol = (vfrac_new(i,j,k) - vfrac_old(i,j,k))/dt;
-                    Real eps = 1.e-14;
 
                     if (!flag_old(i,j,k).isRegular() && !flag_new(i,j,k).isCovered()
-                        && delta_vol > eps )
+                        && delta_vol > eps ) // we need this correction for NU but don't for NC...
                     {
                         Ueb_dot_an =
                             AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
@@ -274,6 +275,14 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
                         + dt * delta_divU;
 
+                    if (j==8 && (i==9 || i==8) ) {
+                        //if (j==12 && (i==15 || i==16) ) {
+                        Print()<<"NOT REGULAR! "<<i<<std::endl;
+			Print()<<"DELTA_DIVU "<<i<<": "<<delta_vol<<" "<<Ueb_dot_an
+                               <<" "<<delta_divU<<std::endl;
+                     Print()<<U_in(i,j,k,n)<<std::endl;
+                    }
+
                 }
                 else
                 {
@@ -300,10 +309,24 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         {
                             Real delta_vol = vfrac_new(i,j,k) / dt;
                             Real delta_divU = delta_vol * U_in(i+ioff,j+joff,k+koff,n);
-
+			    Real dV = vfrac_new(i+ioff,j+joff,k+koff)-vfrac_old(i+ioff,j+joff,k+koff);
+			    
                             // NOTE this correction is only right for the case that the newly
                             // uncovered cell has only one other cell in it's neghborhood.
-                            if ( vel_eb_new) {
+			    if (!flag_old(i+ioff,j+joff,k+koff).isRegular() && !flag_new(i+ioff,j+joff,k+koff).isCovered()
+				&& dV < eps ) // we need this correction for NU but don't for NC...
+			    {
+				Real Ueb_dot_an =
+				    AMREX_D_TERM(  vel_eb_old(i+ioff,j+joff,k+koff,0)*bnorm_old(i+ioff,j+joff,k+koff,0) * dxinv[0],
+						   + vel_eb_old(i+ioff,j+joff,k+koff,1)*bnorm_old(i+ioff,j+joff,k+koff,1) * dxinv[1],
+						   + vel_eb_old(i+ioff,j+joff,k+koff,2)*bnorm_old(i+ioff,j+joff,k+koff,2) * dxinv[2] );
+				Ueb_dot_an *= barea_old(i+ioff,j+joff,k+koff);
+
+				delta_divU = (delta_vol - Ueb_dot_an) * U_in(i+ioff,j+joff,k+koff,n);
+			    }
+
+
+			    if ( vel_eb_new) {
                                 Real Ueb_dot_n =
                                     AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
                                                  + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
