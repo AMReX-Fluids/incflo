@@ -71,7 +71,7 @@ Redistribution::MakeITracker ( Box const& bx,
                                Real target_volfrac,
                                Array4<Real const> const& vel_eb)
 {
-    int debug_verbose = 1;
+    int debug_verbose = 0;
 
     auto map = getCellMap();
     // Inverse map
