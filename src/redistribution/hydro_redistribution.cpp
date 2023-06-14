@@ -275,14 +275,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
                         + dt * delta_divU;
 
-                    if (j==8 && (i==9 || i==8) ) {
-                        //if (j==12 && (i==15 || i==16) ) {
-                        Print()<<"NOT REGULAR! "<<i<<std::endl;
-			Print()<<"DELTA_DIVU "<<i<<": "<<delta_vol<<" "<<Ueb_dot_an
-                               <<" "<<delta_divU<<std::endl;
-                     Print()<<U_in(i,j,k,n)<<std::endl;
-                    }
-
                 }
                 else
                 {
