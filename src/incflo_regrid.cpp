@@ -263,3 +263,109 @@ void incflo::ClearLevel (int lev)
     m_diffusion_scalar_op.reset();
     macproj.reset();
 }
+
+void incflo::EB_fill_uncovered (int lev, MultiFab& mf_new, MultiFab& mf_old)
+{
+    auto const& vfrac_old = OldEBFactory(lev).getVolFrac();
+    auto const& vfrac_new =    EBFactory(lev).getVolFrac();
+
+    for (MFIter mfi(mf_new,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        Box const& bx = mfi.tilebox();
+        Array4<Real>       const& fab_new = mf_new.array(mfi);
+        Array4<Real const> const& fab_old = mf_old.const_array(mfi);
+
+        Array4<Real const> const&  vf_old = vfrac_old.const_array(mfi);
+        Array4<Real const> const&  vf_new = vfrac_new.const_array(mfi);
+
+        const int ncomp = mf_new.nComp();
+
+        amrex::ParallelFor(bx,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            // If new cell is uncovered... avg from neighbors that are cut or regular
+            if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
+            {
+                //amrex::Print() << "Need to fill cell " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
+                for (int n = 0; n < ncomp; n++)
+                {
+                    fab_new(i,j,k,n) = 0.;
+                    Real den = 0.;
+
+                    if (vf_old(i+1,j,k) > 0.0)
+                    {
+                        fab_new(i,j,k,n) += fab_old(i+1,j,k,n);
+                        //amrex::Print() << "right fill: " << fab_old(i+1,j,k,n) << std::endl;
+                        den += 1.;
+                    }
+                    if (vf_old(i-1,j,k) > 0.0)
+                    {
+                        fab_new(i,j,k,n) += fab_old(i-1,j,k,n);
+                        //amrex::Print() << "left fill: " << fab_old(i-1,j,k,n) << std::endl;
+                        den += 1.;
+                    }
+                    if (vf_old(i,j+1,k) > 0.0)
+                    {
+                        fab_new(i,j,k,n) += fab_old(i,j+1,k,n);
+                        //amrex::Print() << "top fill: " << fab_old(i,j+1,k,n) << std::endl;
+                        den += 1.;
+                    }
+                    if (vf_old(i,j-1,k) > 0.0)
+                    {
+                        fab_new(i,j,k,n) += fab_old(i,j-1,k,n);
+                        //amrex::Print() << "bottom fill: " << fab_old(i,j-1,k,n) << std::endl;
+                        den += 1.;
+                    }
+#if (AMREX_SPACEDIM == 3)
+                    if (vf_old(i,j,k+1) > 0.0)
+                    {
+                        fab_new(i,j,k,n) += fab_old(i,j,k+1,n);
+                        //amrex::Print() << "up fill: " << fab_old(i,j,k+1,n) << std::endl;
+                        den += 1.;
+                    }
+                    if (vf_old(i,j,k-1) > 0.0)
+                    {
+                        fab_new(i,j,k,n) += fab_old(i,j,k-1,n);
+                        //amrex::Print() << "down fill: " << fab_old(i,j,k-1,n) << std::endl;
+                        den += 1.;
+                    }
+#endif
+
+                    fab_new(i,j,k,n) = fab_new(i,j,k,n) / den;
+                }
+            }
+        });
+    }
+}
+
+void incflo::EB_fill_uncovered_with_zero (int lev, MultiFab& mf)
+{
+    auto const& vfrac_old = OldEBFactory(lev).getVolFrac();
+    auto const& vfrac_new =    EBFactory(lev).getVolFrac();
+
+    for (MFIter mfi(mf,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        Box const& bx = mfi.tilebox();
+        Array4<Real>       const& fab = mf.array(mfi);
+
+        Array4<Real const> const&  vf_old = vfrac_old.const_array(mfi);
+        Array4<Real const> const&  vf_new = vfrac_new.const_array(mfi);
+
+        const int ncomp = mf.nComp();
+
+        amrex::ParallelFor(bx,
+        [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            // If new cell is uncovered... avg from neighbors that are cut or regular
+            if (vf_old(i,j,k) == 0.0 && vf_new(i,j,k) > 0.0)
+            {
+                //amrex::Print() << "Need to fill cell with zero " << IntVect(AMREX_D_DECL(i,j,k)) << std::endl;
+                for (int n = 0; n < ncomp; n++)
+                {
+                    // FIXME- for now make this not identically zero so inv does not cause error
+                    fab(i,j,k,n) = 1.e-40;
+                }
+            }
+        });
+    }
+}

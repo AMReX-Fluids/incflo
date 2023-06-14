@@ -25,6 +25,87 @@ namespace {
     constexpr int itracker_comp = (AMREX_SPACEDIM < 3 ) ? 9 : 8;
 }
 
+// For moving SRD, fill newly uncovered cells in valid region of the MF with
+// the value of it's merging neighbor
+void
+Redistribution::FillNewlyUncovered ( MultiFab& mf,
+                                     EBFArrayBoxFactory const& ebfact_old,
+                                     EBFArrayBoxFactory const& ebfact_new,
+                                     MultiFab const& vel_eb,
+                                     Geometry& geom,
+                                     Real target_volfrac)
+{
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(mf,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        Box const& bx = mfi.tilebox();
+
+        EBCellFlagFab const& flagfab = ebfact_new.getMultiEBCellFlagFab()[mfi];
+        if ( flagfab.getType(bx) == FabType::singlevalued)
+        {
+            AMREX_D_TERM(Array4<Real const> apx_old = ebfact_old.getAreaFrac()[0]->const_array(mfi);,
+                         Array4<Real const> apy_old = ebfact_old.getAreaFrac()[1]->const_array(mfi);,
+                         Array4<Real const> apz_old = ebfact_old.getAreaFrac()[2]->const_array(mfi););
+            AMREX_D_TERM(Array4<Real const> apx_new = ebfact_new.getAreaFrac()[0]->const_array(mfi);,
+                         Array4<Real const> apy_new = ebfact_new.getAreaFrac()[1]->const_array(mfi);,
+                         Array4<Real const> apz_new = ebfact_new.getAreaFrac()[2]->const_array(mfi););
+            Array4<Real const> vfrac_old = ebfact_old.getVolFrac().const_array(mfi);
+            Array4<Real const> vfrac_new = ebfact_new.getVolFrac().const_array(mfi);
+            Array4<Real const> vel_eb_arr= vel_eb.const_array(mfi);
+            Array4<Real> U_in = mf.array(mfi);
+
+
+// FIXME - how big does this box really need to be?
+            // MakeITracker has 4 hard-coded into it, but here we would otherwise only need
+            // 1 ghost cell
+            Box const& gbx = grow(bx,4);
+
+            IArrayBox itracker(gbx,itracker_comp,The_Async_Arena());
+            Array4<int> itr = itracker.array();
+
+            MakeITracker(bx, AMREX_D_DECL(apx_old, apy_old, apz_old), vfrac_old,
+                             AMREX_D_DECL(apx_new, apy_new, apz_new), vfrac_new,
+                         itr, geom, target_volfrac, vel_eb_arr);
+
+            auto map = getCellMap();
+
+            // Fill only valid region here. This will require FillPatch later...
+            amrex::ParallelFor(Box(bx), mf.nComp(),
+            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                // Check to see if this cell was covered at time n, but uncovered at n+1
+                if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
+                {
+                    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+                    {
+                        int ioff = map[0][itr(i,j,k,i_nbor)];
+                        int joff = map[1][itr(i,j,k,i_nbor)];
+                        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
+
+                        // Take the old value of my neighbor as my own
+                        // NOTE this is only right for the case that the newly
+                        // uncovered cell has only one other cell in it's neghborhood.
+                        U_in(i,j,k,n) = U_in(i+ioff,j+joff,k+koff,n);
+
+                        // FIXME -- correct fix of parallel OOB error here is that
+                        // we check if we fall in the box...
+                        amrex::Print() << "Cell  " << Dim3{i,j,k}
+                                       << " newly uncovered, fill with value of neighbor at "
+                                       << Dim3{i+ioff,j+joff,k+koff}
+                                       <<": "<<U_in(i,j,k,n)<< std::endl;
+                    }
+                }
+            });
+        }
+        else if ( !(flagfab.getType(bx) == FabType::regular || flagfab.getType(bx) == FabType::covered) )
+        {
+            Abort("Redistribution::FillNewlyUncovered(): Bad CellFlag type");
+        }
+    } //end mfiter
+}
+
 void Redistribution::Apply ( Box const& bx, int ncomp,
                              Array4<Real>       const& out,
                              Array4<Real>       const& dUdt_in,

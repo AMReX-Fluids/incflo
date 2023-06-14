@@ -212,6 +212,22 @@ void incflo::ApplyPredictor (bool incremental_projection)
         compute_divtau(get_divtau_old(),get_velocity_old_const(),
                        get_density_old_const(),GetVecOfConstPtrs(vel_eta));
 
+#ifdef AMREX_USE_MOVING_EB
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+        // FIXME - need some way to make sure target volfrac is consistent between
+        // here and other calls
+        Real target_volfrac = Redistribution::defaults::target_vol_fraction;
+        // FOR varible density, we have to take the NU cell's merging neighbor
+        // Needs one filled ghost cell. Fills only valid region
+        Redistribution::FillNewlyUncovered(m_leveldata[lev]->divtau_o,
+                                           OldEBFactory(lev), EBFactory(lev),
+                                           *get_velocity_eb()[lev],
+                                           geom[lev], target_volfrac);
+        // FIXME? Don't think we need to FP because of how we form the update
+        // fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
+    }
+#endif
     }
     else
     {
@@ -232,6 +248,22 @@ void incflo::ApplyPredictor (bool incremental_projection)
         compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
                      GetVecOfConstPtrs(tra_eta));
 
+#ifdef AMREX_USE_MOVING_EB
+        for (int lev = 0; lev <= finest_level; lev++)
+        {
+            // FIXME - need some way to make sure target volfrac is consistent between
+            // here and other calls
+            Real target_volfrac = Redistribution::defaults::target_vol_fraction;
+            // FOR varible density, we have to take the NU cell's merging neighbor
+            // Needs one filled ghost cell. Fills only valid region
+            Redistribution::FillNewlyUncovered(m_leveldata[lev]->laps_o,
+                                               OldEBFactory(lev), EBFactory(lev),
+                                               *get_velocity_eb()[lev],
+                                               geom[lev], target_volfrac);
+            // FIXME? Don't think we need to FP because of how we form the update
+            // fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
+        }
+#endif
     }
 
     // *************************************************************************************
@@ -241,6 +273,22 @@ void incflo::ApplyPredictor (bool incremental_projection)
     compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(),
                        get_density_old_const(), get_tracer_old_const(), get_tracer_new_const(),
                        include_pressure_gradient);
+#ifdef AMREX_USE_MOVING_EB
+        for (int lev = 0; lev <= finest_level; lev++)
+        {
+            // FIXME - need some way to make sure target volfrac is consistent between
+            // here and other calls
+            Real target_volfrac = Redistribution::defaults::target_vol_fraction;
+            // FOR varible density, we have to take the NU cell's merging neighbor
+            // Needs one filled ghost cell. Fills only valid region
+            Redistribution::FillNewlyUncovered(vel_forces[lev],
+                                               OldEBFactory(lev), EBFactory(lev),
+                                               *get_velocity_eb()[lev],
+                                               geom[lev], target_volfrac);
+            // FIXME? Don't think we need to FP because of how we form the update
+            // fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
+        }
+#endif
 
 
     //VisMF::Write(m_leveldata[0]->density_o,"do3");

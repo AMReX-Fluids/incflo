@@ -34,6 +34,13 @@ namespace Redistribution {
     amrex::Array<int,9> getInvCellMap();
 #endif
 
+     void FillNewlyUncovered ( amrex::MultiFab& mf,
+                               amrex::EBFArrayBoxFactory const& ebfact_old,
+                               amrex::EBFArrayBoxFactory const& ebfact_new,
+                               amrex::MultiFab const& vel_eb,
+                               amrex::Geometry& geom,
+                               amrex::Real target_volfrac);
+
     void normalMerging ( int i, int j, int k,
                          AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
                                       amrex::Array4<amrex::Real const> const& apy,

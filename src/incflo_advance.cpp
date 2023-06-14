@@ -74,6 +74,27 @@ void incflo::Advance(Real orig_mass, Real& prev_mass)
     }
 
 
+#ifdef INCFLO_USE_MOVING_EB
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+        // FIXME - need some way to make sure target volfrac is consistent between
+        // here and other calls
+        Real target_volfrac = Redistribution::defaults::target_vol_fraction;
+        // FOR varible density, we have to take the NU cell's merging neighbor
+        // Needs one filled ghost cell. Fills only valid region
+        Redistribution::FillNewlyUncovered(m_leveldata[lev]->density_o,
+                                           OldEBFactory(lev), EBFactory(lev),
+                                           *get_velocity_eb()[lev],
+                                           geom[lev], target_volfrac);
+        fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
+
+        Redistribution::FillNewlyUncovered(m_leveldata[lev]->gp,
+                                           OldEBFactory(lev), EBFactory(lev),
+                                           *get_velocity_eb()[lev],
+                                           geom[lev], target_volfrac);
+    }
+#endif
+
     ApplyPredictor();
 
 #if 1
