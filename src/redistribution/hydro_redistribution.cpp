@@ -238,7 +238,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     Real delta_vol = (vfrac_new(i,j,k) - vfrac_old(i,j,k))/dt;
 
                     if (!flag_old(i,j,k).isRegular() && !flag_new(i,j,k).isCovered()
-                        && delta_vol > eps ) // we need this correction for NU but don't for NC...
+                        && std::abs(delta_vol) > eps ) // we need this correction for NU but don't for NC...
                     {
                         Ueb_dot_an =
                             AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
@@ -250,7 +250,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     }
 
                     // For the Corrector step
-                    if (!flag_new(i,j,k).isCovered() && delta_vol > eps && vel_eb_new)
+                    if (!flag_new(i,j,k).isCovered() && std::abs(delta_vol) > eps && vel_eb_new)
                     {
                         Real Ueb_dot_an_new =
                             AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
@@ -259,10 +259,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         Ueb_dot_an_new *= barea_new(i,j,k);
 
                         if ( flag_old(i,j,k).isRegular() ){
+			    // FIXME - not really sure if we want to average U or just take out...
                             delta_divU = 0.5 * (U_in(i,j,k,n) + out(i,j,k,n)) * delta_vol
                                 - 0.5 * out(i,j,k,n) * Ueb_dot_an_new;
-
-                             Abort("This not yet tested...");
                         } else {
                             delta_divU = Real(0.5) * (delta_divU
                                                       + out(i,j,k,n) * (delta_vol - Ueb_dot_an_new));
@@ -306,7 +305,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             // NOTE this correction is only right for the case that the newly
                             // uncovered cell has only one other cell in it's neghborhood.
 			    if (!flag_old(i+ioff,j+joff,k+koff).isRegular() && !flag_new(i+ioff,j+joff,k+koff).isCovered()
-				&& dV < eps ) // we need this correction for NU but don't for NC...
+				&& std::abs(dV) < eps ) // we need this correction for NU but don't for NC...
 			    {
 				Real Ueb_dot_an =
 				    AMREX_D_TERM(  vel_eb_old(i+ioff,j+joff,k+koff,0)*bnorm_old(i+ioff,j+joff,k+koff,0) * dxinv[0],
