@@ -216,8 +216,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             // FIXME - for now, don't allow scaling with MSRD.
             AMREX_ALWAYS_ASSERT(!srd_update_scale);
 
-	    Real eps = 1.e-14;
-	    
+            Real eps = 1.e-14;
+
             amrex::ParallelFor(Box(scratch), ncomp,
             [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
@@ -237,8 +237,16 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     Real Ueb_dot_an = 0.0;
                     Real delta_vol = (vfrac_new(i,j,k) - vfrac_old(i,j,k))/dt;
 
-                    if (!flag_old(i,j,k).isRegular() && !flag_new(i,j,k).isCovered()
-                        && std::abs(delta_vol) > eps ) // we need this correction for NU but don't for NC...
+                    // Commented if() below was to force delta_divU = 0 for newly covered (NC) cells,
+                    // as should be true in 1D
+                    // For inputs_box_right (2D), we don't stay constant for predictor
+                    // if we don't include this for NC. Along with NC corrector addition,
+                    // we can get box_right to work for covering (but not uncovering), BUT this breaks
+                    // variable density 1D (inputs_moving_right)
+                    //
+                    // We need this correction for NU but not for NC in 1D.
+                    // if (!flag_old(i,j,k).isRegular() && !flag_new(i,j,k).isCovered()
+                    //     && std::abs(delta_vol) > eps )
                     {
                         Ueb_dot_an =
                             AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
@@ -250,7 +258,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     }
 
                     // For the Corrector step
-                    if (!flag_new(i,j,k).isCovered() && std::abs(delta_vol) > eps && vel_eb_new)
+                    if (//!flag_new(i,j,k).isCovered() &&
+                        std::abs(delta_vol) > eps && vel_eb_new)
                     {
                         Real Ueb_dot_an_new =
                             AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
@@ -259,9 +268,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         Ueb_dot_an_new *= barea_new(i,j,k);
 
                         if ( flag_old(i,j,k).isRegular() ){
-			    // FIXME - not really sure if we want to average U or just take out...
+                            // FIXME - not really sure if we want to average U or just take out...
                             delta_divU = 0.5 * (U_in(i,j,k,n) + out(i,j,k,n)) * delta_vol
                                 - 0.5 * out(i,j,k,n) * Ueb_dot_an_new;
+                        } else if ( flag_new(i,j,k).isCovered() ) {
+                            // Use half of Ueb_dot_an and the full delta_vol
+                            // Needed to get 2D inputs_box_right to stay constant for covering
+                            delta_divU = Real(0.5) * (delta_divU + delta_vol );
                         } else {
                             delta_divU = Real(0.5) * (delta_divU
                                                       + out(i,j,k,n) * (delta_vol - Ueb_dot_an_new));
@@ -300,24 +313,27 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         {
                             Real delta_vol = vfrac_new(i,j,k) / dt;
                             Real delta_divU = delta_vol * U_in(i+ioff,j+joff,k+koff,n);
-			    Real dV = vfrac_new(i+ioff,j+joff,k+koff)-vfrac_old(i+ioff,j+joff,k+koff);
-			    
+                            Real dV = vfrac_new(i+ioff,j+joff,k+koff)-vfrac_old(i+ioff,j+joff,k+koff);
+
                             // NOTE this correction is only right for the case that the newly
                             // uncovered cell has only one other cell in it's neghborhood.
-			    if (!flag_old(i+ioff,j+joff,k+koff).isRegular() && !flag_new(i+ioff,j+joff,k+koff).isCovered()
-				&& std::abs(dV) < eps ) // we need this correction for NU but don't for NC...
-			    {
-				Real Ueb_dot_an =
-				    AMREX_D_TERM(  vel_eb_old(i+ioff,j+joff,k+koff,0)*bnorm_old(i+ioff,j+joff,k+koff,0) * dxinv[0],
-						   + vel_eb_old(i+ioff,j+joff,k+koff,1)*bnorm_old(i+ioff,j+joff,k+koff,1) * dxinv[1],
-						   + vel_eb_old(i+ioff,j+joff,k+koff,2)*bnorm_old(i+ioff,j+joff,k+koff,2) * dxinv[2] );
-				Ueb_dot_an *= barea_old(i+ioff,j+joff,k+koff);
 
-				delta_divU = (delta_vol - Ueb_dot_an) * U_in(i+ioff,j+joff,k+koff,n);
-			    }
+                            // // Whether this block is needed or not depends on whether it was already
+                            // // included in above loop or not.
+                            // if (!flag_old(i+ioff,j+joff,k+koff).isRegular() && !flag_new(i+ioff,j+joff,k+koff).isCovered()
+                            //     && std::abs(dV) < eps ) // we need this correction for NU but don't for NC...
+                            // {
+                            //     Real Ueb_dot_an =
+                            //         AMREX_D_TERM(  vel_eb_old(i+ioff,j+joff,k+koff,0)*bnorm_old(i+ioff,j+joff,k+koff,0) * dxinv[0],
+                            //                        + vel_eb_old(i+ioff,j+joff,k+koff,1)*bnorm_old(i+ioff,j+joff,k+koff,1) * dxinv[1],
+                            //                        + vel_eb_old(i+ioff,j+joff,k+koff,2)*bnorm_old(i+ioff,j+joff,k+koff,2) * dxinv[2] );
+                            //     Ueb_dot_an *= barea_old(i+ioff,j+joff,k+koff);
+
+                            //     delta_divU = (delta_vol - Ueb_dot_an) * U_in(i+ioff,j+joff,k+koff,n);
+                            // }
 
 
-			    if ( vel_eb_new) {
+                            if ( vel_eb_new) {
                                 Real Ueb_dot_n =
                                     AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
                                                  + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
@@ -325,12 +341,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                                 Ueb_dot_n *= barea_new(i,j,k);
 
-				delta_divU = 0.5*(delta_divU + 
-						  out(i,j,k,n) * (delta_vol - Ueb_dot_n));
-				
+                                delta_divU = 0.5*(delta_divU +
+                                                  out(i,j,k,n) * (delta_vol - Ueb_dot_n));
+
                                 // Account for flux into newly uncovered cell (needed for conservation)
                                 scratch(i+ioff,j+joff,k+koff,n) += Real(0.5) * dt * dUdt_in(i,j,k,n)
-				    * vfrac_new(i,j,k)/vfrac_old(i+ioff,j+joff,k+koff);
+                                    * vfrac_new(i,j,k)/vfrac_old(i+ioff,j+joff,k+koff);
                             }
 
                             scratch(i+ioff,j+joff,k+koff,n) += dt*delta_divU/vfrac_old(i+ioff,j+joff,k+koff);
