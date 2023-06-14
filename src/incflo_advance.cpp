@@ -1,6 +1,10 @@
 #include <incflo.H>
 #include <volWgtSum.H>
 
+#ifdef AMREX_USE_MOVING_EB
+#include <hydro_redistribution.H>
+#endif
+
 using namespace amrex;
 
 void incflo::Advance(Real orig_mass, Real& prev_mass)
