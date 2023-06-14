@@ -41,6 +41,7 @@ void incflo::make_eb_hexahedron(Real cur_time)
     pp.queryarr("lo", boxLo, 0, AMREX_SPACEDIM);
     pp.queryarr("hi", boxHi, 0, AMREX_SPACEDIM);
     pp.query("angle", angle);
+    pp.query("angle2", angle2);
     pp.query("dir", dir);
 
     Vector<Real> vel(AMREX_SPACEDIM);
