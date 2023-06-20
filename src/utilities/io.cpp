@@ -786,54 +786,8 @@ void incflo::PrintDragForce(std::ofstream &drag_file)
          {
             Real nx = bnorm(i,j,k,0);
             Real ny = bnorm(i,j,k,1);
-            //Real dudx = 0.;
-            //Real dudy = 0.;
-            //Real dvdx = 0.;
-            //Real pavg = 0.;
-            //Real pcnt = 0;
 
             if (flag(i,j,k).isSingleValued()) {
-
-                
-                /*if (flag(i+1,j,k).isCovered()){
-                    dudx = (phi_arr(i,j,k,0) - phi_arr(i-1,j,k,0))/dx[0];
-                } else {
-                    dudx = (phi_arr(i+1,j,k,0) - phi_arr(i,j,k,0))/dx[0];
-                }
-                
-                if (flag(i,j+1,k).isCovered()){
-                    dudy = (phi_arr(i,j,k,0) - phi_arr(i,j-1,k,0))/dx[1];
-                } else {
-                    dudy = (phi_arr(i,j+1,k,0) - phi_arr(i,j,k,0))/dx[1];
-                }
-
-                if (flag(i+1,j,k).isCovered()){
-                    dvdx = (phi_arr(i,j,k,1) - phi_arr(i-1,j,k,1))/dx[0];
-                } else {
-                    dvdx = (phi_arr(i+1,j,k,1) - phi_arr(i,j,k,1))/dx[0];
-                }
-                
-                if (!flag(i-1,j-1,k).isCovered()){
-                    pavg += p_nd_arr(i,j,k);
-                    pcnt += 1.;
-                }
-
-                if (!flag(i-1,j+1,k).isCovered()){
-                    pavg += p_nd_arr(i,j+1,k);
-                    pcnt += 1.;
-                }
-                     
-                if (!flag(i+1,j-1,k).isCovered()){
-                    pavg += p_nd_arr(i+1,j,k);
-                    pcnt += 1.;
-                }
-
-                if (!flag(i+1,j+1,k).isCovered()){
-                    pavg += p_nd_arr(i+1,j+1,k);
-                    pcnt += 1.;
-                }
-
-                pavg = pavg/pcnt;*/
 
 #if (AMREX_SPACEDIM == 2)
                //Real cell_drag = 

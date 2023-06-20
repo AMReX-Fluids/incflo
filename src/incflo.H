@@ -297,6 +297,10 @@ public: // for cuda
 
     bool SteadyStateReached ();
 
+#ifdef AMREX_USE_EB
+    void PrintDragForce(std::ofstream &drag_file);
+#endif
+
 private:
 
     //
@@ -971,9 +975,6 @@ private:
     void WriteCheckPointFile () const;
     void WritePlotFile ();
     void ReadCheckpointFile ();
-#ifdef AMREX_USE_EB
-    void PrintDragForce(std::ofstream &drag_file);
-#endif
 };
 
 #endif
