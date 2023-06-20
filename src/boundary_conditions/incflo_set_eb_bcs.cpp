@@ -184,7 +184,7 @@ incflo::set_eb_velocity_for_rotation (int lev, amrex::Real time, MultiFab& eb_ve
              AMREX_GPU_DEVICE (int i, int j, int k) noexcept
            {
              if (flags_arr(i,j,k).isSingleValued()) {
-               Vector<Real> r(3, 0.0);
+               GpuArray<Real, 3> r{0._rt};
                RealVect btan;
 
                // Compute r as vector from EB surface to center of rotation

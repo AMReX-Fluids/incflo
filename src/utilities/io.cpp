@@ -780,7 +780,9 @@ void incflo::PrintDragForce(std::ofstream &drag_file)
          Array4<EBCellFlag const> const& flag = flags->const_array(mfi);
 
          Array4<const Real> const& phi_arr     = ld.velocity.array(mfi);
-         
+
+         Real mu = m_mu;
+
          amrex::ParallelFor(bx,
          [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
          {
@@ -791,22 +793,22 @@ void incflo::PrintDragForce(std::ofstream &drag_file)
 
 #if (AMREX_SPACEDIM == 2)
                //Real cell_drag = 
-               //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*gradx_arr(i,j,k,0)/dx[0] + ny*(grady_arr(i,j,k,0)/dx[1] + gradx_arr(i,j,k,1)/dx[0])));
+               //   barea(i,j,k)*dx[0]*(-pavg*nx + mu*(2*nx*gradx_arr(i,j,k,0)/dx[0] + ny*(grady_arr(i,j,k,0)/dx[1] + gradx_arr(i,j,k,1)/dx[0])));
                
                //Real cell_drag = 
-               //   barea(i,j,k)*dx[0]*(-p_cc_arr(i,j,k)*nx + m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
+               //   barea(i,j,k)*dx[0]*(-p_cc_arr(i,j,k)*nx + mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
                Real cell_p_term = 
                   barea(i,j,k)*dx[0]*(-p_cc_arr(i,j,k)*nx);
                Real cell_v_term = 
-                  barea(i,j,k)*(                      m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
+                  barea(i,j,k)*(                      mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
                
                Real cell_drag = cell_p_term + cell_v_term;
 
                //Real cell_drag = 
-               //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
+               //   barea(i,j,k)*dx[0]*(-pavg*nx + mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
 
                //Real cell_drag = 
-               //   barea(i,j,k)*dx[0]*(-pavg*nx + m_mu*(2*nx*dudx + ny*(dudy + dvdx)));
+               //   barea(i,j,k)*dx[0]*(-pavg*nx + mu*(2*nx*dudx + ny*(dudy + dvdx)));
 
                Gpu::Atomic::Add(&p_dv_drag[lev], cell_drag);
                Gpu::Atomic::Add(&p_dv_p_term[lev], cell_p_term);
