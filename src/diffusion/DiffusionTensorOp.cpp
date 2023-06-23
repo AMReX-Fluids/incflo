@@ -3,7 +3,7 @@
 #include <AMReX_ParmParse.H>
 
 #ifdef AMREX_USE_EB
-#include <AMReX_EB_utils.H>
+#include <AMReX_EB_Redistribution.H>
 #include <memory>
 #endif
 
