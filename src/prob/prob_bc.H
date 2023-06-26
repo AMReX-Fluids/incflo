@@ -86,7 +86,15 @@ struct IncfloVelFill
             }
             else if (bc.hi(1) == amrex::BCType::ext_dir && j > domain_box.bigEnd(1))
             {
-                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
+                if (16 == probtype)
+                {
+                    if (orig_comp+nc == 0) { // x velocity
+                        amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
+                        vel(i,j,k,dcomp+nc) = 16.0 * (x*x*x*x - 2.0 * x*x*x + x*x);
+                    }
+                } else {
+                   vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
+                }
             }
 
 #if (AMREX_SPACEDIM == 3)

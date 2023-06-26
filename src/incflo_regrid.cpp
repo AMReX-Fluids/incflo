@@ -18,10 +18,10 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 
 #ifdef AMREX_USE_EB
     std::unique_ptr<EBFArrayBoxFactory> new_fact = makeEBFabFactory(geom[lev], ba, dm,
-                                                                    {nghost_eb_basic(),
-                                                                    nghost_eb_volume(),
-                                                                    nghost_eb_full()},
-                                                                    EBSupport::full);
+                                                                        {nghost_eb_basic(),
+                                                                         nghost_eb_volume(),
+                                                                         nghost_eb_full()},
+                                                                        EBSupport::full);
 #else
     std::unique_ptr<FabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
 #endif
@@ -47,6 +47,18 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     m_new_factory[lev] = std::move(new_fact);
 #else
     m_factory[lev] = std::move(new_fact);
+
+// FIXME? think about if this is also needed for MEB or not...
+    m_diffusion_tensor_op.reset();
+    m_diffusion_scalar_op.reset();
+
+#ifdef AMREX_USE_EB
+    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
+                      MLMG::Location::FaceCentroid,  // Location of mac_vec
+                      MLMG::Location::FaceCentroid,  // Location of beta
+                      MLMG::Location::CellCenter  ) ); // Location of solution variable phi
+#else
+    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level)));
 #endif
 }
 
@@ -54,7 +66,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 // fill with existing fine and coarse data.
 // overrides the pure virtual function in AmrCore
 void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
-                          const DistributionMapping& dm)
+             const DistributionMapping& dm)
 {
     BL_PROFILE("incflo::RemakeLevel()");
 
@@ -64,10 +76,10 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 
 #ifdef AMREX_USE_EB
     std::unique_ptr<EBFArrayBoxFactory> new_fact = makeEBFabFactory(geom[lev], ba, dm,
-                                                                    {nghost_eb_basic(),
-                                                                     nghost_eb_volume(),
-                                                                     nghost_eb_full()},
-                                                                     EBSupport::full);
+                                                                        {nghost_eb_basic(),
+                                                                         nghost_eb_volume(),
+                                                                         nghost_eb_full()},
+                                                                        EBSupport::full);
 #else
     std::unique_ptr<FabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
 #endif
@@ -97,12 +109,12 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
     m_diffusion_scalar_op.reset();
 
 #ifdef AMREX_USE_EB
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level),
                       MLMG::Location::FaceCentroid,  // Location of mac_vec
                       MLMG::Location::FaceCentroid,  // Location of beta
-                      MLMG::Location::CellCenter  ) ); // Location of solution variable phi
+                      MLMG::Location::CellCenter  ); // Location of solution variable phi
 #else
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level)));
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
 #endif
 }
 

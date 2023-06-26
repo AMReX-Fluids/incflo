@@ -4,6 +4,7 @@
 
 #ifdef AMREX_USE_EB
 #include <AMReX_EB_utils.H>
+#include <memory>
 #endif
 
 using namespace amrex;
@@ -40,10 +41,10 @@ void DiffusionTensorOp::define (Real time)
 
         if (m_incflo->useTensorSolve())
         {
-            m_eb_solve_op.reset(new MLEBTensorOp(m_incflo->Geom(0,finest_level),
+            m_eb_solve_op = std::make_unique<MLEBTensorOp>(m_incflo->Geom(0,finest_level),
                                                  m_incflo->boxArray(0,finest_level),
                                                  m_incflo->DistributionMap(0,finest_level),
-                                                 info_solve, ebfact));
+                                                 info_solve, ebfact);
             m_eb_solve_op->setMaxOrder(m_mg_maxorder);
             m_eb_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
                                        m_incflo->get_diffuse_tensor_bc(Orientation::high));
@@ -51,10 +52,10 @@ void DiffusionTensorOp::define (Real time)
 
         if (m_incflo->need_divtau() || m_incflo->useTensorCorrection())
         {
-            m_eb_apply_op.reset(new MLEBTensorOp(m_incflo->Geom(0,finest_level),
+            m_eb_apply_op = std::make_unique<MLEBTensorOp>(m_incflo->Geom(0,finest_level),
                                                  m_incflo->boxArray(0,finest_level),
                                                  m_incflo->DistributionMap(0,finest_level),
-                                                 info_apply, ebfact));
+                                                 info_apply, ebfact);
             m_eb_apply_op->setMaxOrder(m_mg_maxorder);
             m_eb_apply_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
                                        m_incflo->get_diffuse_tensor_bc(Orientation::high));
@@ -65,10 +66,10 @@ void DiffusionTensorOp::define (Real time)
     {
         if (m_incflo->useTensorSolve())
         {
-            m_reg_solve_op.reset(new MLTensorOp(m_incflo->Geom(0,finest_level),
+            m_reg_solve_op = std::make_unique<MLTensorOp>(m_incflo->Geom(0,finest_level),
                                                 m_incflo->boxArray(0,finest_level),
                                                 m_incflo->DistributionMap(0,finest_level),
-                                                info_solve));
+                                                info_solve);
             m_reg_solve_op->setMaxOrder(m_mg_maxorder);
             m_reg_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
                                         m_incflo->get_diffuse_tensor_bc(Orientation::high));
@@ -76,10 +77,10 @@ void DiffusionTensorOp::define (Real time)
 
         if (m_incflo->need_divtau() || m_incflo->useTensorCorrection())
         {
-            m_reg_apply_op.reset(new MLTensorOp(m_incflo->Geom(0,finest_level),
+            m_reg_apply_op = std::make_unique<MLTensorOp>(m_incflo->Geom(0,finest_level),
                                                 m_incflo->boxArray(0,finest_level),
                                                 m_incflo->DistributionMap(0,finest_level),
-                                                info_apply));
+                                                info_apply);
             m_reg_apply_op->setMaxOrder(m_mg_maxorder);
             m_reg_apply_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
                                         m_incflo->get_diffuse_tensor_bc(Orientation::high));

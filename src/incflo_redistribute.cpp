@@ -8,8 +8,8 @@ using namespace amrex;
 void
 incflo::redistribute_term ( MultiFab& result,
                             MultiFab& temporary, // Saves doing a MF::copy. does this matter???
-                            MultiFab const& state,
-                            BCRec const* bc, // this is bc for the state (needed for SRD slopes)
+			    MultiFab const& state,
+			    BCRec const* bc, // this is bc for the state (needed for SRD slopes)
                             int lev,
                             MultiFab*& vel_eb)
 {
@@ -39,7 +39,7 @@ incflo::redistribute_term ( MFIter const& mfi,
                             Array4<Real       > const& result,
                             Array4<Real       > const& temporary,
                             Array4<Real const > const& state,
-                            BCRec const* bc, // this is bc for the state (needed for SRD slopes)
+			    BCRec const* bc, // this is bc for the state (needed for SRD slopes)
                             int lev,
                             Array4<Real const > const& vel_eb)
 {
@@ -71,39 +71,39 @@ incflo::redistribute_term ( MFIter const& mfi,
 
     if (!regular && !covered)
     {
-        auto const& vfrac = ebfact.getVolFrac().const_array(mfi);
-        auto const& ccc   = ebfact.getCentroid().const_array(mfi);
-        AMREX_D_TERM(auto const& apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
-                     auto const& apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
-                     auto const& apz = ebfact.getAreaFrac()[2]->const_array(mfi););
-        AMREX_D_TERM(auto const& fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
-                     auto const& fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
-                     auto const& fcz = ebfact.getFaceCent()[2]->const_array(mfi););
+	auto const& vfrac = ebfact.getVolFrac().const_array(mfi);
+	auto const& ccc   = ebfact.getCentroid().const_array(mfi);
+	AMREX_D_TERM(auto const& apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
+		     auto const& apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
+		     auto const& apz = ebfact.getAreaFrac()[2]->const_array(mfi););
+	AMREX_D_TERM(auto const& fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
+		     auto const& fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
+		     auto const& fcz = ebfact.getFaceCent()[2]->const_array(mfi););
 
-        Box gbx = bx;
+	Box gbx = bx;
 
-        if (m_redistribution_type == "StateRedist") {
-            gbx.grow(3);
-        } else if (m_redistribution_type == "FluxRedist") {
-            gbx.grow(2);
-        }
+	if (m_redistribution_type == "StateRedist") {
+	    gbx.grow(3);
+	} else if (m_redistribution_type == "FluxRedist") {
+	    gbx.grow(2);
+	}
 
-        FArrayBox scratch_fab(gbx,ncomp);
-        Array4<Real> scratch = scratch_fab.array();
-        Elixir eli_scratch = scratch_fab.elixir();
+	FArrayBox scratch_fab(gbx,ncomp);
+	Array4<Real> scratch = scratch_fab.array();
+	Elixir eli_scratch = scratch_fab.elixir();
 
         // FIXME -- For the case that the update/temporary is null (i.e. we want to
         // do regular SRD and return full state), I think we don't need this scratch...
         //
-        // This is scratch space if calling StateRedistribute
-        //  but is used as the weights (here set to 1) if calling
-        //  FluxRedistribute
-        amrex::ParallelFor(Box(scratch),
+	// This is scratch space if calling StateRedistribute
+	//  but is used as the weights (here set to 1) if calling
+	//  FluxRedistribute
+	amrex::ParallelFor(Box(scratch),
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {
-            scratch(i,j,k) = 1.;
-        });
-
+	{
+	    scratch(i,j,k) = 1.;
+	});
+	
 #ifdef AMREX_USE_MOVING_EB
         if (vel_eb_old)
         {
@@ -137,24 +137,24 @@ incflo::redistribute_term ( MFIter const& mfi,
         else
 #endif
         {
-            // State redist acts on a state. What would that be for the diffusive term??
+	// State redist acts on a state. What would that be for the diffusive term??
             Redistribution::Apply(bx, ncomp, result, temporary, state,
-                                  scratch, flag,
-                                  AMREX_D_DECL(apx, apy, apz), vfrac,
-                                  AMREX_D_DECL(fcx, fcy, fcz), ccc,
-                                  bc, geom[lev], m_dt, m_redistribution_type);
+			      scratch, flag,
+			      AMREX_D_DECL(apx, apy, apz), vfrac,
+			      AMREX_D_DECL(fcx, fcy, fcz), ccc,
+			      bc, geom[lev], m_dt, m_redistribution_type);
         }
     }
     else
     {
         Real dt = m_dt;
-        amrex::ParallelFor(bx, ncomp,
+	amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
+	{
 	    //FIXME -- Need to check and make sure this is always how we want to
 	    // use this...
             result(i,j,k,n) = state(i,j,k,n) + dt * temporary(i,j,k,n);
-        });
+	});
     }
 }
 #endif

@@ -4,6 +4,7 @@
 
 #ifdef AMREX_USE_EB
 #include <AMReX_EB_utils.H>
+#include <memory>
 #endif
 
 using namespace amrex;
@@ -37,20 +38,20 @@ void DiffusionScalarOp::define (Real time)
             ebfact.push_back(&(m_incflo->EBFactory(lev,time)));
         }
 
-        m_eb_scal_solve_op.reset(new MLEBABecLap(m_incflo->Geom(0,finest_level),
+        m_eb_scal_solve_op = std::make_unique<MLEBABecLap>(m_incflo->Geom(0,finest_level),
                                                  m_incflo->boxArray(0,finest_level),
                                                  m_incflo->DistributionMap(0,finest_level),
-                                                 info_solve, ebfact));
+                                                 info_solve, ebfact);
         m_eb_scal_solve_op->setMaxOrder(m_mg_maxorder);
         m_eb_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low ),
                                         m_incflo->get_diffuse_scalar_bc(Orientation::high));
 
         if (!m_incflo->useTensorSolve())
         {
-            m_eb_vel_solve_op.reset(new MLEBABecLap(m_incflo->Geom(0,finest_level),
+            m_eb_vel_solve_op = std::make_unique<MLEBABecLap>(m_incflo->Geom(0,finest_level),
                                                     m_incflo->boxArray(0,finest_level),
                                                     m_incflo->DistributionMap(0,finest_level),
-                                                    info_solve, ebfact));
+                                                    info_solve, ebfact);
             m_eb_vel_solve_op->setMaxOrder(m_mg_maxorder);
 
             // We don't call setDomainBC here because we will need to call it separately for each component
@@ -58,10 +59,10 @@ void DiffusionScalarOp::define (Real time)
 
         if (m_incflo->need_divtau())
         {
-            m_eb_scal_apply_op.reset(new MLEBABecLap(m_incflo->Geom(0,finest_level),
+            m_eb_scal_apply_op = std::make_unique<MLEBABecLap>(m_incflo->Geom(0,finest_level),
                                                      m_incflo->boxArray(0,finest_level),
                                                      m_incflo->DistributionMap(0,finest_level),
-                                                     info_apply, ebfact));
+                                                     info_apply, ebfact);
             m_eb_scal_apply_op->setMaxOrder(m_mg_maxorder);
             m_eb_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
                                             m_incflo->get_diffuse_scalar_bc(Orientation::high));
@@ -70,10 +71,10 @@ void DiffusionScalarOp::define (Real time)
         if ( (m_incflo->need_divtau() && !m_incflo->useTensorSolve()) ||
               m_incflo->useTensorCorrection() )
         {
-            m_eb_vel_apply_op.reset(new MLEBABecLap(m_incflo->Geom(0,finest_level),
+            m_eb_vel_apply_op = std::make_unique<MLEBABecLap>(m_incflo->Geom(0,finest_level),
                                                     m_incflo->boxArray(0,finest_level),
                                                     m_incflo->DistributionMap(0,finest_level),
-                                                    info_apply, ebfact));
+                                                    info_apply, ebfact);
             m_eb_vel_apply_op->setMaxOrder(m_mg_maxorder);
 
             // We don't call setDomainBC here because we will need to call it separately for each component
@@ -82,29 +83,29 @@ void DiffusionScalarOp::define (Real time)
     else
 #endif
     {
-        m_reg_scal_solve_op.reset(new MLABecLaplacian(m_incflo->Geom(0,m_incflo->finestLevel()),
+        m_reg_scal_solve_op = std::make_unique<MLABecLaplacian>(m_incflo->Geom(0,m_incflo->finestLevel()),
                                                       m_incflo->boxArray(0,m_incflo->finestLevel()),
                                                       m_incflo->DistributionMap(0,m_incflo->finestLevel()),
-                                                      info_solve));
+                                                      info_solve);
         m_reg_scal_solve_op->setMaxOrder(m_mg_maxorder);
         m_reg_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
                                          m_incflo->get_diffuse_scalar_bc(Orientation::high));
 
         if (!m_incflo->useTensorSolve())
         {
-            m_reg_vel_solve_op.reset(new MLABecLaplacian(m_incflo->Geom(0,m_incflo->finestLevel()),
+            m_reg_vel_solve_op = std::make_unique<MLABecLaplacian>(m_incflo->Geom(0,m_incflo->finestLevel()),
                                                          m_incflo->boxArray(0,m_incflo->finestLevel()),
                                                          m_incflo->DistributionMap(0,m_incflo->finestLevel()),
-                                                         info_solve));
+                                                         info_solve);
             m_reg_vel_solve_op->setMaxOrder(m_mg_maxorder);
 
             // We don't call setDomainBC here because we will need to call it separately for each component
         }
         if (m_incflo->need_divtau()) {
-            m_reg_scal_apply_op.reset(new MLABecLaplacian(m_incflo->Geom(0,m_incflo->finestLevel()),
+            m_reg_scal_apply_op = std::make_unique<MLABecLaplacian>(m_incflo->Geom(0,m_incflo->finestLevel()),
                                                           m_incflo->boxArray(0,m_incflo->finestLevel()),
                                                           m_incflo->DistributionMap(0,m_incflo->finestLevel()),
-                                                          info_apply));
+                                                          info_apply);
             m_reg_scal_apply_op->setMaxOrder(m_mg_maxorder);
             m_reg_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
                                              m_incflo->get_diffuse_scalar_bc(Orientation::high));
@@ -113,10 +114,10 @@ void DiffusionScalarOp::define (Real time)
         if ( (m_incflo->need_divtau() && !m_incflo->useTensorSolve()) ||
               m_incflo->useTensorCorrection() )
         {
-            m_reg_vel_apply_op.reset(new MLABecLaplacian(m_incflo->Geom(0,m_incflo->finestLevel()),
+            m_reg_vel_apply_op = std::make_unique<MLABecLaplacian>(m_incflo->Geom(0,m_incflo->finestLevel()),
                                                          m_incflo->boxArray(0,m_incflo->finestLevel()),
                                                          m_incflo->DistributionMap(0,m_incflo->finestLevel()),
-                                                         info_apply));
+                                                         info_apply);
             m_reg_vel_apply_op->setMaxOrder(m_mg_maxorder);
 
             // We don't call setDomainBC here because we will need to call it separately for each component

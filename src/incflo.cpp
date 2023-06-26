@@ -4,6 +4,8 @@
 // Need this for TagCutCells
 #ifdef AMREX_USE_EB
 #include <AMReX_EBAmrUtil.H>
+#include <utility>
+#include <memory>
 #endif
 
 using namespace amrex;
@@ -40,7 +42,7 @@ incflo::incflo ()
 }
 
 incflo::~incflo ()
-{}
+= default;
 
 void incflo::InitData ()
 {
@@ -60,6 +62,7 @@ void incflo::InitData ()
         // with MakeNewLevelFromScratch.
         InitFromScratch(m_cur_time);
 
+// FIXME - do we want to keep both initial projections?
 #ifdef AMREX_USE_EB
         amrex::Print() << "Doing initial projection before initial redistribution "  << std::endl;
 #endif
@@ -86,6 +89,7 @@ void incflo::InitData ()
         m_nstep = 0;
 
         // xxxxx TODO averagedown ???
+
         if (m_check_int > 0) { WriteCheckPointFile(); }
 
         // Plot initial distribution
@@ -237,7 +241,7 @@ incflo::ApplyProjection (Vector<MultiFab const*> density,
                          Real time, Real scaling_factor, bool incremental)
 {
     BL_PROFILE("incflo::ApplyProjection");
-    ApplyNodalProjection(density,time,scaling_factor,incremental);
+    ApplyNodalProjection(std::move(density),time,scaling_factor,incremental);
 }
 
 // Make a new level from scratch using provided BoxArray and DistributionMapping.
@@ -280,7 +284,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
                                       {nghost_eb_basic(),
                                        nghost_eb_volume(),
                                        nghost_eb_full()},
-                                      EBSupport::full);
+                                       EBSupport::full);
 #endif
 #else
     // No EB
@@ -312,12 +316,12 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
     }
 
 #ifdef AMREX_USE_EB
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level),
                       MLMG::Location::FaceCentroid,  // Location of mac_vec
                       MLMG::Location::FaceCentroid,  // Location of beta
-                      MLMG::Location::CellCenter  ) ); // Location of solution variable phi
+                      MLMG::Location::CellCenter  ); // Location of solution variable phi
 #else
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level)));
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
 #endif
 }
 
@@ -326,14 +330,10 @@ incflo::writeNow()
 {
     bool write_now = false;
 
-    if ( m_plot_int > 0 && (m_nstep % m_plot_int == 0) )
+    if ( ( m_plot_int > 0 && (m_nstep % m_plot_int == 0) ) ||
+         (m_plot_per_exact  > 0 && (std::abs(std::remainder(m_cur_time, m_plot_per_exact)) < 1.e-12) ) ) {
         write_now = true;
-
-    else if ( m_plot_per_exact  > 0 && (std::abs(std::remainder(m_cur_time, m_plot_per_exact)) < 1.e-12) )
-        write_now = true;
-
-    else if (m_plot_per_approx > 0.0)
-    {
+    } else if (m_plot_per_approx > 0.0) {
         // Check to see if we've crossed a m_plot_per_approx interval by comparing
         // the number of intervals that have elapsed for both the current
         // time and the time at the beginning of this timestep.
@@ -384,8 +384,8 @@ Vector<MultiFab*> incflo::get_velocity_eb (Real time) noexcept
         if ( time == m_cur_time ) {
             r.push_back(&(m_leveldata[lev]->velocity_eb_o));
         } else {
-            r.push_back(&(m_leveldata[lev]->velocity_eb));
-        }
+        r.push_back(&(m_leveldata[lev]->velocity_eb));
+    }
     }
     return r;
 }

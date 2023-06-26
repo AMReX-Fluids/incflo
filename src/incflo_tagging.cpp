@@ -22,13 +22,13 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
         ParmParse pp("incflo");
 
         pp.queryarr("rhoerr", rhoerr_v);
-        if (rhoerr_v.size() > 0) {
+        if (!rhoerr_v.empty()) {
             Real last = rhoerr_v.back();
             rhoerr_v.resize(max_level+1, last);
         }
 
         pp.queryarr("gradrhoerr", gradrhoerr_v);
-        if (gradrhoerr_v.size() > 0) {
+        if (!gradrhoerr_v.empty()) {
             Real last = gradrhoerr_v.back();
             gradrhoerr_v.resize(max_level+1, last);
         }

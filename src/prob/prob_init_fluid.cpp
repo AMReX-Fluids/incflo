@@ -137,6 +137,14 @@ void incflo::prob_init_fluid (int lev)
                                        ld.tracer.array(mfi),
                                        domain, dx, problo, probhi);
         }
+        else if (16 == m_probtype)
+        {
+            init_burggraf(vbx, gbx,
+                          ld.velocity.array(mfi),
+                          ld.density.array(mfi),
+                          ld.tracer.array(mfi),
+                          domain, dx, problo, probhi);
+        }
         else if (66 == m_probtype)
         {
             init_vortex_in_sphere(vbx, gbx,
@@ -674,7 +682,7 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
                                      Box const& /*domain*/,
                                      GpuArray<Real, AMREX_SPACEDIM> const& dx,
                                      GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
-                                     GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+                                     GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
 {
     if (111 == m_probtype)
     {
@@ -782,7 +790,7 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& /*gbx*/,
                                       Box const& /*domain*/,
                                       GpuArray<Real, AMREX_SPACEDIM> const& dx,
                                       GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
-                                      GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+                                      GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
 {
     static constexpr Real twopi = Real(2.0) * Real(3.1415926535897932);
     if (21 == m_probtype)
@@ -856,7 +864,7 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
                                     Box const& domain,
                                     GpuArray<Real, AMREX_SPACEDIM> const& /*dx*/,
                                     GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
-                                    GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+                                    GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
 {
     Real dxinv = Real(1.0) / domain.length(0);
     Real dyinv = Real(1.0) / domain.length(1);
@@ -1012,3 +1020,25 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
         amrex::Abort("Unknown plane poiseuille m_probtype");
     };
 }
+
+void incflo::init_burggraf (Box const& vbx, Box const& /*gbx*/,
+                            Array4<Real> const& vel,
+                            Array4<Real> const& /*density*/,
+                            Array4<Real> const& /*tracer*/,
+                            Box const& /*domain*/,
+                            GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                            GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
+                            GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+{
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        Real x = Real(i+0.5)*dx[0];
+        Real y = Real(j+0.5)*dx[1];
+        vel(i,j,k,0) =  8.0 * (x*x*x*x - 2.0 * x*x*x + x*x) * (4.0*y*y*y - 2.0*y);
+        vel(i,j,k,1) = -8.0 * (4.0*x*x*x - 6.0 * x*x + 2.*x) * (y*y*y*y - y*y);
+#if (AMREX_SPACEDIM == 3)
+        vel(i,j,k,2) = 0.0;
+#endif
+    });
+}
+

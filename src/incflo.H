@@ -29,7 +29,24 @@ public:
     };
 
     incflo ();
-    virtual ~incflo ();
+    ~incflo () override;
+
+    // Declare a default move constructor so we ensure the destructor is
+    // not called when we return an object of this class by value
+    incflo(incflo&&)  noexcept = default;
+
+    // Declare a default move assignment operator
+    incflo& operator=(incflo&& other)  noexcept = default;
+
+    // Delete the copy constructor and copy assignment operators because
+    // the integrator allocates internal memory that is best initialized
+    // from scratch when needed instead of making a copy.
+
+    // Delete the copy constructor
+    incflo(const incflo& other) = delete;
+    //
+    // Delete the copy assignment operator
+    incflo& operator=(const incflo& other) = delete;
 
     // Initialize multilevel AMR data
     void InitData ();
@@ -42,23 +59,23 @@ public:
     void Evolve ();
 
     // Tag cells for refinement
-    virtual void ErrorEst (int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow) override;
+    void ErrorEst (int lev, amrex::TagBoxArray& tags, amrex::Real time, int ngrow) override;
 
     // Make a new level from scratch using provided BoxArray and DistributionMapping
     // Only used during initialization
-    virtual void MakeNewLevelFromScratch (int lev, amrex::Real time,
+    void MakeNewLevelFromScratch (int lev, amrex::Real time,
                                           const amrex::BoxArray& new_grids,
                                           const amrex::DistributionMapping& new_dmap) override;
 
     // Make a new level using provided BoxArray and DistributionMapping,
     // and fill with interpolated coarse level data
-    virtual void MakeNewLevelFromCoarse (int lev, amrex::Real time,
+    void MakeNewLevelFromCoarse (int lev, amrex::Real time,
                                          const amrex::BoxArray& ba,
                                          const amrex::DistributionMapping& dm) override;
 
     // Remake an existing level using provided BoxArray and DistributionMapping,
     // and fill with existing fine and coarse data
-    virtual void RemakeLevel (int lev, amrex::Real time,
+    void RemakeLevel (int lev, amrex::Real time,
                               const amrex::BoxArray& ba,
                               const amrex::DistributionMapping& dm) override;
 
@@ -69,11 +86,10 @@ public:
 #endif
 
     // Delete level data
-    virtual void ClearLevel (int lev) override;
+    void ClearLevel (int lev) override;
 
-public: // for cuda
 
-    void ComputeDt (int initialisation, bool explicit_diffusion);
+    void ComputeDt (int initialization, bool explicit_diffusion);
 
     amrex::Real vol_wgt_sum (amrex::Vector<amrex::MultiFab*> const& mf, int icomp);
 
@@ -92,6 +108,7 @@ public: // for cuda
                                        const amrex::MultiFab& tracer_old,
                                        const amrex::MultiFab& tracer_new,
                                        bool include_pressure_gradient = true);
+
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -166,13 +183,13 @@ public: // for cuda
                            amrex::MultiFab const& vel);
     void ComputeDivU (amrex::Real time);
     void ComputeDrag ();
-    amrex::Real ComputeKineticEnergy () const;
+    [[nodiscard]] static amrex::Real ComputeKineticEnergy () ;
 
     void DiffFromExact (int lev, amrex::Geometry& lev_geom, amrex::Real time, amrex::Real dt,
-                        amrex::MultiFab& error, int icomp_src, int icomp_err);
+                        amrex::MultiFab& error, int soln_comp, int err_comp) const;
 
     virtual void compute_strainrate_at_level (int lev,
-                                              amrex::MultiFab* sr,
+                                              amrex::MultiFab* strainrate,
                                               amrex::MultiFab* vel,
                                               amrex::Geometry& lev_geom,
                                               amrex::Real time, int nghost);
@@ -183,7 +200,7 @@ public: // for cuda
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
+    [[nodiscard]] amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
     average_velocity_eta_to_faces (int lev, amrex::MultiFab const& cc_eta) const;
 
     void compute_divtau  (amrex::Vector<amrex::MultiFab      *> const& divtau,
@@ -196,7 +213,7 @@ public: // for cuda
                            amrex::Vector<amrex::MultiFab const*> const& eta,
                            amrex::Real dt_diff);
 
-    amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
+    [[nodiscard]] amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
     average_scalar_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
 
     void compute_laps (amrex::Vector<amrex::MultiFab      *> const& laps,
@@ -243,18 +260,17 @@ public: // for cuda
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    virtual void compute_viscosity (amrex::Vector<amrex::MultiFab*> const& eta,
+    void compute_viscosity (amrex::Vector<amrex::MultiFab*> const& eta,
                                     amrex::Vector<amrex::MultiFab*> const& rho,
                                     amrex::Vector<amrex::MultiFab*> const& vel,
                                     amrex::Real time, int nghost);
-    virtual void compute_viscosity_at_level (int lev,
+    void compute_viscosity_at_level (int lev,
                                              amrex::MultiFab* eta,
                                              amrex::MultiFab* rho,
                                              amrex::MultiFab* vel,
                                              amrex::Geometry& lev_geom,
                                              amrex::Real time, int nghost);
-    virtual void compute_tracer_diff_coeff (amrex::Vector<amrex::MultiFab*> const& tra_eta,
-                                            int nghost);
+    void compute_tracer_diff_coeff (amrex::Vector<amrex::MultiFab*> const& tra_eta, int nghost);
 
 #ifdef AMREX_USE_EB
     ///////////////////////////////////////////////////////////////////////////
@@ -262,21 +278,21 @@ public: // for cuda
     // embedded_boundaries
     //
     ///////////////////////////////////////////////////////////////////////////
-    void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& cc_vel,
+    void incflo_correct_small_cells (amrex::Vector<amrex::MultiFab*      > const& vel_in,
                                      AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
                                                   amrex::Vector<amrex::MultiFab const*> const& v_mac,
                                                   amrex::Vector<amrex::MultiFab const*> const& w_mac));
 
     void redistribute_term ( amrex::MultiFab& result, amrex::MultiFab& result_tmp,
-                             amrex::MultiFab const& state,
-                             amrex::BCRec const* bc,
+			     amrex::MultiFab const& state,
+			     amrex::BCRec const* bc,
                              int lev,
                              amrex::MultiFab*& vel_eb);
     void redistribute_term ( amrex::MFIter const& mfi,
                              amrex::Array4<amrex::Real      > const& result,
                              amrex::Array4<amrex::Real      > const& result_tmp,
                              amrex::Array4<amrex::Real const> const& state,
-                             amrex::BCRec const* bc,
+			     amrex::BCRec const* bc,
                              int lev,
                              amrex::Array4<amrex::Real const> const& vel_eb);
     void redistribute_term ( amrex::MFIter const& mfi,
@@ -295,12 +311,12 @@ public: // for cuda
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    bool SteadyStateReached ();
+    static bool SteadyStateReached ();
 
 #ifdef AMREX_USE_EB
     void PrintDragForce(std::ofstream &drag_file);
 #endif
-
+    
 private:
 
     //
@@ -449,17 +465,17 @@ private:
 
     // EB flow settings
     struct EBFlow_t {
-       bool enabled;
-       bool has_normal;
-       bool is_mag;
-       bool is_frequency;
-       bool is_omega;
-       amrex::Real vel_mag;
+       bool enabled{false};
+       bool has_normal{false};
+       bool is_mag{false};
+       bool is_frequency{false};
+       bool is_omega{false};
+       amrex::Real vel_mag{0.};
        amrex::Vector<amrex::Real> velocity;
        amrex::Vector<amrex::Real> frequency;
        amrex::Vector<amrex::Real> amplitude;
-       amrex::Vector<amrex::Real> omega;
-       amrex::Vector<amrex::Real> center_of_rotation;
+       amrex::Vector<amrex::Real> omega{0.};
+       amrex::Vector<amrex::Real> center_of_rotation{0.};
        bool plt_drag;
        bool plt_drag_hist;
        int plt_drag_int;
@@ -467,24 +483,15 @@ private:
        // Normal to exclude EB faces. By default all faces within a specified
        // region will
        amrex::Vector<amrex::Real> normal;
-       amrex::Real normal_tol;
+       amrex::Real normal_tol{0.};
 
        // scalars
-       amrex::Real density;
+       amrex::Real density{1.};
        amrex::Vector<amrex::Real> tracer;
 
        EBFlow_t ()
-         : enabled(false)
-         , has_normal(false)
-         , is_mag(false)
-         , is_frequency(false)
-         , is_omega(false)
-         , vel_mag(0.)
-         , omega(0.)
-         , center_of_rotation(0.)
-         , normal_tol(0.)
-         , density(1.)
-       {}
+
+       = default;
     };
     EBFlow_t m_eb_flow;
 
@@ -585,7 +592,7 @@ private:
                    amrex::DistributionMapping const& dm,
                    amrex::FabFactory<amrex::FArrayBox> const& fact,
                    int ntrac, int ng_state,
-                   std::string advection_type, bool implicit_diffusion,
+                   const std::string& advection_type, bool implicit_diffusion,
                    bool use_tensor_correction, bool advect_tracer);
         // cell-centered multifabs
         amrex::MultiFab velocity;
@@ -678,12 +685,12 @@ private:
     //
 
 #ifdef INCFLO_USE_MOVING_EB
-    amrex::FabFactory<amrex::FArrayBox> const&
+    [[nodiscard]] amrex::FabFactory<amrex::FArrayBox> const&
         Factory (int lev) const noexcept { return *m_new_factory[lev]; }
-    amrex::FabFactory<amrex::FArrayBox> const&
+    [[nodiscard]] amrex::FabFactory<amrex::FArrayBox> const&
         OldFactory (int lev) const noexcept { return *m_old_factory[lev]; }
 #else
-    amrex::FabFactory<amrex::FArrayBox> const&
+    [[nodiscard]] amrex::FabFactory<amrex::FArrayBox> const&
     Factory (int lev) const noexcept { return *m_factory[lev]; }
 #endif
 
@@ -710,16 +717,10 @@ private:
     EBFactory (int lev) const noexcept {
         return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
     }
-
-    amrex::EBFArrayBoxFactory const&
-    EBFactory (int lev, amrex::Real /*time*/) const noexcept {
-        return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
-    }
-#endif
 #endif
 
     // Number of ghost cells for field arrays.
-    int nghost_state () const {
+    [[nodiscard]] int nghost_state () const {
 #ifdef AMREX_USE_EB
         if (!EBFactory(0).isAllRegular())
         {
@@ -733,7 +734,7 @@ private:
 
     // For Godunov, we need 1 ghost cell in addition to the Box we are filling
     // For MOL    , we need 0 ghost cells
-    int nghost_force () const
+    [[nodiscard]] int nghost_force () const
     {
        if (m_advection_type == "MOL")
            return 0;
@@ -741,7 +742,7 @@ private:
            return 1;
     }
 
-    int nghost_mac () const {
+    [[nodiscard]] int nghost_mac () const {
 #ifdef AMREX_USE_EB
         if (!EBFactory(0).isAllRegular()) return (m_advection_type == "MOL") ? 3 : 4;
 #endif
@@ -749,35 +750,35 @@ private:
     }
 
 #ifdef AMREX_USE_EB
-    int nghost_eb_basic () const
+    [[nodiscard]] static int nghost_eb_basic ()
     { return 4; }
 
     // We need 5 for doing StateRedistribution; otherwise 4 would be enough
-    int nghost_eb_volume () const
+    [[nodiscard]] static int nghost_eb_volume ()
     { return 5; }
 
-    int nghost_eb_full () const
+    [[nodiscard]] static int nghost_eb_full ()
     { return 4; }
 #endif
 
-    bool need_divtau () const {
+    [[nodiscard]] bool need_divtau () const {
         return ( m_godunov_include_diff_in_forcing || DiffusionType::Implicit != m_diff_type );
     }
 
-    bool AdvectMomentum () const {
+    [[nodiscard]] bool AdvectMomentum () const {
         return m_advect_momentum;
     }
 
-    bool useTensorSolve () const {
+    [[nodiscard]] bool useTensorSolve () const {
         return use_tensor_solve;
     }
 
-    bool useTensorCorrection () const {
+    [[nodiscard]] bool useTensorCorrection () const {
         return use_tensor_correction;
     }
 
 #ifdef AMREX_USE_EB
-    bool hasEBFlow () const {
+    [[nodiscard]] bool hasEBFlow () const {
        return m_eb_flow.enabled;
     }
 #endif
@@ -805,14 +806,14 @@ private:
     amrex::Vector<amrex::MultiFab*> get_laps_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_laps_new () noexcept;
     //
-    amrex::Vector<amrex::MultiFab const*> get_velocity_old_const () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_velocity_new_const () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_density_old_const () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_density_new_const () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_tracer_old_const () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_tracer_new_const () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_vel_forces_const () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_tra_forces_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_velocity_old_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_velocity_new_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_old_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_new_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_old_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_new_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_vel_forces_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tra_forces_const () const noexcept;
 
 #ifdef AMREX_USE_EB
     amrex::Vector<amrex::MultiFab*> get_velocity_eb () noexcept;
@@ -820,48 +821,48 @@ private:
     amrex::Vector<amrex::MultiFab*> get_density_eb () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_eb () noexcept;
 
-    amrex::Vector<amrex::MultiFab const*> get_velocity_eb () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_density_eb () const noexcept;
-    amrex::Vector<amrex::MultiFab const*> get_tracer_eb () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_velocity_eb () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_eb () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_eb () const noexcept;
 #endif
 
-    amrex::Vector<int> const& get_velocity_iconserv () const noexcept { return m_iconserv_velocity; }
-    amrex::Vector<int> const& get_density_iconserv () const noexcept { return m_iconserv_density; }
-    amrex::Vector<int> const& get_tracer_iconserv () const noexcept { return m_iconserv_tracer; }
+    [[nodiscard]] amrex::Vector<int> const& get_velocity_iconserv () const noexcept { return m_iconserv_velocity; }
+    [[nodiscard]] amrex::Vector<int> const& get_density_iconserv () const noexcept { return m_iconserv_density; }
+    [[nodiscard]] amrex::Vector<int> const& get_tracer_iconserv () const noexcept { return m_iconserv_tracer; }
     //
-    int const* get_velocity_iconserv_device_ptr () const noexcept {
+    [[nodiscard]] int const* get_velocity_iconserv_device_ptr () const noexcept {
         return m_iconserv_velocity_d.data(); }
-    int const* get_density_iconserv_device_ptr () const noexcept {
+    [[nodiscard]] int const* get_density_iconserv_device_ptr () const noexcept {
         return m_iconserv_density_d.data(); }
-    int const* get_tracer_iconserv_device_ptr () const noexcept {
+    [[nodiscard]] int const* get_tracer_iconserv_device_ptr () const noexcept {
         return m_iconserv_tracer_d.data(); }
 
-    amrex::Vector<amrex::BCRec> const& get_velocity_bcrec () const noexcept { return m_bcrec_velocity; }
-    amrex::Vector<amrex::BCRec> const& get_density_bcrec () const noexcept { return m_bcrec_density; }
-    amrex::Vector<amrex::BCRec> const& get_tracer_bcrec () const noexcept { return m_bcrec_tracer; }
-    amrex::Vector<amrex::BCRec> const& get_force_bcrec () const noexcept { return m_bcrec_force; }
+    [[nodiscard]] amrex::Vector<amrex::BCRec> const& get_velocity_bcrec () const noexcept { return m_bcrec_velocity; }
+    [[nodiscard]] amrex::Vector<amrex::BCRec> const& get_density_bcrec () const noexcept { return m_bcrec_density; }
+    [[nodiscard]] amrex::Vector<amrex::BCRec> const& get_tracer_bcrec () const noexcept { return m_bcrec_tracer; }
+    [[nodiscard]] amrex::Vector<amrex::BCRec> const& get_force_bcrec () const noexcept { return m_bcrec_force; }
     //
-    amrex::BCRec const* get_velocity_bcrec_device_ptr () const noexcept {
+    [[nodiscard]] amrex::BCRec const* get_velocity_bcrec_device_ptr () const noexcept {
         return m_bcrec_velocity_d.data(); }
-    amrex::BCRec const* get_density_bcrec_device_ptr () const noexcept {
+    [[nodiscard]] amrex::BCRec const* get_density_bcrec_device_ptr () const noexcept {
         return m_bcrec_density_d.data(); }
-    amrex::BCRec const* get_tracer_bcrec_device_ptr () const noexcept {
+    [[nodiscard]] amrex::BCRec const* get_tracer_bcrec_device_ptr () const noexcept {
         return m_bcrec_tracer_d.data(); }
-    amrex::BCRec const* get_force_bcrec_device_ptr () const noexcept {
+    [[nodiscard]] amrex::BCRec const* get_force_bcrec_device_ptr () const noexcept {
         return m_bcrec_force_d.data(); }
 
-    amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
+    [[nodiscard]] amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
     get_nodal_projection_bc (amrex::Orientation::Side side) const noexcept;
-    amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
+    [[nodiscard]] amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
     get_mac_projection_bc (amrex::Orientation::Side side) const noexcept;
 
-    amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
+    [[nodiscard]] amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
     get_diffuse_velocity_bc (amrex::Orientation::Side side, int comp) const noexcept;
 
-    amrex::Vector<amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM> >
+    [[nodiscard]] amrex::Vector<amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM> >
     get_diffuse_tensor_bc (amrex::Orientation::Side side) const noexcept;
 
-    amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
+    [[nodiscard]] amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
     get_diffuse_scalar_bc (amrex::Orientation::Side side) const noexcept;
 
     void fillpatch_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int ng);
@@ -971,7 +972,7 @@ private:
     ///////////////////////////////////////////////////////////////////////////
 
     void WriteHeader (const std::string& name, bool is_checkpoint) const;
-    void WriteJobInfo (const std::string& dir) const;
+    void WriteJobInfo (const std::string& path) const;
     void WriteCheckPointFile () const;
     void WritePlotFile ();
     void ReadCheckpointFile ();
