@@ -60,6 +60,8 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 #else
     macproj.reset(new Hydro::MacProjector(Geom(0,finest_level)));
 #endif
+
+#endif
 }
 
 // Remake an existing level using provided BoxArray and DistributionMapping and

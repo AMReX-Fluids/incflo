@@ -718,6 +718,7 @@ private:
         return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
     }
 #endif
+#endif
 
     // Number of ghost cells for field arrays.
     [[nodiscard]] int nghost_state () const {
