@@ -339,8 +339,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     }
 
                     // For the Corrector step
-                    if (//!flag_new(i,j,k).isCovered() &&
-                        std::abs(delta_vol) > eps && vel_eb_new)
+                    if (//!flag_new(i,j,k).isCovered() && std::abs(delta_vol) > eps &&
+                        vel_eb_new)
                     {
                         Real Ueb_dot_an_new =
                             AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
@@ -361,6 +361,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                                                       + out(i,j,k,n) * (delta_vol - Ueb_dot_an_new));
                         }
                     }
+
+                    // if ( i==19 && j==8){
+                    //     Print()<<"NUN DELTA DIVU "<<delta_divU
+                    //            <<" "<<Ueb_dot_an
+                    //            <<" "<<delta_vol<<std::endl;
+                    // }
 
                     // This will undo volume scaling that happens later in forming q-hat
                     delta_divU /= vfrac_old(i,j,k);
@@ -394,7 +400,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         {
                             Real delta_vol = vfrac_new(i,j,k) / dt;
                             Real delta_divU = delta_vol * U_in(i+ioff,j+joff,k+koff,n);
-                            Real dV = vfrac_new(i+ioff,j+joff,k+koff)-vfrac_old(i+ioff,j+joff,k+koff);
+                            //Real dV = vfrac_new(i+ioff,j+joff,k+koff)-vfrac_old(i+ioff,j+joff,k+koff);
 
                             // NOTE this correction is only right for the case that the newly
                             // uncovered cell has only one other cell in it's neghborhood.
@@ -422,8 +428,16 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                                 Ueb_dot_n *= barea_new(i,j,k);
 
+                                // if ( i==20 && j==8){
+                                //     Print()<<"NU DELTA VOL "<<delta_divU<<std::endl;
+                                // }
+
                                 delta_divU = 0.5*(delta_divU +
                                                   out(i,j,k,n) * (delta_vol - Ueb_dot_n));
+
+                                // if ( i==20 && j==8){
+                                //     Print()<<"NU DELTA DIVU "<<delta_divU<<std::endl;
+                                // }
 
                                 // Account for flux into newly uncovered cell (needed for conservation)
                                 scratch(i+ioff,j+joff,k+koff,n) += Real(0.5) * dt * dUdt_in(i,j,k,n)
@@ -431,6 +445,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             }
 
                             scratch(i+ioff,j+joff,k+koff,n) += dt*delta_divU/vfrac_old(i+ioff,j+joff,k+koff);
+
                         }
                     }
                 }
