@@ -141,7 +141,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             if (nbhd_vol(i,j,k) < 1e-14 &&
                 !(std::abs(alpha(i,j,k,0)) < 1e-14 && std::abs(alpha(i,j,k,1)) < 1e-14) )
             {
-                amrex::Print() << "NBVOL " << Dim3{i,j,k} << " " <<  nbhd_vol(i,j,k) << std::endl;
+                std::printf("NBVOL (%i,%i,%i) %f\n", i, j, k, nbhd_vol(i,j,k));
                 Abort();
             }
             for (int n = 0; n < ncomp; n++)  {

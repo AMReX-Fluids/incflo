@@ -1,18 +1,12 @@
-/*
- * \file hydro_create_itracker_2d.cpp
- * \addtogroup Redistribution
- * @{
- *
- */
-
 #include <hydro_redistribution.H>
 
 using namespace amrex;
 
-#if (AMREX_SPACEDIM == 2)
+namespace Redistribution {
 
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Array<amrex::Array<int,9>,AMREX_SPACEDIM>
-Redistribution::getCellMap()
+getCellMap()
 {
     //
     // Note that itracker has XX components and all are initialized to zero
@@ -32,8 +26,9 @@ Redistribution::getCellMap()
     return map;
 }
 
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Array<int,9>
-Redistribution::getInvCellMap()
+getInvCellMap()
 {
     //
     // Create the inverse cell map for
@@ -47,14 +42,18 @@ Redistribution::getInvCellMap()
     return nmap;
 }
 
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 void
-Redistribution::normalMerging ( int i, int j, int /*k*/,
-                                Array4<Real const> const& apx,
-                                Array4<Real const> const& apy,
-                                Array4<Real const> const& vfrac,
-                                Array4<int> const& itracker,
-                                Geometry const& geom,
-                                Real target_volfrac)
+normalMerging ( int i, int j, int /*k*/,
+                Array4<Real const> const& apx,
+                Array4<Real const> const& apy,
+                Array4<Real const> const& vfrac,
+                Array4<int> const& itracker,
+                Geometry const& geom,
+                Real target_volfrac,
+                const Box& domain,
+                bool is_periodic_x,
+                bool is_periodic_y)
 {
     int debug_verbose = 0;
     //
@@ -65,10 +64,6 @@ Redistribution::normalMerging ( int i, int j, int /*k*/,
     Array<int,9> jmap = map[1];
 
     using defaults::small_norm_diff;
-
-    const Box domain = geom.Domain();
-    const auto& is_periodic_x = geom.isPeriodic(0);
-    const auto& is_periodic_y = geom.isPeriodic(1);
 
     Real apnorm, apnorm_inv, dapx, dapy;
     int k = 0;
@@ -173,11 +168,9 @@ Redistribution::normalMerging ( int i, int j, int /*k*/,
 
             if (debug_verbose > 0 )
             {
-                Print().SetPrecision(15);
-                amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) <<
-                    " trying to ALSO1 merge with " << IntVect(i+ioff2,j+joff2) <<
-                    " with volfrac " << vfrac(i+ioff2,j+joff2,k) <<
-                    " to get new sum_vol " <<  sum_vol << std::endl;
+                std::printf("Cell (%i,%i) with volfrac %.15f trying to ALSO1 merge with (%i,%i) "
+                            "with volfrac %.15f to get new sum_vol %.15f\n", 
+                            i, j, vfrac(i,j,k), i+ioff2, j+joff2, vfrac(i+ioff2,j+joff2,k), sum_vol);
             }
         }
     }
@@ -206,18 +199,16 @@ Redistribution::normalMerging ( int i, int j, int /*k*/,
 
         if (debug_verbose > 0 )
         {
-            Print().SetPrecision(15);
-            amrex::Print() << "Cell " << IntVect(i,j) << " with volfrac " << vfrac(i,j,k) <<
-                " trying to ALSO2 merge with " << IntVect(i+ioff,j+joff) <<
-                " with volfrac " << vfrac(i+ioff,j+joff,k) <<
-                " to get new sum_vol " <<  sum_vol << std::endl;
+            std::printf("Cell (%i,%i) with volfrac %.15f trying to ALSO2 merge with (%i,%i) "
+                        "with volfrac %.15f to get new sum_vol %.15f\n",
+                        i, j, vfrac(i,j,k), i+ioff, j+joff, vfrac(i+ioff,j+joff,k), sum_vol);
         }
     }
 
     if (sum_vol < target_volfrac)
     {
-        amrex::Print() << "normalMerging(): Couldn't merge with enough cells to raise volume at " <<
-            IntVect(i,j) << " so stuck with sum_vol " << sum_vol << std::endl;
+        std::printf("normalMerging(): Couldn't merge with enough cells to raise volume at "
+                    "(%i,%i) so stuck with sum_vol %f\n", i, j, sum_vol);
         amrex::Warning("Couldn't merge with enough cells to raise volume greater than target_volfrac");
 // FIXME -- need this to get plane_right to work (has wall BC), but 0.5 is likely a better choice here
         // or using target_volume...
@@ -228,15 +219,19 @@ Redistribution::normalMerging ( int i, int j, int /*k*/,
     }
 }
 
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 void
-Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
-                                     Array4<Real const> const& apx,
-                                     Array4<Real const> const& apy,
-                                     Array4<Real const> const& vfrac,
-                                     Array4<Real const> const& vel_eb,
-                                     Array4<int> const& itracker,
-                                     Geometry const& geom,
-                                     Real target_volfrac)
+newlyUncoveredNbhd ( int i, int j, int /*k*/,
+                     Array4<Real const> const& apx,
+                     Array4<Real const> const& apy,
+                     Array4<Real const> const& vfrac,
+                     Array4<Real const> const& vel_eb,
+                     Array4<int> const& itracker,
+                     Geometry const& geom,
+                     Real target_volfrac,
+                     const Box& domain,
+                     bool is_periodic_x,
+                     bool is_periodic_y)
 {
     int debug_verbose = 1;
     //
@@ -247,10 +242,6 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
     Array<int,9> jmap = map[1];
 
     using defaults::small_norm_diff;
-
-    const Box domain = geom.Domain();
-    const auto& is_periodic_x = geom.isPeriodic(0);
-    const auto& is_periodic_y = geom.isPeriodic(1);
 
     Real apnorm, apnorm_inv, dapx, dapy;
     int k = 0;
@@ -301,11 +292,9 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
                       (std::abs(vx+vy) < small_norm_diff)  ) ? true : false;
 
     if ( vx_eq_vy && nx_eq_ny ){
-        Print()<<"cell "<<IntVect(i,j)
-               <<"eb_vel "<< vx <<", "<<vy<<std::endl;
-        Print()<<"eb_norm "<< nx <<", "<<ny<<std::endl;
+        std::printf("cell (%i,%i) eb_vel %f, %f\neb_norm %f, %f\n", i, j, vx, vy, nx, ny);
         //Abort("Newly uncovered cell nbhd: Direction to merge not well resolved");
-        Print() << "WARNING: Newly uncovered cell nbhd: Direction to merge not well resolved" << std::endl;
+        std::printf("WARNING: Newly uncovered cell nbhd: Direction to merge not well resolved\n");
     }
 
     // Select first for EB motion. If that's indeterminate, choose based on EB normal
@@ -359,9 +348,9 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
     // For now, require we merge with only one other cell.
     if (sum_vol < target_volfrac)
     {
-        amrex::Print() << "newlyUncoveredNbhd(): Couldn't merge with enough cells to raise volume at "
-                       << IntVect(i,j) << "to target " << target_volfrac
-                       << ". Stuck with sum_vol " << sum_vol << std::endl;
+        std::printf("newlyUncoveredNbhd(): Couldn't merge with enough cells "
+                    "to raise volume at (%i,%i) to target %f. Stuck with sum_vol %f\n", 
+                    i, j, target_volfrac, sum_vol);
     }
 
 }
@@ -369,6 +358,7 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int /*k*/,
 //
 // Central Merging
 //
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 void
 centralMerging ( int i, int j,
                  Array4<Real const> const& apx,
@@ -376,11 +366,11 @@ centralMerging ( int i, int j,
                  Array4<Real const> const& vfrac,
                  Array4<int> const& itracker,
                  Geometry const& lev_geom,
-                 Real target_volfrac)
+                 Real target_volfrac,
+                 const Box& domain,
+                 bool is_periodic_x,
+                 bool is_periodic_y)
 {
-    const Box domain = lev_geom.Domain();
-    const auto& is_periodic_x = lev_geom.isPeriodic(0);
-    const auto& is_periodic_y = lev_geom.isPeriodic(1);
     int k=0, kk=0;
     Real sum_vol = vfrac(i,j,k);
 
@@ -403,8 +393,7 @@ centralMerging ( int i, int j,
 
 //fixme
                     if ( i==16 && j==8 ){
-                        Print()<<"Including cell ("<<ii<<","<<jj<<"). label: "
-                               <<label[ii+1][jj+1]<<std::endl;
+                        std::printf("Including cell (%i,%i). label: %f\n", ii, jj, label[ii+1][jj+1]);
                     }
                 }
             }
@@ -413,5 +402,6 @@ centralMerging ( int i, int j,
 // Add check on sum_vol...
 }
 
-#endif
+}
+
 /** @} */

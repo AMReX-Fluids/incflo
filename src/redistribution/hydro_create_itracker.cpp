@@ -7,6 +7,12 @@
 
 #include <hydro_redistribution.H>
 
+#if (AMREX_SPACEDIM == 2)
+#include <hydro_create_itracker_2d_K.H>
+#else
+#include <hydro_create_itracker_3d_K.H>
+#endif
+
 using namespace amrex;
 
 
@@ -96,6 +102,7 @@ Redistribution::MakeITracker ( Box const& bx,
 
     Box const& bxg4 = amrex::grow(bx,4);
     Box bx_per_g4= domain_per_grown & bxg4;
+    Box domain = lev_geom.Domain();
 
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -106,7 +113,8 @@ Redistribution::MakeITracker ( Box const& bx,
             normalMerging(i, j, k,
                           AMREX_D_DECL(apx_new, apy_new, apz_new),
                           vfrac_new, itracker,
-                          lev_geom, target_volfrac);
+                          lev_geom, target_volfrac, domain, 
+                          AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
         }
         // Given the CFL restriction of MOL, it will always be the case that NU cells
         // will get a neighbor for default target_volfrac of 0.5
@@ -116,7 +124,8 @@ Redistribution::MakeITracker ( Box const& bx,
             newlyUncoveredNbhd(i, j, k,
                                AMREX_D_DECL(apx_new, apy_new, apz_new),
                                vfrac_new, vel_eb, itracker,
-                               lev_geom, target_volfrac);
+                               lev_geom, target_volfrac, domain,
+                               AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
         }
         else if ( vfrac_old(i,j,k) > 0.0 && vfrac_new(i,j,k) == 0.0)
         {
@@ -128,7 +137,8 @@ Redistribution::MakeITracker ( Box const& bx,
             normalMerging(i, j, k,
                           AMREX_D_DECL(apx_old, apy_old, apz_old),
                           vfrac_new, itracker,
-                          lev_geom, target_volfrac);
+                          lev_geom, target_volfrac, domain,
+                          AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
         }
     });
 
