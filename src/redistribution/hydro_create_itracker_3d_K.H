@@ -1,18 +1,12 @@
-/**
- * \file hydro_create_itracker_3d.cpp
- * \addtogroup Redistribution
- * @{
- *
- */
-
 #include <hydro_redistribution.H>
 
 using namespace amrex;
 
-#if (AMREX_SPACEDIM == 3)
+namespace Redistribution {
 
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Array<amrex::Array<int,27>,AMREX_SPACEDIM>
-Redistribution::getCellMap()
+getCellMap()
 {
     //
     // Note that itracker has XX components and all are initialized to zero
@@ -37,8 +31,9 @@ Redistribution::getCellMap()
     return map;
 }
 
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Array<int,27>
-Redistribution::getInvCellMap()
+getInvCellMap()
 {
     //
     // Create the inverse cell map for
@@ -54,26 +49,26 @@ Redistribution::getInvCellMap()
     return nmap;
 }
 
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 void
-Redistribution::normalMerging ( int i, int j, int k,
-                                Array4<Real const> const& apx,
-                                Array4<Real const> const& apy,
-                                Array4<Real const> const& apz,
-                                Array4<Real const> const& vfrac,
-                                Array4<int> const& itracker,
-                                Geometry const& geom,
-                                Real target_volfrac)
+normalMerging ( int i, int j, int k,
+                Array4<Real const> const& apx,
+                Array4<Real const> const& apy,
+                Array4<Real const> const& apz,
+                Array4<Real const> const& vfrac,
+                Array4<int> const& itracker,
+                Geometry const& geom,
+                Real target_volfrac,
+                const Box& domain,
+                bool is_periodic_x,
+                bool is_periodic_y,
+                bool is_periodic_z) noexcept
 {
 #if 0
     bool debug_print = false;
 #endif
 
     using defaults::small_norm_diff;
-
-    const Box domain = geom.Domain();
-    const auto& is_periodic_x = geom.isPeriodic(0);
-    const auto& is_periodic_y = geom.isPeriodic(1);
-    const auto& is_periodic_z = geom.isPeriodic(2);
 
     Real apnorm, apnorm_inv;
     const Real dapx = apx(i+1,j  ,k  ) - apx(i,j,k);
@@ -165,7 +160,8 @@ Redistribution::normalMerging ( int i, int j, int k,
     // Sanity check
     if (vfrac(i+ioff,j+joff,k+koff) == 0.)
     {
-        amrex::Print() << "Cell " << IntVect(i,j,k) << " is trying to merge with cell " << IntVect(i+ioff,j+joff,k+koff) << std::endl;
+        std::printf("Cell (%i,%i,%i) is trying to merge with cell (%i,%i,%i)\n",
+                    i, j, k, i+ioff, j+joff, k+koff);
         amrex::Abort("normalMerging(): Trying to merge with covered cell");
     }
 
@@ -496,27 +492,27 @@ Redistribution::normalMerging ( int i, int j, int k,
     }
 }
 
+AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 void
-Redistribution::newlyUncoveredNbhd ( int i, int j, int k,
-                                     Array4<Real const> const& apx,
-                                     Array4<Real const> const& apy,
-                                     Array4<Real const> const& apz,
-                                     Array4<Real const> const& vfrac,
-                                     Array4<Real const> const& vel_eb,
-                                     Array4<int> const& itracker,
-                                     Geometry const& geom,
-                                     Real target_volfrac)
+newlyUncoveredNbhd ( int i, int j, int k,
+                     Array4<Real const> const& apx,
+                     Array4<Real const> const& apy,
+                     Array4<Real const> const& apz,
+                     Array4<Real const> const& vfrac,
+                     Array4<Real const> const& vel_eb,
+                     Array4<int> const& itracker,
+                     Geometry const& geom,
+                     Real target_volfrac,
+                     const Box& domain,
+                     bool is_periodic_x,
+                     bool is_periodic_y,
+                     bool is_periodic_z) noexcept
 {
 #if 0
     bool debug_print = false;
 #endif
 
     using defaults::small_norm_diff;
-
-    const Box domain = geom.Domain();
-    const auto& is_periodic_x = geom.isPeriodic(0);
-    const auto& is_periodic_y = geom.isPeriodic(1);
-    const auto& is_periodic_z = geom.isPeriodic(2);
 
     Real apnorm, apnorm_inv;
     const Real dapx = apx(i+1,j  ,k  ) - apx(i,j,k);
@@ -579,11 +575,10 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int k,
     if ( vx_eq_vy && nx_eq_ny &&
          vx_eq_vz && nx_eq_nz &&
          vy_eq_vz && ny_eq_nz ){
-        Print()<<"cell "<<IntVect(i,j,k)
-               <<"eb_vel  "<< vx <<", "<<vy <<", "<<vz<<std::endl;
-        Print()<<"eb_norm "<< nx <<", "<<ny <<", "<<nz<<std::endl;
+        std::printf("cell (%i,%i,%i) eb_vel  %f, %f, %f\neb_norm %f, %f, %f\n",
+                    i, j, k, vx, vy, vz, nx, ny, nz);
         //Abort("Newly uncovered cell nbhd: Direction to merge not well resolved");
-        Print() << "WARNING: Newly uncovered cell nbhd: Direction to merge not well resolved" << std::endl;
+        std::printf("WARNING: Newly uncovered cell nbhd: Direction to merge not well resolved\n");
     }
 
     // Select first for EB motion. If that's indeterminate, choose based on EB normal
@@ -661,7 +656,8 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int k,
     // Sanity check
     if (vfrac(i+ioff,j+joff,k+koff) == 0.)
     {
-        amrex::Print() << "Cell " << IntVect(i,j,k) << " is trying to merge with cell " << IntVect(i+ioff,j+joff,k+koff) << std::endl;
+        std::printf("Cell (%i,%i,%i) is trying to merge with cell (%i,%i,%i)\n", 
+                    i, j, k, i+ioff, j+joff, k+koff);
         amrex::Abort("newlyUncoveredNbhd(): Trying to merge with covered cell");
     }
 
@@ -669,9 +665,8 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int k,
     Real sum_vol = vfrac(i,j,k) + vfrac(i+ioff,j+joff,k+koff);
     if (sum_vol < target_volfrac)
     {
-        amrex::Print() << "newlyUncoveredNbhd(): Couldn't merge with enough cells to raise volume at "
-                       << IntVect(i,j,k) << "to target " << target_volfrac
-                       << ". Stuck with sum_vol " << sum_vol << std::endl;
+        std::printf("newlyUncoveredNbhd(): Couldn't merge with enough cells to raise volume at (%i,%i,%i)"
+                    "to target %f. Stuck with sum_vol %f\n", i, j, k, target_volfrac, sum_vol);
         Abort("Remove abort in hydro_create_itracker_3d.cpp and recompile to continue with reduced volfrac");
     }
 
@@ -684,5 +679,6 @@ Redistribution::newlyUncoveredNbhd ( int i, int j, int k,
 #endif
 
 }
-#endif
+
+}
 /** @} */

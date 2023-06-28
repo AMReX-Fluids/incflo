@@ -6,6 +6,13 @@
  */
 
 #include <hydro_redistribution.H>
+
+#if (AMREX_SPACEDIM == 2)
+#include <hydro_create_itracker_2d_K.H>
+#else
+#include <hydro_create_itracker_3d_K.H>
+#endif
+
 #include <AMReX_EB_utils.H>
 #include <AMReX_EBMultiFabUtil_C.H>
 
