@@ -202,6 +202,7 @@ void incflo::ReadCheckpointFile()
         // Create distribution mapping
         DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
 
+        MakeNewEBGeometry(m_cur_time);
         MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
     }
 
@@ -749,11 +750,11 @@ void incflo::PrintDragForce(std::ofstream &drag_file)
    Vector<Real> drag(finest_level + 1, 0.);
    Vector<Real> p_term(finest_level + 1, 0.);
    Vector<Real> v_term(finest_level + 1, 0.);
-   
+
    Gpu::DeviceVector<Real> dv_drag(finest_level + 1, 0.);
    Gpu::DeviceVector<Real> dv_p_term(finest_level + 1, 0.);
    Gpu::DeviceVector<Real> dv_v_term(finest_level + 1, 0.);
-   
+
    auto* p_dv_drag = dv_drag.data();
    auto* p_dv_p_term = dv_p_term.data();
    auto* p_dv_v_term = dv_v_term.data();
@@ -792,22 +793,22 @@ void incflo::PrintDragForce(std::ofstream &drag_file)
             if (flag(i,j,k).isSingleValued()) {
 
 #if (AMREX_SPACEDIM == 2)
-               //Real cell_drag = 
+               //Real cell_drag =
                //   barea(i,j,k)*dx[0]*(-pavg*nx + mu*(2*nx*gradx_arr(i,j,k,0)/dx[0] + ny*(grady_arr(i,j,k,0)/dx[1] + gradx_arr(i,j,k,1)/dx[0])));
-               
-               //Real cell_drag = 
+
+               //Real cell_drag =
                //   barea(i,j,k)*dx[0]*(-p_cc_arr(i,j,k)*nx + mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
-               Real cell_p_term = 
+               Real cell_p_term =
                   barea(i,j,k)*dx[0]*(-p_cc_arr(i,j,k)*nx);
-               Real cell_v_term = 
+               Real cell_v_term =
                   barea(i,j,k)*(                      mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
-               
+
                Real cell_drag = cell_p_term + cell_v_term;
 
-               //Real cell_drag = 
+               //Real cell_drag =
                //   barea(i,j,k)*dx[0]*(-pavg*nx + mu*(2*nx*nx*gradeb_arr(i,j,k,0) + ny*(ny*gradeb_arr(i,j,k,0) + nx*gradeb_arr(i,j,k,1))));
 
-               //Real cell_drag = 
+               //Real cell_drag =
                //   barea(i,j,k)*dx[0]*(-pavg*nx + mu*(2*nx*dudx + ny*(dudy + dvdx)));
 
                Gpu::Atomic::Add(&p_dv_drag[lev], cell_drag);
