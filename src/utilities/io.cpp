@@ -202,7 +202,9 @@ void incflo::ReadCheckpointFile()
         // Create distribution mapping
         DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
 
+#ifdef AMREX_USE_MOVING_EB
         MakeNewEBGeometry(m_cur_time);
+#endif
         MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
     }
 
