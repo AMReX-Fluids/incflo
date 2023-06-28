@@ -393,7 +393,7 @@ centralMerging ( int i, int j,
 
 //fixme
                     if ( i==16 && j==8 ){
-                        std::printf("Including cell (%i,%i). label: %f\n", ii, jj, label[ii+1][jj+1]);
+                        std::printf("Including cell (%i,%i). label: %i\n", ii, jj, label[ii+1][jj+1]);
                     }
                 }
             }
