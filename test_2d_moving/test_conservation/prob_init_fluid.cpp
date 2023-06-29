@@ -688,7 +688,7 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
                                      Box const& /*domain*/,
                                      GpuArray<Real, AMREX_SPACEDIM> const& dx,
                                      GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
-                                     GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+                                     GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
 {
     if (111 == m_probtype)
     {
@@ -796,7 +796,7 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& /*gbx*/,
                                       Box const& /*domain*/,
                                       GpuArray<Real, AMREX_SPACEDIM> const& dx,
                                       GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
-                                      GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+                                      GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
 {
     static constexpr Real twopi = Real(2.0) * Real(3.1415926535897932);
     if (21 == m_probtype)
@@ -870,7 +870,7 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
                                     Box const& domain,
                                     GpuArray<Real, AMREX_SPACEDIM> const& /*dx*/,
                                     GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
-                                    GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+                                    GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
 {
     Real dxinv = Real(1.0) / domain.length(0);
     Real dyinv = Real(1.0) / domain.length(1);
