@@ -89,11 +89,11 @@ void incflo::ApplyCorrector()
 // #ifdef AMREX_USE_EB
 //    if (m_eb_flow.enabled) {
         for (int lev = 0; lev <= finest_level; ++lev) {
-	    // FIXME - for the corrector to work, we need the EB density to match with val during pred
-	    // and it seems that value needs to be time N cell average, or perhaps linearly extrapolated
-	    // value (InitialRedistribution changes the density, and so hacking in 3.4 only works if we
-	    // comment the InitialRedsit, but then in the next timestep we don;t conserve for either pred
-	    // or corr...)
+            // FIXME - for the corrector to work, we need the EB density to match with val during pred
+            // and it seems that value needs to be time N cell average, or perhaps linearly extrapolated
+            // value (InitialRedistribution changes the density, and so hacking in 3.4 only works if we
+            // comment the InitialRedsit, but then in the next timestep we don;t conserve for either pred
+            // or corr...)
             set_eb_density(lev, m_cur_time, *get_density_eb()[lev], 1);
             //set_eb_tracer(lev, new_time, *get_tracer_eb()[lev], 1);
         }
@@ -244,7 +244,7 @@ void incflo::ApplyCorrector()
 
                     //FIXME - I think this will just work for NU and NC since we init conv to zero.
                     if ( vfrac_old(i,j,k) != 0.0 ) {
-			// FIXME - for this corrector to work, we need the EB density to match with val during pred...
+                        // FIXME - for this corrector to work, we need the EB density to match with val during pred...
                         rho_t(i,j,k) =  m_half * (drdt_o(i,j,k) + drdt(i,j,k)*vfrac_new(i,j,k)/vfrac_old(i,j,k));
                     } else if (vfrac_new(i,j,k) > 0.0) {
                         rho_t(i,j,k) = drdt(i,j,k);
@@ -547,7 +547,9 @@ void incflo::ApplyCorrector()
             Box const& bx = mfi.tilebox();
             Array4<Real> const& rhovel_t     = vel_temp.array(mfi);
             Array4<Real> const& vel_o        = ld.velocity_o.array(mfi);
+            Array4<Real> const& vel          = ld.velocity.array(mfi);
             Array4<Real const> const& rho_o  = ld.density_o.const_array(mfi);
+            Array4<Real const> const& rho    = ld.density.const_array(mfi);
             Array4<Real const> const& dvdt_o = ld.conv_velocity_o.const_array(mfi);
             Array4<Real const> const& dvdt   = ld.conv_velocity.const_array(mfi);
             Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
@@ -577,6 +579,9 @@ void incflo::ApplyCorrector()
                     } else {
                         rhovel_t(i,j,k,n) = 0.;
                     }
+
+                    // Need to pass predicted momentum also here
+                    vel(i,j,k,n) = rho(i,j,k)*vel(i,j,k,n);
                 }
             });
         }
@@ -592,7 +597,7 @@ void incflo::ApplyCorrector()
         // VisMF::Write(ld.conv_velocity,"dvdtn");
         // VisMF::Write(ld.divtau,"divt");
         // VisMF::Write(vel_forces[lev],"vf");
-	//VisMF::Write(*get_velocity_eb(new_time)[lev],"ebv");
+        //VisMF::Write(*get_velocity_eb(new_time)[lev],"ebv");
 #endif
 
 #ifdef _OPENMP
@@ -804,6 +809,11 @@ void incflo::ApplyCorrector()
         Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
         diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
+
+
+    // VisMF::Write(m_leveldata[0]->density,"densc");
+    // // VisMF::Write(density_nph_neweb[0],"rnph");
+    // VisMF::Write(m_leveldata[0]->velocity,"velc");
 
     // **********************************************************************************************
     //

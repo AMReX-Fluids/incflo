@@ -348,25 +348,36 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                                          + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
                         Ueb_dot_an_new *= barea_new(i,j,k);
 
-                        if ( flag_old(i,j,k).isRegular() ){
-                            // FIXME - not really sure if we want to average U or just take out...
-                            delta_divU = 0.5 * (U_in(i,j,k,n) + out(i,j,k,n)) * delta_vol
-                                - 0.5 * out(i,j,k,n) * Ueb_dot_an_new;
-                        } else if ( flag_new(i,j,k).isCovered() ) {
+                        //FIXME? I think this only applied to NC situation...
+                        // if ( flag_old(i,j,k).isRegular() ){
+                        //     // FIXME - not really sure if we want to average U or just take out...
+                        //     delta_divU = 0.5 * (U_in(i,j,k,n) + out(i,j,k,n)) * delta_vol
+                        //         - 0.5 * out(i,j,k,n) * Ueb_dot_an_new;
+                        // } else
+                        if ( flag_new(i,j,k).isCovered() ) {
                             // Use half of Ueb_dot_an and the full delta_vol
                             // Needed to get 2D inputs_box_right to stay constant for covering
-                            delta_divU = Real(0.5) * (delta_divU + delta_vol );
+                                delta_divU = Real(0.5) * (delta_divU + delta_vol*U_in(i,j,k,n) );
                         } else {
                             delta_divU = Real(0.5) * (delta_divU
                                                       + out(i,j,k,n) * (delta_vol - Ueb_dot_an_new));
                         }
-                    }
-
-                    // if ( i==19 && j==8){
-                    //     Print()<<"NUN DELTA DIVU "<<delta_divU
+                    // if ( i==9 && j==8){
+                    //     Print()<<"NU DELTA DIVU "<<delta_divU
                     //            <<" "<<Ueb_dot_an
+                    //            <<" "<<Ueb_dot_an_new
                     //            <<" "<<delta_vol<<std::endl;
                     // }
+                    // if ( i==10 && j==8){
+                    //     Print()<<"NUN DELTA DIVU "<<delta_divU
+                    //            <<" "<<Ueb_dot_an
+                    //            <<" "<<Ueb_dot_an_new
+                    //            <<" "<<delta_vol<<std::endl;
+                    //     Print()<<"U "<<U_in(i,j,k,n)
+                    //            <<" "<<out(i,j,k,n)
+                    //            <<std::endl;
+                    // }
+                    }
 
                     // This will undo volume scaling that happens later in forming q-hat
                     delta_divU /= vfrac_old(i,j,k);
