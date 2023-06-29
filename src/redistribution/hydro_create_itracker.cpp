@@ -116,11 +116,16 @@ Redistribution::MakeITracker ( Box const& bx,
                           lev_geom, target_volfrac, domain, 
                           AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
         }
-        // Given the CFL restriction of MOL, it will always be the case that NU cells
-        // will get a neighbor for default target_volfrac of 0.5
-        else if ( (vfrac_new(i,j,k) > 0.0 && vfrac_new(i,j,k) < target_volfrac) && vfrac_old(i,j,k) == 0.0)
+        // WARNING, even with the CFL restriction of MOL, it will NOT always be the case that NU cells
+        // will get a neighbor for default target_volfrac of 0.5. This can happen with a very coarse
+        // simulation due to the single cut cell requirement.
+        else if ( vfrac_new(i,j,k) > 0.0 && vfrac_old(i,j,k) == 0.0)
         {
             // For now, require that newly uncovered cells only have one other cell in it's nbhd
+            if ( vfrac_new(i,j,k) > target_volfrac )
+            {
+                amrex::Warning("WARNING: Newly uncovered cell has volfrac > target_volfrac, suggesting the EB is under-resolved");
+            }
             newlyUncoveredNbhd(i, j, k,
                                AMREX_D_DECL(apx_new, apy_new, apz_new),
                                vfrac_new, vel_eb, itracker,
@@ -182,7 +187,7 @@ Redistribution::MakeITracker ( Box const& bx,
     // {
     //     if ( (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.0 ) // Newly uncovered
     //          //|| (vfrac_new(i,j,k) == 0. && vfrac_old(i,j,k) > 0.0) // Newly covered Cells
-    // 	    )
+    //      )
     //     {
     //         enforceReciprocity(i, j, k, itracker);
     //     }
