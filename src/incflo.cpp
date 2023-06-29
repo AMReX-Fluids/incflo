@@ -115,7 +115,8 @@ void incflo::Evolve()
     BL_PROFILE("incflo::Evolve()");
 
     bool do_not_evolve = ((m_max_step == 0) || ((m_stop_time >= 0.) && (m_cur_time > m_stop_time)) ||
-                            ((m_stop_time <= 0.) && (m_max_step <= 0))) && !m_steady_state;
+                           ((m_stop_time <= 0.) && (m_max_step <= 0)) || (m_max_step >= 0 && m_nstep >= m_max_step) )
+                         && !m_steady_state;
 
     while(!do_not_evolve)
     {
