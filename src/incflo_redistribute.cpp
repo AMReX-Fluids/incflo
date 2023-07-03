@@ -1,7 +1,7 @@
 #ifdef AMREX_USE_EB
 
 #include <incflo.H>
-#include <hydro_redistribution.H>
+#include <AMReX_EB_Redistribution.H>
 
 using namespace amrex;
 
@@ -85,11 +85,11 @@ incflo::redistribute_term ( MFIter const& mfi,
 
 	Array4<Real const> state_arr = state.const_array(mfi);
 	// State redist acts on a state. What would that be for the diffusive term??
-	Redistribution::Apply(bx, ncomp, out, in, state_arr,
-			      scratch, flag,
-			      AMREX_D_DECL(apx, apy, apz), vfrac,
-			      AMREX_D_DECL(fcx, fcy, fcz), ccc,
-			      bc, geom[lev], m_dt, m_redistribution_type);
+        ApplyRedistribution( bx, ncomp, out, in, state_arr,
+ 	                     scratch, flag,
+       		             AMREX_D_DECL(apx, apy, apz), vfrac,
+ 		             AMREX_D_DECL(fcx, fcy, fcz), ccc,
+ 			     bc, geom[lev], m_dt, m_redistribution_type);
     }
     else
     {
