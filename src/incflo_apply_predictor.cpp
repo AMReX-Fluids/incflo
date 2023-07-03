@@ -331,16 +331,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
                  Array4<Real  const> const& rho_new  = ld.density.const_array(mfi);
                  Array4<Real>        const& rho_nph  = density_nph_oldeb[lev].array(mfi);
 #ifdef AMREX_USE_MOVING_EB
-                 auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
-                 auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
+                 // auto const& vfrac_old = OldEBFactory(lev).getVolFrac().const_array(mfi);
+                 // auto const& vfrac_new =    EBFactory(lev).getVolFrac().const_array(mfi);
 
                  amrex::ParallelFor(bxg1, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                  {
                      // FIXME - probably want to think more about what to do with rho_n+1/2 here
-                     if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
-                     {
-                         rho_old(i,j,k) = rho_new(i,j,k);
-                     }
+                     // Could just use predicted value instead of FillNewlyUncovered???
+                     // if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
+                     // {
+                     //     rho_old(i,j,k) = rho_new(i,j,k);
+                     // }
                      rho_nph(i,j,k) = m_half * (rho_old(i,j,k) + rho_new(i,j,k));
                  });
 #else
@@ -804,7 +805,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 #endif
 
     // VisMF::Write(m_leveldata[0]->density,"dens");
-    // VisMF::Write(density_nph_neweb[0],"rnph");
+    // // VisMF::Write(density_nph_neweb[0],"rnph");
     // VisMF::Write(m_leveldata[0]->velocity,"vel");
 
     // std::string save = m_plot_file;
