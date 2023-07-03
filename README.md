@@ -42,4 +42,6 @@ either as environment variables or in incflo/test*/GNUMakefile.
 
 # Contributing
 
-We welcome contributions in the form of pull-requests from anyone.
+We welcome contributions in the form of pull-requests from anyone. For more
+details on how to contribute to incflo, please see
+[CONTRIBUTING.md](CONTRIBUTING.md).
