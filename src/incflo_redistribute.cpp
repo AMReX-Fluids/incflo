@@ -1,3 +1,5 @@
+#include <AMReX_Config.H>
+
 #ifdef AMREX_USE_EB
 
 #include <incflo.H>
@@ -7,10 +9,10 @@ using namespace amrex;
 
 void
 incflo::redistribute_term ( MultiFab& result,
-			    MultiFab& result_tmp, // Saves doing a MF::copy. does this matter???
-			    MultiFab const& state,
-			    BCRec const* bc, // this is bc for the state (needed for SRD slopes)
-			    int lev)
+                MultiFab& result_tmp, // Saves doing a MF::copy. does this matter???
+                MultiFab const& state,
+                BCRec const* bc, // this is bc for the state (needed for SRD slopes)
+                int lev)
 {
     // ************************************************************************
     // Redistribute result_tmp and pass out result
@@ -24,17 +26,17 @@ incflo::redistribute_term ( MultiFab& result,
 #endif
     for (MFIter mfi(state,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
-	redistribute_term(mfi, result, result_tmp, state, bc, lev);
+    redistribute_term(mfi, result, result_tmp, state, bc, lev);
     }
 }
 
 void
 incflo::redistribute_term ( MFIter const& mfi,
-			    MultiFab& result,
-			    MultiFab& result_tmp,
-			    MultiFab const& state,
-			    BCRec const* bc, // this is bc for the state (needed for SRD slopes)
-			    int lev)
+                MultiFab& result,
+                MultiFab& result_tmp,
+                MultiFab const& state,
+                BCRec const* bc, // this is bc for the state (needed for SRD slopes)
+                int lev)
 {
     AMREX_ASSERT(result.nComp() == state.nComp());
 
@@ -53,51 +55,51 @@ incflo::redistribute_term ( MFIter const& mfi,
 
     if (!regular && !covered)
     {
-	auto const& vfrac = ebfact.getVolFrac().const_array(mfi);
-	auto const& ccc   = ebfact.getCentroid().const_array(mfi);
-	AMREX_D_TERM(auto const& apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
-		     auto const& apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
-		     auto const& apz = ebfact.getAreaFrac()[2]->const_array(mfi););
-	AMREX_D_TERM(auto const& fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
-		     auto const& fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
-		     auto const& fcz = ebfact.getFaceCent()[2]->const_array(mfi););
+    auto const& vfrac = ebfact.getVolFrac().const_array(mfi);
+    auto const& ccc   = ebfact.getCentroid().const_array(mfi);
+    AMREX_D_TERM(auto const& apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
+             auto const& apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
+             auto const& apz = ebfact.getAreaFrac()[2]->const_array(mfi););
+    AMREX_D_TERM(auto const& fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
+             auto const& fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
+             auto const& fcz = ebfact.getFaceCent()[2]->const_array(mfi););
 
-	Box gbx = bx;
+    Box gbx = bx;
 
-	if (m_redistribution_type == "StateRedist") {
-	    gbx.grow(3);
-	} else if (m_redistribution_type == "FluxRedist") {
-	    gbx.grow(2);
-	}
+    if (m_redistribution_type == "StateRedist") {
+        gbx.grow(3);
+    } else if (m_redistribution_type == "FluxRedist") {
+        gbx.grow(2);
+    }
 
-	FArrayBox scratch_fab(gbx,ncomp);
-	Array4<Real> scratch = scratch_fab.array();
-	Elixir eli_scratch = scratch_fab.elixir();
+    FArrayBox scratch_fab(gbx,ncomp);
+    Array4<Real> scratch = scratch_fab.array();
+    Elixir eli_scratch = scratch_fab.elixir();
 
-	// This is scratch space if calling StateRedistribute
-	//  but is used as the weights (here set to 1) if calling
-	//  FluxRedistribute
-	amrex::ParallelFor(Box(scratch),
+    // This is scratch space if calling StateRedistribute
+    //  but is used as the weights (here set to 1) if calling
+    //  FluxRedistribute
+    amrex::ParallelFor(Box(scratch),
         [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-	{
-	    scratch(i,j,k) = 1.;
-	});
+    {
+        scratch(i,j,k) = 1.;
+    });
 
-	Array4<Real const> state_arr = state.const_array(mfi);
-	// State redist acts on a state. What would that be for the diffusive term??
+    Array4<Real const> state_arr = state.const_array(mfi);
+    // State redist acts on a state. What would that be for the diffusive term??
         ApplyRedistribution( bx, ncomp, out, in, state_arr,
- 	                     scratch, flag,
-       		             AMREX_D_DECL(apx, apy, apz), vfrac,
- 		             AMREX_D_DECL(fcx, fcy, fcz), ccc,
- 			     bc, geom[lev], m_dt, m_redistribution_type);
+                          scratch, flag,
+                            AMREX_D_DECL(apx, apy, apz), vfrac,
+                      AMREX_D_DECL(fcx, fcy, fcz), ccc,
+                  bc, geom[lev], m_dt, m_redistribution_type);
     }
     else
     {
-	amrex::ParallelFor(bx, ncomp,
+    amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-	{
-	    out(i,j,k,n) = in(i,j,k,n);
-	});
+    {
+        out(i,j,k,n) = in(i,j,k,n);
+    });
     }
 }
 #endif

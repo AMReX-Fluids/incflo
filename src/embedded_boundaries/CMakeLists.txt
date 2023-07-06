@@ -18,8 +18,8 @@ if (INCFLO_DIM EQUAL 3)
       eb_spherecube.cpp
       eb_tuscan.cpp
       eb_twocylinders.cpp
-      writeEBsurface.cpp
-)
+      writeEBsurface.cpp)
+endif()
 
 if (INCFLO_CSG)
    target_sources(incflo PRIVATE eb_csg.cpp)

@@ -49,6 +49,7 @@ struct IncfloVelFill
                         amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
                         vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * y * (amrex::Real(1.0)-y);
                     }
+#if (AMREX_SPACEDIM == 3)
                     else if (311 == probtype)
                     {
                         amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
@@ -59,6 +60,7 @@ struct IncfloVelFill
                         amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
                         vel(i,j,k,dcomp+nc) =  amrex::Real(0.5) * z;
                     }
+#endif
                 }
             }
             else if (bc.hi(0) == amrex::BCType::ext_dir && i > domain_box.bigEnd(0))
@@ -72,12 +74,15 @@ struct IncfloVelFill
 
                 if (orig_comp+nc == 1) // y velocity
                 {
+#if (AMREX_SPACEDIM == 3)
                     if (32 == probtype)
                     {
                         amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
                         vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * z * (amrex::Real(1.0)-z);
                     }
-                    else if (322 == probtype)
+                    else
+#endif
+                    if (322 == probtype)
                     {
                         amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
                         vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * x * (amrex::Real(1.0)-x);

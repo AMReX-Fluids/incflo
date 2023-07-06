@@ -54,7 +54,7 @@ void incflo::compute_vel_forces_on_level (int lev,
     GpuArray<Real,3> l_gravity{m_gravity[0],m_gravity[1],m_gravity[2]};
     GpuArray<Real,3> l_gp0{m_gp0[0], m_gp0[1], m_gp0[2]};
 
-    auto const dx = geom[lev].CellSize();
+    auto const dx = geom[lev].CellSizeArray();
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -118,7 +118,7 @@ void incflo::compute_vel_forces_on_level (int lev,
                     Real capG1 = -24.0 * y*y*y*y*y + 8.0 * y*y*y - 4.0 * y;
 
                     Real  fp   = 4.0 * x*x*x - 6.0*x*x + 2.0*x;
-                    Real  fpp  = 12.0 * x*x - 12.0*x + 2.0;
+                    //Real  fpp  = 12.0 * x*x - 12.0*x + 2.0;
                     Real  fppp = 24.0 * x - 12.0;
 
                     Real  gp   =  4.0 * y*y*y - 2.0*y;

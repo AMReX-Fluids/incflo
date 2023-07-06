@@ -37,7 +37,7 @@ incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
         // amrex::Print() << "Z-comp: Norm of tensor apply vs scalar apply " <<
         //                    divtau[0]->norm0(2) << " " << divtau_scal[0]->norm0(2) << std::endl;
 
-        divtau[0]->Saxpy(*divtau[0], -1.0, *divtau_scal[0], 0, 0, AMREX_SPACEDIM, 0);
+        MultiFab::Saxpy(*divtau[0], -1.0, *divtau_scal[0], 0, 0, AMREX_SPACEDIM, 0);
 
         // amrex::Print() << "X-comp: Norm of difference of tensor apply vs scalar apply " <<
         //                    divtau[0]->norm0(0) << std::endl;

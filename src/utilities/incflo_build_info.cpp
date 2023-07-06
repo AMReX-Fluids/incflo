@@ -3,11 +3,6 @@
 
 using namespace amrex;
 
-namespace
-{
-    const std::string level_prefix {"Level_"};
-}
-
 void writeBuildInfo ()
 {
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.20.0)
 
 project( incflo
    #VERSION 1.0
@@ -16,6 +16,21 @@ else ()
    message(STATUS "Build type set by user to '${CMAKE_BUILD_TYPE}'.")
 endif()
 
+# CMake policies ##############################################################
+#
+# AMReX 21.06+ supports CUDA_ARCHITECTURES with CMake 3.20+
+# CMake 3.18+: CMAKE_CUDA_ARCHITECTURES
+# https://cmake.org/cmake/help/latest/policy/CMP0104.html
+if(POLICY CMP0104)
+    cmake_policy(SET CMP0104 OLD)
+endif()
+
+# We use simple syntax in cmake_dependent_option, so we are compatible with the
+# extended syntax in CMake 3.22+
+# https://cmake.org/cmake/help/v3.22/policy/CMP0127.html
+if(POLICY CMP0127)
+    cmake_policy(SET CMP0127 NEW)
+endif()
 
 #
 # Options -- incflo uses XSDK!!! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -24,7 +39,7 @@ set(INCFLO_DIM_VALUES 2 3)
 set(INCFLO_DIM 3 CACHE STRING "Dimension of the incflo build. Valid values: <2,3>")
 set_property(CACHE INCFLO_DIM PROPERTY STRINGS ${INCFLO_DIM_VALUES})
 if(NOT INCFLO_DIM IN_LIST INCFLO_DIM_VALUES)
-    message(FATAL_ERROR "\nINCFLO_DIM setto ${INCFLO_DIM}. Must be one of ${INCFLO_DIM_VALUES}. ")
+    message(FATAL_ERROR "\nINCFLO_DIM set to ${INCFLO_DIM}. Must be one of ${INCFLO_DIM_VALUES}. ")
 endif()
 
 
@@ -36,15 +51,28 @@ endif()
 option( INCFLO_OMP    "Enable OpenMP" NO )
 option( INCFLO_MPI    "Enable MPI"   YES )
 option( INCFLO_CUDA   "Enable CUDA"   NO )
+option( INCFLO_HIP    "Enable HIP"    NO )
+option( INCFLO_SYCL   "Enable SYCL"   NO )
 option( INCFLO_EB     "Build Embedded Boundary support" NO )
 option( INCFLO_HYPRE  "Enable HYPRE"  NO )
 option( INCFLO_FPE    "Enable Floating Point Exceptions checks" NO )
+
+if ((INCFLO_CUDA AND INCFLO_HIP) OR
+    (INCFLO_CUDA AND INCFLO_SYCL) OR
+    (INCFLO_HIP  AND INCFLO_SYCL))
+    message(FATAL_ERROR "\nOnly one of INCFLO_CUDA, INCFLO_HIP and INCFLO_SYCL can be YES.\n")
+endif()
 
 # CSG support
 option( INCFLO_CSG "Build with CSG support" OFF)
 
 if (INCFLO_CUDA)
     enable_language(CUDA)
+
+   if (CMAKE_VERSION GREATER_EQUAL 3.17)
+      #The CUDAToolkit was added with version 3.17
+      find_package(CUDAToolkit REQUIRED)
+   endif()
 endif ()
 
 #
@@ -74,21 +102,18 @@ if (AMREX_HOME)  # SUPERBUILD MODE
   set(AMReX_OMP               ${INCFLO_OMP} CACHE INTERNAL "")
   if (INCFLO_CUDA)
     set(AMReX_GPU_BACKEND     CUDA          CACHE INTERNAL "")
+  elseif (INCFLO_HIP)
+    set(AMReX_GPU_BACKEND     HIP           CACHE INTERNAL "")
+  elseif (INCFLO_SYCL)
+    set(AMReX_GPU_BACKEND     SYCL          CACHE INTERNAL "")
   endif ()
   set(AMReX_EB                ${INCFLO_EB}  CACHE INTERNAL "")
   set(AMREX_FORTRAN           OFF           CACHE INTERNAL "")
   set(AMReX_LINEAR_SOLVERS    ON            CACHE INTERNAL "")
   set(AMReX_BUILD_TUTORIALS   OFF           CACHE INTERNAL "")
 
-  # If CUDA is required, enable the language BEFORE adding the AMReX directory
-  # Since AMReX_SetupCUDA has an include guard, it will be included only once here.
-  # The reason for enabling CUDA before adding the AMReX subdirectory is that
-  # the top-most directory needs to setup the CUDA language before a CUDA-enabled target
-  # from a sub-project is included via add_subdirectory.
-  # IMPORTANT: if you don't do this, AMReX will perform this step in a sub-scope and therefore
-  # it will not setup CUDA here!
   if(INCFLO_CUDA)
-     include(AMReX_SetupCUDA)
+     include(AMReXTargetHelpers)
   endif ()
 
   # Add AMReX as a sub-project: incflo inherits all AMReX options
@@ -100,7 +125,7 @@ else ()  # STANDALONE MODE
 
    # Find amrex
    set(AMREX_MINIMUM_VERSION 20.11 CACHE INTERNAL "Minimum required AMReX version")
-   set(AMREX_REQUIRED_COMPONENTS ${INCFLO_DIM}D FORTRAN DOUBLE LSOLVERS)
+   set(AMREX_REQUIRED_COMPONENTS ${INCFLO_DIM}D DOUBLE LSOLVERS)
 
    if (INCFLO_EB)
       list(APPEND AMREX_REQUIRED_COMPONENTS EB)
@@ -113,6 +138,10 @@ else ()  # STANDALONE MODE
    endif ()
    if (INCFLO_CUDA)
       list(APPEND AMREX_REQUIRED_COMPONENTS CUDA)
+   elseif (INCFLO_HIP)
+      list(APPEND AMREX_REQUIRED_COMPONENTS HIP)
+   elseif (INCFLO_SYCL)
+      list(APPEND AMREX_REQUIRED_COMPONENTS SYCL)
    endif ()
 
    find_package(AMReX ${AMREX_MINIMUM_VERSION} CONFIG
@@ -125,7 +154,7 @@ endif ()
 set(AMREX_HYDRO_HOME "" CACHE PATH "Path to AMReX-Hydro top-level source directory")
 
 if (AMREX_HYDRO_HOME)
-   message(STATUD "AMReX-Hydro top-level source directory path: ${AMREX_HYDRO_HOME}")
+   message(STATUS "AMReX-Hydro top-level source directory path: ${AMREX_HYDRO_HOME}")
    set(AMREX_HYDRO_BINARY_DIR "${incflo_BINARY_DIR}/AMReX-Hydro" CACHE INTERNAL "Path to AMReX-Hydro top-level binary directory")
 
    # Set required settings for AMReX-Hydro
@@ -135,6 +164,10 @@ if (AMREX_HYDRO_HOME)
    set(HYDRO_EB          ${INCFLO_EB}  CACHE INTERNAL "")
    if (INCFLO_CUDA)
      set(HYDRO_GPU_BACKEND CUDA CACHE INTERNAL "")
+   elseif (INCFLO_HIP)
+     set(AMReX_GPU_BACKEND HIP  CACHE INTERNAL "")
+   elseif (INCFLO_SYCL)
+     set(AMReX_GPU_BACKEND SYCL CACHE INTERNAL "")
    endif ()
 
   # Add AMReX-Hydro directory to the build
@@ -169,7 +202,10 @@ target_link_libraries(incflo PUBLIC amrex_hydro) #link to amrex through amrex_hy
 #        an incflo-specific macro, say INCFLO_USE_EB, dependent on
 #        the value of the INCFLO_EB option.
 #
-if (NOT INCFLO_EB AND AMReX_EB_FOUND)
+# W.Z.: Since we now require AMReX-Hydro and we only support support for that,
+#       I don't think this still works.
+#
+if (NOT AMREX_HOME AND NOT INCFLO_EB AND AMReX_EB_FOUND)
    target_compile_options(incflo PUBLIC -UAMREX_USE_EB)
 endif ()
 
@@ -196,11 +232,7 @@ set_target_properties(incflo PROPERTIES OUTPUT_NAME "incflo.ex")
 # Setup CUDA
 #
 if (INCFLO_CUDA)
-   set_cpp_sources_to_cuda_language( incflo )
-   set_target_properties( incflo
-      PROPERTIES
-      CUDA_SEPARABLE_COMPILATION ON  # This add -dc flag
-      )
+   setup_target_for_cuda_compilation(incflo)
 endif ()
 
 if(INCFLO_CSG)
