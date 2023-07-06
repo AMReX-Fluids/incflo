@@ -451,7 +451,7 @@ incflo::InitialRedistribution ()
                 auto const& bc_vel = get_velocity_bcrec_device_ptr();
                 ApplyInitialRedistribution( bx,ncomp,
                                           ld.velocity.array(mfi), ld.velocity_o.array(mfi),
-                                          flag, AMREX_D_DECL(apx, apy, apz), vfrac, vfrac,
+                                          flag, AMREX_D_DECL(apx, apy, apz), vfrac,
                                           AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                           bc_vel, geom[lev], m_redistribution_type);
 
@@ -461,7 +461,7 @@ incflo::InitialRedistribution ()
                     auto const& bc_den = get_density_bcrec_device_ptr();
                     ApplyInitialRedistribution( bx,ncomp,
                                               ld.density.array(mfi), ld.density_o.array(mfi),
-                                              flag, AMREX_D_DECL(apx, apy, apz), vfrac, vfrac,
+                                              flag, AMREX_D_DECL(apx, apy, apz), vfrac,
                                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                               bc_den, geom[lev], m_redistribution_type);
                 }
@@ -471,7 +471,7 @@ incflo::InitialRedistribution ()
                     auto const& bc_tra = get_tracer_bcrec_device_ptr();
                     ApplyInitialRedistribution( bx,ncomp,
                                               ld.tracer.array(mfi), ld.tracer_o.array(mfi),
-                                              flag, AMREX_D_DECL(apx, apy, apz), vfrac, vfrac,
+                                              flag, AMREX_D_DECL(apx, apy, apz), vfrac,
                                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
                                               bc_tra, geom[lev], m_redistribution_type);
                 }

@@ -2,6 +2,7 @@
 
 #include <incflo.H>
 #include <AMReX_EB_Redistribution.H>
+#include <hydro_redistribution.H>
 
 using namespace amrex;
 

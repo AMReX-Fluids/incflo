@@ -6,6 +6,7 @@
  */
 
 #include <hydro_redistribution.H>
+#include <AMReX_EB_Redistribution.H>
 
 #if (AMREX_SPACEDIM == 2)
 #include <hydro_create_itracker_2d_K.H>
@@ -195,7 +196,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     {
         int icomp = 0;
         apply_flux_redistribution (bx, out, dUdt_in, scratch, icomp, ncomp,
-                                   flag_old, vfrac_old, lev_geom);
+                                   flag_old, vfrac_old, lev_geom, false);
 
     } else if (redistribution_type == "StateRedist") {
 
