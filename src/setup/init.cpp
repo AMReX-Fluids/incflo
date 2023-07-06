@@ -1,7 +1,7 @@
 #include <AMReX_BC_TYPES.H>
 #include <incflo.H>
 #ifdef AMREX_USE_EB
-#include <hydro_redistribution.H>
+#include <AMReX_EB_Redistribution.H>
 #endif
 
 using namespace amrex;
@@ -449,7 +449,7 @@ incflo::InitialRedistribution ()
 
                 int ncomp = AMREX_SPACEDIM;
                 auto const& bc_vel = get_velocity_bcrec_device_ptr();
-                Redistribution::ApplyToInitialData( bx,ncomp,
+                ApplyInitialRedistribution( bx,ncomp,
                                           ld.velocity.array(mfi), ld.velocity_o.array(mfi),
                                           flag, AMREX_D_DECL(apx, apy, apz), vfrac, vfrac,
                                           AMREX_D_DECL(fcx, fcy, fcz), ccc,
@@ -459,7 +459,7 @@ incflo::InitialRedistribution ()
                 {
                     ncomp = 1;
                     auto const& bc_den = get_density_bcrec_device_ptr();
-                    Redistribution::ApplyToInitialData( bx,ncomp,
+                    ApplyInitialRedistribution( bx,ncomp,
                                               ld.density.array(mfi), ld.density_o.array(mfi),
                                               flag, AMREX_D_DECL(apx, apy, apz), vfrac, vfrac,
                                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
@@ -469,7 +469,7 @@ incflo::InitialRedistribution ()
                 {
                     ncomp = m_ntrac;
                     auto const& bc_tra = get_tracer_bcrec_device_ptr();
-                    Redistribution::ApplyToInitialData( bx,ncomp,
+                    ApplyInitialRedistribution( bx,ncomp,
                                               ld.tracer.array(mfi), ld.tracer_o.array(mfi),
                                               flag, AMREX_D_DECL(apx, apy, apz), vfrac, vfrac,
                                               AMREX_D_DECL(fcx, fcy, fcz), ccc,

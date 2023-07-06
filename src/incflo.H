@@ -284,15 +284,15 @@ public:
                                                   amrex::Vector<amrex::MultiFab const*> const& w_mac));
 
     void redistribute_term ( amrex::MultiFab& result, amrex::MultiFab& result_tmp,
-			     amrex::MultiFab const& state,
-			     amrex::BCRec const* bc,
+			                 amrex::MultiFab const& state,
+			                 amrex::BCRec const* bc,
                              int lev,
                              amrex::MultiFab*& vel_eb);
     void redistribute_term ( amrex::MFIter const& mfi,
                              amrex::Array4<amrex::Real      > const& result,
                              amrex::Array4<amrex::Real      > const& result_tmp,
                              amrex::Array4<amrex::Real const> const& state,
-			     amrex::BCRec const* bc,
+			                 amrex::BCRec const* bc,
                              int lev,
                              amrex::Array4<amrex::Real const> const& vel_eb);
     void redistribute_term ( amrex::MFIter const& mfi,
@@ -303,6 +303,7 @@ public:
                              int lev,
                              amrex::Array4<amrex::Real const> const& vel_eb_old,
                              amrex::Array4<amrex::Real const> const& vel_eb_new);
+
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
@@ -316,7 +317,7 @@ public:
 #ifdef AMREX_USE_EB
     void PrintDragForce(std::ofstream &drag_file);
 #endif
-    
+
 private:
 
     //
