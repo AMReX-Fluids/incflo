@@ -79,7 +79,7 @@ jobs:
     - name: Run
       run: |
         cd ${{ github.workspace }}/incflo
-        mpiexec -n 2 build/incflo.ex test_3d/benchmark.uniform_velocity_sphere incflo.verbose=1
+        mpiexec -n 2 build/incflo.ex test_3d/benchmark.uniform_velocity_sphere incflo.verbose=1 mac_proj.verbose=1 nodal_proj.verbose=1
 
   gcc_no_eb_3d_lib:
     name: GCC NO EB 3D
@@ -163,7 +163,7 @@ jobs:
     - name: Run
       run: |
         cd ${{ github.workspace }}/incflo
-        mpiexec -n 2 build/incflo.ex test_no_eb_3d/benchmark.rayleigh_taylor max_step=3 incflo.verbose=1
+        mpiexec -n 2 build/incflo.ex test_no_eb_3d/benchmark.rayleigh_taylor max_step=3 incflo.verbose=1 mac_proj.verbose=1 nodal_proj.verbose=1
 
   gcc_eb_2d_lib:
     name: GCC EB 2D
@@ -247,7 +247,7 @@ jobs:
     - name: Run
       run: |
         cd ${{ github.workspace }}/incflo
-        build/incflo.ex test_2d/benchmark.eb_flow_sphere incflo.verbose=1
+        build/incflo.ex test_2d/benchmark.eb_flow_sphere incflo.verbose=1 mac_proj.verbose=1 nodal_proj.verbose=1
 
   gcc_no_eb_2d_super:
     name: GCC NO EB 2D
@@ -317,7 +317,7 @@ jobs:
       run: |
         export OMP_NUM_THREADS=2
         cd ${{ github.workspace }}/incflo
-        build/incflo.ex test_no_eb_2d/benchmark.bouss_bubble_god max_step=10 incflo.verbose=1
+        build/incflo.ex test_no_eb_2d/benchmark.bouss_bubble_god max_step=10 incflo.verbose=1 mac_proj.verbose=1 nodal_proj.verbose=1
 
   save_pr_number:
     if: github.event_name == 'pull_request'
