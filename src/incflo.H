@@ -258,14 +258,14 @@ public:
                                                   amrex::Vector<amrex::MultiFab const*> const& w_mac));
 
     void redistribute_term ( amrex::MultiFab& result, amrex::MultiFab& result_tmp,
-			     amrex::MultiFab const& state,
-			     amrex::BCRec const* bc,
-			     int lev);
+                 amrex::MultiFab const& state,
+                 amrex::BCRec const* bc,
+                 int lev);
     void redistribute_term ( amrex::MFIter const& mfi,
-			     amrex::MultiFab& result, amrex::MultiFab& result_tmp,
-			     amrex::MultiFab const& state,
-			     amrex::BCRec const* bc,
-			     int lev);
+                 amrex::MultiFab& result, amrex::MultiFab& result_tmp,
+                 amrex::MultiFab const& state,
+                 amrex::BCRec const* bc,
+                 int lev);
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
@@ -493,8 +493,8 @@ private:
     int m_last_chk = -1;
     int m_KE_int = -1;
     std::string m_check_file{"chk"};
-    std::string m_restart_file{""};
-    std::string m_tag_file{""};
+    std::string m_restart_file;
+    std::string m_tag_file;
 
     bool m_plotfile_on_restart = false;
 
@@ -613,9 +613,9 @@ private:
     [[nodiscard]] amrex::FabFactory<amrex::FArrayBox> const&
     Factory (int lev) const noexcept { return *m_factory[lev]; }
 #ifdef AMREX_USE_EB
-    amrex::EBFArrayBoxFactory const&
-        EBFactory (int lev) const noexcept {
-            return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
+    [[nodiscard]] amrex::EBFArrayBoxFactory const&
+    EBFactory (int lev) const noexcept {
+        return static_cast<amrex::EBFArrayBoxFactory const&>(*m_factory[lev]);
     }
 #endif
 

@@ -70,8 +70,7 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
             Real rhoerr = tag_rho ? rhoerr_v[lev]: std::numeric_limits<Real>::max();
             Real gradrhoerr = tag_gradrho ? gradrhoerr_v[lev] : std::numeric_limits<Real>::max();
             amrex::ParallelFor(bx,
-            [tag_rho,tag_gradrho,rhoerr,gradrhoerr,tagval,rho,tag]
-            AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 if (tag_rho && rho(i,j,k) > rhoerr) {
                     tag(i,j,k) = tagval;
@@ -107,8 +106,7 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
 #if (AMREX_SPACEDIM == 2)
 
             amrex::ParallelFor(bx,
-            [xlo, xhi, ylo, yhi, problo, l_dx, l_dy, tagval, tag]
-            AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                  Real x = problo[0] + (i+0.5)*l_dx;
                  Real y = problo[1] + (j+0.5)*l_dy;
@@ -125,8 +123,7 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
             Real zhi = tag_region_hi[2];
 
             amrex::ParallelFor(bx,
-            [xlo, xhi, ylo, yhi, zlo, zhi, problo, l_dx, l_dy, l_dz,tagval, tag]
-            AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                  Real x = problo[0] + Real(i+0.5)*l_dx;
                  Real y = problo[1] + Real(j+0.5)*l_dy;

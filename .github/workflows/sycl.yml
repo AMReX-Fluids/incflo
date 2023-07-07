@@ -1,0 +1,90 @@
+---
+name: SYCL
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "13 8 * * *"
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.head_ref }}-SYCL
+  cancel-in-progress: true
+
+jobs:
+  sycl_eb_2d:
+    name: SYCL EB 2D
+    runs-on: ubuntu-latest
+    env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wextra-semi -Wunreachable-code -Wnon-virtual-dtor -Wno-sign-compare -Wno-missing-braces"}
+    steps:
+    - name: Checkout incflo
+      uses: actions/checkout@v3
+      with:
+        path: incflo
+    - name: Checkout AMReX-Hydro
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/AMReX-Hydro
+        path: AMReX-Hydro
+    - name: Checkout AMReX
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/amrex
+        path: amrex
+    - name: Set Up Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
+        restore-keys: |
+             ccache-${{ github.workflow }}-${{ github.job }}-git-
+    - name: Load Dependencies
+      run: |
+        amrex/.github/workflows/dependencies/dependencies_dpcpp.sh
+        amrex/.github/workflows/dependencies/dependencies_ccache.sh
+    - name: Build
+      run: |
+        export CCACHE_COMPRESS=1
+        export CCACHE_COMPRESSLEVEL=10
+        export CCACHE_MAXSIZE=200M
+        export CCACHE_DEPEND=1
+        ccache -z
+
+        set +e
+        source /opt/intel/oneapi/setvars.sh
+        set -e
+
+        cd incflo
+        mkdir build
+        cd build
+        cmake ..                                                     \
+           -DINCFLO_DIM=2                                            \
+           -DINCFLO_MPI=ON                                           \
+           -DINCFLO_OMP=OFF                                          \
+           -DINCFLO_EB=ON                                            \
+           -DINCFLO_SYCL=ON                                          \
+           -DAMREX_HOME=${{ github.workspace }}/amrex                \
+           -DAMREX_HYDRO_HOME=${{ github.workspace }}/AMReX-Hydro    \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                               \
+           -DCMAKE_C_COMPILER=$(which icx)                           \
+           -DCMAKE_CXX_COMPILER=$(which icpx)                        \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        make -j 2
+
+        ccache -s
+        du -hs ~/.cache/ccache
+
+  save_pr_number:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Save PR number
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          echo $PR_NUMBER > pr_number.txt
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pr_number
+          path: pr_number.txt
+          retention-days: 1

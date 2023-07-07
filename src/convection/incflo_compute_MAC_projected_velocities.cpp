@@ -22,9 +22,9 @@ incflo::compute_MAC_projected_velocities (
     // We first compute the velocity forcing terms to be used in predicting
     //    to faces before the MAC projection
     if (m_advection_type != "MOL") {
-        
+
         if (m_godunov_include_diff_in_forcing) {
-            
+
             for (int lev = 0; lev <= finest_level; ++lev) {
                 auto& ld = *m_leveldata[lev];
 #ifdef _OPENMP

@@ -474,12 +474,12 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-	    amrex::single_level_redistribute(laps_tmp[lev],
-					     *a_laps[lev], 0, m_incflo->m_ntrac,
+        amrex::single_level_redistribute(laps_tmp[lev],
+                         *a_laps[lev], 0, m_incflo->m_ntrac,
                                              m_incflo->Geom(lev));
-	    // auto const& bc = m_incflo->get_tracer_bcrec_device_ptr();
+        // auto const& bc = m_incflo->get_tracer_bcrec_device_ptr();
             // m_incflo->redistribute_term(*a_laps[lev], laps_tmp[lev], *a_scalar[lev],
-	    // 				bc, lev);
+        //                 bc, lev);
         }
     }
     else
@@ -592,12 +592,12 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-	    amrex::single_level_redistribute(divtau_tmp[lev],
+        amrex::single_level_redistribute(divtau_tmp[lev],
                                              *a_divtau[lev], 0, a_divtau[lev]->nComp(),
                                              m_incflo->Geom(lev));
             // auto const& bc = m_incflo->get_velocity_bcrec_device_ptr();
             // m_incflo->redistribute_term(*a_divtau[lev], divtau_tmp[lev], *a_vel[lev],
-	    // 				bc, lev);
+        //                 bc, lev);
         }
     }
     else

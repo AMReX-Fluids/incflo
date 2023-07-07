@@ -19,18 +19,9 @@ class UnionListIF
 
 public:
     UnionListIF(const amrex::Vector<F>& a_ifs)
-        : m_ifs(a_ifs)
-    {
-        empty = !a_ifs.empty();
-    }
-
-    ~UnionListIF()
-    = default;
-
-    UnionListIF(const UnionListIF& rhs) = default;
-    UnionListIF(UnionListIF&& rhs)  noexcept = default;
-    UnionListIF& operator=(const UnionListIF& rhs) = default;
-    UnionListIF& operator=(UnionListIF&& rhs)  noexcept = default;
+        : m_ifs(a_ifs),
+          empty(!a_ifs.empty())
+    {}
 
     [[nodiscard]] bool is_empty() const
     {

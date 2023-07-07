@@ -1,0 +1,335 @@
+---
+name: GCC
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "13 8 * * *"
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.head_ref }}-gcc
+  cancel-in-progress: true
+
+jobs:
+  gcc_eb_3d_super:
+    name: GCC EB 3D
+    runs-on: ubuntu-latest
+    env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
+    steps:
+    - name: Checkout incflo
+      uses: actions/checkout@v3
+      with:
+        path: incflo
+    - name: Checkout AMReX-Hydro
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/AMReX-Hydro
+        path: AMReX-Hydro
+    - name: Checkout AMReX
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/amrex
+        path: amrex
+    - name: Set Up Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
+        restore-keys: |
+             ccache-${{ github.workflow }}-${{ github.job }}-git-
+    - name: Load Dependencies
+      run: |
+        amrex/.github/workflows/dependencies/dependencies.sh
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 14
+        amrex/.github/workflows/dependencies/dependencies_ccache.sh
+    - name: Build
+      run: |
+        export CCACHE_COMPRESS=1
+        export CCACHE_COMPRESSLEVEL=10
+        export CCACHE_MAXSIZE=100M
+        export CCACHE_EXTRAFILES=${{ github.workspace }}/incflo/.clang-tidy
+        export CCACHE_LOGFILE=${{ github.workspace }}/ccache.log.txt
+
+        ccache -z
+
+        cd incflo
+        mkdir build
+        cd build
+        cmake ..                                                     \
+           -DINCFLO_DIM=3                                            \
+           -DINCFLO_MPI=ON                                           \
+           -DINCFLO_OMP=OFF                                          \
+           -DINCFLO_EB=ON                                            \
+           -DAMREX_HOME=${{ github.workspace }}/amrex                \
+           -DAMREX_HYDRO_HOME=${{ github.workspace }}/AMReX-Hydro    \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                               \
+           -DCMAKE_CXX_STANDARD=17                                   \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        make -j 2
+
+        ${{github.workspace}}/amrex/Tools/C_scripts/mmclt.py --input ${{github.workspace}}/ccache.log.txt --identifier incflo/src
+        make -j2 -f clang-tidy-ccache-misses.mak \
+            CLANG_TIDY=clang-tidy-14 \
+            CLANG_TIDY_ARGS="--config-file=${{github.workspace}}/AMReX-Hydro/.clang-tidy --warnings-as-errors=*"
+
+        ccache -s
+        du -hs ~/.cache/ccache
+
+    - name: Run
+      run: |
+        cd ${{ github.workspace }}/incflo
+        mpiexec -n 2 build/incflo.ex test_3d/benchmark.uniform_velocity_sphere incflo.verbose=1
+
+  gcc_no_eb_3d_lib:
+    name: GCC NO EB 3D
+    runs-on: ubuntu-latest
+    env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
+    steps:
+    - name: Checkout incflo
+      uses: actions/checkout@v3
+      with:
+        path: incflo
+    - name: Checkout AMReX-Hydro
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/AMReX-Hydro
+        path: AMReX-Hydro
+    - name: Checkout AMReX
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/amrex
+        path: amrex
+    - name: Set Up Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
+        restore-keys: |
+             ccache-${{ github.workflow }}-${{ github.job }}-git-
+    - name: Load Dependencies
+      run: |
+        amrex/.github/workflows/dependencies/dependencies.sh
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 14
+        amrex/.github/workflows/dependencies/dependencies_ccache.sh
+    - name: Build
+      run: |
+        export CCACHE_COMPRESS=1
+        export CCACHE_COMPRESSLEVEL=10
+        export CCACHE_MAXSIZE=100M
+
+        ccache -z
+
+        cd amrex
+        mkdir build
+        cd build
+        cmake ..                                                    \
+           -DAMReX_SPACEDIM=3                                       \
+           -DAMReX_MPI=ON                                           \
+           -DAMReX_OMP=OFF                                          \
+           -DAMReX_EB=OFF                                           \
+           -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/amrex_lib \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                              \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        make -j 2
+        make install
+
+        export CCACHE_EXTRAFILES=${{ github.workspace }}/incflo/.clang-tidy
+        export CCACHE_LOGFILE=${{ github.workspace }}/ccache.log.txt
+
+        cd ${{ github.workspace }}/incflo
+        mkdir build
+        cd build
+        cmake ..                                                         \
+           -DINCFLO_DIM=3                                                \
+           -DINCFLO_MPI=ON                                               \
+           -DINCFLO_OMP=OFF                                              \
+           -DINCFLO_EB=OFF                                               \
+           -DAMReX_DIR=${{ github.workspace }}/amrex_lib/lib/cmake/AMReX \
+           -DAMREX_HYDRO_HOME=${{ github.workspace }}/AMReX-Hydro        \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                                   \
+           -DCMAKE_CXX_STANDARD=17                                       \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        make -j 2
+
+        ${{github.workspace}}/amrex/Tools/C_scripts/mmclt.py --input ${{github.workspace}}/ccache.log.txt --identifier incflo/src
+        make -j2 -f clang-tidy-ccache-misses.mak \
+            CLANG_TIDY=clang-tidy-14 \
+            CLANG_TIDY_ARGS="--config-file=${{github.workspace}}/AMReX-Hydro/.clang-tidy --warnings-as-errors=*"
+
+        ccache -s
+        du -hs ~/.cache/ccache
+
+    - name: Run
+      run: |
+        cd ${{ github.workspace }}/incflo
+        mpiexec -n 2 build/incflo.ex test_no_eb_3d/benchmark.rayleigh_taylor max_step=3 incflo.verbose=1
+
+  gcc_eb_2d_lib:
+    name: GCC EB 2D
+    runs-on: ubuntu-latest
+    env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
+    steps:
+    - name: Checkout incflo
+      uses: actions/checkout@v3
+      with:
+        path: incflo
+    - name: Checkout AMReX-Hydro
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/AMReX-Hydro
+        path: AMReX-Hydro
+    - name: Checkout AMReX
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/amrex
+        path: amrex
+    - name: Set Up Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
+        restore-keys: |
+             ccache-${{ github.workflow }}-${{ github.job }}-git-
+    - name: Load Dependencies
+      run: |
+        amrex/.github/workflows/dependencies/dependencies.sh
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 14
+        amrex/.github/workflows/dependencies/dependencies_ccache.sh
+    - name: Build
+      run: |
+        export CCACHE_COMPRESS=1
+        export CCACHE_COMPRESSLEVEL=10
+        export CCACHE_MAXSIZE=100M
+
+        ccache -z
+
+        cd amrex
+        mkdir build
+        cd build
+        cmake ..                                                    \
+           -DAMReX_SPACEDIM=2                                       \
+           -DAMReX_MPI=OFF                                          \
+           -DAMReX_OMP=OFF                                          \
+           -DAMReX_EB=ON                                            \
+           -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/amrex_lib \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                              \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        make -j 2
+        make install
+
+        export CCACHE_EXTRAFILES=${{ github.workspace }}/incflo/.clang-tidy
+        export CCACHE_LOGFILE=${{ github.workspace }}/ccache.log.txt
+
+        cd ${{ github.workspace }}/incflo
+        mkdir build
+        cd build
+        cmake ..                                                         \
+           -DINCFLO_DIM=2                                                \
+           -DINCFLO_MPI=OFF                                              \
+           -DINCFLO_OMP=OFF                                              \
+           -DINCFLO_EB=ON                                                \
+           -DAMReX_DIR=${{ github.workspace }}/amrex_lib/lib/cmake/AMReX \
+           -DAMREX_HYDRO_HOME=${{ github.workspace }}/AMReX-Hydro        \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                                   \
+           -DCMAKE_CXX_STANDARD=17                                       \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        make -j 2
+
+        ${{github.workspace}}/amrex/Tools/C_scripts/mmclt.py --input ${{github.workspace}}/ccache.log.txt --identifier incflo/src
+        make -j2 -f clang-tidy-ccache-misses.mak \
+            CLANG_TIDY=clang-tidy-14 \
+            CLANG_TIDY_ARGS="--config-file=${{github.workspace}}/AMReX-Hydro/.clang-tidy --warnings-as-errors=*"
+
+        ccache -s
+        du -hs ~/.cache/ccache
+
+    - name: Run
+      run: |
+        cd ${{ github.workspace }}/incflo
+        build/incflo.ex test_2d/benchmark.eb_flow_sphere incflo.verbose=1
+
+  gcc_no_eb_2d_super:
+    name: GCC NO EB 2D
+    runs-on: ubuntu-latest
+    env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
+    steps:
+    - name: Checkout incflo
+      uses: actions/checkout@v3
+      with:
+        path: incflo
+    - name: Checkout AMReX-Hydro
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/AMReX-Hydro
+        path: AMReX-Hydro
+    - name: Checkout AMReX
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/amrex
+        path: amrex
+    - name: Set Up Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
+        restore-keys: |
+             ccache-${{ github.workflow }}-${{ github.job }}-git-
+    - name: Load Dependencies
+      run: |
+        amrex/.github/workflows/dependencies/dependencies.sh
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 14
+        amrex/.github/workflows/dependencies/dependencies_ccache.sh
+    - name: Build
+      run: |
+        export CCACHE_COMPRESS=1
+        export CCACHE_COMPRESSLEVEL=10
+        export CCACHE_MAXSIZE=100M
+        export CCACHE_EXTRAFILES=${{ github.workspace }}/incflo/.clang-tidy
+        export CCACHE_LOGFILE=${{ github.workspace }}/ccache.log.txt
+
+        ccache -z
+
+        cd incflo
+        mkdir build
+        cd build
+        cmake ..                                                     \
+           -DINCFLO_DIM=2                                            \
+           -DINCFLO_MPI=OFF                                          \
+           -DINCFLO_OMP=ON                                           \
+           -DINCFLO_EB=OFF                                           \
+           -DAMREX_HOME=${{ github.workspace }}/amrex                \
+           -DAMREX_HYDRO_HOME=${{ github.workspace }}/AMReX-Hydro    \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                               \
+           -DCMAKE_CXX_STANDARD=17                                   \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        make -j 2
+
+        ${{github.workspace}}/amrex/Tools/C_scripts/mmclt.py --input ${{github.workspace}}/ccache.log.txt --identifier incflo/src
+        make -j2 -f clang-tidy-ccache-misses.mak \
+            CLANG_TIDY=clang-tidy-14 \
+            CLANG_TIDY_ARGS="--config-file=${{github.workspace}}/AMReX-Hydro/.clang-tidy --warnings-as-errors=*"
+
+        ccache -s
+        du -hs ~/.cache/ccache
+
+    - name: Run
+      run: |
+        export OMP_NUM_THREADS=2
+        cd ${{ github.workspace }}/incflo
+        build/incflo.ex test_no_eb_2d/benchmark.bouss_bubble_god max_step=10 incflo.verbose=1
+
+  save_pr_number:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Save PR number
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          echo $PR_NUMBER > pr_number.txt
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pr_number
+          path: pr_number.txt
+          retention-days: 1
