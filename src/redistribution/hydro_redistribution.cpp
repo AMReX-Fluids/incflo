@@ -317,9 +317,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // it gets mult by V^n which is zero
                     scratch(i,j,k,n) = U_in(i,j,k,n);
                 }
+                else if ( flag_new(i,j,k).isCovered() )
+                {
+                    // Skip over any newly covered cells and treat in next loop.
+                }              
                 else if ( (vfrac_old(i,j,k) > 0. && vfrac_old(i,j,k) < 1.0) ||
-                         (vfrac_old(i,j,k) == 1. &&
-                          (!flag_old(i,j,k).isRegular() || !flag_new(i,j,k).isRegular()) ))
+                         ( vfrac_old(i,j,k) == 1. &&
+                          (!flag_old(i,j,k).isRegular() || !flag_new(i,j,k).isRegular()) ) )
                 {
                     // Correct all cells that are cut at time n or become cut at time n+1
                     Real delta_divU = 0.0;
@@ -370,25 +374,26 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             delta_divU = Real(0.5) * (delta_divU
                                                       + out(i,j,k,n) * (delta_vol - Ueb_dot_an_new));
                         }
-                    // if ( i==9 && j==8){
-                    //     Print()<<"NU DELTA DIVU "<<delta_divU
-                    //            <<" "<<Ueb_dot_an
-                    //            <<" "<<Ueb_dot_an_new
-                    //            <<" "<<delta_vol<<std::endl;
-                    // }
-                    // if ( i==10 && j==8){
-                    //     Print()<<"NUN DELTA DIVU "<<delta_divU
-                    //            <<" "<<Ueb_dot_an
-                    //            <<" "<<Ueb_dot_an_new
-                    //            <<" "<<delta_vol<<std::endl;
-                    //     Print()<<"U "<<U_in(i,j,k,n)
-                    //            <<" "<<out(i,j,k,n)
-                    //            <<std::endl;
-                    // }
                     }
 
                     // This will undo volume scaling that happens later in forming q-hat
                     delta_divU /= vfrac_old(i,j,k);
+
+                    if ( i==9 && j==8){
+                        Print()<<"NC DELTA DIVU "<<delta_divU
+                               <<" "<<Ueb_dot_an
+                            //<<" "<<Ueb_dot_an_new
+                               <<" "<<delta_vol<<std::endl;
+                    }
+                    if ( i==10 && j==8){
+                        Print()<<"NCN DELTA DIVU "<<delta_divU
+                               <<" "<<Ueb_dot_an
+                            //<<" "<<Ueb_dot_an_new
+                               <<" "<<delta_vol<<std::endl;
+                        Print()<<"U "<<U_in(i,j,k,n)
+                               <<" "<<out(i,j,k,n)
+                               <<std::endl;
+                    }
 
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
                         + dt * delta_divU;
@@ -404,11 +409,13 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             amrex::ParallelFor(Box(scratch), ncomp,
             [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
+// FIXME maybe we want to be using flag.isCovered, ect here instead
+                
                 // Check to see if this cell was covered at time n.
                 // If covered, add my vol correction to the cells in my nbhd
                 // Need this in a separate loop because otherwise we can't be guaranteed
                 // that the nb has been initialized.
-                if ( vfrac_old(i,j,k) == 0.0 ) {
+                if ( vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k) > 0. ) {
                     for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
                     {
                         int ioff = map[0][itr(i,j,k,i_nbor)];
@@ -467,6 +474,115 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                         }
                     }
+                }
+                else if ( vfrac_new(i,j,k) == 0.0 && vfrac_old(i,j,k) > 0. )
+                {
+                    // Newly covered cell and nbs
+                    
+                    // Create nbhd average U^n
+                    // Do we need U^pred-bar also?
+                    Real Ubar = U_in(i,j,k,n)*vfrac_old(i,j,k);
+                    Real vol_o  = vfrac_old(i,j,k);
+                    Real Upbar = 0.;
+                    Real vol_n  = 0.;
+                    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+                    {
+                        int ioff = map[0][itr(i,j,k,i_nbor)];
+                        int joff = map[1][itr(i,j,k,i_nbor)];
+                        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
+
+                        if ( Box(scratch).contains(Dim3{i+ioff,j+joff,k+koff}) )
+                        {
+                            Ubar += U_in(i+ioff,j+joff,k+koff,n)*vfrac_old(i+ioff,j+joff,k+koff);
+                            vol_o  += vfrac_old(i+ioff,j+joff,k+koff);
+                            Upbar += out(i+ioff,j+joff,k+koff,n)*vfrac_old(i+ioff,j+joff,k+koff);
+                            vol_n  += vfrac_new(i+ioff,j+joff,k+koff);
+                        }
+                    }
+                    Ubar /= vol_o;
+                    Upbar /= vol_n;
+
+                    Real delta_divU = 0.0;
+                    Real Ueb_dot_an = 0.0;
+                    Real delta_vol = (vfrac_new(i,j,k) - vfrac_old(i,j,k))/dt;
+
+                    {
+                        Ueb_dot_an =
+                            AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
+                                           + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
+                                           + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
+                        Ueb_dot_an *= barea_old(i,j,k);
+
+                        delta_divU = (delta_vol - Ueb_dot_an) * Ubar;
+                    }
+
+                    // For the Corrector step
+                    if (vel_eb_new)
+                    {
+                        Real Ueb_dot_an_new =
+                            AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
+                                         + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
+                                         + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
+                        Ueb_dot_an_new *= barea_new(i,j,k);
+
+                        // Use half of Ueb_dot_an and the full delta_vol
+                        // Needed to get 2D inputs_box_right to stay constant for covering
+                        delta_divU = Real(0.5) * (delta_divU + delta_vol*Upbar );
+                    }
+
+                    // This will undo volume scaling that happens later in forming q-hat
+                    delta_divU /= vfrac_old(i,j,k);
+
+                    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
+                        + dt * delta_divU;
+
+                    //
+                    // Now correct nbs
+                    //
+                    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+                    {
+                        int ioff = map[0][itr(i,j,k,i_nbor)];
+                        int joff = map[1][itr(i,j,k,i_nbor)];
+                        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
+
+                        if ( Box(scratch).contains(Dim3{i+ioff,j+joff,k+koff}) )
+                        {
+                            int ii = i+ioff;
+                            int jj = j+joff;
+                            int kk = k+koff;
+
+                            delta_vol = (vfrac_new(ii,jj,kk) - vfrac_old(ii,jj,kk))/dt;
+
+                            Ueb_dot_an =
+                                AMREX_D_TERM(  vel_eb_old(ii,jj,kk,0)*bnorm_old(ii,jj,kk,0) * dxinv[0],
+                                             + vel_eb_old(ii,jj,kk,1)*bnorm_old(ii,jj,kk,1) * dxinv[1],
+                                             + vel_eb_old(ii,jj,kk,2)*bnorm_old(ii,jj,kk,2) * dxinv[2] );
+                            Ueb_dot_an *= barea_old(ii,jj,kk);
+
+                            delta_divU = (delta_vol - Ueb_dot_an) * Ubar;
+
+                            // For the Corrector step
+                            if (vel_eb_new)
+                            {
+                                Real Ueb_dot_an_new =
+                                    AMREX_D_TERM(  vel_eb_new(ii,jj,kk,0)*bnorm_new(ii,jj,kk,0) * dxinv[0],
+                                                 + vel_eb_new(ii,jj,kk,1)*bnorm_new(ii,jj,kk,1) * dxinv[1],
+                                                 + vel_eb_new(ii,jj,kk,2)*bnorm_new(ii,jj,kk,2) * dxinv[2] );
+                                Ueb_dot_an_new *= barea_new(ii,jj,kk);
+
+                                delta_divU = Real(0.5) * (delta_divU
+                                                          + Upbar * (delta_vol - Ueb_dot_an_new));
+                            }
+
+                            // This will undo volume scaling that happens later in forming q-hat
+                            delta_divU /= vfrac_old(ii,jj,kk);
+
+                            scratch(ii,jj,kk,n) = U_in(ii,jj,kk,n) + dt * dUdt_in(ii,jj,kk,n)
+                                + dt * delta_divU;
+                        }
+                    }
+
+
                 }
             });
         }
