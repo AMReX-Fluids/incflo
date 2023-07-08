@@ -1,5 +1,5 @@
-#ifndef DIFFUSION_SCALAR_OP_H_
-#define DIFFUSION_SCALAR_OP_H_
+#ifndef INCFLO_DIFF_SCALAR_OP_H_
+#define INCFLO_DIFF_SCALAR_OP_H_
 
 #include <AMReX_MLMG.H>
 
