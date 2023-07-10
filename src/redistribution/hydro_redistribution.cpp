@@ -379,6 +379,9 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // This will undo volume scaling that happens later in forming q-hat
                     delta_divU /= vfrac_old(i,j,k);
 
+                    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
+                        + dt * delta_divU;
+                    
                     if ( i==9 && j==8){
                         Print()<<"NC DELTA DIVU "<<delta_divU
                                <<" "<<Ueb_dot_an
@@ -390,13 +393,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                                <<" "<<Ueb_dot_an
                             //<<" "<<Ueb_dot_an_new
                                <<" "<<delta_vol<<std::endl;
-                        Print()<<"U "<<U_in(i,j,k,n)
-                               <<" "<<out(i,j,k,n)
+                        Print()<<"NCN U "<<U_in(i,j,k,n)
+                               <<" "<<dUdt_in(i,j,k,n)
+                               <<" "<<scratch(i,j,k,n)
                                <<std::endl;
+                        Print()<<"NCN #nbs "<<itr(i,j,k,0)<<std::endl;
                     }
-
-                    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
-                        + dt * delta_divU;
 
                 }
                 else
@@ -426,25 +428,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                         {
                             Real delta_vol = vfrac_new(i,j,k) / dt;
                             Real delta_divU = delta_vol * U_in(i+ioff,j+joff,k+koff,n);
-                            //Real dV = vfrac_new(i+ioff,j+joff,k+koff)-vfrac_old(i+ioff,j+joff,k+koff);
-
-                            // NOTE this correction is only right for the case that the newly
-                            // uncovered cell has only one other cell in it's neghborhood.
-
-                            // // Whether this block is needed or not depends on whether it was already
-                            // // included in above loop or not.
-                            // if (!flag_old(i+ioff,j+joff,k+koff).isRegular() && !flag_new(i+ioff,j+joff,k+koff).isCovered()
-                            //     && std::abs(dV) < eps ) // we need this correction for NU but don't for NC...
-                            // {
-                            //     Real Ueb_dot_an =
-                            //         AMREX_D_TERM(  vel_eb_old(i+ioff,j+joff,k+koff,0)*bnorm_old(i+ioff,j+joff,k+koff,0) * dxinv[0],
-                            //                        + vel_eb_old(i+ioff,j+joff,k+koff,1)*bnorm_old(i+ioff,j+joff,k+koff,1) * dxinv[1],
-                            //                        + vel_eb_old(i+ioff,j+joff,k+koff,2)*bnorm_old(i+ioff,j+joff,k+koff,2) * dxinv[2] );
-                            //     Ueb_dot_an *= barea_old(i+ioff,j+joff,k+koff);
-
-                            //     delta_divU = (delta_vol - Ueb_dot_an) * U_in(i+ioff,j+joff,k+koff,n);
-                            // }
-
 
                             if ( vel_eb_new) {
                                 Real Ueb_dot_n =
@@ -477,68 +460,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 }
                 else if ( vfrac_new(i,j,k) == 0.0 && vfrac_old(i,j,k) > 0. )
                 {
-                    // Newly covered cell and nbs
-                    
-                    // Create nbhd average U^n
-                    // Do we need U^pred-bar also?
-                    Real Ubar = U_in(i,j,k,n)*vfrac_old(i,j,k);
-                    Real vol_o  = vfrac_old(i,j,k);
-                    Real Upbar = 0.;
-                    Real vol_n  = 0.;
-                    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
-                    {
-                        int ioff = map[0][itr(i,j,k,i_nbor)];
-                        int joff = map[1][itr(i,j,k,i_nbor)];
-                        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
+                    // Newly covered cell
 
-                        if ( Box(scratch).contains(Dim3{i+ioff,j+joff,k+koff}) )
-                        {
-                            Ubar += U_in(i+ioff,j+joff,k+koff,n)*vfrac_old(i+ioff,j+joff,k+koff);
-                            vol_o  += vfrac_old(i+ioff,j+joff,k+koff);
-                            Upbar += out(i+ioff,j+joff,k+koff,n)*vfrac_old(i+ioff,j+joff,k+koff);
-                            vol_n  += vfrac_new(i+ioff,j+joff,k+koff);
-                        }
-                    }
-                    Ubar /= vol_o;
-                    Upbar /= vol_n;
-
-                    Real delta_divU = 0.0;
-                    Real Ueb_dot_an = 0.0;
-                    Real delta_vol = (vfrac_new(i,j,k) - vfrac_old(i,j,k))/dt;
-
-                    {
-                        Ueb_dot_an =
-                            AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
-                                           + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
-                                           + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
-                        Ueb_dot_an *= barea_old(i,j,k);
-
-                        delta_divU = (delta_vol - Ueb_dot_an) * Ubar;
-                    }
-
-                    // For the Corrector step
-                    if (vel_eb_new)
-                    {
-                        Real Ueb_dot_an_new =
-                            AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
-                                         + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
-                                         + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
-                        Ueb_dot_an_new *= barea_new(i,j,k);
-
-                        // Use half of Ueb_dot_an and the full delta_vol
-                        // Needed to get 2D inputs_box_right to stay constant for covering
-                        delta_divU = Real(0.5) * (delta_divU + delta_vol*Upbar );
-                    }
-
-                    // This will undo volume scaling that happens later in forming q-hat
-                    delta_divU /= vfrac_old(i,j,k);
-
-                    scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
-                        + dt * delta_divU;
-
-                    //
-                    // Now correct nbs
-                    //
                     for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
                     {
                         int ioff = map[0][itr(i,j,k,i_nbor)];
@@ -551,38 +474,38 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                             int jj = j+joff;
                             int kk = k+koff;
 
-                            delta_vol = (vfrac_new(ii,jj,kk) - vfrac_old(ii,jj,kk))/dt;
-
-                            Ueb_dot_an =
-                                AMREX_D_TERM(  vel_eb_old(ii,jj,kk,0)*bnorm_old(ii,jj,kk,0) * dxinv[0],
-                                             + vel_eb_old(ii,jj,kk,1)*bnorm_old(ii,jj,kk,1) * dxinv[1],
-                                             + vel_eb_old(ii,jj,kk,2)*bnorm_old(ii,jj,kk,2) * dxinv[2] );
-                            Ueb_dot_an *= barea_old(ii,jj,kk);
-
-                            delta_divU = (delta_vol - Ueb_dot_an) * Ubar;
-
-                            // For the Corrector step
-                            if (vel_eb_new)
+                            Real delta_divU = 0.0;
+                            Real Ueb_dot_an = 0.0;
+                            Real delta_vol = (vfrac_new(i,j,k) - vfrac_old(i,j,k))/dt;
+                            
                             {
-                                Real Ueb_dot_an_new =
-                                    AMREX_D_TERM(  vel_eb_new(ii,jj,kk,0)*bnorm_new(ii,jj,kk,0) * dxinv[0],
-                                                 + vel_eb_new(ii,jj,kk,1)*bnorm_new(ii,jj,kk,1) * dxinv[1],
-                                                 + vel_eb_new(ii,jj,kk,2)*bnorm_new(ii,jj,kk,2) * dxinv[2] );
-                                Ueb_dot_an_new *= barea_new(ii,jj,kk);
-
-                                delta_divU = Real(0.5) * (delta_divU
-                                                          + Upbar * (delta_vol - Ueb_dot_an_new));
+                                Ueb_dot_an =
+                                    AMREX_D_TERM(  vel_eb_old(i,j,k,0)*bnorm_old(i,j,k,0) * dxinv[0],
+                                                 + vel_eb_old(i,j,k,1)*bnorm_old(i,j,k,1) * dxinv[1],
+                                                 + vel_eb_old(i,j,k,2)*bnorm_old(i,j,k,2) * dxinv[2] );
+                                Ueb_dot_an *= barea_old(i,j,k);
+                                
+                                delta_divU = (delta_vol - Ueb_dot_an) *  U_in(ii,jj,kk,n);
+                                
                             }
 
-                            // This will undo volume scaling that happens later in forming q-hat
-                            delta_divU /= vfrac_old(ii,jj,kk);
+                            if ( vel_eb_new )
+                            {
+                                delta_divU = Real(0.5) * (delta_divU
+                                                          + out(ii,jj,kk,n) * delta_vol );
 
-                            scratch(ii,jj,kk,n) = U_in(ii,jj,kk,n) + dt * dUdt_in(ii,jj,kk,n)
-                                + dt * delta_divU;
+                                // // This will undo volume scaling that happens later in forming q-hat
+                                // delta_divU /= vfrac_old(i,j,k);
+
+                                // scratch(ii,jj,kk,n) += dt * delta_divU;
+                            }
+
+                            delta_divU /= vfrac_old(i,j,k);
+                            
+                            scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
+                                                             + dt * delta_divU;
                         }
                     }
-
-
                 }
             });
         }
@@ -663,7 +586,15 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     // Only need to reset cells that didn't get SRD changes
                     out(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
                 }
-        });
+                                
+                if ( i==10 && j==8){
+                    Print()<<"NCN SRD out "
+                           <<" "<<out(i,j,k,n)
+                           <<std::endl;
+                }
+
+
+            });
         }
     } else if (redistribution_type == "NoRedist") {
         Print()<<"No redistribution..."<<std::endl;
