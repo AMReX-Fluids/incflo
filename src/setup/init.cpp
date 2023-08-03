@@ -1,7 +1,7 @@
 #include <AMReX_BC_TYPES.H>
 #include <incflo.H>
 #ifdef AMREX_USE_EB
-#include <AMREX_EB_Redistribution.H>
+#include <AMReX_EB_Redistribution.H>
 #endif
 
 using namespace amrex;
