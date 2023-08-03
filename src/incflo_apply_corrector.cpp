@@ -135,8 +135,8 @@ void incflo::ApplyCorrector()
     // Compute the explicit "new" advective terms R_u^(n+1,*), R_r^(n+1,*) and R_t^(n+1,*)
     // Note that "get_conv_tracer_new" returns div(rho u tracer)
     // *************************************************************************************
-    compute_convective_term(get_conv_velocity_new(), get_conv_density_new(), get_conv_tracer_new(),
-                            get_velocity_new_const(), get_density_new_const(), get_tracer_new_const(),
+    compute_convective_term(get_conv_velocity_new(), get_conv_density_new(), get_conv_tracer_new(), {},
+                            get_velocity_new_const(), get_density_new_const(), get_tracer_new_const(), {},
                             AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                             GetVecOfPtrs(w_mac)),
                             {}, {}, new_time);
@@ -203,17 +203,6 @@ void incflo::ApplyCorrector()
                 });
             } // mfi
         } // lev
-
-        // Average down solution
-        for (int lev = finest_level-1; lev >= 0; --lev) {
-#ifdef AMREX_USE_EB
-            amrex::EB_average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
-                                   0, 1, refRatio(lev));
-#else
-            amrex::average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
-                                0, 1, refRatio(lev));
-#endif
-        }
     } // not constant density
 
     // *************************************************************************************
@@ -307,32 +296,16 @@ void incflo::ApplyCorrector()
     // *************************************************************************************
     // Solve diffusion equation for tracer
     // *************************************************************************************
-    if ( m_advect_tracer )
+    if ( m_advect_tracer &&
+        (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit) )
     {
-        if (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit)
-        {
-            const int ng_diffusion = 1;
-            for (int lev = 0; lev <= finest_level; ++lev)
-                fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
+        const int ng_diffusion = 1;
+        for (int lev = 0; lev <= finest_level; ++lev)
+            fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
 
-            Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
-            diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
-        }
-        else
-        {
-            // Need to average down tracer since the diffusion solver didn't do it for us.
-            for (int lev = finest_level-1; lev >= 0; --lev) {
-#ifdef AMREX_USE_EB
-                amrex::EB_average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
-                                       0, m_ntrac, refRatio(lev));
-#else
-                amrex::average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
-                                    0, m_ntrac, refRatio(lev));
-#endif
-            }
-        }
-    } // if (m_advect_tracer)
-
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
+        diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
+    }
 
     // *************************************************************************************
     // Define the forcing terms to use in the final update (using half-time density)
@@ -455,11 +428,11 @@ void incflo::ApplyCorrector()
                             AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
                                                         m_half*(dvdt_o(i,j,k,0) +   dvdt(i,j,k,0))
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,0) + divtau(i,j,k,0));,
-//
+//    
                                          vel(i,j,k,1) = rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
                                                         m_half*(dvdt_o(i,j,k,1) +   dvdt(i,j,k,1))
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,1) + divtau(i,j,k,1));,
-//
+//    
                                          vel(i,j,k,2) = rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
                                                         m_half*(dvdt_o(i,j,k,2) +   dvdt(i,j,k,2))
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,2) + divtau(i,j,k,2)););
@@ -474,11 +447,11 @@ void incflo::ApplyCorrector()
                             AMREX_D_TERM(vel(i,j,k,0) = vel_o(i,j,k,0) + l_dt * (
                                                         m_half*(  dvdt_o(i,j,k,0) +   dvdt(i,j,k,0))
                                                       + vel_f(i,j,k,0) + divtau(i,j,k,0));,
-//
+//    
                                          vel(i,j,k,1) = vel_o(i,j,k,1) + l_dt * (
                                                         m_half*(dvdt_o(i,j,k,1) +   dvdt(i,j,k,1))
                                                       + vel_f(i,j,k,1) + divtau(i,j,k,1) );,
-//
+//    
                                          vel(i,j,k,2) = vel_o(i,j,k,2) + l_dt * (
                                                         m_half*(  dvdt_o(i,j,k,2) +   dvdt(i,j,k,2))
                                                       + vel_f(i,j,k,2) + divtau(i,j,k,2) ););
@@ -490,13 +463,13 @@ void incflo::ApplyCorrector()
                         amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
-                                                        m_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0))
+                                                        m_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0)) 
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,0) );,
                                          vel(i,j,k,1) = rho_old(i,j,k) * vel_o(i,j,k,1) + l_dt * (
-                                                        m_half*(  dvdt_o(i,j,k,1)+dvdt(i,j,k,1))
+                                                        m_half*(  dvdt_o(i,j,k,1)+dvdt(i,j,k,1)) 
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,1) );,
                                          vel(i,j,k,2) = rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
-                                                        m_half*(  dvdt_o(i,j,k,2)+dvdt(i,j,k,2))
+                                                        m_half*(  dvdt_o(i,j,k,2)+dvdt(i,j,k,2)) 
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,2) ););
                             AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
                                          vel(i,j,k,1) /= rho_new(i,j,k);,

@@ -7,7 +7,7 @@ void incflo::Advance()
     BL_PROFILE("incflo::Advance");
 
     // Start timing current time step
-    Real strt_step = static_cast<Real>(ParallelDescriptor::second());
+    Real start_step = static_cast<Real>(ParallelDescriptor::second());
 
     // Compute time step size
     int initialisation = 0;
@@ -29,9 +29,23 @@ void incflo::Advance()
                        << " with dt = " << m_dt << ".\n" << std::endl;
     }
 
+    // **********************************************************************************************
+    //
+    // CRYO-PLUNGING: set velocity to be zero
+    //
+    // **********************************************************************************************
+    // TODO: figure out how many hard resets are needed
+    if (m_advect_energy || m_advect_tracer)
+    {
+        cryo_set_zero_vel();
+        cryo_update_thermal();
+    }
+    
     copy_from_new_to_old_velocity();
     copy_from_new_to_old_density();
     copy_from_new_to_old_tracer();
+    if (m_advect_energy) copy_from_new_to_old_energy();
+
 
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
@@ -39,6 +53,11 @@ void incflo::Advance()
         fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
         if (m_advect_tracer) {
             fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
+        }
+        if (m_advect_energy) {
+            fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->one, ng);
+            fillpatch_energy(lev, m_t_old[lev], m_leveldata[lev]->energy_o, ng);
+            fillpatch_temp(lev, m_t_old[lev], m_leveldata[lev]->temp_o, ng);
         }
     }
 
@@ -66,6 +85,11 @@ void incflo::Advance()
         ApplyCorrector();
     }
 
+    if (m_advect_energy || m_advect_tracer)
+    {
+        cryo_set_zero_vel();
+    }
+
 #if 0
     // This sums over all levels
     if (m_test_tracer_conservation) {
@@ -75,8 +99,24 @@ void incflo::Advance()
     }
 #endif
 
+    // **********************************************************************************************
+    //
+    // CRYO-PLUNGING: convect energy field
+    //
+    // **********************************************************************************************
+    if (m_advect_energy)
+    {
+        // cryo_set_zero_vel(); // TODO: Check how many hard resets are needed
+        // cryo_update_thermal();
+        // cryo_compute_temp();
+        // cryo_convect_energy();
+        cryo_compute_temp();
+        // HACK: Write energy and temperature directly
+        cryo_copy_from_temp_to_tracer();
+    }
+
     // Stop timing current time step
-    Real end_step = static_cast<Real>(ParallelDescriptor::second()) - strt_step;
+    Real end_step = static_cast<Real>(ParallelDescriptor::second()) - start_step;
     ParallelDescriptor::ReduceRealMax(end_step, ParallelDescriptor::IOProcessorNumber());
     if (m_verbose > 0)
     {

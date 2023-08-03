@@ -11,6 +11,7 @@ void incflo::init_bcs ()
     auto f = [this] (std::string const& bcid, Orientation ori)
     {
         m_bc_density[ori] = 1.0;
+        m_bc_energy[ori] = 1.0;
         AMREX_D_TERM(m_bc_velocity[ori][0] = 0.0;, // default
                      m_bc_velocity[ori][1] = 0.0;,
                      m_bc_velocity[ori][2] = 0.0;);
@@ -51,6 +52,7 @@ void incflo::init_bcs ()
             }
 
             pp.query("density", m_bc_density[ori]);
+            pp.query("density", m_bc_energy[ori]);
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }
         else if (bc_type == "no_slip_wall" || bc_type == "nsw")
@@ -213,6 +215,7 @@ void incflo::init_bcs ()
 
     {
         m_bcrec_density.resize(1);
+        m_bcrec_energy.resize(1);
         for (OrientationIter oit; oit; ++oit) {
             Orientation ori = oit();
             int dir = ori.coordDir();
@@ -224,42 +227,52 @@ void incflo::init_bcs ()
             {
                 if (side == Orientation::low) {
                     m_bcrec_density[0].setLo(dir, BCType::foextrap);
+                    m_bcrec_energy[0].setLo(dir, BCType::foextrap);
                 } else {
                     m_bcrec_density[0].setHi(dir, BCType::foextrap);
+                    m_bcrec_energy[0].setHi(dir, BCType::foextrap);
                 }
             }
             else if (bct == BC::slip_wall)
             {
                 if (side == Orientation::low) {
                     m_bcrec_density[0].setLo(dir, BCType::hoextrap);
+                    m_bcrec_energy[0].setLo(dir, BCType::hoextrap);
                 } else {
                     m_bcrec_density[0].setHi(dir, BCType::hoextrap);
+                    m_bcrec_energy[0].setHi(dir, BCType::hoextrap);
                 }
             }
             else if (bct == BC::mass_inflow)
             {
                 if (side == Orientation::low) {
                     m_bcrec_density[0].setLo(dir, BCType::ext_dir);
+                    m_bcrec_energy[0].setLo(dir, BCType::ext_dir);
                 } else {
                     m_bcrec_density[0].setHi(dir, BCType::ext_dir);
+                    m_bcrec_energy[0].setHi(dir, BCType::ext_dir);
                 }
             }
             else if (bct == BC::periodic)
             {
                 if (side == Orientation::low) {
                     m_bcrec_density[0].setLo(dir, BCType::int_dir);
+                    m_bcrec_energy[0].setLo(dir, BCType::int_dir);
                 } else {
                     m_bcrec_density[0].setHi(dir, BCType::int_dir);
+                    m_bcrec_energy[0].setHi(dir, BCType::int_dir);
                 }
             }
         }
         m_bcrec_density_d.resize(1);
+        m_bcrec_energy_d.resize(1);
 #ifdef AMREX_USE_GPU
         Gpu::htod_memcpy
 #else
         std::memcpy
 #endif
             (m_bcrec_density_d.data(), m_bcrec_density.data(), sizeof(BCRec));
+            (m_bcrec_energy_d.data(), m_bcrec_energy.data(), sizeof(BCRec));
     }
 
     if (m_ntrac > 0)

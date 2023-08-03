@@ -25,3 +25,10 @@ void incflo::fillphysbc_tracer (int lev, Real time, MultiFab& tracer, int ng)
         physbc.FillBoundary(tracer, 0, m_ntrac, IntVect(ng), time, 0);
     }
 }
+
+void incflo::fillphysbc_energy (int lev, Real time, MultiFab& energy, int ng)
+{
+    PhysBCFunct<GpuBndryFuncFab<IncfloEneFill> > physbc(geom[lev], get_energy_bcrec(),
+                                                        IncfloEneFill{m_probtype, m_bc_energy});
+    physbc.FillBoundary(energy, 0, 1, IntVect(ng), time, 0);
+}

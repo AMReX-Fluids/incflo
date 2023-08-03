@@ -103,7 +103,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Forcing terms
     Vector<MultiFab> vel_forces, tra_forces;
 
-    Vector<MultiFab> vel_eta, tra_eta;
+    Vector<MultiFab> vel_eta, tra_eta, energy_eta;
 
     // *************************************************************************************
     // Allocate space for the forcing terms
@@ -119,6 +119,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
         vel_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
         if (m_advect_tracer) {
             tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, 1, MFInfo(), Factory(lev));
+            energy_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+        }
+        if ( m_advect_energy) {
+            energy_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
         }
     }
 
@@ -133,6 +137,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                       get_density_old(), get_velocity_old(),
                       m_cur_time, 1);
     compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
+    compute_energy_diff_coeff(GetVecOfPtrs(energy_eta), 1);
 
     // *************************************************************************************
     // Compute explicit viscous term
@@ -150,6 +155,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
     {
         compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
                      GetVecOfConstPtrs(tra_eta));
+    }
+    if (m_advect_energy)
+    {
+        compute_laps(get_laps_old(), get_temp_old_const(), get_one_const(),
+                 GetVecOfConstPtrs(energy_eta));
     }
 
     // **********************************************************************************************
@@ -169,9 +179,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // if (advection_type == "MOL"                )
     //      Compute the explicit advective terms R_u^n      , R_s^n       and R_t^n
     // Note that "get_conv_tracer_old" returns div(rho u tracer)
+    // Note that "get_conv_energy_old" returns div(u E)
     // *************************************************************************************
-    compute_convective_term(get_conv_velocity_old(), get_conv_density_old(), get_conv_tracer_old(),
-                            get_velocity_old_const(), get_density_old_const(), get_tracer_old_const(),
+    compute_convective_term(get_conv_velocity_old(), get_conv_density_old(),
+                            get_conv_tracer_old(), get_conv_energy_old(),
+                            get_velocity_old_const(), get_density_old_const(),
+                            get_tracer_old_const(), get_energy_old_const(),
                             AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                             GetVecOfPtrs(w_mac)),
                             GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
@@ -229,19 +242,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
             } // mfi
 
         } // lev
-
-        // Average down solution
-        for (int lev = finest_level-1; lev >= 0; --lev) {
-#ifdef AMREX_USE_EB
-            amrex::EB_average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
-                                   0, 1, refRatio(lev));
-#else
-            amrex::average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
-                                0, 1, refRatio(lev));
-#endif
-        }
     } // not constant density
-
 
     // *************************************************************************************
     // Compute (or if Godunov, re-compute) the tracer forcing terms (forcing for (rho s), not for s)
@@ -269,6 +270,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real const> const& rho_o   = ld.density_o.const_array(mfi);
                 Array4<Real> const& tra           = ld.tracer.array(mfi);
                 Array4<Real const> const& rho     = ld.density.const_array(mfi);
+                Array4<Real const> const& cv      = ld.vol_heat_cap.const_array(mfi);
                 Array4<Real const> const& dtdt_o  = ld.conv_tracer_o.const_array(mfi);
                 Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
                                                                   : Array4<Real const>{};
@@ -283,10 +285,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
                         //                   div(rho trac u) + div (mu grad trac) + rho * f_t
                         for (int n = 0; n < l_ntrac; ++n)
                         {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n) );
+                            // Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
+                            //     ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n) );
+                            Real tra_new = rho_o(i,j,k)*cv(i,j,k)*tra_o(i,j,k,n)
+                                         + l_dt * cv(i,j,k) * 
+                                         ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n) );
 
                             tra_new /= rho(i,j,k);
+                            tra_new /= cv(i,j,k);
                             tra(i,j,k,n) = tra_new;
                         }
                     });
@@ -326,34 +332,68 @@ void incflo::ApplyPredictor (bool incremental_projection)
     } // if (m_advect_tracer)
 
     // *************************************************************************************
+    // Update the energy next
+    // *************************************************************************************
+    if (m_advect_energy)
+    {
+        for (int lev = 0; lev <= finest_level; lev++)
+        {
+            auto& ld = *m_leveldata[lev];
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            for (MFIter mfi(ld.energy,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                Box const& bx = mfi.tilebox();
+                Array4<Real const> const& energy_o = ld.energy_o.const_array(mfi);
+                Array4<Real const> const& cv       = ld.vol_heat_cap.const_array(mfi);
+                Array4<Real const> const& dedt_o   = ld.conv_energy_o.const_array(mfi);
+                Array4<Real> const& energy         = ld.energy.array(mfi);
+
+                // if (m_diff_type == DiffusionType::Explicit)
+                // {
+                    // TODO: Check if laps is operator or already on vel
+                    Array4<Real const> const& laps_o = ld.laps_o.const_array(mfi);
+                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        // (energy)^new = (energy)^old + dt * ( div(energy vel) + div(k grad temp) )
+                        Real energy_new = energy_o(i,j,k) + l_dt *
+                            ( -10000000.0*dedt_o(i,j,k) + laps_o(i,j,k) );
+                        energy(i,j,k) = energy_new;
+                    }); // amrex::ParallelFor
+                // } // if (m_diff_type)
+            } // mfi
+        } // lev
+    } // if (m_advect_energy)
+
+    // *************************************************************************************
     // Solve diffusion equation for tracer
     // *************************************************************************************
-    if ( m_advect_tracer )
+    if ( m_advect_tracer &&
+        (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit) )
     {
-        if (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit)
-        {
-            const int ng_diffusion = 1;
-            for (int lev = 0; lev <= finest_level; ++lev)
-                fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
+        const int ng_diffusion = 1;
+        for (int lev = 0; lev <= finest_level; ++lev)
+            fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
 
-            Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
-            diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
-        }
-        else
-        {
-            // Need to average down tracer since the diffusion solver didn't do it for us.
-            for (int lev = finest_level-1; lev >= 0; --lev) {
-#ifdef AMREX_USE_EB
-                amrex::EB_average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
-                                       0, m_ntrac, refRatio(lev));
-#else
-                amrex::average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
-                                    0, m_ntrac, refRatio(lev));
-#endif
-            }
-        }
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
+        diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
+
     } // if (m_advect_tracer)
 
+    // *************************************************************************************
+    // Solve diffusion equation for energy
+    // *************************************************************************************
+    if (m_advect_energy)
+    {
+        const int ng_diffusion = 1;
+        for (int lev = 0; lev <= finest_level; ++lev)
+            fillphysbc_energy(lev, new_time, m_leveldata[lev]->energy, ng_diffusion);
+
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
+        diffuse_scalar(get_energy_new(), get_one_new(), GetVecOfConstPtrs(energy_eta), dt_diff);
+
+    } // if (m_advect_energy)
 
     // *************************************************************************************
     // Define (or if advection_type != "MOL", re-define) the forcing terms, without the viscous terms

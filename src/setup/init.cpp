@@ -1,7 +1,7 @@
 #include <AMReX_BC_TYPES.H>
 #include <incflo.H>
 #ifdef AMREX_USE_EB
-#include <AMReX_EB_Redistribution.H>
+#include <hydro_redistribution.H>
 #endif
 
 using namespace amrex;
@@ -55,6 +55,9 @@ void incflo::ReadParameters ()
 
         // Are we advecting velocity or momentum (default is velocity)
         pp.query("advect_momentum"                  , m_advect_momentum);
+
+        // Are we advecting energy
+        pp.query("advect_energy"                    , m_advect_energy);
 
         // Are we using MOL or Godunov?
         pp.query("advection_type"                   , m_advection_type);
@@ -130,7 +133,7 @@ void incflo::ReadParameters ()
 
         pp.query("ntrac", m_ntrac);
 
-        if (m_ntrac <= 0) m_advect_tracer = false;
+        if (m_ntrac <= 0) m_advect_tracer = 0;
 
         if (m_ntrac < 1) {
             amrex::Abort("We currently require at least one tracer");
@@ -281,6 +284,7 @@ void incflo::InitialIterations ()
     copy_from_new_to_old_velocity();
     copy_from_new_to_old_density();
     copy_from_new_to_old_tracer();
+    copy_from_new_to_old_energy();
 
     int initialisation = 1;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
@@ -298,10 +302,15 @@ void incflo::InitialIterations ()
 
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
-            fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
+        fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
         fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
         if (m_advect_tracer) {
             fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
+        }
+        if (m_advect_energy) {
+            fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->one, ng);
+            fillpatch_energy(lev, m_t_old[lev], m_leveldata[lev]->energy_o, ng);
+            fillpatch_temp(lev, m_t_old[lev], m_leveldata[lev]->temp_o, ng);
         }
     }
 
@@ -314,6 +323,7 @@ void incflo::InitialIterations ()
         copy_from_old_to_new_velocity();
         copy_from_old_to_new_density();
         copy_from_old_to_new_tracer();
+        copy_from_old_to_new_energy();
     }
 }
 
@@ -397,7 +407,7 @@ incflo::InitialRedistribution ()
 
         for (MFIter mfi(ld.density,TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
-            const Box& bx = mfi.tilebox();
+            const Box& bx = mfi.validbox();
             auto const& fact = EBFactory(lev);
 
             EBCellFlagFab const& flagfab = fact.getMultiEBCellFlagFab()[mfi];
@@ -418,7 +428,7 @@ incflo::InitialRedistribution ()
 
                 int ncomp = AMREX_SPACEDIM;
                 auto const& bc_vel = get_velocity_bcrec_device_ptr();
-                ApplyInitialRedistribution( bx,ncomp,
+                Redistribution::ApplyToInitialData( bx,ncomp,
                                           ld.velocity.array(mfi), ld.velocity_o.array(mfi),
                                           flag, AMREX_D_DECL(apx, apy, apz), vfrac,
                                           AMREX_D_DECL(fcx, fcy, fcz), ccc,
@@ -428,7 +438,7 @@ incflo::InitialRedistribution ()
                 {
                     ncomp = 1;
                     auto const& bc_den = get_density_bcrec_device_ptr();
-                    ApplyInitialRedistribution( bx,ncomp,
+                    Redistribution::ApplyToInitialData( bx,ncomp,
                                               ld.density.array(mfi), ld.density_o.array(mfi),
                                               flag, AMREX_D_DECL(apx, apy, apz), vfrac,
                                               AMREX_D_DECL(fcx, fcy, fcz), ccc,
@@ -438,7 +448,7 @@ incflo::InitialRedistribution ()
                 {
                     ncomp = m_ntrac;
                     auto const& bc_tra = get_tracer_bcrec_device_ptr();
-                    ApplyInitialRedistribution( bx,ncomp,
+                    Redistribution::ApplyToInitialData( bx,ncomp,
                                               ld.tracer.array(mfi), ld.tracer_o.array(mfi),
                                               flag, AMREX_D_DECL(apx, apy, apz), vfrac,
                                               AMREX_D_DECL(fcx, fcy, fcz), ccc,

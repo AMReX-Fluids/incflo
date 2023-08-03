@@ -22,6 +22,7 @@ void incflo::prob_init_fluid (int lev)
 
     if (m_ntrac > 0) ld.tracer.setVal(0.0);
 
+    // TODO: Fix the bug in MFIter here
     for (MFIter mfi(ld.density); mfi.isValid(); ++mfi)
     {
         const Box& vbx = mfi.validbox();
@@ -124,14 +125,6 @@ void incflo::prob_init_fluid (int lev)
                                        ld.tracer.array(mfi),
                                        domain, dx, problo, probhi);
         }
-        else if (16 == m_probtype)
-        {
-            init_burggraf(vbx, gbx,
-                          ld.velocity.array(mfi),
-                          ld.density.array(mfi),
-                          ld.tracer.array(mfi),
-                          domain, dx, problo, probhi);
-        }
         else if (66 == m_probtype)
         {
             init_vortex_in_sphere(vbx, gbx,
@@ -168,6 +161,61 @@ void incflo::prob_init_fluid (int lev)
                                domain, dx, problo, probhi);
         }
 #endif
+        else if (2976 == m_probtype)
+        {
+            init_cryo_plunging(vbx, gbx,
+                               ld.velocity.array(mfi),
+                               ld.density.array(mfi),
+                               ld.tracer.array(mfi),
+                               domain, dx, problo, probhi);
+        }
+        else if (2977 == m_probtype)
+        {
+            init_thermo_couple(vbx, gbx,
+                               ld.velocity.array(mfi),
+                               ld.density.array(mfi),
+                               ld.tracer.array(mfi),
+                               domain, dx, problo, probhi);
+        }
+        else if (2978 == m_probtype)
+        {
+            init_tcouple_energy(vbx, gbx,
+                                ld.velocity.array(mfi),
+                                ld.density.array(mfi),
+                                ld.tracer.array(mfi),
+                                ld.energy.array(mfi),
+                                ld.temp.array(mfi),
+                                ld.vol_heat_cap.array(mfi),
+                                ld.ther_conduct.array(mfi),
+                                ld.one.array(mfi),
+                                domain, dx, problo, probhi);
+        }
+        else if (2979 == m_probtype)
+        {
+            init_disk_energy(vbx, gbx,
+                                ld.velocity.array(mfi),
+                                ld.density.array(mfi),
+                                ld.tracer.array(mfi),
+                                ld.energy.array(mfi),
+                                ld.temp.array(mfi),
+                                ld.vol_heat_cap.array(mfi),
+                                ld.ther_conduct.array(mfi),
+                                ld.one.array(mfi),
+                                domain, dx, problo, probhi);
+        }
+        else if (2980 == m_probtype)
+        {
+            init_grid_energy(vbx, gbx,
+                                ld.velocity.array(mfi),
+                                ld.density.array(mfi),
+                                ld.tracer.array(mfi),
+                                ld.energy.array(mfi),
+                                ld.temp.array(mfi),
+                                ld.vol_heat_cap.array(mfi),
+                                ld.ther_conduct.array(mfi),
+                                ld.one.array(mfi),
+                                domain, dx, problo, probhi);
+        }
         else
         {
             amrex::Abort("prob_init_fluid: unknown m_probtype");
@@ -210,11 +258,7 @@ void incflo::init_taylor_green3d (Box const& vbx, Box const& /*gbx*/,
     {
         Real x = Real(i+0.5)*dx[0];
         Real y = Real(j+0.5)*dx[1];
-#if (AMREX_SPACEDIM == 3)
         Real z = Real(k+0.5)*dx[2];
-#else
-        Real z = 0.0_rt;
-#endif
         constexpr Real twopi = Real(2.0)*Real(3.1415926535897932);
         AMREX_D_TERM(vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y) * std::cos(twopi*z);,
                      vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y) * std::cos(twopi*z);,
@@ -384,6 +428,9 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
 #if (AMREX_SPACEDIM == 2)
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+        Real x = (i+0.5)*dx[0];
+        Real y = (j+0.5)*dx[1];
+        
         vel(i,j,k,0) = 1.;
         vel(i,j,k,1) = 0.5;
 
@@ -405,14 +452,18 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
 
             }
         }
-
+        
         tracer(i,j,k) = sum / 100.;
 
-    });
-
+    });   
+    
 #elif (AMREX_SPACEDIM == 3)
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+        Real x = (i+0.5)*dx[0];
+        Real y = (j+0.5)*dx[1];
+        Real z = (k+0.5)*dx[2];
+        
         vel(i,j,k,0) = 1.;
         vel(i,j,k,1) = 0.5;
         vel(i,j,k,2) = 0.25;
@@ -426,7 +477,7 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
                 Real yy = (j + (jj+0.5)/10.) * dx[1];
                 for (int ii=0; ii<10; ++ii) {
                     Real xx = (i + (ii+0.5)/10.) * dx[0];
-
+        
                     Real r = std::sqrt( (xx-0.5)*(xx-0.5) + (yy-0.5)*(yy-0.5) + (zz-0.5)*(zz-0.5) );
 
                     if (r < 0.1) {
@@ -438,12 +489,12 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
                 }
             }
         }
-
+        
         tracer(i,j,k) = sum / 1000.;
 
     });
 #endif
-
+    
 }void incflo::init_gaussian_traceradvect (Box const& vbx, Box const& /*gbx*/,
                                           Array4<Real> const& vel,
                                           Array4<Real> const& density,
@@ -453,13 +504,13 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
                                           GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
                                           GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
-
+    
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real x = (i+0.5)*dx[0];
         Real y = (j+0.5)*dx[1];
 
-
+        
         vel(i,j,k,0) = 1.;
         vel(i,j,k,1) = 1.;
 
@@ -470,13 +521,13 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
 #elif (AMREX_SPACEDIM == 3)
         Real z = (k+0.5)*dx[2];
         vel(i,j,k,2) = 1.;
-
+        
         Real r = std::sqrt( (x-0.5)*(x-0.5) + (y-0.5)*(y-0.5) + (z-0.5)*(z-0.5) );
 #endif
 
         tracer(i,j,k) = exp(-300.*r*r);
     });
-
+    
 }
 
 void incflo::init_couette (Box const& vbx, Box const& /*gbx*/,
@@ -608,7 +659,7 @@ void incflo::init_tuscan (Box const& vbx, Box const& /*gbx*/,
                           GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
                           GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
-    int half_num_cells = domain.length(AMREX_SPACEDIM-1) / 2;
+    int half_num_cells = domain.length(2) / 2;
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         AMREX_D_TERM(vel(i,j,k,0) = Real(0.0);,
@@ -630,16 +681,12 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
                                      Box const& /*domain*/,
                                      GpuArray<Real, AMREX_SPACEDIM> const& dx,
                                      GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
-                                     GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
-
+                                     GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
-#if (AMREX_SPACEDIM == 3)
-    constexpr Real   m_half = Real(0.50);
-    constexpr Real m_fourth = Real(0.25);
-#endif
-
     if (111 == m_probtype)
     {
+        constexpr Real m_fourth = Real(0.25);
+        constexpr Real   m_half = Real(0.50);
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             vel(i,j,k,0) = 0.0;
@@ -665,6 +712,8 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
     }
 #if (AMREX_SPACEDIM == 3)
     else if (112 == m_probtype) {
+        constexpr Real m_fourth = Real(0.25);
+        constexpr Real   m_half = Real(0.50);
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             vel(i,j,k,0) = Real(0.0);
@@ -685,6 +734,8 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
                 tracer(i,j,k,0) = Real(0.01);
         });
     } else if (113 == m_probtype) {
+        constexpr Real m_fourth = Real(0.25);
+        constexpr Real   m_half = Real(0.50);
         amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             vel(i,j,k,0) = 0.0;
@@ -723,11 +774,7 @@ void incflo::init_periodic_tracer (Box const& vbx, Box const& /*gbx*/,
         constexpr Real A = Real(1.0);
         Real x = Real(i+0.5)*dx[0];
         Real y = Real(j+0.5)*dx[1];
-#if (AMREX_SPACEDIM == 3)
         Real z = Real(k+0.5)*dx[2];
-#else
-        Real z = 0.0_rt;
-#endif
         AMREX_D_TERM(vel(i,j,k,0) = Real(1.0);,
                      vel(i,j,k,1) = Real(0.1)*(std::sin(C*(x+z) - Real(0.00042)) + Real(1.0)) * std::exp(y);,
                      vel(i,j,k,2) = Real(0.1)*(std::sin(C*(x+y) - Real(0.00042)) + Real(1.0)) * std::exp(z););
@@ -742,7 +789,7 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& /*gbx*/,
                                       Box const& /*domain*/,
                                       GpuArray<Real, AMREX_SPACEDIM> const& dx,
                                       GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
-                                      GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
+                                      GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
     static constexpr Real twopi = Real(2.0) * Real(3.1415926535897932);
     if (21 == m_probtype)
@@ -816,7 +863,7 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
                                     Box const& domain,
                                     GpuArray<Real, AMREX_SPACEDIM> const& /*dx*/,
                                     GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
-                                    GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
+                                    GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
     Real dxinv = Real(1.0) / domain.length(0);
     Real dyinv = Real(1.0) / domain.length(1);
@@ -971,25 +1018,4 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
     {
         amrex::Abort("Unknown plane poiseuille m_probtype");
     };
-}
-
-void incflo::init_burggraf (Box const& vbx, Box const& /*gbx*/,
-                            Array4<Real> const& vel,
-                            Array4<Real> const& /*density*/,
-                            Array4<Real> const& /*tracer*/,
-                            Box const& /*domain*/,
-                            GpuArray<Real, AMREX_SPACEDIM> const& dx,
-                            GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
-                            GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
-{
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        Real x = Real(i+0.5)*dx[0];
-        Real y = Real(j+0.5)*dx[1];
-        vel(i,j,k,0) =  8.0 * (x*x*x*x - 2.0 * x*x*x + x*x) * (4.0*y*y*y - 2.0*y);
-        vel(i,j,k,1) = -8.0 * (4.0*x*x*x - 6.0 * x*x + 2.*x) * (y*y*y*y - y*y);
-#if (AMREX_SPACEDIM == 3)
-        vel(i,j,k,2) = 0.0;
-#endif
-    });
 }

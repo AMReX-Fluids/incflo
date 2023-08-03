@@ -1,5 +1,5 @@
-#ifndef INCFLO_PROB_I_H_
-#define INCFLO_PROB_I_H_
+#ifndef INCFLO_PROB_USR_I_H_
+#define INCFLO_PROB_USR_I_H_
 
 // This header is include by incflo.H.  These functions are members of incflo class.
 
@@ -122,6 +122,7 @@
                                 amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
                                 amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& problo,
                                 amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& probhi);
+    
     void init_flow_in_box (amrex::Box const& vbx, amrex::Box const& gbx,
                            amrex::Array4<amrex::Real> const& p,
                            amrex::Array4<amrex::Real> const& vel,
@@ -131,4 +132,5 @@
                            amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
                            amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& problo,
                            amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& probhi);
+
 #endif

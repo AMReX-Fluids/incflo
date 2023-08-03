@@ -23,45 +23,13 @@ incflo::compute_MAC_projected_velocities (
     //    to faces before the MAC projection
     if (m_advection_type != "MOL") {
 
-        if (m_godunov_include_diff_in_forcing) {
-
-            for (int lev = 0; lev <= finest_level; ++lev) {
-                auto& ld = *m_leveldata[lev];
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-                for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-                    Box const& bx = mfi.tilebox();
-                    Array4<Real> const& vel_f          = vel_forces[lev]->array(mfi);
-                    Array4<Real const> const& rho      = density[lev]->array(mfi);
-                    Array4<Real const> const& divtau   = ld.divtau_o.const_array(mfi);
-                    if (m_advect_momentum) {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                        {
-                            AMREX_D_TERM(vel_f(i,j,k,0) += divtau(i,j,k,0)/rho(i,j,k);,
-                                         vel_f(i,j,k,1) += divtau(i,j,k,1)/rho(i,j,k);,
-                                         vel_f(i,j,k,2) += divtau(i,j,k,2)/rho(i,j,k););
-                        });
-                    }
-                    else {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                        {
-                            AMREX_D_TERM(vel_f(i,j,k,0) += divtau(i,j,k,0);,
-                                         vel_f(i,j,k,1) += divtau(i,j,k,1);,
-                                         vel_f(i,j,k,2) += divtau(i,j,k,2););
-                        });
-                    } // end m_advect_momentum
-
-                } // end MFIter
-
-            } // end lev
-
-        } // end m_godunov_include_diff_in_forcing
+        if (m_godunov_include_diff_in_forcing)
+            for (int lev = 0; lev <= finest_level; ++lev)
+                MultiFab::Add(*vel_forces[lev], m_leveldata[lev]->divtau_o, 0, 0, AMREX_SPACEDIM, 0);
 
         if (nghost_force() > 0)
             fillpatch_force(m_cur_time, vel_forces, nghost_force());
-
-    } // end m_advection_type
+    }
 
 
     // This will hold (1/rho) on faces

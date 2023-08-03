@@ -97,7 +97,7 @@ void incflo::compute_strainrate_at_level (int /*lev*/,
         }
 }
 
-Real incflo::ComputeKineticEnergy ()
+Real incflo::ComputeKineticEnergy () const
 {
 #if 0
     BL_PROFILE("incflo::ComputeKineticEnergy");

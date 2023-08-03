@@ -3,10 +3,7 @@
 // Need this for TagCutCells
 #ifdef AMREX_USE_EB
 #include <AMReX_EBAmrUtil.H>
-#include <utility>
 #endif
-
-#include <memory>
 
 using namespace amrex;
 
@@ -35,7 +32,7 @@ incflo::incflo ()
 }
 
 incflo::~incflo ()
-= default;
+{}
 
 void incflo::InitData ()
 {
@@ -63,7 +60,24 @@ void incflo::InitData ()
             InitialProjection();
         }
 
+        // HACK: set velocity to 0 for plunged objects
+        // TODO: figure out how many hard resets are needed
+
         InitialIterations();
+        
+        if (m_advect_tracer)
+        {
+            cryo_set_zero_vel();
+            cryo_update_thermal();
+        }
+        
+        if (m_advect_energy)
+        {
+            cryo_set_zero_vel();
+            cryo_update_thermal();
+            cryo_compute_temp();
+            cryo_copy_from_temp_to_tracer();
+        }
 
         // Set m_nstep to 0 before entering time loop
         m_nstep = 0;
@@ -115,8 +129,7 @@ void incflo::Evolve()
     BL_PROFILE("incflo::Evolve()");
 
     bool do_not_evolve = ((m_max_step == 0) || ((m_stop_time >= 0.) && (m_cur_time > m_stop_time)) ||
-                           ((m_stop_time <= 0.) && (m_max_step <= 0)) || (m_max_step >= 0 && m_nstep >= m_max_step) )
-                         && !m_steady_state;
+                            ((m_stop_time <= 0.) && (m_max_step <= 0))) && !m_steady_state;
 
     while(!do_not_evolve)
     {
@@ -135,6 +148,8 @@ void incflo::Evolve()
         }
 
         // Advance to time t + dt
+        if (m_advect_energy || m_advect_tracer) cryo_set_zero_vel();
+
         Advance();
         m_nstep++;
         m_cur_time += m_dt;
@@ -178,7 +193,7 @@ incflo::ApplyProjection (Vector<MultiFab const*> density,
                          Real time, Real scaling_factor, bool incremental)
 {
     BL_PROFILE("incflo::ApplyProjection");
-    ApplyNodalProjection(std::move(density),time,scaling_factor,incremental);
+    ApplyNodalProjection(density,time,scaling_factor,incremental);
 }
 
 // Make a new level from scratch using provided BoxArray and DistributionMapping.
@@ -207,15 +222,15 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
                                        nghost_eb_full()},
                                        EBSupport::full);
 #else
-    m_factory[lev] = std::make_unique<FArrayBoxFactory>();
+    m_factory[lev].reset(new FArrayBoxFactory());
 #endif
 
-    m_leveldata[lev] = std::make_unique<LevelData>(grids[lev], dmap[lev], *m_factory[lev],
+    m_leveldata[lev].reset(new LevelData(grids[lev], dmap[lev], *m_factory[lev],
                                          m_ntrac, nghost_state(),
                                          m_advection_type,
                                          m_diff_type==DiffusionType::Implicit,
                                            use_tensor_correction,
-                                         m_advect_tracer);
+                                         m_advect_tracer));
 
     m_t_new[lev] = time;
     m_t_old[lev] = time - Real(1.e200);
@@ -225,12 +240,12 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
     }
 
 #ifdef AMREX_USE_EB
-    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level),
+    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
                       MLMG::Location::FaceCentroid,  // Location of mac_vec
                       MLMG::Location::FaceCentroid,  // Location of beta
-                      MLMG::Location::CellCenter  ); // Location of solution variable phi
+                      MLMG::Location::CellCenter  ) ); // Location of solution variable phi
 #else
-    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
+    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level)));
 #endif
 }
 
@@ -239,10 +254,14 @@ incflo::writeNow()
 {
     bool write_now = false;
 
-    if ( ( m_plot_int > 0 && (m_nstep % m_plot_int == 0) ) ||
-         (m_plot_per_exact  > 0 && (std::abs(std::remainder(m_cur_time, m_plot_per_exact)) < 1.e-12) ) ) {
+    if ( m_plot_int > 0 && (m_nstep % m_plot_int == 0) )
         write_now = true;
-    } else if (m_plot_per_approx > 0.0) {
+
+    else if ( m_plot_per_exact  > 0 && (std::abs(std::remainder(m_cur_time, m_plot_per_exact)) < 1.e-12) )
+        write_now = true;
+
+    else if (m_plot_per_approx > 0.0)
+    {
         // Check to see if we've crossed a m_plot_per_approx interval by comparing
         // the number of intervals that have elapsed for both the current
         // time and the time at the beginning of this timestep.
@@ -367,6 +386,26 @@ Vector<MultiFab*> incflo::get_tracer_new () noexcept
     return r;
 }
 
+Vector<MultiFab*> incflo::get_one_new () noexcept
+{
+    Vector<MultiFab*> r;
+    r.reserve(finest_level+1);
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        r.push_back(&(m_leveldata[lev]->one));
+    }
+    return r;
+}
+
+Vector<MultiFab*> incflo::get_energy_new () noexcept
+{
+    Vector<MultiFab*> r;
+    r.reserve(finest_level+1);
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        r.push_back(&(m_leveldata[lev]->energy));
+    }
+    return r;
+}
+
 Vector<MultiFab*> incflo::get_mac_phi() noexcept
 {
     Vector<MultiFab*> r;
@@ -433,6 +472,16 @@ Vector<MultiFab*> incflo::get_conv_tracer_new () noexcept
     r.reserve(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
         r.push_back(&(m_leveldata[lev]->conv_tracer));
+    }
+    return r;
+}
+
+Vector<MultiFab*> incflo::get_conv_energy_old () noexcept
+{
+    Vector<MultiFab*> r;
+    r.reserve(finest_level+1);
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        r.push_back(&(m_leveldata[lev]->conv_energy_o));
     }
     return r;
 }
@@ -517,6 +566,16 @@ Vector<MultiFab const*> incflo::get_density_new_const () const noexcept
     return r;
 }
 
+Vector<MultiFab const*> incflo::get_one_const () const noexcept
+{
+    Vector<MultiFab const*> r;
+    r.reserve(finest_level+1);
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        r.push_back(&(m_leveldata[lev]->one));
+    }
+    return r;
+}
+
 Vector<MultiFab const*> incflo::get_tracer_old_const () const noexcept
 {
     Vector<MultiFab const*> r;
@@ -533,6 +592,25 @@ Vector<MultiFab const*> incflo::get_tracer_new_const () const noexcept
     r.reserve(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
         r.push_back(&(m_leveldata[lev]->tracer));
+    }
+    return r;
+}
+Vector<MultiFab const*> incflo::get_energy_old_const () const noexcept
+{
+    Vector<MultiFab const*> r;
+    r.reserve(finest_level+1);
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        r.push_back(&(m_leveldata[lev]->energy_o));
+    }
+    return r;
+}
+
+Vector<MultiFab const*> incflo::get_temp_old_const () const noexcept
+{
+    Vector<MultiFab const*> r;
+    r.reserve(finest_level+1);
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        r.push_back(&(m_leveldata[lev]->temp_o));
     }
     return r;
 }

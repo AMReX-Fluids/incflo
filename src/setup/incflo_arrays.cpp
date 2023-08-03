@@ -6,7 +6,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
                               amrex::DistributionMapping const& dm,
                               amrex::FabFactory<FArrayBox> const& fact,
                               int ntrac, int ng_state,
-                              const std::string& advection_type, bool implicit_diffusion,
+                              std::string advection_type, bool implicit_diffusion,
                               bool use_tensor_correction, bool advect_tracer)
     : velocity  (ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),
       velocity_o(ba, dm, AMREX_SPACEDIM, ng_state, MFInfo(), fact),
@@ -23,17 +23,27 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
       gp        (ba, dm, AMREX_SPACEDIM, 0       , MFInfo(), fact),
       conv_velocity_o(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact),
       conv_density_o (ba, dm, 1             , 0, MFInfo(), fact),
-      conv_tracer_o  (ba, dm, ntrac         , 0, MFInfo(), fact)
+      conv_tracer_o  (ba, dm, ntrac         , 0, MFInfo(), fact),
+      energy         (ba, dm, 1, ng_state, MFInfo(), fact),
+      energy_o       (ba, dm, 1, ng_state, MFInfo(), fact),
+      temp           (ba, dm, 1, ng_state, MFInfo(), fact),
+      temp_o         (ba, dm, 1, ng_state, MFInfo(), fact),
+      vol_heat_cap   (ba, dm, 1, ng_state, MFInfo(), fact),
+      ther_conduct   (ba, dm, 1, ng_state, MFInfo(), fact),
+      one            (ba, dm, 1, ng_state, MFInfo(), fact),
+      conv_energy_o  (ba, dm, 1             , 0, MFInfo(), fact)
 {
     if (advection_type != "MOL") {
         divtau_o.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
-        if (advect_tracer) {
+        // TODO: Add a flag here for cryo-plunging
+        // if (advect_tracer) {
             laps_o.define(ba, dm, ntrac, 0, MFInfo(), fact);
-        }
+        // }
     } else {
         conv_velocity.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
         conv_density.define (ba, dm, 1             , 0, MFInfo(), fact);
-        conv_tracer.define (ba, dm, ntrac         , 0, MFInfo(), fact);
+        conv_tracer.define  (ba, dm, ntrac         , 0, MFInfo(), fact);
+        conv_energy.define  (ba, dm, 1             , 0, MFInfo(), fact);
 
         if (!implicit_diffusion || use_tensor_correction)
         {

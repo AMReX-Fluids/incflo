@@ -71,6 +71,7 @@ incflo::incflo_correct_small_cells (Vector<MultiFab*      > const& vel_in,
                 });
              } else { // EB has flow
                 Array4<Real const> const& eb_vel = get_velocity_eb()[lev]->const_array(mfi);
+                Array4<Real const> const& barea = EBFactory(lev).getBndryArea().const_array(mfi);
 
                 // This FAB has cut cells -- we define the centroid value in terms of the MAC velocities onfaces
                 amrex::ParallelFor(bx,

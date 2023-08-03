@@ -54,8 +54,6 @@ void incflo::compute_vel_forces_on_level (int lev,
     GpuArray<Real,3> l_gravity{m_gravity[0],m_gravity[1],m_gravity[2]};
     GpuArray<Real,3> l_gp0{m_gp0[0], m_gp0[1], m_gp0[2]};
 
-    auto const dx = geom[lev].CellSizeArray();
-
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -90,42 +88,6 @@ void incflo::compute_vel_forces_on_level (int lev,
                     }
                 });
 
-            } else if (m_probtype == 16) {
-                Real Re = 1./m_mu;  // Note this assumes you are running exactly the problem set up, with U = 1 and L = 1 and rho = 1.
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                {
-                    Real rhoinv = Real(1.0)/rho(i,j,k);
-
-                    if (include_pressure_gradient)
-                    {
-                        AMREX_D_TERM(vel_f(i,j,k,0) = -(gradp(i,j,k,0)+l_gp0[0])*rhoinv + l_gravity[0];,
-                                     vel_f(i,j,k,1) = -(gradp(i,j,k,1)+l_gp0[1])*rhoinv + l_gravity[1];,
-                                     vel_f(i,j,k,2) = -(gradp(i,j,k,2)+l_gp0[2])*rhoinv + l_gravity[2];);
-                    } else {
-                        AMREX_D_TERM(vel_f(i,j,k,0) = -(               l_gp0[0])*rhoinv + l_gravity[0];,
-                                     vel_f(i,j,k,1) = -(               l_gp0[1])*rhoinv + l_gravity[1];,
-                                     vel_f(i,j,k,2) = -(               l_gp0[2])*rhoinv + l_gravity[2];);
-                    }
-
-                    Real x = (i+0.5) * dx[0];
-                    Real y = (j+0.5) * dx[1];
-
-                    Real f     = x*x*x*x - 2.*x*x*x + x*x;
-                    Real g     = y*y*y*y - y*y;
-                    Real capF  =  0.2 * x*x*x*x*x   -  0.5 * x*x*x*x   + (1./3.)* x*x*x;
-                    Real capF1 = -4.0 * x*x*x*x*x*x + 12.0 * x*x*x*x*x - 14.    * x*x*x*x + 8.0 * x*x*x - 2.0 * x*x;
-                    Real capF2 = 0.5 * f * f;
-                    Real capG1 = -24.0 * y*y*y*y*y + 8.0 * y*y*y - 4.0 * y;
-
-                    Real  fp   = 4.0 * x*x*x - 6.0*x*x + 2.0*x;
-                    //Real  fpp  = 12.0 * x*x - 12.0*x + 2.0;
-                    Real  fppp = 24.0 * x - 12.0;
-
-                    Real  gp   =  4.0 * y*y*y - 2.0*y;
-                    Real  gpp  = 12.0 * y*y - 2.0;
-
-                    vel_f(i,j,k,1) += 8.0 / Re * (24.0 * capF + 2.0 * fp * gpp + fppp * g) + 64.0 * (capF2 * capG1 - g * gp * capF1);
-                });
             } else {
                 amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {

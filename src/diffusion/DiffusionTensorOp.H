@@ -1,5 +1,5 @@
-#ifndef INCFLO_DIFF_TENSOR_OP_H_
-#define INCFLO_DIFF_TENSOR_OP_H_
+#ifndef DIFFUSION_TENSOR_OP_H_
+#define DIFFUSION_TENSOR_OP_H_
 
 #include <AMReX_MLMG.H>
 

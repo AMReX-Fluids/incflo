@@ -169,14 +169,8 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
 
         forc_cfl = std::max(forc_cfl, forc_lev);
         conv_cfl = std::max(conv_cfl, conv_lev);
-
-#if (AMREX_SPACEDIM == 2)
-        Real dxinv_norm = dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1];
-#else
-        Real dxinv_norm = dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1]+dxinv[2]*dxinv[2];
-#endif
-
-        diff_cfl = std::max(diff_cfl, diff_lev*Real(2.0)*dxinv_norm);
+        diff_cfl = std::max(diff_cfl, diff_lev*Real(2.0)*(dxinv[0]*dxinv[0]+dxinv[1]*dxinv[1]+
+                                                       dxinv[2]*dxinv[2]));
     }
 
     Real cd_cfl;
@@ -227,6 +221,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     if(! initialization && comb_cfl <= eps)
     {
         dt_new = Real(0.5) * m_dt;
+        // if( dt_new<1e-6) dt_new=1e-4;
     }
 
     // Don't let the timestep grow by more than 10% per step

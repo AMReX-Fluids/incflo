@@ -28,7 +28,6 @@ void incflo::prob_set_inflow_velocity (int /*grid_id*/, Orientation ori, Box con
             vel(i,j,k,0) = Real(6.0) * u * y * (Real(1.0)-y);
         });
     }
-#if (AMREX_SPACEDIM == 3)
     else if (311 == m_probtype)
     {
         Real dzinv = Real(1.0) / Geom(lev).Domain().length(2);
@@ -58,7 +57,6 @@ void incflo::prob_set_inflow_velocity (int /*grid_id*/, Orientation ori, Box con
             vel(i,j,k,1) = Real(6.0) * v * z * (Real(1.0)-z);
         });
     }
-#endif
     else if (322 == m_probtype)
     {
         Real dxinv = Real(1.0) / Geom(lev).Domain().length(0);

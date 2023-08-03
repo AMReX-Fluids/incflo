@@ -31,15 +31,21 @@ void incflo::init_advection ()
     // We update (rho * tracer), not tracer itself, hence we update conservatively
     m_iconserv_tracer.resize(m_ntrac, 1);
     m_iconserv_tracer_d.resize(m_ntrac, 1);
+    
+    // Energy is always updated conservatively
+    m_iconserv_energy.resize(1, 1);
+    m_iconserv_energy_d.resize(1, 1);
 }
 
 void
 incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                  Vector<MultiFab*> const& conv_r,
                                  Vector<MultiFab*> const& conv_t,
+                                 Vector<MultiFab*> const& conv_e,
                                  Vector<MultiFab const*> const& vel,
                                  Vector<MultiFab const*> const& density,
                                  Vector<MultiFab const*> const& tracer,
+                                 Vector<MultiFab const*> const& energy,
                                  AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
                                               Vector<MultiFab*> const& v_mac,
                                               Vector<MultiFab*> const& w_mac),
@@ -58,6 +64,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     int n_flux_comp = AMREX_SPACEDIM;
     if (!m_constant_density) n_flux_comp += 1;
     if ( m_advect_tracer)    n_flux_comp += m_ntrac;
+    if ( m_advect_energy)    n_flux_comp += 1;
 
     // This will hold state on faces
     Vector<MultiFab> face_x(finest_level+1);
@@ -76,6 +83,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     Vector<MultiFab> divu(finest_level+1);
     Vector<MultiFab> rhovel(finest_level+1);
     Vector<MultiFab> rhotrac(finest_level+1);
+    Vector<MultiFab> rhoenergy(finest_level+1); // rho = 1, syntax hack
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > fluxes(finest_level+1);
     Vector<Array<MultiFab*,AMREX_SPACEDIM> >  faces(finest_level+1);
@@ -97,6 +105,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         if (m_advect_tracer && m_ntrac > 0)
             rhotrac[lev].define(vel[lev]->boxArray(),dmap[lev],tracer[lev]->nComp(),
                                 tracer[lev]->nGrow(),MFInfo(),Factory(lev));
+        if (m_advect_energy)
+            rhoenergy[lev].define(vel[lev]->boxArray(),dmap[lev],energy[lev]->nComp(),
+                                  energy[lev]->nGrow(),MFInfo(),Factory(lev));
 
         AMREX_D_TERM(faces[lev][0] = &face_x[lev];,
                      faces[lev][1] = &face_y[lev];,
@@ -109,44 +120,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
     // We now re-compute the velocity forcing terms including the pressure gradient,
     //    and compute the tracer forcing terms for the first time
-    if (m_advection_type != "MOL") {
-
+    if (m_advection_type != "MOL")
+    {
         compute_vel_forces(vel_forces, vel, density, tracer, tracer);
 
-        if (m_godunov_include_diff_in_forcing) {
-
-            for (int lev = 0; lev <= finest_level; ++lev) {
-                auto& ld = *m_leveldata[lev];
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-                for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-                    Box const& bx = mfi.tilebox();
-                    Array4<Real> const& vel_f          = vel_forces[lev]->array(mfi);
-                    Array4<Real const> const& rho      = density[lev]->array(mfi);
-                    Array4<Real const> const& divtau   = ld.divtau_o.const_array(mfi);
-                    if (m_advect_momentum) {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                        {
-                            AMREX_D_TERM(vel_f(i,j,k,0) += divtau(i,j,k,0)/rho(i,j,k);,
-                                         vel_f(i,j,k,1) += divtau(i,j,k,1)/rho(i,j,k);,
-                                         vel_f(i,j,k,2) += divtau(i,j,k,2)/rho(i,j,k););
-                        });
-                    }
-                    else {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                        {
-                            AMREX_D_TERM(vel_f(i,j,k,0) += divtau(i,j,k,0);,
-                                         vel_f(i,j,k,1) += divtau(i,j,k,1);,
-                                         vel_f(i,j,k,2) += divtau(i,j,k,2););
-                        });
-                    } // end m_advect_momentum
-
-                } // end MFIter
-
-            } // end lev
-
-        } // end m_godunov_include_diff_in_forcing
+        if (m_godunov_include_diff_in_forcing)
+            for (int lev = 0; lev <= finest_level; ++lev)
+                MultiFab::Add(*vel_forces[lev], m_leveldata[lev]->divtau_o, 0, 0, AMREX_SPACEDIM, 0);
 
         if (nghost_force() > 0)
             fillpatch_force(m_cur_time, vel_forces, nghost_force());
@@ -161,8 +141,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             if (nghost_force() > 0)
                 fillpatch_force(m_cur_time, tra_forces, nghost_force());
         }
-
-    } // end m_advection_type
+    }
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
@@ -440,6 +419,57 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           is_velocity, fluxes_are_area_weighted,
                                           m_advection_type);
             }
+
+            // ************************************************************************
+            // (Energy)
+            // ************************************************************************
+            // Make a FAB holding (energy) that is the same size as the original energy FAB
+            if (m_advect_energy) {
+
+                // Note we must actually grow the tilebox, not use growntilebox, because
+                // we want to use this immediately below and we need all the "ghost cells" of
+                // the tiled region
+                Box const& bxg = amrex::grow(bx,energy[lev]->nGrow());
+
+                Array4<Real const> _energy    =    energy[lev]->const_array(mfi);
+                Array4<Real      > rho_energy = rhoenergy[lev].array(mfi);
+
+                amrex::ParallelFor(bxg, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    rho_energy(i,j,k) = _energy(i,j,k);
+                });
+
+                if (m_constant_density)
+                   face_comp = AMREX_SPACEDIM;
+                else
+                   face_comp = AMREX_SPACEDIM+1;
+                ncomp = 1;
+                is_velocity = false;
+
+                HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi, rho_energy,
+                                          AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
+                                                       flux_y[lev].array(mfi,face_comp),
+                                                       flux_z[lev].array(mfi,face_comp)),
+                                          AMREX_D_DECL(face_x[lev].array(mfi,face_comp),
+                                                       face_y[lev].array(mfi,face_comp),
+                                                       face_z[lev].array(mfi,face_comp)),
+                                          knownFaceStates,
+                                          AMREX_D_DECL(u_mac[lev]->const_array(mfi),
+                                                       v_mac[lev]->const_array(mfi),
+                                                       w_mac[lev]->const_array(mfi)),
+                                          divu_arr, Array4<Real const>{},
+                                          geom[lev], m_dt,
+                                          get_energy_bcrec(),
+                                          get_energy_bcrec_device_ptr(),
+                                          get_energy_iconserv_device_ptr(),
+#ifdef AMREX_USE_EB
+                                          ebfact,
+                                          m_eb_flow.enabled ? get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+#endif
+                                          m_godunov_ppm, m_godunov_use_forces_in_trans,
+                                          is_velocity, fluxes_are_area_weighted,
+                                          m_advection_type);
+            }
         } // mfi
     } // lev
 
@@ -464,11 +494,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         MultiFab dvdt_tmp(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,3,MFInfo(),Factory(lev));
         MultiFab drdt_tmp(vel[lev]->boxArray(),dmap[lev],1             ,3,MFInfo(),Factory(lev));
         MultiFab dtdt_tmp(vel[lev]->boxArray(),dmap[lev],m_ntrac       ,3,MFInfo(),Factory(lev));
+        MultiFab dedt_tmp(vel[lev]->boxArray(),dmap[lev],1             ,3,MFInfo(),Factory(lev));
 
         // Must initialize to zero because not all values may be set, e.g. outside the domain.
         dvdt_tmp.setVal(0.);
         drdt_tmp.setVal(0.);
         dtdt_tmp.setVal(0.);
+        dedt_tmp.setVal(0.);
 
         const EBFArrayBoxFactory* ebfact = &EBFactory(lev);
         auto const& vfrac = ebfact->getVolFrac();
@@ -486,17 +518,17 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int flux_comp = 0;
             int  num_comp = AMREX_SPACEDIM;
 #ifdef AMREX_USE_EB
-            FArrayBox rhovel_fab;
+            FArrayBox rhovel;
             if (m_advect_momentum && m_eb_flow.enabled)
             {
                 // FIXME - not sure if rhovel needs same num grow cells as vel or if
                 // could make do with tmp_ng
                 Box const& bxg = amrex::grow(bx,vel[lev]->nGrow());
-                rhovel_fab.resize(bxg, AMREX_SPACEDIM, The_Async_Arena());
+                rhovel.resize(bxg, AMREX_SPACEDIM, The_Async_Arena());
 
                 Array4<Real const> U       = get_velocity_eb()[lev]->const_array(mfi);
                 Array4<Real const> rho     =  get_density_eb()[lev]->const_array(mfi);
-                Array4<Real      > rho_vel =  rhovel_fab.array();
+                Array4<Real      > rho_vel =  rhovel.array();
 
                 amrex::ParallelFor(bxg, AMREX_SPACEDIM,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -516,7 +548,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
-                                                 ( m_advect_momentum  ? rhovel_fab.const_array() : get_velocity_eb()[lev]->const_array(mfi))
+                                                 ( m_advect_momentum  ? rhovel.const_array() : get_velocity_eb()[lev]->const_array(mfi))
                                                  : Array4<Real const>{},
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
@@ -556,10 +588,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         if (!m_constant_density)
         {
           int flux_comp = AMREX_SPACEDIM;
-//Was this OMP intentionally left off?
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
           for (MFIter mfi(*conv_r[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
           {
             Box const& bx = mfi.tilebox();
@@ -590,21 +618,17 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                           1, geom[lev], mult,
                                           fluxes_are_area_weighted);
 #endif
-          } // mfi
+            } // mfi
         } // not constant density
 
         // Note: (rho*trac) is always updated conservatively -- we do not provide an option for
         //       updating (rho*trac) convectively
         if (m_advect_tracer && m_ntrac > 0)
         {
-          int flux_comp = (m_constant_density) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
+            int flux_comp = (m_constant_density) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
 
-//Was this OMP intentionally left off?
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-          for (MFIter mfi(*conv_t[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
-          {
+            for (MFIter mfi(*conv_t[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
             Box const& bx = mfi.tilebox();
 
 #ifdef AMREX_USE_EB
@@ -636,8 +660,50 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                               fluxes_are_area_weighted);
 #endif
 
-          } // mfi
+            } // mfi
         } // advect tracer
+
+        // Note: (energy) is always updated conservatively -- we do not provide an option for
+        //       updating (energy) convectively
+        if (m_advect_energy)
+        {
+            int flux_comp = AMREX_SPACEDIM;
+
+            for (MFIter mfi(*conv_e[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+            Box const& bx = mfi.tilebox();
+
+#ifdef AMREX_USE_EB
+            EBCellFlagFab const& flagfab = ebfact->getMultiEBCellFlagFab()[mfi];
+            auto const& update_arr  = dtdt_tmp.array(mfi);
+            if (flagfab.getType(bx) != FabType::covered)
+                HydroUtils::EB_ComputeDivergence(bx, update_arr,
+                                                 AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
+                                                              flux_y[lev].const_array(mfi,flux_comp),
+                                                              flux_z[lev].const_array(mfi,flux_comp)),
+                                                 vfrac.const_array(mfi), m_ntrac, geom[lev], mult,
+                                                 fluxes_are_area_weighted,
+                                                 m_eb_flow.enabled ?
+                                                    get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                 m_eb_flow.enabled ?
+                                                    get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                 flagfab.const_array(),
+                                                 (flagfab.getType(bx) != FabType::regular) ?
+                                                    ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},
+                                                 (flagfab.getType(bx) != FabType::regular) ?
+                                                    ebfact->getBndryNormal().const_array(mfi) : Array4<Real const>{});
+#else
+                auto const& update_arr  = conv_e[lev]->array(mfi);
+                HydroUtils::ComputeDivergence(bx, update_arr,
+                                              AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
+                                                           flux_y[lev].const_array(mfi,flux_comp),
+                                                           flux_z[lev].const_array(mfi,flux_comp)),
+                                              1, geom[lev], mult,
+                                              fluxes_are_area_weighted);
+#endif
+
+            } // mfi
+        } // advect energy
 
 #ifdef AMREX_USE_EB
         // We only filled these on the valid cells so we fill same-level interior ghost cells here.
@@ -646,40 +712,22 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         drdt_tmp.FillBoundary(geom[lev].periodicity());
         dtdt_tmp.FillBoundary(geom[lev].periodicity());
 
-//Was this OMP intentionally left off?
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
-        Box const& bx = mfi.tilebox();
-
-        // velocity
-        auto const& bc_vel = get_velocity_bcrec_device_ptr();
-        redistribute_term(mfi, *conv_u[lev], dvdt_tmp,
-                  (m_advect_momentum) ? rhovel[lev] : *vel[lev],
-                  bc_vel, lev);
-
-        // density
-        if (!m_constant_density) {
-        auto const& bc_den = get_density_bcrec_device_ptr();
-        redistribute_term(mfi, *conv_r[lev], drdt_tmp,
-                  *density[lev], bc_den, lev);
-        } else {
-        auto const& drdt = conv_r[lev]->array(mfi);
-        amrex::ParallelFor(bx,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {
-            drdt(i,j,k) = 0.;
-        });
-        }
-
-        if (m_advect_tracer) {
-        auto const& bc_tra = get_tracer_bcrec_device_ptr();
-        redistribute_term(mfi, *conv_t[lev], dtdt_tmp,
-                  rhotrac[lev], bc_tra, lev);
-        }
-    } // mfi
+            Box const& bx = mfi.tilebox();
+            redistribute_convective_term (bx, mfi,
+                                          (m_advect_momentum) ? rhovel[lev].const_array(mfi) : vel[lev]->const_array(mfi),
+                                          density[lev]->const_array(mfi),
+                                          (m_advect_tracer && (m_ntrac>0)) ? rhotrac[lev].const_array(mfi) : Array4<Real const>{},
+                                          dvdt_tmp.array(mfi),
+                                          drdt_tmp.array(mfi),
+                                          (m_advect_tracer && (m_ntrac>0)) ? dtdt_tmp.array(mfi) : Array4<Real>{},
+                                          conv_u[lev]->array(mfi),
+                                          conv_r[lev]->array(mfi),
+                                          (m_advect_tracer && (m_ntrac>0)) ? conv_t[lev]->array(mfi) : Array4<Real>{},
+                                          m_redistribution_type, m_constant_density, m_advect_tracer, m_ntrac,
+                                          ebfact, geom[lev], m_dt);
+       } // mfi
 #endif
     } // lev
 }

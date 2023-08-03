@@ -3,8 +3,7 @@
 #include <AMReX_ParmParse.H>
 
 #ifdef AMREX_USE_EB
-#include <AMReX_EB_Redistribution.H>
-#include <memory>
+#include <AMReX_EB_utils.H>
 #endif
 
 using namespace amrex;
@@ -30,10 +29,10 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
 
         if (m_incflo->useTensorSolve())
         {
-            m_eb_solve_op = std::make_unique<MLEBTensorOp>(m_incflo->Geom(0,finest_level),
+            m_eb_solve_op.reset(new MLEBTensorOp(m_incflo->Geom(0,finest_level),
                                                  m_incflo->boxArray(0,finest_level),
                                                  m_incflo->DistributionMap(0,finest_level),
-                                                 info_solve, ebfact);
+                                                 info_solve, ebfact));
             m_eb_solve_op->setMaxOrder(m_mg_maxorder);
             m_eb_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
                                        m_incflo->get_diffuse_tensor_bc(Orientation::high));
@@ -41,10 +40,10 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
 
         if (m_incflo->need_divtau() || m_incflo->useTensorCorrection())
         {
-            m_eb_apply_op = std::make_unique<MLEBTensorOp>(m_incflo->Geom(0,finest_level),
+            m_eb_apply_op.reset(new MLEBTensorOp(m_incflo->Geom(0,finest_level),
                                                  m_incflo->boxArray(0,finest_level),
                                                  m_incflo->DistributionMap(0,finest_level),
-                                                 info_apply, ebfact);
+                                                 info_apply, ebfact));
             m_eb_apply_op->setMaxOrder(m_mg_maxorder);
             m_eb_apply_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
                                        m_incflo->get_diffuse_tensor_bc(Orientation::high));
@@ -55,10 +54,10 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
     {
         if (m_incflo->useTensorSolve())
         {
-            m_reg_solve_op = std::make_unique<MLTensorOp>(m_incflo->Geom(0,finest_level),
+            m_reg_solve_op.reset(new MLTensorOp(m_incflo->Geom(0,finest_level),
                                                 m_incflo->boxArray(0,finest_level),
                                                 m_incflo->DistributionMap(0,finest_level),
-                                                info_solve);
+                                                info_solve));
             m_reg_solve_op->setMaxOrder(m_mg_maxorder);
             m_reg_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
                                         m_incflo->get_diffuse_tensor_bc(Orientation::high));
@@ -66,10 +65,10 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
 
         if (m_incflo->need_divtau() || m_incflo->useTensorCorrection())
         {
-            m_reg_apply_op = std::make_unique<MLTensorOp>(m_incflo->Geom(0,finest_level),
+            m_reg_apply_op.reset(new MLTensorOp(m_incflo->Geom(0,finest_level),
                                                 m_incflo->boxArray(0,finest_level),
                                                 m_incflo->DistributionMap(0,finest_level),
-                                                info_apply);
+                                                info_apply));
             m_reg_apply_op->setMaxOrder(m_mg_maxorder);
             m_reg_apply_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
                                         m_incflo->get_diffuse_tensor_bc(Orientation::high));
@@ -234,11 +233,10 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
     if (m_eb_apply_op)
     {
         Vector<MultiFab> divtau_tmp(finest_level+1);
-        int tmp_comp = (m_incflo->m_redistribution_type == "StateRedist") ? 3 : 2;
         for (int lev = 0; lev <= finest_level; ++lev) {
             divtau_tmp[lev].define(a_divtau[lev]->boxArray(),
                                    a_divtau[lev]->DistributionMap(),
-                                   AMREX_SPACEDIM, tmp_comp, MFInfo(),
+                                   AMREX_SPACEDIM, 2, MFInfo(),
                                    a_divtau[lev]->Factory());
             divtau_tmp[lev].setVal(0.0);
         }
@@ -269,10 +267,7 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-        amrex::single_level_redistribute( divtau_tmp[lev], *a_divtau[lev], 0, AMREX_SPACEDIM, m_incflo->Geom(lev));
-            // auto const& bc = m_incflo->get_velocity_bcrec_device_ptr();
-            // m_incflo->redistribute_term(*a_divtau[lev], divtau_tmp[lev], *a_velocity[lev],
-        //                 bc, lev);
+            amrex::single_level_redistribute( divtau_tmp[lev], *a_divtau[lev], 0, AMREX_SPACEDIM, m_incflo->Geom(lev));
         }
     }
     else

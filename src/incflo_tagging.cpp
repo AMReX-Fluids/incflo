@@ -22,13 +22,13 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
         ParmParse pp("incflo");
 
         pp.queryarr("rhoerr", rhoerr_v);
-        if (!rhoerr_v.empty()) {
+        if (rhoerr_v.size() > 0) {
             Real last = rhoerr_v.back();
             rhoerr_v.resize(max_level+1, last);
         }
 
         pp.queryarr("gradrhoerr", gradrhoerr_v);
-        if (!gradrhoerr_v.empty()) {
+        if (gradrhoerr_v.size() > 0) {
             Real last = gradrhoerr_v.back();
             gradrhoerr_v.resize(max_level+1, last);
         }
@@ -70,7 +70,8 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
             Real rhoerr = tag_rho ? rhoerr_v[lev]: std::numeric_limits<Real>::max();
             Real gradrhoerr = tag_gradrho ? gradrhoerr_v[lev] : std::numeric_limits<Real>::max();
             amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            [tag_rho,tag_gradrho,rhoerr,gradrhoerr,tagval,rho,tag]
+            AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 if (tag_rho && rho(i,j,k) > rhoerr) {
                     tag(i,j,k) = tagval;
@@ -106,7 +107,8 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
 #if (AMREX_SPACEDIM == 2)
 
             amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            [xlo, xhi, ylo, yhi, problo, l_dx, l_dy, tagval, tag]
+            AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                  Real x = problo[0] + (i+0.5)*l_dx;
                  Real y = problo[1] + (j+0.5)*l_dy;
@@ -120,10 +122,20 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
 
 #else
             Real zlo = tag_region_lo[2];
+            // // HACK: Manually change zlo based on plunging speed
+            // // // 1 m/s
+            // // Real v0 = 0.7408041682457519;
+            // // Real acc = -0.04623555291981721;
+            // // 500 mm/s
+            // Real v0 = 0.485047915352808;
+            // Real acc = -0.03131555980546892;
+            // Real disp = v0*m_cur_time+0.5*acc*m_cur_time*m_cur_time;
+            // Real zlo = -disp - 0.05;
             Real zhi = tag_region_hi[2];
 
             amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            [xlo, xhi, ylo, yhi, zlo, zhi, problo, l_dx, l_dy, l_dz,tagval, tag]
+            AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                  Real x = problo[0] + Real(i+0.5)*l_dx;
                  Real y = problo[1] + Real(j+0.5)*l_dy;
