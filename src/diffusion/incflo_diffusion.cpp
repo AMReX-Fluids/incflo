@@ -1,4 +1,5 @@
 #include <incflo.H>
+#include <memory>
 
 using namespace amrex;
 
@@ -36,7 +37,7 @@ incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
         // amrex::Print() << "Z-comp: Norm of tensor apply vs scalar apply " <<
         //                    divtau[0]->norm0(2) << " " << divtau_scal[0]->norm0(2) << std::endl;
 
-        divtau[0]->Saxpy(*divtau[0], -1.0, *divtau_scal[0], 0, 0, AMREX_SPACEDIM, 0);
+        MultiFab::Saxpy(*divtau[0], -1.0, *divtau_scal[0], 0, 0, AMREX_SPACEDIM, 0);
 
         // amrex::Print() << "X-comp: Norm of difference of tensor apply vs scalar apply " <<
         //                    divtau[0]->norm0(0) << std::endl;
@@ -91,14 +92,14 @@ incflo::diffuse_velocity(Vector<MultiFab      *> const& vel,
 DiffusionTensorOp*
 incflo::get_diffusion_tensor_op ()
 {
-    if (!m_diffusion_tensor_op) m_diffusion_tensor_op.reset(new DiffusionTensorOp(this));
+    if (!m_diffusion_tensor_op) m_diffusion_tensor_op = std::make_unique<DiffusionTensorOp>(this);
     return m_diffusion_tensor_op.get();
 }
 
 DiffusionScalarOp*
 incflo::get_diffusion_scalar_op ()
 {
-    if (!m_diffusion_scalar_op) m_diffusion_scalar_op.reset(new DiffusionScalarOp(this));
+    if (!m_diffusion_scalar_op) m_diffusion_scalar_op = std::make_unique<DiffusionScalarOp>(this);
     return m_diffusion_scalar_op.get();
 }
 
