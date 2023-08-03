@@ -122,7 +122,7 @@
                                 amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
                                 amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& problo,
                                 amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& probhi);
-    
+
     void init_flow_in_box (amrex::Box const& vbx, amrex::Box const& gbx,
                            amrex::Array4<amrex::Real> const& p,
                            amrex::Array4<amrex::Real> const& vel,

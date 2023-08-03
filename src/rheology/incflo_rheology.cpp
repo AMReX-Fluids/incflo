@@ -158,7 +158,7 @@ void incflo::compute_tracer_diff_coeff (Vector<MultiFab*> const& tra_eta, int ng
                 //             Real x = (i+0.5)*dx[0] - 0.5*(probhi[0]-problo[0]);
                 //             Real y = (j+0.5)*dx[1] - 0.5*(probhi[1]-problo[1]);
                 //             Real z = (k+0.5)*dx[2] - (probhi[2]-problo[2]);
-                            
+
                 //             // Set velocity field inside the plunged objects to 0
                 //             Real rz = 3./2;
                 //             Real ry = 0.025;
@@ -242,7 +242,7 @@ void incflo::compute_tracer_diff_coeff (Vector<MultiFab*> const& tra_eta, int ng
                             Real k_tcp = 0.0340625/cv_tcp;
 
                             // diff_coeff(i,j,k) = k_tcp/cv_tcp;
-                            
+
                             // Smoothing
                             // Real phi = x*x+y*y+(z+1.5*r+d+dx[2])*(z+1.5*r+d+dx[2]) - r*r;
                             Real phi = x*x+y*y+(z-r+d+dx[2])*(z-r+d+dx[2]) - r*r;
@@ -463,7 +463,7 @@ void incflo::compute_tracer_diff_coeff (Vector<MultiFab*> const& tra_eta, int ng
                             // if (inner_grid<pow(0.04/2,2) && (y>ry && y<ry+0.01)) {
                                 // sample
                                 diff_coeff(i,j,k) = k_spl;
-                            }  
+                            }
                         });
                     }
                 }
@@ -496,7 +496,7 @@ void incflo::compute_energy_diff_coeff (Vector<MultiFab*> const& energy_eta, int
                 //             Real x = (i+0.5)*dx[0] - 0.5*(probhi[0]-problo[0]);
                 //             Real y = (j+0.5)*dx[1] - 0.5*(probhi[1]-problo[1]);
                 //             Real z = (k+0.5)*dx[2] - (probhi[2]-problo[2]);
-                            
+
                 //             // Set velocity field inside the plunged objects to 0
                 //             Real rz = 3./2;
                 //             Real ry = 0.025;
@@ -582,7 +582,7 @@ void incflo::compute_energy_diff_coeff (Vector<MultiFab*> const& energy_eta, int
                             Real k_tcp = 0.0340625;//cv_tcp;
 
                             // diff_coeff(i,j,k) = k_tcp/cv_tcp;
-                            
+
                             // Smoothing
                             // Real phi = x*x+y*y+(z+1.5*r+d+dx[2])*(z+1.5*r+d+dx[2]) - r*r;
                             Real phi = x*x+y*y+(z-r+d+dx[2])*(z-r+d+dx[2]) - r*r;
@@ -599,7 +599,7 @@ void incflo::compute_energy_diff_coeff (Vector<MultiFab*> const& energy_eta, int
                     }
                 }
             }
-        
+
             // Disk with energy
             else if (2979 == m_probtype) {
                 // TODO: find a better way to set diff_coeff
@@ -650,7 +650,7 @@ void incflo::compute_energy_diff_coeff (Vector<MultiFab*> const& energy_eta, int
                     }
                 }
             }
-        
+
             // Grid with energy
             else if (2980 == m_probtype) {
                 // TODO: find a better way to set diff_coeff
@@ -804,7 +804,7 @@ void incflo::compute_energy_diff_coeff (Vector<MultiFab*> const& energy_eta, int
                             if (inner_grid<0.25*0.25 && (y>ry && y<ry+0.025)) {
                                 // sample
                                 diff_coeff(i,j,k) = k_spl;
-                            } 
+                            }
                         });
                     }
                 }

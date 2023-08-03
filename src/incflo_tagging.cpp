@@ -22,13 +22,13 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
         ParmParse pp("incflo");
 
         pp.queryarr("rhoerr", rhoerr_v);
-        if (rhoerr_v.size() > 0) {
+        if (!rhoerr_v.empty()) {
             Real last = rhoerr_v.back();
             rhoerr_v.resize(max_level+1, last);
         }
 
         pp.queryarr("gradrhoerr", gradrhoerr_v);
-        if (gradrhoerr_v.size() > 0) {
+        if (!gradrhoerr_v.empty()) {
             Real last = gradrhoerr_v.back();
             gradrhoerr_v.resize(max_level+1, last);
         }
@@ -69,8 +69,8 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
             Array4<Real const> const& rho = m_leveldata[lev]->density.const_array(mfi);
             Real rhoerr = tag_rho ? rhoerr_v[lev]: std::numeric_limits<Real>::max();
             Real gradrhoerr = tag_gradrho ? gradrhoerr_v[lev] : std::numeric_limits<Real>::max();
-            amrex::ParallelFor(bx,
-            [tag_rho,tag_gradrho,rhoerr,gradrhoerr,tagval,rho,tag]
+
+            amrex::ParallelFor(bx, [tag_rho,tag_gradrho,rhoerr,gradrhoerr,tagval,rho,tag]
             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 if (tag_rho && rho(i,j,k) > rhoerr) {

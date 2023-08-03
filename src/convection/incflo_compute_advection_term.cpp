@@ -31,7 +31,7 @@ void incflo::init_advection ()
     // We update (rho * tracer), not tracer itself, hence we update conservatively
     m_iconserv_tracer.resize(m_ntrac, 1);
     m_iconserv_tracer_d.resize(m_ntrac, 1);
-    
+
     // Energy is always updated conservatively
     m_iconserv_energy.resize(1, 1);
     m_iconserv_energy_d.resize(1, 1);

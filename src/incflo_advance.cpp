@@ -7,7 +7,7 @@ void incflo::Advance()
     BL_PROFILE("incflo::Advance");
 
     // Start timing current time step
-    Real start_step = static_cast<Real>(ParallelDescriptor::second());
+    Real strt_step = static_cast<Real>(ParallelDescriptor::second());
 
     // Compute time step size
     int initialisation = 0;
@@ -40,7 +40,7 @@ void incflo::Advance()
         cryo_set_zero_vel();
         cryo_update_thermal();
     }
-    
+
     copy_from_new_to_old_velocity();
     copy_from_new_to_old_density();
     copy_from_new_to_old_tracer();
@@ -116,7 +116,7 @@ void incflo::Advance()
     }
 
     // Stop timing current time step
-    Real end_step = static_cast<Real>(ParallelDescriptor::second()) - start_step;
+    Real end_step = static_cast<Real>(ParallelDescriptor::second()) - strt_step;
     ParallelDescriptor::ReduceRealMax(end_step, ParallelDescriptor::IOProcessorNumber());
     if (m_verbose > 0)
     {

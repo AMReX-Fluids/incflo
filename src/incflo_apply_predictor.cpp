@@ -242,6 +242,17 @@ void incflo::ApplyPredictor (bool incremental_projection)
             } // mfi
 
         } // lev
+
+        // Average down solution
+        for (int lev = finest_level-1; lev >= 0; --lev) {
+#ifdef AMREX_USE_EB
+            amrex::EB_average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
+                                   0, 1, refRatio(lev));
+#else
+            amrex::average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
+                                0, 1, refRatio(lev));
+#endif
+
     } // not constant density
 
     // *************************************************************************************
@@ -288,7 +299,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                             // Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
                             //     ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n) );
                             Real tra_new = rho_o(i,j,k)*cv(i,j,k)*tra_o(i,j,k,n)
-                                         + l_dt * cv(i,j,k) * 
+                                         + l_dt * cv(i,j,k) *
                                          ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n) );
 
                             tra_new /= rho(i,j,k);
@@ -378,6 +389,20 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
         Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
         diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
+    }
+    else
+    {
+            // Need to average down tracer since the diffusion solver didn't do it for us.
+            for (int lev = finest_level-1; lev >= 0; --lev) {
+#ifdef AMREX_USE_EB
+                amrex::EB_average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
+                                       0, m_ntrac, refRatio(lev));
+#else
+                amrex::average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
+                                    0, m_ntrac, refRatio(lev));
+#endif
+            }
+    }
 
     } // if (m_advect_tracer)
 

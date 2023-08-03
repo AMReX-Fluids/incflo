@@ -6,6 +6,7 @@ CEXE_sources += incflo_compute_dt.cpp
 CEXE_sources += incflo_compute_forces.cpp
 CEXE_sources += incflo_cryo_plunging.cpp
 CEXE_sources += incflo_tagging.cpp
+CEXE_sources += incflo_redistribute.cpp
 CEXE_sources += incflo_regrid.cpp
 CEXE_sources += main.cpp
 

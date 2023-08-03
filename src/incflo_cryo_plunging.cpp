@@ -158,8 +158,8 @@ void incflo::cryo_set_zero_vel ()
                     // }
 
                     // if (phi<=eps)
-                    // {   
-                    //     if (phi<-eps) 
+                    // {
+                    //     if (phi<-eps)
                     //     {   // Tcouple
                     //         if (z>-2.*dx[2]) energy(i,j,k) = temp_tcp * cv_tcp;
                     //     } else {
@@ -473,7 +473,7 @@ void incflo::cryo_update_thermal () {
                     //     vol_heat_cap(i,j,k) = cv_tcp;
                     //     ther_conduct(i,j,k) = k_tcp;
                     // }
-                    } else if (phi<-eps) 
+                    } else if (phi<-eps)
                     {   // Tcouple
                         vol_heat_cap(i,j,k) = cv_tcp;
                         ther_conduct(i,j,k) = k_tcp;
@@ -803,14 +803,14 @@ void incflo::cryo_compute_temp ()
 //     constexpr Real m_half = Real(0.5);
 //     // We use the new time value for things computed on the "*" state
 //     Real new_time = m_cur_time + m_dt;
-    
+
 //     // Forcing terms (?)
 //     Vector<MultiFab> energy_eta;
 //     // Allocate space for the forcing terms
 //     for (int lev = 0; lev <= finest_level; ++lev) {
 //         energy_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
 //     }
-    
+
 //     // Compute diffusive coefficients
 //     compute_tracer_diff_coeff(GetVecOfPtrs(energy_eta), 1);
 //     // Compute explicit diffusive term

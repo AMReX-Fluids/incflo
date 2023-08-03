@@ -3,7 +3,10 @@
 // Need this for TagCutCells
 #ifdef AMREX_USE_EB
 #include <AMReX_EBAmrUtil.H>
+#include <utility>
 #endif
+
+#include <memory>
 
 using namespace amrex;
 
@@ -32,7 +35,7 @@ incflo::incflo ()
 }
 
 incflo::~incflo ()
-{}
+= default;
 
 void incflo::InitData ()
 {
@@ -64,13 +67,13 @@ void incflo::InitData ()
         // TODO: figure out how many hard resets are needed
 
         InitialIterations();
-        
+
         if (m_advect_tracer)
         {
             cryo_set_zero_vel();
             cryo_update_thermal();
         }
-        
+
         if (m_advect_energy)
         {
             cryo_set_zero_vel();
@@ -129,7 +132,8 @@ void incflo::Evolve()
     BL_PROFILE("incflo::Evolve()");
 
     bool do_not_evolve = ((m_max_step == 0) || ((m_stop_time >= 0.) && (m_cur_time > m_stop_time)) ||
-                            ((m_stop_time <= 0.) && (m_max_step <= 0))) && !m_steady_state;
+                           ((m_stop_time <= 0.) && (m_max_step <= 0)) || (m_max_step >= 0 && m_nstep >= m_max_step) )
+                         && !m_steady_state;
 
     while(!do_not_evolve)
     {
@@ -193,7 +197,7 @@ incflo::ApplyProjection (Vector<MultiFab const*> density,
                          Real time, Real scaling_factor, bool incremental)
 {
     BL_PROFILE("incflo::ApplyProjection");
-    ApplyNodalProjection(density,time,scaling_factor,incremental);
+    ApplyNodalProjection(std::move(density),time,scaling_factor,incremental);
 }
 
 // Make a new level from scratch using provided BoxArray and DistributionMapping.
@@ -222,15 +226,15 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
                                        nghost_eb_full()},
                                        EBSupport::full);
 #else
-    m_factory[lev].reset(new FArrayBoxFactory());
+    m_factory[lev] = std::make_unique<FArrayBoxFactory>();
 #endif
 
-    m_leveldata[lev].reset(new LevelData(grids[lev], dmap[lev], *m_factory[lev],
+    m_leveldata[lev] = std::make_unique<LevelData>(grids[lev], dmap[lev], *m_factory[lev],
                                          m_ntrac, nghost_state(),
                                          m_advection_type,
                                          m_diff_type==DiffusionType::Implicit,
                                            use_tensor_correction,
-                                         m_advect_tracer));
+                                         m_advect_tracer);
 
     m_t_new[lev] = time;
     m_t_old[lev] = time - Real(1.e200);
@@ -240,13 +244,14 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
     }
 
 #ifdef AMREX_USE_EB
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level),
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level),
                       MLMG::Location::FaceCentroid,  // Location of mac_vec
                       MLMG::Location::FaceCentroid,  // Location of beta
-                      MLMG::Location::CellCenter  ) ); // Location of solution variable phi
+                      MLMG::Location::CellCenter  ); // Location of solution variable phi
 #else
-    macproj.reset(new Hydro::MacProjector(Geom(0,finest_level)));
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
 #endif
+
 }
 
 bool
@@ -254,14 +259,10 @@ incflo::writeNow()
 {
     bool write_now = false;
 
-    if ( m_plot_int > 0 && (m_nstep % m_plot_int == 0) )
+    if ( ( m_plot_int > 0 && (m_nstep % m_plot_int == 0) ) ||
+         (m_plot_per_exact  > 0 && (std::abs(std::remainder(m_cur_time, m_plot_per_exact)) < 1.e-12) ) ) {
         write_now = true;
-
-    else if ( m_plot_per_exact  > 0 && (std::abs(std::remainder(m_cur_time, m_plot_per_exact)) < 1.e-12) )
-        write_now = true;
-
-    else if (m_plot_per_approx > 0.0)
-    {
+    } else if (m_plot_per_approx > 0.0) {
         // Check to see if we've crossed a m_plot_per_approx interval by comparing
         // the number of intervals that have elapsed for both the current
         // time and the time at the beginning of this timestep.
