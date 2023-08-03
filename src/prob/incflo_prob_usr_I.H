@@ -1,5 +1,5 @@
-#ifndef INCFLO_PROB_USR_I_H_
-#define INCFLO_PROB_USR_I_H_
+#ifndef INCFLO_PROB_I_H_
+#define INCFLO_PROB_I_H_
 
 // This header is include by incflo.H.  These functions are members of incflo class.
 
