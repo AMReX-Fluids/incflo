@@ -213,6 +213,7 @@ void incflo::ApplyCorrector()
             amrex::average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
                                 0, 1, refRatio(lev));
 #endif
+        } // lev
 
     } // not constant density
 
@@ -328,7 +329,7 @@ void incflo::ApplyCorrector()
             amrex::average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
                                 0, m_ntrac, refRatio(lev));
 #endif
-    }
+        }
     }
 
     // *************************************************************************************
