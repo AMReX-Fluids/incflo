@@ -329,6 +329,7 @@ void incflo::ApplyCorrector()
                                 0, m_ntrac, refRatio(lev));
 #endif
     }
+    }
 
     // *************************************************************************************
     // Define the forcing terms to use in the final update (using half-time density)
