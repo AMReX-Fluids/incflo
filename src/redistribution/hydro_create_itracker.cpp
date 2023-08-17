@@ -63,6 +63,61 @@ enforceReciprocity(int i, int j, int k, Array4<int> const& itracker)
 }
 
 void
+reverseNbhd(int i, int j, int k, Array4<int> const& itracker)
+{
+    auto map = Redistribution::getCellMap();
+    // Inverse map
+    auto nmap = Redistribution::getInvCellMap();
+
+    // Reverse the neighborhood relationship so that now I am in my neighbor's neighborhood
+    // and they are no longer in mine
+    if (itracker(i,j,k,0) > 1) Abort("reverseNbhd: Nelwy uncovered cell has more than one neighbor");
+    for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
+    {
+        int ioff = map[0][itracker(i,j,k,i_nbor)];
+        int joff = map[1][itracker(i,j,k,i_nbor)];
+        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itracker(i,j,k,i_nbor)];
+
+        int ii = i+ioff;
+        int jj = j+joff;
+        int kk = k+koff;
+
+        if ( Box(itracker).contains(Dim3{ii,jj,kk}) )
+        {
+            int nbor = itracker(i,j,k,i_nbor);
+            int me = nmap[nbor];
+            bool found = false;
+
+            // amrex::Print() << "Cell  " << Dim3{i,j,k} << " is (un)covered and merged with neighbor at " << Dim3{i+ioff,j+joff,k+koff} << std::endl;
+
+            // Loop over the neighbor's neighbors to see if I'm already included
+            // If not, add me to the neighbor list.
+            for (int i_nbor2 = 1; i_nbor2 <= itracker(ii,jj,kk,0); i_nbor2++)
+            {
+                if ( itracker(ii,jj,kk,i_nbor2) == me ) {
+                    // Print()<<IntVect(i,j)<<" is ALREADY A NEIGHBOR!"<<std::endl;
+                    found = true;
+                    Abort("A newly uncovered cell has been included in another neighborhood");
+                    break;
+                }
+            }
+            if ( !found )
+            {
+                itracker(ii,jj,kk,0) += 1;
+                itracker(ii,jj,kk,itracker(ii,jj,kk,0)) = me;
+
+                // remove this from my neighborhood.
+                itracker(i,j,k,0) -= 1;
+                // Newly uncovered cell should now have no neighbors. Otherwise we need to
+                // actually remove the neighbor from the array and make adjustments if there's
+                // still valid neighbors at higher array indices.
+                if (itracker(i,j,k,0) > 0 ) Abort("reverseNbhd: Newly uncovered cell still has neighbors");
+            }
+        }
+    }
+}
+
+void
 Redistribution::MakeITracker ( Box const& bx,
                                AMREX_D_DECL(Array4<Real const> const& apx_old,
                                             Array4<Real const> const& apy_old,
@@ -131,6 +186,11 @@ Redistribution::MakeITracker ( Box const& bx,
                                vfrac_new, vel_eb, itracker,
                                lev_geom, target_volfrac, domain,
                                AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
+            // normalMerging(i, j, k,
+            //               AMREX_D_DECL(apx_new, apy_new, apz_new),
+            //               vfrac_new, itracker,
+            //               lev_geom, target_volfrac, domain,
+            //               AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
         }
         else if ( vfrac_old(i,j,k) > 0.0 && vfrac_new(i,j,k) == 0.0)
         {
@@ -148,16 +208,84 @@ Redistribution::MakeITracker ( Box const& bx,
     });
 
 
-#if 0
-    amrex::Print() << "\nInitial Cell Merging" << std::endl;
+    // // For Newly Uncovered cells, make my neighbor's neighors my own neighbors
+    // // since MSRD essentially removes the NU NB cell from the equations with alpha=0
+    // amrex::ParallelFor(Box(itracker),
+    // [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    // {
+    //     if ( (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.0) ) // Newly uncovered
+    //     {
+    //         for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+    //         {
+    //             int ioff = map[0][itracker(i,j,k,i_nbor)];
+    //             int joff = map[1][itracker(i,j,k,i_nbor)];
+    //             int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itracker(i,j,k,i_nbor)];
 
+    //             int ii = i+ioff;
+    //             int jj = j+joff;
+    //             int kk = k+koff;
+    //             if ( Box(itracker).contains(Dim3{ii,jj,kk}) )
+    //             {
+    //                 if ( itracker(ii, jj, kk, 0) > 0 )
+    //                 {
+    //                     for (int i_nbor2 = 1; i_nbor2 <= itracker(ii,jj,kk,0); i_nbor2++)
+    //                     {
+    //                         int ioff2 = map[0][itracker(ii,jj,kk,i_nbor2)];
+    //                         int joff2 = map[1][itracker(ii,jj,kk,i_nbor2)];
+    //                         int koff2 = (AMREX_SPACEDIM < 3) ? 0 : map[2][itracker(ii,jj,kk,i_nbor2)];
+
+    //                         itracker(i,j,k,0) += 1;
+                            
+    //                         // WOuls need to extend the mapping to go 2 cells away....
+    //                     }
+    //             }
+    //     }
+    // });
+    
+    // Check uncovered and covered cells, make sure the neighbors also include them.
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (k==8){
-        if (itracker(i,j,k) > 0)
+        if ( (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.0 ) // Newly uncovered
+             //|| (vfrac_new(i,j,k) == 0. && vfrac_old(i,j,k) > 0.0) // Newly covered Cells
+         )
         {
-            amrex::Print() << "Cell " << Dim3{i,j,k} << " is merged with: ";
+            int i_nbor = itracker(i,j,k,0);
+            if (i_nbor < 1) Abort("NU cell didn't get a nb");
+            int ii = i+map[0][itracker(i,j,k,i_nbor)];
+            int jj = j+map[1][itracker(i,j,k,i_nbor)];
+            int kk = k+( (AMREX_SPACEDIM < 3) ? 0 : map[2][itracker(i,j,k,i_nbor)] );
+
+            if ( Box(itracker).contains(Dim3{ii,jj,kk}) )
+            {
+                // I don;t think this if is needed for enforceReciprocity...
+                // This was just as a test. To see if when the neighbor took it's own neighbors,
+                // only then we enforced reciprocity...
+                if ( itracker(ii, jj, kk, 0) > 0 )
+                {
+                    //enforceReciprocity(i, j, k, itracker);
+// It appears something is off in the math when the neighbor doesn't have it's own neighbors...
+                    reverseNbhd(i, j, k, itracker);
+                }
+            }
+        }
+    });
+
+#if 1
+
+    amrex::ParallelFor(Box(itracker),
+    [=] AMREX_GPU_DEVICE (int ii, int jj, int kk) noexcept
+    {
+        if ( (ii==45 && jj==21 && kk==40) )
+        {
+            amrex::Print() << "\nInitial Cell Merging" << std::endl;
+            
+            for ( int i = ii-1; i<= ii+1; i++){
+            for ( int j = jj-1; j<= jj+1; j++){
+            for ( int k = kk-1; k<= kk+1; k++){ 
+            if (itracker(i,j,k) > 0)
+            {
+            amrex::AllPrint() << "Cell " << Dim3{i,j,k} << " is merged with: ";
 
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
             {
@@ -167,31 +295,20 @@ Redistribution::MakeITracker ( Box const& bx,
 
                 if (i_nbor > 1)
                 {
-                    amrex::Print() << ", " << Dim3{i+ioff,j+joff,k+koff};
+                    amrex::AllPrint() << ", " << Dim3{i+ioff,j+joff,k+koff};
                 } else
                 {
-                    amrex::Print() << Dim3{i+ioff,j+joff,k+koff};
+                    amrex::AllPrint() << Dim3{i+ioff,j+joff,k+koff};
                 }
             }
 
-            amrex::Print() << std::endl;
+            amrex::AllPrint() << std::endl;
         }
+            }}}
         }
     });
-    amrex::Print() << std::endl;
+    //amrex::Print() << std::endl;
 #endif
-
-    // // Check uncovered and covered cells, make sure the neighbors also include them.
-    // amrex::ParallelFor(Box(itracker),
-    // [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    // {
-    //     if ( (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.0 ) // Newly uncovered
-    //          //|| (vfrac_new(i,j,k) == 0. && vfrac_old(i,j,k) > 0.0) // Newly covered Cells
-    //      )
-    //     {
-    //         enforceReciprocity(i, j, k, itracker);
-    //     }
-    // });
 
 #if 0
     amrex::Print() << "Check for all covered cells." << std::endl;
