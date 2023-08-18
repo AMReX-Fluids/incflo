@@ -175,6 +175,9 @@ normalMerging ( int i, int j, int /*k*/,
         }
     }
 
+    // FIXME - What if we couldn't claim the other dir due to a phys bndry?
+    // wouldn't we still want to try to take the corner?
+    //
     // Now we merge in the corner direction if we have already claimed two
     if (itracker(i,j,k,0) == 2)
     {
@@ -330,13 +333,20 @@ newlyUncoveredNbhd ( int i, int j, int /*k*/,
         itracker(i,j,k,1) = (nx > 0) ? 5 : 4;
     }
 
-    // (i,j) merges with at least one cell now
-    itracker(i,j,k,0) += 1;
 
     // (i+ioff,j+joff) is in the nbhd of (i,j)
     int ioff = imap[itracker(i,j,k,1)];
     int joff = jmap[itracker(i,j,k,1)];
-
+    // (i,j) merges with at least one cell now
+    //itracker(i,j,k,0) += 1;
+    if ( Box(itracker).contains(Dim3{i+ioff,j+joff,k}) )
+    {
+        // Now put (i,j,k) in the NB's neighborhood instead
+        itracker(i+ioff,j+joff,k,0) += 1;
+        int me = getInvCellMap()[itracker(i,j,k,1)];
+        itracker(i+ioff,j+joff,k,itracker(i+ioff,j+joff,k,0)) = me;
+    }
+    
     Real sum_vol = vfrac(i,j,k) + vfrac(i+ioff,j+joff,k);
 
     // if ( i==10 && j==9 ) //( debug_verbose > 0 )

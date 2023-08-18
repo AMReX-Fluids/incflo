@@ -30,7 +30,8 @@ namespace {
 // FIXME --
 // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    constexpr int itracker_comp = (AMREX_SPACEDIM < 3 ) ? 9 : 8;
+    // FIXME? -- Add one for NU adding itself...
+    constexpr int itracker_comp = (AMREX_SPACEDIM < 3 ) ? 9 : 9;
 }
 
 // For moving SRD, fill newly uncovered cells in valid region of the MF with
@@ -392,6 +393,53 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                     scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n)
                         + dt * delta_divU;
 
+                    // Now look at my neighbors. If any is NU then I take its' correction
+                    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+                    {
+                        int r = i+map[0][itr(i,j,k,i_nbor)];
+                        int s = j+map[1][itr(i,j,k,i_nbor)];
+                        int t = k+((AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)]);
+
+                        if ( vfrac_old(r,s,t) == 0.0 && vfrac_new(r,s,t) > 0.0 )
+                        {
+                        // if ( Box(scratch).contains(Dim3{i+ioff,j+joff,k+koff}) )
+                        // {
+                            Real delta_vol = vfrac_new(r,s,t) / dt;
+                            Real delta_divU = delta_vol * U_in(i,j,k,n);
+
+                            if ( vel_eb_new) {
+                                Real Ueb_dot_n =
+                                    AMREX_D_TERM(  vel_eb_new(r,s,t,0)*bnorm_new(r,s,t,0) * dxinv[0],
+                                                 + vel_eb_new(r,s,t,1)*bnorm_new(r,s,t,1) * dxinv[1],
+                                                 + vel_eb_new(r,s,t,2)*bnorm_new(r,s,t,2) * dxinv[2] );
+
+                                Ueb_dot_n *= barea_new(r,s,t);
+
+                                // if ( i==20 && j==8){
+                                //     Print()<<"NU DELTA VOL "<<delta_divU<<std::endl;
+                                // }
+
+                                delta_divU = 0.5*(delta_divU +
+                                                  out(r,s,t,n) * (delta_vol - Ueb_dot_n));
+
+                                // if ( i==20 && j==8){
+                                //     Print()<<"NU DELTA DIVU "<<delta_divU<<std::endl;
+                                // }
+
+                                // Account for flux into newly uncovered cell (needed for conservation)
+                                scratch(i,j,k,n) += Real(0.5) * dt * dUdt_in(r,s,t,n)
+                                    * vfrac_new(r,s,t)/vfrac_old(i,j,k);
+                            }
+
+                            scratch(i,j,k,n) += dt*delta_divU/vfrac_old(i,j,k);
+
+                            if ((i==8 || i==9) && j==8)
+                            {
+                                Print()<<Dim3{r,s,t}<<"alpha, beta, N : "<<alpha(r,s,t,0)<<" "<<alpha(r,s,t,1)
+                                       <<" "<<nrs(r,s,t)<<std::endl;
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -399,75 +447,65 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                 }
             });
 
+            // recall that now the NU cell doesn't take a neighbor, but rather puts itself in
+            // another cells neighborhood -- so we do this in above loop and don't need this one
             // FIXME need to think about how big we really need this box to be
-            amrex::ParallelFor(Box(scratch), ncomp,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                // Check to see if this cell was covered at time n.
-                // If covered, add my vol correction to the cells in my nbhd
-                // Need this in a separate loop because otherwise we can't be guaranteed
-                // that the nb has been initialized.
-                if ( vfrac_old(i,j,k) == 0.0 ) {
-                    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
-                    {
-                        int ioff = map[0][itr(i,j,k,i_nbor)];
-                        int joff = map[1][itr(i,j,k,i_nbor)];
-                        int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
+            // amrex::ParallelFor(Box(scratch), ncomp,
+            // [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            // {
+            //     // Check to see if this cell was covered at time n.
+            //     // If covered, add my vol correction to the cells in my nbhd
+            //     // Need this in a separate loop because otherwise we can't be guaranteed
+            //     // that the nb has been initialized.
+            //     if ( vfrac_old(i,j,k) == 0.0 && vfrac_new(i,j,k) > 0.0 ) {
+            //        for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+            //        {
+            //             Print()<<Dim3{i,j,k}<<"itr "<<itr(i,j,k,1)<<std::endl;
+            //             int ioff = map[0][itr(i,j,k,i_nbor)];
+            //             int joff = map[1][itr(i,j,k,i_nbor)];
+            //             int koff = (AMREX_SPACEDIM < 3) ? 0 : map[2][itr(i,j,k,i_nbor)];
 
-                        if ( Box(scratch).contains(Dim3{i+ioff,j+joff,k+koff}) )
-                        {
-                            Real delta_vol = vfrac_new(i,j,k) / dt;
-                            Real delta_divU = delta_vol * U_in(i+ioff,j+joff,k+koff,n);
-                            //Real dV = vfrac_new(i+ioff,j+joff,k+koff)-vfrac_old(i+ioff,j+joff,k+koff);
+            //             if ( Box(scratch).contains(Dim3{i+ioff,j+joff,k+koff}) )
+            //             {
+            //                 Real delta_vol = vfrac_new(i,j,k) / dt;
+            //                 Real delta_divU = delta_vol * U_in(i+ioff,j+joff,k+koff,n);
 
-                            // NOTE this correction is only right for the case that the newly
-                            // uncovered cell has only one other cell in it's neghborhood.
+            //                 if ( vel_eb_new) {
+            //                     Real Ueb_dot_n =
+            //                         AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
+            //                                      + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
+            //                                      + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
 
-                            // // Whether this block is needed or not depends on whether it was already
-                            // // included in above loop or not.
-                            // if (!flag_old(i+ioff,j+joff,k+koff).isRegular() && !flag_new(i+ioff,j+joff,k+koff).isCovered()
-                            //     && std::abs(dV) < eps ) // we need this correction for NU but don't for NC...
-                            // {
-                            //     Real Ueb_dot_an =
-                            //         AMREX_D_TERM(  vel_eb_old(i+ioff,j+joff,k+koff,0)*bnorm_old(i+ioff,j+joff,k+koff,0) * dxinv[0],
-                            //                        + vel_eb_old(i+ioff,j+joff,k+koff,1)*bnorm_old(i+ioff,j+joff,k+koff,1) * dxinv[1],
-                            //                        + vel_eb_old(i+ioff,j+joff,k+koff,2)*bnorm_old(i+ioff,j+joff,k+koff,2) * dxinv[2] );
-                            //     Ueb_dot_an *= barea_old(i+ioff,j+joff,k+koff);
+            //                     Ueb_dot_n *= barea_new(i,j,k);
 
-                            //     delta_divU = (delta_vol - Ueb_dot_an) * U_in(i+ioff,j+joff,k+koff,n);
-                            // }
+            //                     // if ( i==20 && j==8){
+            //                     //     Print()<<"NU DELTA VOL "<<delta_divU<<std::endl;
+            //                     // }
 
+            //                     delta_divU = 0.5*(delta_divU +
+            //                                       out(i,j,k,n) * (delta_vol - Ueb_dot_n));
 
-                            if ( vel_eb_new) {
-                                Real Ueb_dot_n =
-                                    AMREX_D_TERM(  vel_eb_new(i,j,k,0)*bnorm_new(i,j,k,0) * dxinv[0],
-                                                 + vel_eb_new(i,j,k,1)*bnorm_new(i,j,k,1) * dxinv[1],
-                                                 + vel_eb_new(i,j,k,2)*bnorm_new(i,j,k,2) * dxinv[2] );
+            //                     // if ( i==20 && j==8){
+            //                     //     Print()<<"NU DELTA DIVU "<<delta_divU<<std::endl;
+            //                     // }
 
-                                Ueb_dot_n *= barea_new(i,j,k);
+            //                     // Account for flux into newly uncovered cell (needed for conservation)
+            //                     scratch(i+ioff,j+joff,k+koff,n) += Real(0.5) * dt * dUdt_in(i,j,k,n)
+            //                         * vfrac_new(i,j,k)/vfrac_old(i+ioff,j+joff,k+koff);
+            //                 }
 
-                                // if ( i==20 && j==8){
-                                //     Print()<<"NU DELTA VOL "<<delta_divU<<std::endl;
-                                // }
+            //                 scratch(i+ioff,j+joff,k+koff,n) += dt*delta_divU/vfrac_old(i+ioff,j+joff,k+koff);
 
-                                delta_divU = 0.5*(delta_divU +
-                                                  out(i,j,k,n) * (delta_vol - Ueb_dot_n));
-
-                                // if ( i==20 && j==8){
-                                //     Print()<<"NU DELTA DIVU "<<delta_divU<<std::endl;
-                                // }
-
-                                // Account for flux into newly uncovered cell (needed for conservation)
-                                scratch(i+ioff,j+joff,k+koff,n) += Real(0.5) * dt * dUdt_in(i,j,k,n)
-                                    * vfrac_new(i,j,k)/vfrac_old(i+ioff,j+joff,k+koff);
-                            }
-
-                            scratch(i+ioff,j+joff,k+koff,n) += dt*delta_divU/vfrac_old(i+ioff,j+joff,k+koff);
-
-                        }
-                    }
-                }
-            });
+            //                            if ((i==8 || i==9) && j==8)
+            // {
+            //     Print()<<Dim3{i,j,k}<<"alpha, beta, N : "<<alpha(i,j,k,0)<<" "<<alpha(i,j,k,1)
+            //            <<" "<<nrs(i,j,k)<<std::endl;
+            // }
+ 
+            //             }
+            //         }
+            //     }
+            // });
         }
 
         //FIXME - For now, use the data in out, need to zero here

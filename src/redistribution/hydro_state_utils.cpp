@@ -125,37 +125,30 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
 
             if (itracker(i,j,k,0) > 0) {
 
-                // Loop over my neighbors to see if any is newly uncovered
-                for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-                {
-                    int ioff = imap[itracker(i,j,k,i_nbor)];
-                    int joff = jmap[itracker(i,j,k,i_nbor)];
-                    int koff = (AMREX_SPACEDIM < 3) ? 0 : kmap[itracker(i,j,k,i_nbor)];
-                    
-                    if ( Box(itracker).contains(Dim3{i+ioff,j+joff,k+koff}) )
-                    {
-                        // maybe better to check flag here?
-                        if ( vfrac_old(i+ioff,j+joff,k+koff) == 0. )
-                        {
-                            alpha(i,j,k,1) = Real(1.0);
-                            break;
-                        }
-                        else
-                        {
-                            alpha(i,j,k,1) = std::max(target_vol - vfrac_new(i,j,k), 0.0) / vol_of_nbors;
-                        }
-                    }
-                }
-                
                 if ( vfrac_old(i,j,k) > 0. ) {
                     alpha(i,j,k,1) = std::max(target_vol - vfrac_new(i,j,k), 0.0) / vol_of_nbors;
                     //alpha(i,j,k,1) = 1.;
                 } else {
                     //alpha(i,j,k,1) = std::max(target_vol - vfrac_new(i,j,k), 0.0) / vol_of_nbors;
-                    alpha(i,j,k,1) = Real(2.0);
+                    alpha(i,j,k,1) = Real(0.0);
+                }
+
+                // Loop over my neighbors to see if any is newly uncovered
+                // Assume NU is only in its own nbhd to start
+                for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
+                {
+                    int r = i+imap[itracker(i,j,k,i_nbor)];
+                    int s = j+jmap[itracker(i,j,k,i_nbor)];
+                    int t = k+kmap[itracker(i,j,k,i_nbor)];
+                    
+                    // maybe better to check flag here?
+                    if ( vfrac_old(r,s,t) == 0. )
+                    {
+                        alpha(i,j,k,1) = Real(2.0);
+                        break;
+                    }
                 }
             }
-
         } else {
             nbhd_vol(i,j,k) = 0.;
             alpha(i,j,k,0) = 0.;
@@ -187,6 +180,14 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg3,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+           
+            if ((i==8 || i==9) && j==8)
+            {
+                Print()<<Dim3{i,j,k}<<"alpha, beta, N : "<<alpha(i,j,k,0)<<" "<<alpha(i,j,k,1)
+                       <<" "<<nrs(i,j,k)<<std::endl;
+            }
+
+
         if (vfrac_new(i,j,k) > 0.0 || vfrac_old(i,j,k) > 0.0)
         //if (!flag(i,j,k).isCovered())
         {

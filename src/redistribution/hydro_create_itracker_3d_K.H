@@ -581,7 +581,8 @@ newlyUncoveredNbhd ( int i, int j, int k,
         std::printf("WARNING: Newly uncovered cell nbhd: Direction to merge not well resolved\n");
     }
 
-    // Select first for EB motion. If that's indeterminate, choose based on EB normal
+    // NOT considering EB motion right now. //Select first for EB motion. If that's indeterminate,
+    // choose based on EB normal
     // x-component of normal is greatest
     if ( //(std::abs(vx) > std::abs(vy) && std::abs(vx) > std::abs(vz)) ||
          (std::abs(nx) > std::abs(ny) && std::abs(nx) > std::abs(nz)) )
@@ -644,31 +645,29 @@ newlyUncoveredNbhd ( int i, int j, int k,
             itracker(i,j,k,1) = (ny > 0) ? 7 : 2;
     }
 
-    // (i,j,k) merges with at least one cell now
-    itracker(i,j,k,0) += 1;
-
-    // (i+ioff,j+joff,k+koff) is now the first cell in the nbhd of (i,j,k)
+    // (i,j,k) will merge with (i+ioff,j+joff,k+koff)
     auto map = getCellMap();
     int ioff = map[0][itracker(i,j,k,1)];
     int joff = map[1][itracker(i,j,k,1)];
     int koff = map[2][itracker(i,j,k,1)];
-
-    // Sanity check
-    if (vfrac(i+ioff,j+joff,k+koff) == 0.)
+    if ( Box(itracker).contains(Dim3{i+ioff,j+joff,k+koff}) )
     {
-        std::printf("Cell (%i,%i,%i) is trying to merge with cell (%i,%i,%i)\n", 
-                    i, j, k, i+ioff, j+joff, k+koff);
-        amrex::Abort("newlyUncoveredNbhd(): Trying to merge with covered cell");
+        // Now put (i,j,k) in the NB's neighborhood
+        itracker(i+ioff,j+joff,k+koff,0) += 1;
+        int me = getInvCellMap()[itracker(i,j,k,1)];
+        itracker(i+ioff,j+joff,k+koff,itracker(i+ioff,j+joff,k+koff,0)) = me;
     }
-
+    
     // For now, require we merge with only one other cell.
     Real sum_vol = vfrac(i,j,k) + vfrac(i+ioff,j+joff,k+koff);
     if (sum_vol < target_volfrac)
     {
         std::printf("newlyUncoveredNbhd(): Couldn't merge with enough cells to raise volume at (%i,%i,%i)"
-                    "to target %f. Stuck with sum_vol %f\n", i, j, k, target_volfrac, sum_vol);
-        Abort("Remove abort in hydro_create_itracker_3d.cpp and recompile to continue with reduced volfrac");
+                    "to target %f, so neighbor will take its' own neighbors. sum_vol %f\n",
+                    i, j, k, target_volfrac, sum_vol);
+        //Abort("Remove abort in hydro_create_itracker_3d.cpp and recompile to continue with reduced volfrac");
     }
+
 
 #if 0
     if (debug_print)

@@ -171,27 +171,27 @@ Redistribution::MakeITracker ( Box const& bx,
                           lev_geom, target_volfrac, domain, 
                           AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
         }
-        // WARNING, even with the CFL restriction of MOL, it will NOT always be the case that NU cells
-        // will get a neighbor for default target_volfrac of 0.5. This can happen with a very coarse
-        // simulation due to the single cut cell requirement.
-        else if ( vfrac_new(i,j,k) > 0.0 && vfrac_old(i,j,k) == 0.0)
-        {
-            // For now, require that newly uncovered cells only have one other cell in it's nbhd
-            if ( vfrac_new(i,j,k) > target_volfrac )
-            {
-                amrex::Warning("WARNING: Newly uncovered cell has volfrac > target_volfrac, suggesting the EB is under-resolved");
-            }
-            newlyUncoveredNbhd(i, j, k,
-                               AMREX_D_DECL(apx_new, apy_new, apz_new),
-                               vfrac_new, vel_eb, itracker,
-                               lev_geom, target_volfrac, domain,
-                               AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
-            // normalMerging(i, j, k,
-            //               AMREX_D_DECL(apx_new, apy_new, apz_new),
-            //               vfrac_new, itracker,
-            //               lev_geom, target_volfrac, domain,
-            //               AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
-        }
+        // // WARNING, even with the CFL restriction of MOL, it will NOT always be the case that NU cells
+        // // will get a neighbor for default target_volfrac of 0.5. This can happen with a very coarse
+        // // simulation due to the single cut cell requirement.
+        // else if ( vfrac_new(i,j,k) > 0.0 && vfrac_old(i,j,k) == 0.0)
+        // {
+        //     // For now, require that newly uncovered cells only have one other cell in it's nbhd
+        //     if ( vfrac_new(i,j,k) > target_volfrac )
+        //     {
+        //         amrex::Warning("WARNING: Newly uncovered cell has volfrac > target_volfrac, suggesting the EB is under-resolved");
+        //     }
+        //     newlyUncoveredNbhd(i, j, k,
+        //                        AMREX_D_DECL(apx_new, apy_new, apz_new),
+        //                        vfrac_new, vel_eb, itracker,
+        //                        lev_geom, target_volfrac, domain,
+        //                        AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
+        //     // normalMerging(i, j, k,
+        //     //               AMREX_D_DECL(apx_new, apy_new, apz_new),
+        //     //               vfrac_new, itracker,
+        //     //               lev_geom, target_volfrac, domain,
+        //     //               AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
+        // }
         else if ( vfrac_old(i,j,k) > 0.0 && vfrac_new(i,j,k) == 0.0)
         {
             // Create a nbhd for cells that become covered...
@@ -207,7 +207,36 @@ Redistribution::MakeITracker ( Box const& bx,
         }
     });
 
-
+// FIXME - need some check to make sure normalMerging doesn't put NU cells into neighborhoods.
+    
+    // Need a separate loop because this adds to the neighbor's neighborhood
+    // probably could alter normalMerging to allow for one loop...
+    amrex::ParallelFor(bx_per_g4,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        // WARNING, even with the CFL restriction of MOL, it will NOT always be the case that NU cells
+        // will get a neighbor for default target_volfrac of 0.5. This can happen with a very coarse
+        // simulation due to the single cut cell requirement.
+        if ( vfrac_new(i,j,k) > 0.0 && vfrac_old(i,j,k) == 0.0)
+        {
+            // For now, require that newly uncovered cells have one and only one other cell in it's nbhd
+            if ( vfrac_new(i,j,k) > target_volfrac )
+            {
+                amrex::Warning("WARNING: Newly uncovered cell has volfrac > target_volfrac, suggesting the EB is under-resolved");
+            }
+            newlyUncoveredNbhd(i, j, k,
+                               AMREX_D_DECL(apx_new, apy_new, apz_new),
+                               vfrac_new, vel_eb, itracker,
+                               lev_geom, target_volfrac, domain,
+                               AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
+            // normalMerging(i, j, k,
+            //               AMREX_D_DECL(apx_new, apy_new, apz_new),
+            //               vfrac_new, itracker,
+            //               lev_geom, target_volfrac, domain,
+            //               AMREX_D_DECL(is_periodic_x, is_periodic_y, is_periodic_z));
+        }
+    });
+    
     // // For Newly Uncovered cells, make my neighbor's neighors my own neighbors
     // // since MSRD essentially removes the NU NB cell from the equations with alpha=0
     // amrex::ParallelFor(Box(itracker),
@@ -243,33 +272,34 @@ Redistribution::MakeITracker ( Box const& bx,
     // });
     
     // Check uncovered and covered cells, make sure the neighbors also include them.
-    amrex::ParallelFor(Box(itracker),
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if ( (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.0 ) // Newly uncovered
-             //|| (vfrac_new(i,j,k) == 0. && vfrac_old(i,j,k) > 0.0) // Newly covered Cells
-         )
-        {
-            int i_nbor = itracker(i,j,k,0);
-            if (i_nbor < 1) Abort("NU cell didn't get a nb");
-            int ii = i+map[0][itracker(i,j,k,i_nbor)];
-            int jj = j+map[1][itracker(i,j,k,i_nbor)];
-            int kk = k+( (AMREX_SPACEDIM < 3) ? 0 : map[2][itracker(i,j,k,i_nbor)] );
+    // Do this in newlyUncoveredNbhd instead...
+//     amrex::ParallelFor(Box(itracker),
+//     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//     {
+//         if ( (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.0 ) // Newly uncovered
+//              //|| (vfrac_new(i,j,k) == 0. && vfrac_old(i,j,k) > 0.0) // Newly covered Cells
+//          )
+//         {
+//             int i_nbor = itracker(i,j,k,0);
+//             if (i_nbor < 1) Abort("NU cell didn't get a nb");
+//             int ii = i+map[0][itracker(i,j,k,i_nbor)];
+//             int jj = j+map[1][itracker(i,j,k,i_nbor)];
+//             int kk = k+( (AMREX_SPACEDIM < 3) ? 0 : map[2][itracker(i,j,k,i_nbor)] );
 
-            if ( Box(itracker).contains(Dim3{ii,jj,kk}) )
-            {
-                // I don;t think this if is needed for enforceReciprocity...
-                // This was just as a test. To see if when the neighbor took it's own neighbors,
-                // only then we enforced reciprocity...
-                if ( itracker(ii, jj, kk, 0) > 0 )
-                {
-                    //enforceReciprocity(i, j, k, itracker);
-// It appears something is off in the math when the neighbor doesn't have it's own neighbors...
-                    reverseNbhd(i, j, k, itracker);
-                }
-            }
-        }
-    });
+//             if ( Box(itracker).contains(Dim3{ii,jj,kk}) )
+//             {
+//                 // I don;t think this if is needed for enforceReciprocity...
+//                 // This was just as a test. To see if when the neighbor took it's own neighbors,
+//                 // only then we enforced reciprocity...
+//                 // if ( itracker(ii, jj, kk, 0) > 0 )
+//                 // {
+//                     //enforceReciprocity(i, j, k, itracker);
+// // It appears something is off in the math when the neighbor doesn't have it's own neighbors...
+//                     reverseNbhd(i, j, k, itracker);
+//                 // }
+//             }
+//         }
+//     });
 
 #if 1
 
