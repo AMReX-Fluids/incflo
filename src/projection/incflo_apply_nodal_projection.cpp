@@ -75,7 +75,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
         {
             sigma[lev].define(grids[lev], dmap[lev], 1, 0, MFInfo(),
 #ifdef INCFLO_USE_MOVING_EB
-                              *m_new_factory[lev]);
+                              EBFactory(lev,time));
 #else
                               *m_factory[lev]);
 #endif
