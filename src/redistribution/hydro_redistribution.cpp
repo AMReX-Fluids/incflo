@@ -85,9 +85,10 @@ Redistribution::FillNewlyUncovered ( MultiFab& mf,
             [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
                 // Check to see if this cell was covered at time n, but uncovered at n+1
-                if (vfrac_new(i,j,k) > 0. && vfrac_new(i,j,k) < 1. && vfrac_old(i,j,k) == 0.)
+                if (vfrac_new(i,j,k) > 0. && vfrac_old(i,j,k) == 0.)
                 {
-                    for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
+                    int i_nbor = 1; // Recall, the neighbor cell carries everything
+                    // for (int i_nbor = 1; i_nbor <= itr(i,j,k,0); i_nbor++)
                     {
                         int ioff = map[0][itr(i,j,k,i_nbor)];
                         int joff = map[1][itr(i,j,k,i_nbor)];
@@ -433,11 +434,11 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                             scratch(i,j,k,n) += dt*delta_divU/vfrac_old(i,j,k);
 
-                            if ((i==8 || i==9) && j==8)
-                            {
-                                Print()<<Dim3{r,s,t}<<"alpha, beta, N : "<<alpha(r,s,t,0)<<" "<<alpha(r,s,t,1)
-                                       <<" "<<nrs(r,s,t)<<std::endl;
-                            }
+                            // if ((i==8 || i==9) && j==8)
+                            // {
+                            //     Print()<<Dim3{r,s,t}<<"alpha, beta, N : "<<alpha(r,s,t,0)<<" "<<alpha(r,s,t,1)
+                            //            <<" "<<nrs(r,s,t)<<std::endl;
+                            // }
                         }
                     }
                 }
