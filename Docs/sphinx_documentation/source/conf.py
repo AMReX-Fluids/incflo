@@ -44,9 +44,9 @@ extensions = ['sphinx.ext.mathjax',
               'breathe']
 
 intersphinx_mapping = {
-    'incflo_tutorials': ('https://incflo-codes.github.io/incflo/tutorials_html/', None)
-    # 'incflo_tutorials': ('../../../sphinx_tutorials/build/html/',
-    #                    '../../sphinx_tutorials/build/html/objects.inv')
+     'amrex': ('https://amrex-codes.github.io/amrex/docs_html/', None),
+     'hydro': ('https://amrex-codes.github.io/amrex/hydro_html/', None)
+     # 'incflo_tutorials': ('https://incflo-codes.github.io/incflo/tutorials_html/', None)
 }
 
 # Add any paths that contain templates here, relative to this directory.
