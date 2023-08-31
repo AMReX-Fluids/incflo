@@ -185,7 +185,7 @@ SUPERBUILD Instructions (recommended)
 
 In this mode, incflo CMake inherents AMReX CMake targets and configuration options, as well as AMRex-Hydro CMake targets; that is, incflo, AMReX and AMReX-Hydro are configured and built as a single entity.
 
-First, make sure you've downloaded all the source code (see :ref:`Download`).
+First, make sure you've downloaded all the source codes (see :ref:`Download`).
 
 Next, build the incflo executable:
 
@@ -212,7 +212,7 @@ AMReX installation on the system and link the incflo binaries against it.
 Building AMReX
 ~~~~~~~~~~~~~~~~~~~
 
-First, make sure you've downloaded all the source code (see :ref:`Download`).
+First, make sure you've downloaded all the source codes (see :ref:`Download`).
 
 Next, configure, build and install AMReX as follows:
 

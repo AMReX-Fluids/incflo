@@ -12,7 +12,7 @@ The following inputs must be preceded by "amr" and determine how we initialize a
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 
 
-The following inputs must be preceded by "incfo" and determine how we initialize a calculation:
+The following inputs must be preceded by "incflo" and determine how we initialize a calculation:
 
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |                      | Description                                                           |   Type      | Default      |

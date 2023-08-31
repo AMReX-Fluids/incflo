@@ -44,8 +44,9 @@ extensions = ['sphinx.ext.mathjax',
               'breathe']
 
 intersphinx_mapping = {
-     'amrex': ('https://amrex-codes.github.io/amrex/docs_html/', None),
-     'hydro': ('https://amrex-codes.github.io/amrex/hydro_html/', None)
+    'amrex': ('https://amrex-codes.github.io/amrex/docs_html/', None),
+    'hydro': ('https://amrex-codes.github.io/amrex-hydro/docs_html/', None),
+    'iamr': ('https://amrex-codes.github.io/IAMR/', None)
      # 'incflo_tutorials': ('https://incflo-codes.github.io/incflo/tutorials_html/', None)
 }
 
