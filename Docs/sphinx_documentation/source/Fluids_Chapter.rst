@@ -9,4 +9,4 @@ Solving the Fluid Equations
 .. toctree::
 
    FluidEquations
-   FluidTimeDiscretization
+   TimeStep
