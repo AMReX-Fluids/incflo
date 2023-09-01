@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fluid Variables &mdash; incflo 23.09-dev documentation</title>
+  <title>Fluid Variables &mdash; incflo 23.10-dev documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
@@ -12,16 +12,16 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=94759461"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Time Discretization" href="FluidTimeDiscretization.html" />
+    <link rel="next" title="Time Step" href="TimeStep.html" />
     <link rel="prev" title="Solving the Fluid Equations" href="Fluids_Chapter.html" /> 
 </head>
 
@@ -37,7 +37,7 @@
             incflo
           </a>
               <div class="version">
-                23.09-dev
+                23.10-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -56,7 +56,7 @@
 <li class="toctree-l1 current"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Fluid Variables</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#fluid-equations">Fluid Equations</a></li>
-<li class="toctree-l2"><a class="reference internal" href="FluidTimeDiscretization.html">Time Discretization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="TimeStep.html">Time Step</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
@@ -89,7 +89,7 @@
            <div itemprop="articleBody">
              
   <section id="fluid-variables">
-<h1>Fluid Variables<a class="headerlink" href="#fluid-variables" title="Permalink to this heading"></a></h1>
+<h1>Fluid Variables<a class="headerlink" href="#fluid-variables" title="Link to this heading"></a></h1>
 <blockquote>
 <div><table class="docutils align-default">
 <thead>
@@ -107,28 +107,39 @@
 <tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\tau\)</span></p></td>
 <td><p>Viscous stress tensor</p></td>
 </tr>
-<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(g\)</span></p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\mu_s\)</span></p></td>
+<td><p>scalar diffusivity</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\({\bf g}\)</span></p></td>
 <td><p>Gravitational acceleration</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\({\bf H}_U\)</span></p></td>
+<td><p><span class="math notranslate nohighlight">\(= (H_x , H_y , H_z )\)</span>, External Forces</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(H_s\)</span></p></td>
+<td><p>External sources</p></td>
 </tr>
 </tbody>
 </table>
 </div></blockquote>
 </section>
 <section id="fluid-equations">
-<h1>Fluid Equations<a class="headerlink" href="#fluid-equations" title="Permalink to this heading"></a></h1>
+<h1>Fluid Equations<a class="headerlink" href="#fluid-equations" title="Link to this heading"></a></h1>
 <p>Conservation of fluid mass:</p>
 <div class="math notranslate nohighlight">
 \[\frac{\partial \rho}{\partial t} + \nabla \cdot (\rho U)  = 0\]</div>
 <p>Conservation of fluid momentum:</p>
 <div class="math notranslate nohighlight">
 \[\frac{ \partial (\rho U)}{\partial t}
-+ \nabla \cdot (\rho U U) + \nabla p = \nabla \cdot \tau + \rho g\]</div>
++ \nabla \cdot (\rho U U) + \nabla p = \nabla \cdot \tau  + {\bf H}_U\]</div>
 <p>Incompressibility constraint:</p>
 <div class="math notranslate nohighlight">
 \[\nabla \cdot U = 0\]</div>
-<p>Tracer(s) advection:</p>
+<p>Tracer(s):</p>
 <div class="math notranslate nohighlight">
-\[\frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  = 0\]</div>
+\[\frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  =  \nabla \cdot \mu_s \nabla s + \rho H_s\]</div>
+<p>By default, <span class="math notranslate nohighlight">\(H_s = 0\)</span> and <span class="math notranslate nohighlight">\({\bf H}_U = {\bf 0}\)</span>.
+If gravity is set during runtime, then <span class="math notranslate nohighlight">\({\bf H}_U\)</span> defaults to <span class="math notranslate nohighlight">\(\rho {\bf g}\)</span></p>
 </section>
 
 
@@ -136,7 +147,7 @@
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="Fluids_Chapter.html" class="btn btn-neutral float-left" title="Solving the Fluid Equations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="FluidTimeDiscretization.html" class="btn btn-neutral float-right" title="Time Discretization" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="TimeStep.html" class="btn btn-neutral float-right" title="Time Step" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

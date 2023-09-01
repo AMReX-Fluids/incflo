@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Embedded Boundaries &mdash; incflo 23.09-dev documentation</title>
+  <title>Embedded Boundaries &mdash; incflo 23.10-dev documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
@@ -12,16 +12,16 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=94759461"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Constructing Embedded Boundaries in incflo" href="EBWalls.html" />
-    <link rel="prev" title="Creating the MAC velocities" href="BuildingMacVelocities.html" /> 
+    <link rel="next" title="Debugging" href="Debugging.html" />
+    <link rel="prev" title="Time Step" href="TimeStep.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -36,7 +36,7 @@
             incflo
           </a>
               <div class="version">
-                23.09-dev
+                23.10-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -53,10 +53,7 @@
 <li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Embedded Boundaries</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="EBWalls.html">Constructing Embedded Boundaries in incflo</a></li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Embedded Boundaries</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
 </ul>
 
@@ -85,23 +82,34 @@
            <div itemprop="articleBody">
              
   <section id="embedded-boundaries">
-<span id="chap-eb"></span><h1>Embedded Boundaries<a class="headerlink" href="#embedded-boundaries" title="Permalink to this heading"></a></h1>
-<p>incflo uses AMReX’s Embedded Boundary (cut cell) functionality to represent internal
-or external geometry in the flow.</p>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="EBWalls.html">Constructing Embedded Boundaries in incflo</a></li>
-</ul>
+<span id="chap-eb"></span><h1>Embedded Boundaries<a class="headerlink" href="#embedded-boundaries" title="Link to this heading"></a></h1>
+<p>incflo follows AMReX’s approach to embedded boundaries (EB), which is described in the
+<a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/EB_Chapter.html">AMReX EB documentation</a>.
+By default, incflo uses AMReX’s constructive solid geometry framework defined in the namespace <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">amrex</span><span class="o">::</span><span class="n">EB2</span></code>.
+Alternatively, the constructive solid geometry can also be created using OpenSCAD’s CSG file format by installing
+the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">csg</span><span class="o">-</span><span class="n">eb</span></code> library. To use this option, incflo must be built with the flag
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">USE_CSG</span><span class="o">=</span><span class="n">TRUE</span></code> and <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">CSGEB_HOME</span></code> must be set to where the library was installed.
+See <a class="reference external" href="https://mfix.netl.doe.gov/gitlab/exa/csg-eb">MFIX’s CSG-EB repository</a> for more details about this format.</p>
+<p>incflo provides several options of embedded boundary geometries. The inputs parameter <code class="docutils literal notranslate"><span class="pre">incflo.geometry</span> <span class="pre">=</span> <span class="pre">XXX</span></code>
+determines which geometry is selected by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">MakeEBGeometry</span><span class="p">()</span></code> within <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">embedded_boundaries</span></code>.
+The procedure to create your own EB geometry is described in the AMReX documentation on <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/EB.html#sec-eb-ebinit" title="(in amrex v23.10-dev)"><span>Initializing the Geometric Database</span></a>.
+As discussed in the AMReX documentation, note that when constructing the EB, we must specify a
+maxium coarsening level (<code class="docutils literal notranslate"><span class="pre">max_crse_level</span></code>):</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">EB2</span><span class="o">::</span><span class="n">Build</span><span class="p">(</span><span class="n">gshop</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">[</span><span class="n">lev</span><span class="p">],</span><span class="w"> </span><span class="n">required_crse_lev</span><span class="p">,</span><span class="w"> </span><span class="n">max_crse_level</span><span class="p">);</span>
+</pre></div>
 </div>
+<p>This specifies to which level of coarseness the EB is still defined. It might not be
+immediately obvious, but the multigrid solver (used in the fluid solve) also
+depends indirectly on this parameters. Choosing a value of <code class="docutils literal notranslate"><span class="pre">max_crse_level</span></code> that is too small might restrict
+how many levels the MLMG solver can use, and therefore give slightly different answers in the fluid solve.</p>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="BuildingMacVelocities.html" class="btn btn-neutral float-left" title="Creating the MAC velocities" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="EBWalls.html" class="btn btn-neutral float-right" title="Constructing Embedded Boundaries in incflo" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="TimeStep.html" class="btn btn-neutral float-left" title="Time Step" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Debugging.html" class="btn btn-neutral float-right" title="Debugging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

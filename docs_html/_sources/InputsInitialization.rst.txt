@@ -12,12 +12,11 @@ The following inputs must be preceded by "amr" and determine how we initialize a
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 
 
-The following inputs must be preceded by "incfo" and determine how we initialize a calculation:
+The following inputs must be preceded by "incflo" and determine how we initialize a calculation:
 
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |                      | Description                                                           |   Type      | Default      |
 +======================+=======================================================================+=============+==============+
-+----------------------+-----------------------------------------------------------------------+-------------+--------------+
 | do_initial_proj      | Should we do the initial projection?                                  |    Bool     |  True        |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 | initial_iterations   | How many pressure iterations before starting the first timestep       |  Int        |    3         |

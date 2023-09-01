@@ -5,14 +5,16 @@ incflo is a massively parallel code for solving the incompressible Navier-Stokes
 equations in 2-D or 3-D,  with the option for an embedded boundary (cut cell) representation of
 of complex geometries.
 
-It is built on top of AMReX, a publicly available software framework designed for building
+It is built on top of :ref:`AMReX <amrex:amrex_doc_indx>`, a publicly available software framework designed for building
 massively parallel block-structured adaptive mesh refinement (AMR)
-applications.
+applications. It also utilizes :ref:`AMReX-Hydro <hydro:amrex_hydro_indx>`, a set of routines that support the construction
+of convective terms for incompressible and low Mach number flow modeling in cartesian coordinates
+with (or without) embedded boundaries and R-Z coordinate systems.
 
-Another AMReX-based code, IAMR, also solves the variable-density incompressible
+Another AMReX-based code, :ref:`IAMR <iamr:iamr_doc_indx>`, also solves the variable-density incompressible
 Navier-Stokes equations in 2-D or 3-D but is based on a subcycling-in-time approach.
 
-Key software and algorithmic features of IAMR include:
+Key software and algorithmic features of incflo include:
 
 -  Fluid velocity, density and tracers are defined at cell centroids; pressure is defined at nodes.
 
