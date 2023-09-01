@@ -25,17 +25,6 @@ The following inputs must be preceded by "geometry."
 | prob_hi         | High corner of physical domain (physical not index space)             |   Reals     | None      |
 +-----------------+-----------------------------------------------------------------------+-------------+-----------+
 
-The following inputs must be preceded by "bc."
-
-+-----------------+-----------------------------------------------------------------------+-------------+-----------+
-|                 | Description                                                           |   Type      | Default   |
-+=================+=======================================================================+=============+===========+
-| delp_dir        | Direction for specified pressure drop. Note that this direction       |   Int       |   0       |
-|                 | should also be periodic.                                              |             |           |
-+-----------------+-----------------------------------------------------------------------+-------------+-----------+
-| delp            | Pressure drop (Pa)                                                    |   Real      |   0.0     |
-+-----------------+-----------------------------------------------------------------------+-------------+-----------+
-
 
 The following inputs must be preceded by "incflo."
 
@@ -44,11 +33,13 @@ The following inputs must be preceded by "incflo."
 +======================+=========================================================================+==========+===========+
 | geometry             | Which type of EB geometry are we using?                                 |   String |           |
 +----------------------+-------------------------------------------------------------------------+----------+-----------+
-| gravity              | Gravity vector (e.g., incflo.gravity = -9.81  0.0  0.0) [required]      |  Reals   |  None     |
+| gravity              | Gravity vector (e.g., incflo.gravity = -9.81  0.0  0.0)                 |  Reals   | (0, 0, 0) |
++----------------------+-------------------------------------------------------------------------+----------+-----------+
+| delp                 | Pressure drop (Pa)                                                      |   Real   | (0, 0, 0) |
 +----------------------+-------------------------------------------------------------------------+----------+-----------+
 
 
-Setting basic EB walls can be specified by inputs preceded by "xlo", "xhi", "ylo", "yhi", "zlo", and "zhi"
+Setting basic boundary conditions can be specified by inputs preceded by "xlo", "xhi", "ylo", "yhi", "zlo", and "zhi"
 
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
 |                    | Description                                                               |   Type      | Default   |
@@ -62,22 +53,12 @@ Setting basic EB walls can be specified by inputs preceded by "xlo", "xhi", "ylo
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
 | pressure           | Sets boundary pressure for pressure inflows, outflows and mass inflows    |    Real     |  None     |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
-| velocity           | Sets boundary velocity for mass inflows                                   |    Real     |  None     |
+| velocity           | Sets boundary velocity for mass inflows                                   |    Reals    | (0, 0, 0) |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
-| location           | Specifies an offset from the domain boundary for no-slip walls            |    Real     |  None     |
+| density            | Sets boundary density for mass inflows                                    |    Real     |  1.0      |
++--------------------+---------------------------------------------------------------------------+-------------+-----------+
+| tracer             | Sets boundary tracer for mass inflows                                     |    Real     |  0.0      |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
 
-To specify multiple mass inflows (e.g., define a jet and uniform background flow), provide multiple velocities for the region and define the physical extents of the sub-region. The first velocity is applied to the entire flow plane. Subsequent velocities are successively applied to the specified sub-regions. If multiple sub-regions overlap, the velocity of last specified region is used. An example of a uniform mass inflow with a square-jet centered at (0.5x0.5) is given below.
-
-
-.. code-block:: none
-
-   xlo.type = "mi"
-   xlo.velocity = 0.01  0.10
-
-   xlo.ylo =            0.25
-   xlo.yhi =            0.75
-   xlo.zlo =            0.25
-   xlo.zhi =            0.75
 
 

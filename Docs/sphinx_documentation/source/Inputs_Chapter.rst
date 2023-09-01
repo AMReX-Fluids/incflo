@@ -14,3 +14,4 @@ Run-time Inputs
    InputsPlotFiles
    InputsCheckpoint
    InputsVerbosity
+   InputsAlgorithm
