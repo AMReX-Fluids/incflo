@@ -65,7 +65,7 @@ files for different processes.  For example,
        mpiexec -n 4 valgrind --leak-check=yes --track-origins=yes --log-file=vallog.%p ./incflo.exe ...
 
 
-Also see AMReX's documentation on :ref:`amrex:sec:basics:debugging` for further suggestions. 
+Also see AMReX's documentation on :ref:`amrex:sec:basics:debugging` for further suggestions.
 
 If you believe you've encountered a bug or incorrect behavior in incflo, please report the issue
 on incflo's github page `here <https://github.com/AMReX-Codes/incflo/issues>`_ .
