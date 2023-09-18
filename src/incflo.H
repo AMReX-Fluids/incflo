@@ -651,7 +651,7 @@ private:
 
 #ifdef AMREX_USE_EB
     [[nodiscard]] static int nghost_eb_basic ()
-    { return 4; }
+    { return 5; }
 
     // We need 5 for doing StateRedistribution; otherwise 4 would be enough
     [[nodiscard]] static int nghost_eb_volume ()
