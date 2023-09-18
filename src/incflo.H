@@ -351,10 +351,6 @@ private:
 
     std::unique_ptr<Hydro::MacProjector> macproj;
 
-    int m_mac_mg_verbose = 0;
-    int m_mac_mg_bottom_verbose = 0;
-    int m_mac_mg_maxiter = 200;
-    int m_mac_mg_bottom_maxiter = 200;
     int m_mac_mg_max_coarsening_level = 100;
 
 #ifdef AMREX_USE_FLOAT

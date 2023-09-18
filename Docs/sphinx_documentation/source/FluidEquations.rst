@@ -10,7 +10,13 @@ Fluid Variables
    +-----------------------+--------------------------------------------------+
    | :math:`\tau`          | Viscous stress tensor                            |
    +-----------------------+--------------------------------------------------+
-   | :math:`g`             | Gravitational acceleration                       |
+   | :math:`\mu_s`         | scalar diffusivity                               |
+   +-----------------------+--------------------------------------------------+
+   | :math:`{\bf g}`       | Gravitational acceleration                       |
+   +-----------------------+--------------------------------------------------+
+   | :math:`{\bf H}_U`     | :math:`= (H_x , H_y , H_z )`, External Forces    |
+   +-----------------------+--------------------------------------------------+
+   | :math:`H_s`           | External sources                                 |
    +-----------------------+--------------------------------------------------+
 
 Fluid Equations
@@ -23,12 +29,15 @@ Conservation of fluid mass:
 Conservation of fluid momentum:
 
 .. math:: \frac{ \partial (\rho U)}{\partial t}
-   + \nabla \cdot (\rho U U) + \nabla p = \nabla \cdot \tau + \rho g
+   + \nabla \cdot (\rho U U) + \nabla p = \nabla \cdot \tau  + {\bf H}_U
 
 Incompressibility constraint:
 
 .. math:: \nabla \cdot U = 0
 
-Tracer(s) advection:
+Tracer(s):
 
-.. math:: \frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  = 0
+.. math:: \frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  =  \nabla \cdot \mu_s \nabla s + \rho H_s
+
+By default, :math:`H_s = 0` and :math:`{\bf H}_U = {\bf 0}`.
+If gravity is set during runtime, then :math:`{\bf H}_U` defaults to :math:`\rho {\bf g}`
