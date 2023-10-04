@@ -13,6 +13,7 @@ concurrency:
 
 jobs:
   hip_no_eb_3d:
+    if: ${{ github.repository == 'AMReX-Codes/incflo' || github.event_name != 'schedule' }}
     name: HIP NO EB 3D
     runs-on: ubuntu-20.04
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wextra-semi -Wunreachable-code -Wnon-virtual-dtor -Wno-deprecated-declarations -Wno-gnu-zero-variadic-macro-arguments"}

@@ -13,6 +13,7 @@ concurrency:
 
 jobs:
   sycl_eb_2d:
+    if: ${{ github.repository == 'AMReX-Codes/incflo' || github.event_name != 'schedule' }}
     name: SYCL EB 2D
     runs-on: ubuntu-latest
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wextra-semi -Wunreachable-code -Wnon-virtual-dtor -Wno-sign-compare -Wno-missing-braces"}
