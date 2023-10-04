@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Embedded Boundaries &mdash; incflo 23.10-dev documentation</title>
+  <title>Embedded Boundaries &mdash; incflo 23.11-dev documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
@@ -14,7 +14,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=94759461"></script>
+        <script src="_static/documentation_options.js?v=6905ab27"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -36,7 +36,7 @@
             incflo
           </a>
               <div class="version">
-                23.10-dev
+                23.11-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -92,7 +92,7 @@ the <code class="code highlight cpp c++ docutils literal highlight-c++"><span cl
 See <a class="reference external" href="https://mfix.netl.doe.gov/gitlab/exa/csg-eb">MFIX’s CSG-EB repository</a> for more details about this format.</p>
 <p>incflo provides several options of embedded boundary geometries. The inputs parameter <code class="docutils literal notranslate"><span class="pre">incflo.geometry</span> <span class="pre">=</span> <span class="pre">XXX</span></code>
 determines which geometry is selected by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">MakeEBGeometry</span><span class="p">()</span></code> within <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">embedded_boundaries</span></code>.
-The procedure to create your own EB geometry is described in the AMReX documentation on <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/EB.html#sec-eb-ebinit" title="(in amrex v23.10-dev)"><span>Initializing the Geometric Database</span></a>.
+The procedure to create your own EB geometry is described in the AMReX documentation on <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/EB.html#sec-eb-ebinit" title="(in amrex v23.11-dev)"><span>Initializing the Geometric Database</span></a>.
 As discussed in the AMReX documentation, note that when constructing the EB, we must specify a
 maxium coarsening level (<code class="docutils literal notranslate"><span class="pre">max_crse_level</span></code>):</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">EB2</span><span class="o">::</span><span class="n">Build</span><span class="p">(</span><span class="n">gshop</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">[</span><span class="n">lev</span><span class="p">],</span><span class="w"> </span><span class="n">required_crse_lev</span><span class="p">,</span><span class="w"> </span><span class="n">max_crse_level</span><span class="p">);</span>
