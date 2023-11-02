@@ -311,6 +311,10 @@ void incflo::InitialIterations ()
         copy_from_old_to_new_density();
         copy_from_old_to_new_tracer();
     }
+
+    // Reset dt to get initial step as specified, otherwise we can see increase to dt
+    m_prev_dt = Real(-1.0);
+    m_dt = Real(-1.0);
 }
 
 // Project velocity field to make sure initial velocity is divergence-free
