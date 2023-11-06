@@ -10,7 +10,7 @@ void incflo::Advance()
     Real strt_step = static_cast<Real>(ParallelDescriptor::second());
 
     // Compute time step size
-    int initialisation = 0;
+    int initialisation = ( m_dt < 0 );
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
     ComputeDt(initialisation, explicit_diffusion);
 
