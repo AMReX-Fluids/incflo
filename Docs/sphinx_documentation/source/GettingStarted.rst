@@ -32,7 +32,7 @@ First, make sure that git is installed on your machine.
 
    .. code:: shell
 
-         git clone https://github.com/AMReX-Codes/AMReX-Hydro.git
+         git clone https://github.com/AMReX-Fluids/AMReX-Hydro.git
 
    This will create a folder called ``AMReX-Hydro/`` on your machine.
 
@@ -40,7 +40,7 @@ First, make sure that git is installed on your machine.
 
    .. code:: shell
 
-         git clone https://github.com/AMReX-Codes/incflo.git
+         git clone https://github.com/AMReX-Fluids/incflo.git
 
    This will create a folder called ``incflo/`` on your machine.
 
@@ -371,5 +371,3 @@ Visualizing the Results
 =======================
 
 Options for visualizing the data are discussed in the AMReX Documenation on :ref:`amrex:Chap:Visualization`.
-
-

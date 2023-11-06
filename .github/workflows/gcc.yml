@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   gcc_eb_3d_super:
-    if: ${{ github.repository == 'AMReX-Codes/incflo' || github.event_name != 'schedule' }}
+    if: ${{ github.repository == 'AMReX-Fluids/incflo' || github.event_name != 'schedule' }}
     name: GCC EB 3D
     runs-on: ubuntu-latest
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
@@ -25,7 +25,7 @@ jobs:
     - name: Checkout AMReX-Hydro
       uses: actions/checkout@v3
       with:
-        repository: AMReX-Codes/AMReX-Hydro
+        repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
       uses: actions/checkout@v3
@@ -83,7 +83,7 @@ jobs:
         mpiexec -n 2 build/incflo.ex test_3d/benchmark.uniform_velocity_sphere incflo.verbose=1 mac_proj.verbose=1 nodal_proj.verbose=1
 
   gcc_no_eb_3d_lib:
-    if: ${{ github.repository == 'AMReX-Codes/incflo' || github.event_name != 'schedule' }}
+    if: ${{ github.repository == 'AMReX-Fluids/incflo' || github.event_name != 'schedule' }}
     name: GCC NO EB 3D
     runs-on: ubuntu-latest
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
@@ -95,7 +95,7 @@ jobs:
     - name: Checkout AMReX-Hydro
       uses: actions/checkout@v3
       with:
-        repository: AMReX-Codes/AMReX-Hydro
+        repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
       uses: actions/checkout@v3
@@ -168,7 +168,7 @@ jobs:
         mpiexec -n 2 build/incflo.ex test_no_eb_3d/benchmark.rayleigh_taylor max_step=3 incflo.verbose=1 mac_proj.verbose=1 nodal_proj.verbose=1
 
   gcc_eb_2d_lib:
-    if: ${{ github.repository == 'AMReX-Codes/incflo' || github.event_name != 'schedule' }}
+    if: ${{ github.repository == 'AMReX-Fluids/incflo' || github.event_name != 'schedule' }}
     name: GCC EB 2D
     runs-on: ubuntu-latest
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
@@ -180,7 +180,7 @@ jobs:
     - name: Checkout AMReX-Hydro
       uses: actions/checkout@v3
       with:
-        repository: AMReX-Codes/AMReX-Hydro
+        repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
       uses: actions/checkout@v3
@@ -253,7 +253,7 @@ jobs:
         build/incflo.ex test_2d/benchmark.eb_flow_sphere incflo.verbose=1 mac_proj.verbose=1 nodal_proj.verbose=1
 
   gcc_no_eb_2d_super:
-    if: ${{ github.repository == 'AMReX-Codes/incflo' || github.event_name != 'schedule' }}
+    if: ${{ github.repository == 'AMReX-Fluids/incflo' || github.event_name != 'schedule' }}
     name: GCC NO EB 2D
     runs-on: ubuntu-latest
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
@@ -265,7 +265,7 @@ jobs:
     - name: Checkout AMReX-Hydro
       uses: actions/checkout@v3
       with:
-        repository: AMReX-Codes/AMReX-Hydro
+        repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
       uses: actions/checkout@v3

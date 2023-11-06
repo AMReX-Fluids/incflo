@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20.0)
 
 project( incflo
    #VERSION 1.0
-   HOMEPAGE_URL "https://amrex-codes.github.io/incflo/"
+   HOMEPAGE_URL "https://amrex-fluids.github.io/incflo/"
    DESCRIPTION "An adaptive mesh, variable-density incompressible Navier-Stokes solver with no subcycling in time"
    LANGUAGES C CXX)
 

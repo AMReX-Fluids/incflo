@@ -33,7 +33,6 @@ Key software and algorithmic features of incflo include:
 
 -  Plotfile format supported by AmrVis, VisIt, ParaView, and yt.
 
-The incflo source code can be found at https://github.com/AMReX-Codes/incflo/.
+The incflo source code can be found at https://github.com/AMReX-Fluids/incflo/.
 incflo heavily leverages AMReX (see https://amrex-codes.github.io/) which is supported by
 ECP as part of the AMReX Co-Design Center.
-
