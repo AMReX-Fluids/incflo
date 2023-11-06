@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   cuda_eb_3d:
-    if: ${{ github.repository == 'AMReX-Codes/incflo' || github.event_name != 'schedule' }}
+    if: ${{ github.repository == 'AMReX-Fluids/incflo' || github.event_name != 'schedule' }}
     name: CUDA EB 3D
     runs-on: ubuntu-20.04
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
@@ -25,7 +25,7 @@ jobs:
     - name: Checkout AMReX-Hydro
       uses: actions/checkout@v3
       with:
-        repository: AMReX-Codes/AMReX-Hydro
+        repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
       uses: actions/checkout@v3
@@ -79,7 +79,7 @@ jobs:
         du -hs ~/.cache/ccache
 
   cuda_no_eb_2d:
-    if: ${{ github.repository == 'AMReX-Codes/incflo' || github.event_name != 'schedule' }}
+    if: ${{ github.repository == 'AMReX-Fluids/incflo' || github.event_name != 'schedule' }}
     name: CUDA NO EB 2D
     runs-on: ubuntu-20.04
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
@@ -91,7 +91,7 @@ jobs:
     - name: Checkout AMReX-Hydro
       uses: actions/checkout@v3
       with:
-        repository: AMReX-Codes/AMReX-Hydro
+        repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
       uses: actions/checkout@v3

@@ -24,13 +24,13 @@ Clone AMReX from the official Git repository
 
 Clone AMReX-Hydro from the official Git repository
 ```shell
-> git clone git@github.com:AMReX-Codes/AMReX-Hydro.git
+> git clone git@github.com:AMReX-Fluids/AMReX-Hydro.git
 ```
 
 ## Build and run an example incflo problem
 Clone and build incflo
 ```shell
-> git clone git@github.com:AMReX-Codes/incflo.git
+> git clone git@github.com:AMReX-Fluids/incflo.git
 > cd incflo/test_3d
 > make -j4
 > mpirun -np 4 incflo3d.gnu.MPI.ex benchmark.channel_cylinder-x

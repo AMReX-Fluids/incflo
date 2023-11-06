@@ -51,14 +51,14 @@ your fork.
 `development` on the main incflo repository.
 
 First, let us setup your local git repo. To make your own fork of the main
-repository, press the fork button on the [incflo Github page](https://github.com/AMReX-Codes/incflo).
+repository, press the fork button on the [incflo Github page](https://github.com/AMReX-Fluids/incflo).
 
 Then, clone incflo on your local computer. If you plan on doing a lot of incflo development,
 we recommend configuring your clone to use ssh access so you won't have to enter your Github
 password every time, which you can do using these commands:
 
 ```
-git clone git@github.com:AMReX-Codes/incflo.git
+git clone git@github.com:AMReX-Fluids/incflo.git
 cd incflo
 
 # Add your own fork.
@@ -78,7 +78,7 @@ machine, see
 If you instead prefer to use HTTPS authentication, configure your local clone as follows:
 
 ```
-git clone https://github.com/AMReX-Codes/incflo.git
+git clone https://github.com/AMReX-Fluids/incflo.git
 cd incflo
 
 # Add your own fork.
