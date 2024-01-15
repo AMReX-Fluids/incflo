@@ -656,7 +656,7 @@ void incflo::init_jump (Box const& vbx, Box const& /*gbx*/,
     else if (1102 == m_probtype) {
         direction = 2;
     }
-    
+
     int half_num_cells = domain.length(direction) / 2;
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
