@@ -12,7 +12,7 @@ steady_state            =  0            # Steady-state solver?
 incflo.fixed_dt             =   -1.e-5       # Use this constant dt if > 0
 incflo.cfl = 0.45
 
-incflo.do_initial_proj      =   0
+incflo.do_initial_proj      =   1
 incflo.initial_iterations   =   0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -32,6 +32,7 @@ incflo.mu               =   0.00       # Dynamic viscosity coefficient
 incflo.constant_density =   true         #
 
 incflo.advection_type        =  "Godunov" 
+incflo.diffusion_type        =  0
 incflo.redistribution_type   =  "StateRedist" 
 
 
@@ -53,10 +54,11 @@ geometry.prob_hi        =   1.  1.     # Hi corner coordinates
 geometry.is_periodic    =   0   0       # Periodicity x y z (0/1)
 
 # Boundary conditions
-xlo.type                =   "mi"
-xlo.velocity            =   1.0  0.0  0.0
+xlo.type                =   "mixed"
+#xlo.velocity            =   1.0  0.0  0.0
+xlo.pressure            =   0.0
 
-xhi.type                =   "po"
+xhi.type                =   "mixed"
 xhi.pressure            =   0.0
 
 ylo.type                =   "nsw"

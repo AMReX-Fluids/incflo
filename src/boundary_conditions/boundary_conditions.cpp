@@ -91,6 +91,24 @@ void incflo::init_bcs ()
             // tracer has Dirichlet bcs
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }
+        else if (bc_type == "mixed" )
+        {
+            amrex::Print() << bcid << " set to mixed inflow outflow.\n";
+
+            m_bc_type[ori] = BC::mixed;
+
+            pp.get("pressure", m_bc_pressure[ori]);
+
+            std::vector<Real> v;
+            if (pp.queryarr("velocity", v, 0, AMREX_SPACEDIM)) {
+               for (int i=0; i<AMREX_SPACEDIM; i++){
+                   m_bc_velocity[ori][i] = v[i];
+               }
+            }
+
+            pp.query("density", m_bc_density[ori]);
+            pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
+        }
         else
         {
             m_bc_type[ori] = BC::undefined;
@@ -146,7 +164,9 @@ void incflo::init_bcs ()
             Orientation::Side side = ori.faceDir();
             auto const bct = m_bc_type[ori];
             if (bct == BC::pressure_inflow ||
-                bct == BC::pressure_outflow)
+                bct == BC::pressure_outflow ||
+                bct == BC::mixed ) // BC_mask will handle Dirichlet part.
+
             {
                 if (side == Orientation::low) {
                     AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::foextrap);,

@@ -566,8 +566,11 @@ private:
 
     enum struct BC {
         pressure_inflow, pressure_outflow, mass_inflow, no_slip_wall, slip_wall,
-        periodic, undefined
+        periodic, mixed, undefined
     };
+
+    // mask for mixed BCs: 1 = Neumann, 0 = Dirichlet
+    amrex::Vector<std::unique_ptr<amrex::iMultiFab>> m_BC_mask;
 
     amrex::GpuArray<BC                         , AMREX_SPACEDIM*2> m_bc_type;
     amrex::GpuArray<amrex::Real                , AMREX_SPACEDIM*2> m_bc_pressure;
