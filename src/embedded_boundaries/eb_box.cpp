@@ -34,7 +34,7 @@ void incflo::make_eb_box()
         Vector<Real> boxLo(AMREX_SPACEDIM), boxHi(AMREX_SPACEDIM);
         Real offset = 1.0e-15;
         bool inside = true;
-        
+
         for(int i = 0; i < AMREX_SPACEDIM; i++)
         {
             boxLo[i] = geom[0].ProbLo(i);
@@ -84,12 +84,12 @@ void incflo::make_eb_box()
 
         RealArray lo {AMREX_D_DECL(xlo, ylo, zlo)};
         RealArray hi {AMREX_D_DECL(xhi, yhi, zhi)};
-        
+
         EB2::BoxIF my_box(lo, hi, inside);
 
         // Generate GeometryShop
         auto gshop = EB2::makeShop(my_box);
-        
+
         // Build index space
         int max_level_here = 0;
         int max_coarsening_level = 100;

@@ -109,7 +109,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
         vel.push_back(&(m_leveldata[lev]->velocity));
         vel[lev]->setBndry(0.0);
         if (!proj_for_small_dt && !incremental) {
-            IntVect nghost(1); 
+            IntVect nghost(1);
             PhysBCFunct<GpuBndryFuncFab<IncfloVelFill> > physbc
                 (geom[lev], get_velocity_bcrec(), IncfloVelFill{m_probtype, m_bc_velocity});
             physbc(*vel[lev], 0, AMREX_SPACEDIM, nghost, time, 0);
