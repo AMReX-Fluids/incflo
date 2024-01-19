@@ -110,7 +110,6 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void set_inflow_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost);
 #ifdef AMREX_USE_EB
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
     void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
@@ -211,8 +210,6 @@ public:
     ///////////////////////////////////////////////////////////////////////////
 
     void prob_init_fluid (int lev);
-    void prob_set_inflow_velocity (int grid_id, amrex::Orientation ori, amrex::Box const& bx,
-                                   amrex::Array4<amrex::Real> const& v, int lev, amrex::Real time);
 
 #include "incflo_prob_I.H"
 #include "incflo_prob_usr_I.H"

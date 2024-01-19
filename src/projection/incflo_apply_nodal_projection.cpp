@@ -107,7 +107,16 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
         vel.push_back(&(m_leveldata[lev]->velocity));
         vel[lev]->setBndry(0.0);
         if (!proj_for_small_dt && !incremental) {
-            set_inflow_velocity(lev, time, *vel[lev], 1);
+            //set_inflow_velocity(lev, time, *vel[lev], 1);
+            PhysBCFunct<GpuBndryFuncFab<IncfloVelFill> > physbc
+                (geom[lev], bcrec, IncfloVelFill{m_probtype, m_bc_velocity});
+            physbcf(*vel[lev], 0, AMREX_SPACEDIM, 1, time, 0);
+
+            //FIXME? Not sure we really need this
+            // We make sure to only fill "nghost" ghost cells so we don't accidentally
+            // over-write good ghost cell values with unfilled ghost cell values
+            vel.EnforcePeriodicity(0,AMREX_SPACEDIM,IntVect::Unit,gm.periodicity());
+
         }
     }
 
