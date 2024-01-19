@@ -1,5 +1,7 @@
 #include <AMReX_BC_TYPES.H>
+#include <AMReX_PhysBCFunct.H>
 #include <incflo.H>
+#include <prob_bc.H>
 #include <memory>
 
 using namespace amrex;
@@ -107,15 +109,15 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
         vel.push_back(&(m_leveldata[lev]->velocity));
         vel[lev]->setBndry(0.0);
         if (!proj_for_small_dt && !incremental) {
-            //set_inflow_velocity(lev, time, *vel[lev], 1);
+            IntVect nghost(1); 
             PhysBCFunct<GpuBndryFuncFab<IncfloVelFill> > physbc
-                (geom[lev], bcrec, IncfloVelFill{m_probtype, m_bc_velocity});
-            physbcf(*vel[lev], 0, AMREX_SPACEDIM, 1, time, 0);
+                (geom[lev], get_velocity_bcrec(), IncfloVelFill{m_probtype, m_bc_velocity});
+            physbc(*vel[lev], 0, AMREX_SPACEDIM, nghost, time, 0);
 
             //FIXME? Not sure we really need this
             // We make sure to only fill "nghost" ghost cells so we don't accidentally
             // over-write good ghost cell values with unfilled ghost cell values
-            vel.EnforcePeriodicity(0,AMREX_SPACEDIM,IntVect::Unit,gm.periodicity());
+            vel[lev]->EnforcePeriodicity(0, AMREX_SPACEDIM, nghost, geom[lev].periodicity());
 
         }
     }
