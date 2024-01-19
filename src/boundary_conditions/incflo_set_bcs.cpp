@@ -41,6 +41,36 @@ incflo::set_inflow_velocity (int lev, amrex::Real time, MultiFab& vel, int nghos
     vel.EnforcePeriodicity(0,AMREX_SPACEDIM,ng_vect,gm.periodicity());
 }
 
+void
+incflo::set_mixedBC_mask (int lev, amrex::Real time, MultiFab& mask)
+{
+    Geometry const& gm = Geom(lev);
+    Box const& domain = gm.Domain();
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        Orientation olo(dir,Orientation::low);
+        Orientation ohi(dir,Orientation::high);
+        if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+            Box dlo = (m_bc_type[olo] == BC::mixed) ? surroundingNodes(bdryLo(domain,dir)) : Box();
+            Box dhi = (m_bc_type[ohi] == BC::mixed) ? surroundingNodes(bdryhi(domain,dir)) : Box();
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            for (MFIter mfi(mask); mfi.isValid(); ++mfi) {
+                Box blo = mfi.validbox() & dlo;
+                Box bhi = mfi.validbox() & dhi;
+                Array4<Real> const& mask_arr = mask[mfi].array();
+                int gid = mfi.index();
+                if (blo.ok()) {
+                    prob_set_mixedBC_mask(olo, blo, mask_arr, lev, time);
+                }
+                if (bhi.ok()) {
+                    prob_set_mixedBC_mask(ohi, bhi, mask_arr, lev, time);
+                }
+            }
+        }
+    }
+}
+
 #ifdef AMREX_USE_EB
 void
 incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int nghost)

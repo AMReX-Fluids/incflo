@@ -46,6 +46,16 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
             laps_o.define(ba, dm, ntrac, 0, MFInfo(), fact);
         }
     }
+
+    // Only need BC_mask for mixed
+    for (OrientationIter oit; oit; ++oit) {
+        if (m_bc_type[oit()] == BC::mixed )
+        {
+            // MLNodeLap does not require any ghost cells...
+            mixedBC_mask.define(amrex::convert(ba,IntVect::TheNodeVector()), dm, 1, 0);
+            break;
+        }
+    }
 }
 
 // Resize all arrays when instance of incflo class is constructed.

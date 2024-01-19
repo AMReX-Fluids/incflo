@@ -111,6 +111,7 @@ public:
     ///////////////////////////////////////////////////////////////////////////
 
     void set_inflow_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost);
+    void set_mixedBC_mask (int lev, amrex::Real time, amrex::MultiFab& mask);
 #ifdef AMREX_USE_EB
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
     void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
@@ -213,6 +214,8 @@ public:
     void prob_init_fluid (int lev);
     void prob_set_inflow_velocity (int grid_id, amrex::Orientation ori, amrex::Box const& bx,
                                    amrex::Array4<amrex::Real> const& v, int lev, amrex::Real time);
+    void prob_set_mixedBC_mask (amrex::Orientation ori, amrex::Box const& bx,
+                                amrex::Array4<amrex::Real> const& mask, int lev, amrex::Real time);
 
 #include "incflo_prob_I.H"
 #include "incflo_prob_usr_I.H"
@@ -558,6 +561,11 @@ private:
         amrex::MultiFab divtau_o;
         amrex::MultiFab laps;
         amrex::MultiFab laps_o;
+
+        // mask for mixed BCs: 1 = inflow (Neumann for NodalProj, Dirichlet for advection),
+        //                     0 = outflow (Homogeneous Dirichlet for NodalProj, FOEXTRAP for advection)
+        amrex::iMultiFab mixedBC_mask;
+
     };
 
     amrex::Vector<std::unique_ptr<LevelData> > m_leveldata;
@@ -568,9 +576,6 @@ private:
         pressure_inflow, pressure_outflow, mass_inflow, no_slip_wall, slip_wall,
         periodic, mixed, undefined
     };
-
-    // mask for mixed BCs: 1 = Neumann, 0 = Dirichlet
-    amrex::Vector<std::unique_ptr<amrex::iMultiFab>> m_BC_mask;
 
     amrex::GpuArray<BC                         , AMREX_SPACEDIM*2> m_bc_type;
     amrex::GpuArray<amrex::Real                , AMREX_SPACEDIM*2> m_bc_pressure;
