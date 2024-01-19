@@ -94,6 +94,14 @@ void incflo::init_bcs ()
         else if (bc_type == "mixed" )
         {
             amrex::Print() << bcid << " set to mixed inflow outflow.\n";
+#ifdef AMREX_USE_EB
+            if (EBFactory(0).isAllRegular())
+#endif
+            {
+                Abort("For now, mixed BCs must be separated by an EB");
+            }
+            Warning("Using BC type mixed requires that the Dirichlet and Neumann regions are separated by EB.");
+// Actually, this may only be a requirement for multilevel, but not 100% sure advection would still be good for single level no EB...
 
             m_bc_type[ori] = BC::mixed;
 
