@@ -157,10 +157,10 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
 
     if(m_mixedBC_mask[0])
     {
-      for(int lev = 0; lev <= finest_level; ++lev)
-      {
-	nodal_projector->getLinOp().setOversetMask(lev, *m_mixedBC_mask[lev]);
-      }
+        for(int lev = 0; lev <= finest_level; ++lev)
+        {
+            nodal_projector->getLinOp().setOversetMask(lev, *m_mixedBC_mask[lev]);
+        }
     }
 
 #endif

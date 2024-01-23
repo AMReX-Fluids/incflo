@@ -21,9 +21,9 @@ incflo::make_mixedBC_mask(int lev,
     }
 
     if (!has_mixedBC) { return; }
-            
 
-    // MLNodeLap does not require any ghost cells...    
+
+    // MLNodeLap does not require any ghost cells...
     std::unique_ptr<iMultiFab> new_mask(new iMultiFab(amrex::convert(ba,IntVect::TheNodeVector()),
                                                       dm, 1, 0));
     *new_mask = 1;
