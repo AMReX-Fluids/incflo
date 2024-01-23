@@ -3,11 +3,12 @@
 using namespace amrex;
 
 void incflo::prob_set_mixedBC_mask (Orientation ori, Box const& bx,
-                                    Array4<Real> const& mask, int lev, Real /*time*/)
+                                    Array4<int> const& mask, int lev)
 {
     if (1100 == m_probtype || 1101 == m_probtype || 1102 == m_probtype)
     {
         const int direction = ori.coordDir();
+        Box const& domain = geom[lev].Domain();
         int half_num_cells  = domain.length(direction) / 2;
 
         Orientation::Side side = ori.faceDir();
@@ -54,6 +55,6 @@ void incflo::prob_set_mixedBC_mask (Orientation ori, Box const& bx,
     else
     {
         Abort("incflo::prob_set_mixedBC_mask: No masking function for probtype "
-              +std::to_string(probtype));
+              +std::to_string(m_probtype));
     }
 }

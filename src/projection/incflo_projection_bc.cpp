@@ -24,6 +24,11 @@ incflo::get_nodal_projection_bc (Orientation::Side side) const noexcept
                 r[dir] = LinOpBCType::inflow;
                 break;
             }
+            case BC::mixed:
+            {
+                r[dir] = LinOpBCType::inflow;
+                break;
+            }
             case BC::slip_wall:
             case BC::no_slip_wall:
             {

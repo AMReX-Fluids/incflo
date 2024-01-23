@@ -7,8 +7,27 @@
 using namespace amrex;
 
 void
-incflo::set_mixedBC_mask (int lev, amrex::Real time, MultiFab& mask)
+incflo::make_mixedBC_mask(int lev,
+                          const BoxArray& ba, // do we really need to pass these, use member vars? - i think we need to pass to be safe when calling from RemakeLevel...
+                          const DistributionMapping& dm)
 {
+    bool has_mixedBC = false;
+    for (OrientationIter oit; oit; ++oit) {
+        if (m_bc_type[oit()] == BC::mixed )
+        {
+            has_mixedBC = true;
+            break;
+        }
+    }
+
+    if (!has_mixedBC) { return; }
+            
+
+    // MLNodeLap does not require any ghost cells...    
+    std::unique_ptr<iMultiFab> new_mask(new iMultiFab(amrex::convert(ba,IntVect::TheNodeVector()),
+                                                      dm, 1, 0));
+    *new_mask = 1;
+
     Geometry const& gm = Geom(lev);
     Box const& domain = gm.Domain();
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
@@ -16,24 +35,25 @@ incflo::set_mixedBC_mask (int lev, amrex::Real time, MultiFab& mask)
         Orientation ohi(dir,Orientation::high);
         if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
             Box dlo = (m_bc_type[olo] == BC::mixed) ? surroundingNodes(bdryLo(domain,dir)) : Box();
-            Box dhi = (m_bc_type[ohi] == BC::mixed) ? surroundingNodes(bdryhi(domain,dir)) : Box();
+            Box dhi = (m_bc_type[ohi] == BC::mixed) ? surroundingNodes(bdryHi(domain,dir)) : Box();
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-            for (MFIter mfi(mask); mfi.isValid(); ++mfi) {
+            for (MFIter mfi(*new_mask); mfi.isValid(); ++mfi) {
                 Box blo = mfi.validbox() & dlo;
                 Box bhi = mfi.validbox() & dhi;
-                Array4<Real> const& mask_arr = mask[mfi].array();
-                int gid = mfi.index();
+                Array4<int> const& mask_arr = new_mask->array(mfi);
                 if (blo.ok()) {
-                    prob_set_mixedBC_mask(olo, blo, mask_arr, lev, time);
+                    prob_set_mixedBC_mask(olo, blo, mask_arr, lev);
                 }
                 if (bhi.ok()) {
-                    prob_set_mixedBC_mask(ohi, bhi, mask_arr, lev, time);
+                    prob_set_mixedBC_mask(ohi, bhi, mask_arr, lev);
                 }
             }
         }
     }
+
+    m_mixedBC_mask[lev] = std::move(new_mask);
 }
 
 #ifdef AMREX_USE_EB

@@ -95,7 +95,12 @@ void incflo::init_bcs ()
         {
             amrex::Print() << bcid << " set to mixed inflow outflow.\n";
 #ifdef AMREX_USE_EB
-            if (EBFactory(0).isAllRegular())
+            ParmParse ipp("incflo");
+
+            std::string eb_geom = "null";
+            ipp.query("geometry", eb_geom);
+            eb_geom = amrex::toLower(eb_geom);
+            if (eb_geom == "null" || eb_geom == "all_regular")
 #endif
             {
                 Abort("For now, mixed BCs must be separated by an EB");

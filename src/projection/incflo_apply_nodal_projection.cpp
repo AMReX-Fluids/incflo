@@ -114,7 +114,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
             amrex::Vector<amrex::BCRec> inflow_bcr;
             inflow_bcr.resize(AMREX_SPACEDIM);
             for (OrientationIter oit; oit; ++oit) {
-                if (m_bc_type[oit()] == BC::mass_inflow) {
+                if (m_bc_type[oit()] == BC::mass_inflow || m_bc_type[oit()] == BC::mixed) {
                     AMREX_D_TERM(inflow_bcr[0].set(oit(), BCType::ext_dir);,
                                  inflow_bcr[1].set(oit(), BCType::ext_dir);,
                                  inflow_bcr[2].set(oit(), BCType::ext_dir));
@@ -154,6 +154,15 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
           nodal_projector->getLinOp().setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
        }
     }
+
+    if(m_mixedBC_mask[0])
+    {
+      for(int lev = 0; lev <= finest_level; ++lev)
+      {
+	nodal_projector->getLinOp().setOversetMask(lev, *m_mixedBC_mask[lev]);
+      }
+    }
+
 #endif
 
     nodal_projector->project(m_nodal_mg_rtol, m_nodal_mg_atol);

@@ -110,7 +110,8 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void set_mixedBC_mask (int lev, amrex::Real time, amrex::MultiFab& mask);
+    void make_mixedBC_mask (int lev, const amrex::BoxArray& ba,
+                            const amrex::DistributionMapping& dm);
 #ifdef AMREX_USE_EB
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
     void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
@@ -212,7 +213,7 @@ public:
 
     void prob_init_fluid (int lev);
     void prob_set_mixedBC_mask (amrex::Orientation ori, amrex::Box const& bx,
-                                amrex::Array4<amrex::Real> const& mask, int lev, amrex::Real time);
+                                amrex::Array4<int> const& mask, int lev);
 
 #include "incflo_prob_I.H"
 #include "incflo_prob_usr_I.H"
@@ -558,11 +559,6 @@ private:
         amrex::MultiFab divtau_o;
         amrex::MultiFab laps;
         amrex::MultiFab laps_o;
-
-        // mask for mixed BCs: 1 = inflow (Neumann for NodalProj, Dirichlet for advection),
-        //                     0 = outflow (Homogeneous Dirichlet for NodalProj, FOEXTRAP for advection)
-        amrex::iMultiFab mixedBC_mask;
-
     };
 
     amrex::Vector<std::unique_ptr<LevelData> > m_leveldata;
@@ -574,6 +570,10 @@ private:
         periodic, mixed, undefined
     };
 
+    // mask for mixed BCs: 1 = inflow (Neumann for NodalProj, Dirichlet for advection),
+    //                     0 = outflow (Homogeneous Dirichlet for NodalProj, FOEXTRAP for advection)
+    amrex::Vector<std::unique_ptr<amrex::iMultiFab> > m_mixedBC_mask;
+
     amrex::GpuArray<BC                         , AMREX_SPACEDIM*2> m_bc_type;
     amrex::GpuArray<amrex::Real                , AMREX_SPACEDIM*2> m_bc_pressure;
     amrex::GpuArray<amrex::Real                , AMREX_SPACEDIM*2> m_bc_density;
@@ -583,6 +583,7 @@ private:
     amrex::Vector<amrex::Real>                                     m_bc_eb_velocity;
 
     // amrex::Vector cannot be used on gpu, so ...
+    // FIXME? can probably let go of this an treat like vel...
     amrex::GpuArray<amrex::Real const*, AMREX_SPACEDIM*2> m_bc_tracer_d;
     amrex::Gpu::DeviceVector<amrex::Real> m_bc_tracer_raii;
     //
