@@ -114,7 +114,7 @@ incflo::compute_MAC_projected_velocities (
         // Not sure exactly where this goes. Does it only need initialization? set every time???
         // initProj only take as many levels as 1/rho, so if a level is added, would have to
         // re-init proj anyway.
-        // robin_a, etc needs to exist to finest_level and that's it 
+        // robin_a, etc needs to exist to finest_level and that's it
         // Values need to be in the ghost cells, although the BC is considered on face.
         if ( m_mixedBC_mask[0] ) {
             int nghost = 1;
@@ -152,16 +152,16 @@ incflo::compute_MAC_projected_velocities (
                         Array4<Real> const& f_arr     = robin_f.array(mfi);
                         Array4<int const> const& mask = m_mixedBC_mask[lev]->const_array(mfi);
 
+                        // Robin BC:   a u + b du/dn = f  -- inflow,  Neumann   a=0, b=1, f=0
+                        //                                -- outflow, Dirichlet a=1, b=0, f=0
                         if (blo.ok()) {
+                            // robin_b is the same as the mixedBC_mask, except with vals in
+                            // cell-centered ghosts rather than on BC face.
+                            // So, lo side i_cc->i_nd+1, hi side i_cc=i_nd
+                            Dim3 shift = IntVect::TheDimensionVector(dir).dim3();
+
                             amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                             {
-                                // Robin BC:   a u + b du/dn = f  -- inflow,  Neumann   a=0, b=1, f=0
-                                //                                -- outflow, Dirichlet a=1, b=0, f=0 
-                                // robin_b is the same as the mixedBC_mask, except with vals in
-                                // cell-centered ghosts rather than on BC face.
-                                // So, lo side i_cc->i_nd+1, hi side i_cc=i_nd 
-                                Dim3 shift = TheDimensionVector(dir).dim3();
-
                                 b_arr(i,j,k) = mask(i+shift.x, j+shift.y, k+shift.z);
                                 //robin_a is the "opposite" of b; 0->1 and vice versa
                                 a_arr(i,j,k) = (mask(i+shift.x, j+shift.y, k+shift.z) == 1) ? 0. : 1.;
@@ -179,7 +179,7 @@ incflo::compute_MAC_projected_velocities (
                     }
                 }
 
-                macproj->setLevelBC(lev, nullptr, robin_a, robin_b, robin_f);
+                macproj->setLevelBC(lev, nullptr, &robin_a, &robin_b, &robin_f);
             }
         }
     } else {
@@ -224,11 +224,67 @@ incflo::compute_MAC_projected_velocities (
                                       l_advection_type);
     }
 
-    // Fix up the mixedBC faces which went through advection with FOEXTRAP (outflow) BCs
-    // Here we overwrite the inflow portion with the Dirichlet BC
-    // NOTE - there's a subtle difference in this versus what AMReX-Hydro does. See comment
-    // in Utils/hydro_bcs_K.H
     if (m_mixedBC_mask[0]) {
+        // Fix up the mixedBC faces which went through advection with FOEXTRAP (outflow) BCs
+        // Here we overwrite the inflow portion with the Dirichlet BC
+        // NOTE - there's a subtle difference in this versus what AMReX-Hydro does. See comment
+        // in Utils/hydro_bcs_K.H . If weird gradients start arising at the inflow, we might
+        // want to revisit this...
+        // vel has filled ghost cells, this is needed for ExtrapVel
+        for (int lev = 0; lev <= finest_level; ++lev)
+        {
+            int nghost = 1;
+            Box const& domain = Geom(lev).growPeriodicDomain(nghost);
+            for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+                Orientation olo(dir,Orientation::low);
+                Orientation ohi(dir,Orientation::high);
+                
+                Box dlo = amrex::adjCellLo(domain,dir,nghost);
+                Box dhi = amrex::adjCellHi(domain,dir,nghost);
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+                for (MFIter mfi(*vel[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+                    Box const& gbx = amrex::grow(mfi.validbox(),1);
+                    Box blo = gbx & dlo;
+                    Box bhi = gbx & dhi;
+
+                    MultiFab* mac;
+                    if (dir == 0) {
+                        mac = u_mac[lev]; }
+                    else if (dir == 1) {
+                        mac = v_mac[lev]; }
+#if AMREX_SPACEDIM > 2
+                    else {
+                        mac = w_mac[lev];
+                    }
+#endif
+                    Array4<Real      > const& mac_arr = mac->array(mfi);
+                    Array4<Real const> const& vel_arr = vel[lev]->array(mfi, dir);
+                    Array4<int  const> const& mask    = m_mixedBC_mask[lev]->const_array(mfi);
+
+                    if (blo.ok()) {
+                        Dim3 shift = IntVect::TheDimensionVector(dir).dim3();
+                        
+                        amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        {
+                            if (mask(i+shift.x, j+shift.y, k+shift.z) == 1) // inflow
+                            {
+                                mac_arr(i+shift.x, j+shift.y, k+shift.z) = vel_arr(i,j,k);
+                            }
+                        });
+                    }
+                    if (bhi.ok()) {
+                        amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        {
+                            if (mask(i,j,k) == 1) {
+                                mac_arr(i,j,k) = vel_arr(i,j,k);
+                            }
+                        });
+                    }
+                }
+            }
+        }
     }
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
