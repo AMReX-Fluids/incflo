@@ -55,10 +55,11 @@ geometry.is_periodic    =   0   0       # Periodicity x y z (0/1)
 
 # Boundary conditions
 xlo.type                =   "mixed"
-#xlo.velocity            =   1.0  0.0  0.0
+xlo.velocity            =   1.0  0.0  0.0
 xlo.pressure            =   0.0
 
 xhi.type                =   "mixed"
+xhi.velocity            =   1.0  0.0  0.0
 xhi.pressure            =   0.0
 
 ylo.type                =   "nsw"
