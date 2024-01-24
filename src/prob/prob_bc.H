@@ -24,6 +24,8 @@ struct IncfloVelFill
                      const int orig_comp) const
     {
         // do something for external Dirichlet (amrex::BCType::ext_dir)
+        // and for the Dirichlet part of mixed BCs - which gets FOEXTRAP so the
+        // Neumann part is already filled before arriving here during FillPatch.
         const int i = iv[0];
         const int j = iv[1];
 #if (AMREX_SPACEDIM == 3)
@@ -38,7 +40,27 @@ struct IncfloVelFill
         {
             const amrex::BCRec& bc = bcr[bcomp+nc];
 
-            if (bc.lo(0) == amrex::BCType::ext_dir && i < domain_box.smallEnd(0))
+            //if (1100 == probtype || 1101 == probtype || 1102 == probtype)
+            if (1101 == probtype)
+            {
+                int direction = 1;
+                int half_num_cells = domain_box.length(direction) / 2;
+                if (i < domain_box.smallEnd(0))
+                {
+                    if (j > half_num_cells) {
+                        // Here we take the inflow BC specified in inputs file
+                        vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
+                    }
+                }
+                else if (i > domain_box.bigEnd(0))
+                {
+                    if (j <= half_num_cells) {
+                        // Here we take minus the inflow BC specified in inputs file
+                        vel(i,j,k,dcomp+nc) = -bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
+                    }
+                }
+            }
+            else if (bc.lo(0) == amrex::BCType::ext_dir && i < domain_box.smallEnd(0))
             {
                 vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
 
