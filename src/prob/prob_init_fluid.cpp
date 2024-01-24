@@ -166,14 +166,6 @@ void incflo::prob_init_fluid (int lev)
                                   ld.tracer.array(mfi),
                                   domain, dx, problo, probhi);
         }
-        else if (51 == m_probtype)
-        {
-            init_jump(vbx, gbx,
-                      ld.velocity.array(mfi),
-                      ld.density.array(mfi),
-                      ld.tracer.array(mfi),
-                      domain, dx, problo, probhi);
-        }
 #if 0
         else if (500 == m_probtype)
         {
@@ -662,7 +654,7 @@ void incflo::init_jump (Box const& vbx, Box const& /*gbx*/,
     {
         if (direction == 0) {
             if (i <= half_num_cells) {
-                vel(i,j,k,0) = -vel(i,j,k,0);
+                vel(i,j,k,2) = -vel(i,j,k,2);
             }
         }
         else if (direction == 1) {
@@ -672,7 +664,7 @@ void incflo::init_jump (Box const& vbx, Box const& /*gbx*/,
         }
         else if (direction == 2) {
             if (k <= half_num_cells) {
-                vel(i,j,k,0) = -vel(i,j,k,0);
+                vel(i,j,k,1) = -vel(i,j,k,1);
             }
         }
     });

@@ -7,7 +7,13 @@ void incflo::prob_set_mixedBC_mask (Orientation ori, Box const& bx,
 {
     if (1100 == m_probtype || 1101 == m_probtype || 1102 == m_probtype)
     {
-        const int direction = ori.coordDir();
+        int direction = 0;
+        if (1101 == m_probtype) {
+            direction = 1;
+        }
+        else if (1102 == m_probtype) {
+            direction = 2;
+        }
         Box const& domain = geom[lev].Domain();
         int half_num_cells  = domain.length(direction) / 2;
 
