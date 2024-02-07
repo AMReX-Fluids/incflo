@@ -94,6 +94,7 @@ void incflo::init_bcs ()
         else if (bc_type == "mixed" )
         {
             amrex::Print() << bcid << " set to mixed inflow outflow.\n";
+            m_has_mixedBC = true;
 #ifdef AMREX_USE_EB
             ParmParse ipp("incflo");
 

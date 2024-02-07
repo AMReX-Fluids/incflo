@@ -223,7 +223,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
     if (m_restart_file.empty()) {
         prob_init_fluid(lev);
     }
-    make_mixedBC_mask(lev, grids[lev], dmap[lev]);
+    //make_mixedBC_mask(lev, grids[lev], dmap[lev]);
 
 #ifdef AMREX_USE_EB
     macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level),

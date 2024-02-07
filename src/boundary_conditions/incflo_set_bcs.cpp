@@ -6,27 +6,49 @@
 
 using namespace amrex;
 
-void
-incflo::make_mixedBC_mask(int lev,
-                          const BoxArray& ba, // do we really need to pass these, use member vars? - i think we need to pass to be safe when calling from RemakeLevel...
-                          const DistributionMapping& dm)
+iMultiFab
+incflo::make_ccBC_mask(int lev)
 {
-    bool has_mixedBC = false;
-    for (OrientationIter oit; oit; ++oit) {
-        if (m_bc_type[oit()] == BC::mixed )
-        {
-            has_mixedBC = true;
-            break;
+    // BC info stored in ghost cell.
+    iMultiFab new_mask(grids[lev], dmap[lev], 1, 1);
+// No expectation in MLMG for there to be valid data where there is no Robin BC
+    //new_mask = 0;
+
+    Geometry const& gm = Geom(lev);
+    Box const& domain = gm.Domain();
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        Orientation olo(dir,Orientation::low);
+        Orientation ohi(dir,Orientation::high);
+        if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+            Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
+            Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            for (MFIter mfi(new_mask); mfi.isValid(); ++mfi) {
+                Box blo = mfi.growntilebox() & dlo;
+                Box bhi = mfi.growntilebox() & dhi;
+                Array4<int> const& mask_arr = new_mask.array(mfi);
+                if (blo.ok()) {
+                    prob_set_BC_MF(olo, blo, mask_arr, lev);
+                }
+                if (bhi.ok()) {
+                    prob_set_BC_MF(ohi, bhi, mask_arr, lev);
+                }
+            }
         }
     }
 
-    if (!has_mixedBC) { return; }
+    return new_mask;
+}
 
-
+iMultiFab
+incflo::make_nodalBC_mask(int lev)
+{
     // MLNodeLap does not require any ghost cells...
-    std::unique_ptr<iMultiFab> new_mask(new iMultiFab(amrex::convert(ba,IntVect::TheNodeVector()),
-                                                      dm, 1, 0));
-    *new_mask = 1;
+    iMultiFab new_mask(amrex::convert(grids[lev], IntVect::TheNodeVector()), dmap[lev], 1, 0);
+    // Overset mask needs to be defined everywhere
+    new_mask = 1;
 
     Geometry const& gm = Geom(lev);
     Box const& domain = gm.Domain();
@@ -39,22 +61,122 @@ incflo::make_mixedBC_mask(int lev,
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-            for (MFIter mfi(*new_mask); mfi.isValid(); ++mfi) {
+            for (MFIter mfi(new_mask); mfi.isValid(); ++mfi) {
                 Box blo = mfi.validbox() & dlo;
                 Box bhi = mfi.validbox() & dhi;
-                Array4<int> const& mask_arr = new_mask->array(mfi);
+                Array4<int> const& mask_arr = new_mask.array(mfi);
                 if (blo.ok()) {
-                    prob_set_mixedBC_mask(olo, blo, mask_arr, lev);
+                    prob_set_BC_MF(olo, blo, mask_arr, lev);
                 }
                 if (bhi.ok()) {
-                    prob_set_mixedBC_mask(ohi, bhi, mask_arr, lev);
+                    prob_set_BC_MF(ohi, bhi, mask_arr, lev);
                 }
             }
         }
     }
 
-    m_mixedBC_mask[lev] = std::move(new_mask);
+    return new_mask;
 }
+
+// void
+// incflo::make_ccBC_mask(int lev,
+//                        const BoxArray& ba, // do we really need to pass these, use member vars? - i think we need to pass to be safe when calling from RemakeLevel...
+//                        const DistributionMapping& dm)
+// {
+//     bool has_mixedBC = false;
+//     for (OrientationIter oit; oit; ++oit) {
+//         if (m_bc_type[oit()] == BC::mixed )
+//         {
+//             has_mixedBC = true;
+//             break;
+//         }
+//     }
+
+//     if (!has_mixedBC) { return; }
+
+
+//     // BC info stored in ghost cell.
+//     std::unique_ptr<iMultiFab> new_mask(new iMultiFab(ba, dm, 1, 1));
+//     *new_mask = 0;
+
+//     Geometry const& gm = Geom(lev);
+//     Box const& domain = gm.Domain();
+//     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+//         Orientation olo(dir,Orientation::low);
+//         Orientation ohi(dir,Orientation::high);
+//         if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+//             Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
+//             Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
+// #ifdef _OPENMP
+// #pragma omp parallel if (Gpu::notInLaunchRegion())
+// #endif
+//             for (MFIter mfi(*new_mask); mfi.isValid(); ++mfi) {
+//                 Box blo = mfi.growntilebox() & dlo;
+//                 Box bhi = mfi.growntilebox() & dhi;
+//                 Array4<int> const& mask_arr = new_mask->array(mfi);
+//                 if (blo.ok()) {
+//                     prob_set_BC_MF(olo, blo, mask_arr, lev);
+//                 }
+//                 if (bhi.ok()) {
+//                     prob_set_BC_MF(ohi, bhi, mask_arr, lev);
+//                 }
+//             }
+//         }
+//     }
+
+//     m_BC_MF[lev] = std::move(new_mask);
+// }
+
+// void
+// incflo::make_nodalBC_mask(int lev,
+//                           const BoxArray& ba, // do we really need to pass these, use member vars? - i think we need to pass to be safe when calling from RemakeLevel...
+//                           const DistributionMapping& dm)
+// {
+//     // FIXME do we really want this check here?
+//     bool has_mixedBC = false;
+//     for (OrientationIter oit; oit; ++oit) {
+//         if (m_bc_type[oit()] == BC::mixed )
+//         {
+//             has_mixedBC = true;
+//             break;
+//         }
+//     }
+
+//     if (!has_mixedBC) { return; }
+
+
+//     // MLNodeLap does not require any ghost cells...
+//     std::unique_ptr<iMultiFab> new_mask(new iMultiFab(amrex::convert(ba,IntVect::TheNodeVector()),
+//                                                       dm, 1, 0));
+//     *new_mask = 1;
+
+//     Geometry const& gm = Geom(lev);
+//     Box const& domain = gm.Domain();
+//     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+//         Orientation olo(dir,Orientation::low);
+//         Orientation ohi(dir,Orientation::high);
+//         if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+//             Box dlo = (m_bc_type[olo] == BC::mixed) ? surroundingNodes(bdryLo(domain,dir)) : Box();
+//             Box dhi = (m_bc_type[ohi] == BC::mixed) ? surroundingNodes(bdryHi(domain,dir)) : Box();
+// #ifdef _OPENMP
+// #pragma omp parallel if (Gpu::notInLaunchRegion())
+// #endif
+//             for (MFIter mfi(*new_mask); mfi.isValid(); ++mfi) {
+//                 Box blo = mfi.validbox() & dlo;
+//                 Box bhi = mfi.validbox() & dhi;
+//                 Array4<int> const& mask_arr = new_mask->array(mfi);
+//                 if (blo.ok()) {
+//                     prob_set_BC_MF(olo, blo, mask_arr, lev);
+//                 }
+//                 if (bhi.ok()) {
+//                     prob_set_BC_MF(ohi, bhi, mask_arr, lev);
+//                 }
+//             }
+//         }
+//     }
+
+//     m_BC_MF[lev] = std::move(new_mask);
+// }
 
 #ifdef AMREX_USE_EB
 void

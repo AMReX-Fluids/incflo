@@ -110,8 +110,13 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void make_mixedBC_mask (int lev, const amrex::BoxArray& ba,
-                            const amrex::DistributionMapping& dm);
+    amrex::iMultiFab make_ccBC_mask (int lev);
+    amrex::iMultiFab make_nodalBC_mask (int lev);
+    // void make_ccBC_mask (int lev, const amrex::BoxArray& ba,
+    //                      const amrex::DistributionMapping& dm);
+    // void make_nodalBC_mask (int lev, const amrex::BoxArray& ba,
+    //                         const amrex::DistributionMapping& dm);
+
 #ifdef AMREX_USE_EB
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
     void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
@@ -212,8 +217,13 @@ public:
     ///////////////////////////////////////////////////////////////////////////
 
     void prob_init_fluid (int lev);
-    void prob_set_mixedBC_mask (amrex::Orientation ori, amrex::Box const& bx,
-                                amrex::Array4<int> const& mask, int lev);
+    void prob_set_BC_MF (amrex::Orientation ori, amrex::Box const& bx,
+                         amrex::Array4<int> const& mask, int lev);
+    void prob_set_MAC_robinBCs (amrex::Orientation ori, amrex::Box const& bx,
+                                amrex::Array4<amrex::Real> const& robin_a,
+                                amrex::Array4<amrex::Real> const& robin_b,
+                                amrex::Array4<amrex::Real> const& robin_f,
+                                int lev);
 
 #include "incflo_prob_I.H"
 #include "incflo_prob_usr_I.H"
@@ -570,9 +580,12 @@ private:
         periodic, mixed, undefined
     };
 
+// FIXME - don;t think this is the way to go, just use flag and make when needed since different
+    // code routines need the info in different containers...
     // mask for mixed BCs: 1 = inflow (Neumann for NodalProj, Dirichlet for advection),
     //                     0 = outflow (Homogeneous Dirichlet for NodalProj, FOEXTRAP for advection)
-    amrex::Vector<std::unique_ptr<amrex::iMultiFab> > m_mixedBC_mask;
+    amrex::Vector<std::unique_ptr<amrex::iMultiFab> > m_BC_MF;
+    bool m_has_mixedBC = false;
 
     amrex::GpuArray<BC                         , AMREX_SPACEDIM*2> m_bc_type;
     amrex::GpuArray<amrex::Real                , AMREX_SPACEDIM*2> m_bc_pressure;

@@ -137,10 +137,15 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     // Compute explicit viscous term
     // *************************************************************************************
-    if (need_divtau() || use_tensor_correction)
+    if (need_divtau() || use_tensor_correction )
     {
-        compute_divtau(get_divtau_old(),get_velocity_old_const(),
-                       get_density_old_const(),GetVecOfConstPtrs(vel_eta));
+        // FIXME - deal with viscosity later...
+        auto divtau = get_divtau_old();
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            *divtau[lev] = 0.;
+        }
+        // compute_divtau(get_divtau_old(),get_velocity_old_const(),
+        //                get_density_old_const(),GetVecOfConstPtrs(vel_eta));
     }
 
     // *************************************************************************************

@@ -91,6 +91,7 @@ incflo::compute_MAC_projected_velocities (
     //
     // Initialize (or redefine the beta in) the MacProjector
     //
+    Print()<<"Mac proj needs init? "<<macproj->needInitialization()<<std::endl;
     if (macproj->needInitialization())
     {
         LPInfo lp_info;
@@ -116,7 +117,7 @@ incflo::compute_MAC_projected_velocities (
         // re-init proj anyway.
         // robin_a, etc needs to exist to finest_level and that's it
         // Values need to be in the ghost cells, although the BC is considered on face.
-        if ( m_mixedBC_mask[0] ) {
+        if ( m_has_mixedBC ) {
             int nghost = 1;
 
             for (int lev = 0; lev <= finest_level; ++lev)
@@ -125,6 +126,11 @@ incflo::compute_MAC_projected_velocities (
                 MultiFab robin_a (grids[lev],dmap[lev],1,nghost,MFInfo(),Factory(lev));
                 MultiFab robin_b (grids[lev],dmap[lev],1,nghost,MFInfo(),Factory(lev));
                 MultiFab robin_f (grids[lev],dmap[lev],1,nghost,MFInfo(),Factory(lev));
+
+                // fixme - for vis, init robin MFs, although i don't know that this is generally needed
+                robin_a = 0;
+                robin_b = 0;
+                robin_f = 0;
 
                 // I don't believe interior values get used,
                 // only ghost cells of robin BC arrays are used in MLMG
@@ -138,47 +144,59 @@ incflo::compute_MAC_projected_velocities (
                     Orientation olo(dir,Orientation::low);
                     Orientation ohi(dir,Orientation::high);
 
-                    Box dlo = amrex::adjCellLo(domain,dir,nghost);
-                    Box dhi = amrex::adjCellHi(domain,dir,nghost);
+                    if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+                        Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
+                        Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-                    for (MFIter mfi(robin_a,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-                        Box const& gbx = amrex::grow(mfi.validbox(),nghost);
-                        Box blo = gbx & dlo;
-                        Box bhi = gbx & dhi;
-                        Array4<Real> const& a_arr     = robin_a.array(mfi);
-                        Array4<Real> const& b_arr     = robin_b.array(mfi);
-                        Array4<Real> const& f_arr     = robin_f.array(mfi);
-                        Array4<int const> const& mask = m_mixedBC_mask[lev]->const_array(mfi);
+                    // FIXME - don't think we want tiling here...
+                        for (MFIter mfi(robin_a,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+                            Box const& gbx = amrex::grow(mfi.validbox(),nghost);
+                            Box blo = gbx & dlo;
+                            Box bhi = gbx & dhi;
+                            Array4<Real> const& a_arr     = robin_a.array(mfi);
+                            Array4<Real> const& b_arr     = robin_b.array(mfi);
+                            Array4<Real> const& f_arr     = robin_f.array(mfi);
+                            //Array4<int const> const& mask = m_mixedBC_mask[lev]->const_array(mfi);
 
-                        // Robin BC:   a u + b du/dn = f  -- inflow,  Neumann   a=0, b=1, f=0
-                        //                                -- outflow, Dirichlet a=1, b=0, f=0
-                        if (blo.ok()) {
-                            // robin_b is the same as the mixedBC_mask, except with vals in
-                            // cell-centered ghosts rather than on BC face.
-                            // So, lo side i_cc->i_nd+1, hi side i_cc=i_nd
-                            Dim3 shift = IntVect::TheDimensionVector(dir).dim3();
+                            // Robin BC:   a u + b du/dn = f  -- inflow,  Neumann   a=0, b=1, f=0
+                            //                                -- outflow, Dirichlet a=1, b=0, f=0
+// Only need to fill Robin BC sides, MLMG will check for Robin BC first
+                            if (blo.ok()) {
+                                // robin_b is the same as the nodalBC_mask, except with vals in
+                                // cell-centered ghosts rather than on BC face.
+                                // So, lo side i_cc->i_nd+1, hi side i_cc=i_nd
+                                //Dim3 shift = IntVect::TheDimensionVector(dir).dim3();
 
-                            amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                            {
-                                b_arr(i,j,k) = mask(i+shift.x, j+shift.y, k+shift.z);
-                                //robin_a is the "opposite" of b; 0->1 and vice versa
-                                a_arr(i,j,k) = (mask(i+shift.x, j+shift.y, k+shift.z) == 1) ? 0. : 1.;
-                                f_arr(i,j,k) = 0.;
-                            });
-                        }
-                        if (bhi.ok()) {
-                            amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                            {
-                                b_arr(i,j,k) = mask(i,j,k);
-                                a_arr(i,j,k) = (mask(i,j,k) == 1) ? 0. : 1.;
-                                f_arr(i,j,k) = 0.;
-                            });
+                                prob_set_MAC_robinBCs(olo, blo, a_arr, b_arr, f_arr, lev);
+
+                                // amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                                // {
+                                //     //b_arr(i,j,k) = mask(i+shift.x, j+shift.y, k+shift.z);
+                                //     //robin_a is the "opposite" of b; 0->1 and vice versa
+                                //     a_arr(i,j,k) = (mask(i+shift.x, j+shift.y, k+shift.z) == 1) ? 0. : 1.;
+                                //     f_arr(i,j,k) = 0.;
+                                // });
+                            }
+                            if (bhi.ok()) {
+
+                                prob_set_MAC_robinBCs(ohi, bhi, a_arr, b_arr, f_arr, lev);
+
+                                // amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                                // {
+                                //     b_arr(i,j,k) = mask(i,j,k);
+                                //     a_arr(i,j,k) = (mask(i,j,k) == 1) ? 0. : 1.;
+                                //     f_arr(i,j,k) = 0.;
+                                // });
+                            }
                         }
                     }
                 }
 
+                VisMF::Write(robin_a, "ra");
+                VisMF::Write(robin_b, "rb");
+                VisMF::Write(robin_f, "rf");
                 macproj->setLevelBC(lev, nullptr, &robin_a, &robin_b, &robin_f);
             }
         }
@@ -210,6 +228,62 @@ incflo::compute_MAC_projected_velocities (
             l_advection_type = "Godunov";
         }
 
+// FIXME - need to create the BC MF here. This is a iMF vs a Real MF, so can't use
+        // the robin BC info from MAC. This is because if we want this to be extensible to
+        // full position dependent BCs, would need the MF to hold the BCType, which are enums,
+// so ints...
+        //
+//         if (m_mixedBC_mask[lev]) {
+
+//             // Create MF to hold position-dependent BC info in ghost cells:
+//             // Low  x-face is represented by indices ((i_lo-1, j_lo, k_lo)(i_lo-1, j_hi, k_hi))
+//             // High x-face is represented by indices ((i_hi+1, j_lo, k_lo)(i_hi+1, j_hi, k_hi))
+//             // Interior values don't get used
+//             iMultiFab bcs (grids[lev],dmap[lev],1,1,MFInfo(),Factory(lev));
+
+//             for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+//                     Orientation olo(dir,Orientation::low);
+//                     Orientation ohi(dir,Orientation::high);
+
+//                     Box dlo = amrex::adjCellLo(domain,dir,nghost);
+//                     Box dhi = amrex::adjCellHi(domain,dir,nghost);
+// #ifdef _OPENMP
+// #pragma omp parallel if (Gpu::notInLaunchRegion())
+// #endif
+//                     for (MFIter mfi(bcs,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+//                         Box const& gbx = mfi.growntilebox();
+//                         Box blo = gbx & dlo;
+//                         Box bhi = gbx & dhi;
+//                         Array4<Real> const& bcs_arr     = bcs.array(mfi);
+//                         Array4<int const> const& mask = m_mixedBC_mask[lev]->const_array(mfi);
+
+//                         // Robin BC:   a u + b du/dn = f  -- inflow,  Neumann   a=0, b=1, f=0
+//                         //                                -- outflow, Dirichlet a=1, b=0, f=0
+//                         if (blo.ok()) {
+//                             // robin_b is the same as the mixedBC_mask, except with vals in
+//                             // cell-centered ghosts rather than on BC face.
+//                             // So, lo side i_cc->i_nd+1, hi side i_cc=i_nd
+//                             Dim3 shift = IntVect::TheDimensionVector(dir).dim3();
+
+//                             amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//                             {
+//                                 b_arr(i,j,k) = mask(i+shift.x, j+shift.y, k+shift.z);
+//                                 //robin_a is the "opposite" of b; 0->1 and vice versa
+//                                 a_arr(i,j,k) = (mask(i+shift.x, j+shift.y, k+shift.z) == 1) ? 0. : 1.;
+//                                 f_arr(i,j,k) = 0.;
+//                             });
+//                         }
+//                         if (bhi.ok()) {
+//                             amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//                             {
+//                                 b_arr(i,j,k) = mask(i,j,k);
+//                                 a_arr(i,j,k) = (mask(i,j,k) == 1) ? 0. : 1.;
+//                                 f_arr(i,j,k) = 0.;
+//                             });
+//                         }
+//                     }
+//                 }
+
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
         HydroUtils::ExtrapVelToFaces(*vel[lev], *vel_forces[lev],
@@ -224,68 +298,97 @@ incflo::compute_MAC_projected_velocities (
                                       l_advection_type);
     }
 
-    if (m_mixedBC_mask[0]) {
-        // Fix up the mixedBC faces which went through advection with FOEXTRAP (outflow) BCs
-        // Here we overwrite the inflow portion with the Dirichlet BC
-        // NOTE - there's a subtle difference in this versus what AMReX-Hydro does. See comment
-        // in Utils/hydro_bcs_K.H . If weird gradients start arising at the inflow, we might
-        // want to revisit this...
-        // vel has filled ghost cells, this is needed for ExtrapVel
-        for (int lev = 0; lev <= finest_level; ++lev)
+    //fixme - fix up umac to confirm projection working as expected...
+    Box const& domain_box = geom[0].Domain();
+    int direction = 1;
+    int half_num_cells = domain_box.length(direction) / 2;
+    for (MFIter mfi(*u_mac[0],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+        Box const& bx = mfi.validbox();
+        Array4<Real      > const& um = u_mac[0]->array(mfi);
+        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            int nghost = 1;
-            Box const& domain = Geom(lev).growPeriodicDomain(nghost);
-            for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-                Orientation olo(dir,Orientation::low);
-                Orientation ohi(dir,Orientation::high);
-                
-                Box dlo = amrex::adjCellLo(domain,dir,nghost);
-                Box dhi = amrex::adjCellHi(domain,dir,nghost);
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-                for (MFIter mfi(*vel[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-                    Box const& gbx = amrex::grow(mfi.validbox(),1);
-                    Box blo = gbx & dlo;
-                    Box bhi = gbx & dhi;
-
-                    MultiFab* mac;
-                    if (dir == 0) {
-                        mac = u_mac[lev]; }
-                    else if (dir == 1) {
-                        mac = v_mac[lev]; }
-#if AMREX_SPACEDIM > 2
-                    else {
-                        mac = w_mac[lev];
-                    }
-#endif
-                    Array4<Real      > const& mac_arr = mac->array(mfi);
-                    Array4<Real const> const& vel_arr = vel[lev]->array(mfi, dir);
-                    Array4<int  const> const& mask    = m_mixedBC_mask[lev]->const_array(mfi);
-
-                    if (blo.ok()) {
-                        Dim3 shift = IntVect::TheDimensionVector(dir).dim3();
-                        
-                        amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                        {
-                            if (mask(i+shift.x, j+shift.y, k+shift.z) == 1) // inflow
-                            {
-                                mac_arr(i+shift.x, j+shift.y, k+shift.z) = vel_arr(i,j,k);
-                            }
-                        });
-                    }
-                    if (bhi.ok()) {
-                        amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                        {
-                            if (mask(i,j,k) == 1) {
-                                mac_arr(i,j,k) = vel_arr(i,j,k);
-                            }
-                        });
-                    }
+            if (i == domain_box.smallEnd(0))
+            {
+                if (j > half_num_cells) {
+                    // Here we take the inflow BC specified in inputs file
+                    um(i,j,k) = 1.;
                 }
             }
-        }
+            else if (i == domain_box.bigEnd(0)+1)
+            {
+                if (j <= half_num_cells) {
+                    // Here we take minus the inflow BC specified in inputs file
+                    um(i,j,k) = -1.;
+                }
+            }
+        });
     }
+
+//     if (m_mixedBC_mask[0]) {
+//         // Fix up the mixedBC faces which went through advection with FOEXTRAP (outflow) BCs
+//         // Here we overwrite the inflow portion with the Dirichlet BC
+//         // NOTE - there's a subtle difference in this versus what AMReX-Hydro does. See comment
+//         // in Utils/hydro_bcs_K.H . If weird gradients start arising at the inflow, we might
+//         // want to revisit this...
+//         // vel has filled ghost cells, this is needed for ExtrapVel
+//         for (int lev = 0; lev <= finest_level; ++lev)
+//         {
+//             int nghost = 1;
+//             Box const& domain = Geom(lev).growPeriodicDomain(nghost);
+//             for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+//                 Orientation olo(dir,Orientation::low);
+//                 Orientation ohi(dir,Orientation::high);
+
+//                 Box dlo = amrex::adjCellLo(domain,dir,nghost);
+//                 Box dhi = amrex::adjCellHi(domain,dir,nghost);
+// #ifdef _OPENMP
+// #pragma omp parallel if (Gpu::notInLaunchRegion())
+// #endif
+//                 for (MFIter mfi(*vel[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+//                     Box const& gbx = amrex::grow(mfi.validbox(),1);
+//                     Box blo = gbx & dlo;
+//                     Box bhi = gbx & dhi;
+
+//                     MultiFab* mac;
+//                     if (dir == 0) {
+//                         mac = u_mac[lev]; }
+//                     else if (dir == 1) {
+//                         mac = v_mac[lev]; }
+// #if AMREX_SPACEDIM > 2
+//                     else {
+//                         mac = w_mac[lev];
+//                     }
+// #endif
+//                     Array4<Real      > const& mac_arr = mac->array(mfi);
+//                     Array4<Real const> const& vel_arr = vel[lev]->array(mfi, dir);
+//                     Array4<int  const> const& mask    = m_mixedBC_mask[lev]->const_array(mfi);
+
+//                     if (blo.ok()) {
+//                         Dim3 shift = IntVect::TheDimensionVector(dir).dim3();
+
+//                         amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//                         {
+//                             if (mask(i+shift.x, j+shift.y, k+shift.z) == 1) // inflow
+//                             {
+//                                 mac_arr(i+shift.x, j+shift.y, k+shift.z) = vel_arr(i,j,k);
+//                             }
+//                         });
+//                     }
+//                     if (bhi.ok()) {
+//                         amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//                         {
+//                             if (mask(i,j,k) == 1) {
+//                                 mac_arr(i,j,k) = vel_arr(i,j,k);
+//                             }
+//                         });
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//fixme
+    VisMF::Write(*u_mac[0],"umac");
+    VisMF::Write(*v_mac[0],"vmac");
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
     for (int lev=0; lev <= finest_level; ++lev)
@@ -325,7 +428,9 @@ incflo::compute_MAC_projected_velocities (
     } else {
         macproj->project(m_mac_mg_rtol,m_mac_mg_atol);
     }
-
+//fixme
+    VisMF::Write(*u_mac[0],"umacp");
+    VisMF::Write(*v_mac[0],"vmacp");
     // Note that the macproj->project call above ensures that the MAC velocities are averaged down --
     //      we don't need to do that again here
 }
