@@ -96,8 +96,10 @@ void incflo::init_bcs ()
             amrex::Print() << bcid << " set to mixed inflow outflow.\n";
             m_has_mixedBC = true;
 #ifdef AMREX_USE_EB
-            ParmParse ipp("incflo");
+            // ReadParameters() already called
+            if (m_advection_type != "Godunov") { amrex::Abort("mixed BCs require Godunov"); }
 
+            ParmParse ipp("incflo");
             std::string eb_geom = "null";
             ipp.query("geometry", eb_geom);
             eb_geom = amrex::toLower(eb_geom);
@@ -107,7 +109,6 @@ void incflo::init_bcs ()
                 Abort("For now, mixed BCs must be separated by an EB");
             }
             Warning("Using BC type mixed requires that the Dirichlet and Neumann regions are separated by EB.");
-// Actually, this may only be a requirement for multilevel, but not 100% sure advection would still be good for single level no EB...
 
             m_bc_type[ori] = BC::mixed;
 
