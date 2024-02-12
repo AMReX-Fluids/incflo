@@ -235,7 +235,7 @@ incflo::compute_MAC_projected_velocities (
         //
         std::unique_ptr<iMultiFab> BC_MF;
         if (m_has_mixedBC) {
-                BC_MF = make_BC_MF(lev, m_bcrec_velocity_d);
+            BC_MF = make_BC_MF(lev, m_bcrec_velocity_d);
         }
 
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}

@@ -271,6 +271,24 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         // ************************************************************************
         // Compute advective fluxes
         // ************************************************************************
+        //
+        // Create BC MF
+        // FIXME -- would it be worth it to save this from vel extrap???
+        std::unique_ptr<iMultiFab> velBC_MF;
+        if (m_has_mixedBC) {
+            velBC_MF = make_BC_MF(lev, m_bcrec_velocity_d);
+        }
+        std::unique_ptr<iMultiFab> densBC_MF;
+        if (m_has_mixedBC) {
+            densBC_MF = make_BC_MF(lev, m_bcrec_density_d);
+        }
+        std::unique_ptr<iMultiFab> tracBC_MF;
+        if (m_advect_tracer  && (m_ntrac>0)) {
+            if (m_has_mixedBC) {
+                tracBC_MF = make_BC_MF(lev, m_bcrec_tracer_d);
+            }
+        }
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -322,6 +340,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int face_comp = 0;
             int ncomp = AMREX_SPACEDIM;
             bool is_velocity = true;
+            Array4<int const> const& velbc_arr = (*velBC_MF).const_array(mfi);
             HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
                                                      (m_advect_momentum) ? rhovel[lev].array(mfi) : vel[lev]->const_array(mfi),
                                                      AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
@@ -350,7 +369,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
                                                      m_godunov_ppm, m_godunov_use_forces_in_trans,
                                                      is_velocity, fluxes_are_area_weighted,
-                                                     m_advection_type);
+                                                     m_advection_type, PPM::default_limiter, velbc_arr);
 
 
             // ************************************************************************
@@ -361,6 +380,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 face_comp = AMREX_SPACEDIM;
                 ncomp = 1;
                 is_velocity = false;
+                Array4<int const> const& densbc_arr = (*densBC_MF).const_array(mfi);
                 HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
                                                          density[lev]->const_array(mfi),
                                                          AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
@@ -384,7 +404,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
                                                          m_godunov_ppm, m_godunov_use_forces_in_trans,
                                                          is_velocity, fluxes_are_area_weighted,
-                                                         m_advection_type);
+                                                         m_advection_type, PPM::default_limiter, densbc_arr);
             }
 
             // ************************************************************************
@@ -414,7 +434,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                    face_comp = AMREX_SPACEDIM+1;
                 ncomp = m_ntrac;
                 is_velocity = false;
-
+                Array4<int const> const& tracbc_arr = (*tracBC_MF).const_array(mfi);
                 HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi, ro_trac,
                                           AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
                                                        flux_y[lev].array(mfi,face_comp),
@@ -438,74 +458,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
                                           is_velocity, fluxes_are_area_weighted,
-                                          m_advection_type);
+                                          m_advection_type, PPM::default_limiter, tracbc_arr);
             }
         } // mfi
     } // lev
 
-// FIXME - probably want to make this a fn, since it's the same as get used in compute_MAC
-//     if (m_mixedBC_mask[0]) {
-//         // Fix up the mixedBC faces which went through advection with FOEXTRAP (outflow) BCs
-//         // Here we overwrite the inflow portion with the Dirichlet BC
-//         // NOTE - there's a subtle difference in this versus what AMReX-Hydro does. See comment
-//         // in Utils/hydro_bcs_K.H . If weird gradients start arising at the inflow, we might
-//         // want to revisit this...
-//         // vel has filled ghost cells, this is needed for making edge states
-//         for (int lev = 0; lev <= finest_level; ++lev)
-//         {
-//             int nghost = 1;
-//             Box const& domain = Geom(lev).growPeriodicDomain(nghost);
-//             for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-//                 Orientation olo(dir,Orientation::low);
-//                 Orientation ohi(dir,Orientation::high);
-
-//                 Box dlo = amrex::adjCellLo(domain,dir,nghost);
-//                 Box dhi = amrex::adjCellHi(domain,dir,nghost);
-// #ifdef _OPENMP
-// #pragma omp parallel if (Gpu::notInLaunchRegion())
-// #endif
-//                 for (MFIter mfi(*vel[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-//                     Box const& gbx = amrex::grow(mfi.validbox(),1);
-//                     Box blo = gbx & dlo;
-//                     Box bhi = gbx & dhi;
-
-//                     MultiFab* mac;
-//                     if (dir == 0) {
-//                         mac = u_mac[lev]; }
-//                     else if (dir == 1) {
-//                         mac = v_mac[lev]; }
-// #if AMREX_SPACEDIM > 2
-//                     else {
-//                         mac = w_mac[lev];
-//                     }
-// #endif
-//                     Array4<Real      > const& mac_arr = mac->array(mfi);
-//                     Array4<Real const> const& vel_arr = vel[lev]->array(mfi, dir);
-//                     Array4<int  const> const& mask    = m_mixedBC_mask[lev]->const_array(mfi);
-
-//                     if (blo.ok()) {
-//                         Dim3 shift = IntVect::TheDimensionVector(dir).dim3();
-
-//                         amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-//                         {
-//                             if (mask(i+shift.x, j+shift.y, k+shift.z) == 1) // inflow
-//                             {
-//                                 mac_arr(i+shift.x, j+shift.y, k+shift.z) = vel_arr(i,j,k);
-//                             }
-//                         });
-//                     }
-//                     if (bhi.ok()) {
-//                         amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-//                         {
-//                             if (mask(i,j,k) == 1) {
-//                                 mac_arr(i,j,k) = vel_arr(i,j,k);
-//                             }
-//                         });
-//                     }
-//                 }
-//             }
-//         }
-//     }
 
     // In order to enforce conservation across coarse-fine boundaries we must be sure to average down the fluxes
     //    before we use them.  Note we also need to average down the face states if we are going to do
@@ -746,4 +703,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     } // mfi
 #endif
     } // lev
+//fixme
+    VisMF::Write(*conv_u[0],"conv");
+//
 }
