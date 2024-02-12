@@ -276,16 +276,16 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         // FIXME -- would it be worth it to save this from vel extrap???
         std::unique_ptr<iMultiFab> velBC_MF;
         if (m_has_mixedBC) {
-            velBC_MF = make_BC_MF(lev, m_bcrec_velocity_d);
+            velBC_MF = make_BC_MF(lev, m_bcrec_velocity_d, "velocity");
         }
         std::unique_ptr<iMultiFab> densBC_MF;
         if (m_has_mixedBC) {
-            densBC_MF = make_BC_MF(lev, m_bcrec_density_d);
+            densBC_MF = make_BC_MF(lev, m_bcrec_density_d, "density");
         }
         std::unique_ptr<iMultiFab> tracBC_MF;
         if (m_advect_tracer  && (m_ntrac>0)) {
             if (m_has_mixedBC) {
-                tracBC_MF = make_BC_MF(lev, m_bcrec_tracer_d);
+                tracBC_MF = make_BC_MF(lev, m_bcrec_tracer_d, "tracer");
             }
         }
 

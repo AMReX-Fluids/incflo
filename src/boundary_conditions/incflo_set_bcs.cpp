@@ -69,10 +69,10 @@ incflo::make_nodalBC_mask(int lev)
                 Box bhi = mfi.validbox() & dhi;
                 Array4<int> const& mask_arr = new_mask.array(mfi);
                 if (blo.ok()) {
-                    prob_set_BC_MF(olo, blo, mask_arr, lev, outflow);
+                    prob_set_BC_MF(olo, blo, mask_arr, lev, outflow, "velocity");
                 }
                 if (bhi.ok()) {
-                    prob_set_BC_MF(ohi, bhi, mask_arr, lev, outflow);
+                    prob_set_BC_MF(ohi, bhi, mask_arr, lev, outflow, "velocity");
                 }
             }
         }
@@ -82,7 +82,8 @@ incflo::make_nodalBC_mask(int lev)
 }
 
 std::unique_ptr<iMultiFab>
-incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> bcs) //, int scomp, int ncomp)
+incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> bcs,
+                   std::string field)
 {
     int ncomp = bcs.size();
     // BC info stored in ghost cells to avoid any ambiguity
@@ -107,7 +108,7 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> bcs) //, int 
             Box bhi = mfi.growntilebox() & dhi;
             Array4<int> const& mask_arr = BC_MF->array(mfi);
             if (m_bc_type[olo] == BC::mixed) {
-                prob_set_BC_MF(olo, blo, mask_arr, lev, outflow);
+                prob_set_BC_MF(olo, blo, mask_arr, lev, outflow, field);
             } else {
                 amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
@@ -117,7 +118,7 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> bcs) //, int 
                 });
             }
             if (m_bc_type[ohi] == BC::mixed) {
-                prob_set_BC_MF(ohi, bhi, mask_arr, lev, outflow);
+                prob_set_BC_MF(ohi, bhi, mask_arr, lev, outflow, field);
             } else {
                 amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {

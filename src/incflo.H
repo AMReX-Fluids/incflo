@@ -110,7 +110,9 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    std::unique_ptr<amrex::iMultiFab> make_BC_MF (int lev, amrex::Gpu::DeviceVector<amrex::BCRec> bcs);
+    std::unique_ptr<amrex::iMultiFab> make_BC_MF (int lev,
+                                                  amrex::Gpu::DeviceVector<amrex::BCRec> bcs,
+                                                  std::string field);
     amrex::iMultiFab make_nodalBC_mask (int lev);
     // void make_ccBC_mask (int lev, const amrex::BoxArray& ba,
     //                      const amrex::DistributionMapping& dm);
@@ -219,7 +221,7 @@ public:
     void prob_init_fluid (int lev);
     void prob_set_BC_MF (amrex::Orientation ori, amrex::Box const& bx,
                          amrex::Array4<int> const& mask, int lev,
-                         int outflow_val);
+                         int outflow_val, std::string field);
     void prob_set_MAC_robinBCs (amrex::Orientation ori, amrex::Box const& bx,
                                 amrex::Array4<amrex::Real> const& robin_a,
                                 amrex::Array4<amrex::Real> const& robin_b,

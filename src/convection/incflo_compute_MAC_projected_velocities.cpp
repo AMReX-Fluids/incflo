@@ -235,8 +235,12 @@ incflo::compute_MAC_projected_velocities (
         //
         std::unique_ptr<iMultiFab> BC_MF;
         if (m_has_mixedBC) {
-            BC_MF = make_BC_MF(lev, m_bcrec_velocity_d);
+            BC_MF = make_BC_MF(lev, m_bcrec_velocity_d, "velocity");
         }
+//fixme
+    VisMF::Write(*vel[0],"vin");
+    amrex::Write(*BC_MF,"bcmf");
+//
 
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
@@ -252,7 +256,7 @@ incflo::compute_MAC_projected_velocities (
                                       l_advection_type, PPM::default_limiter, BC_MF.get());
     }
 
-//fixmeamrex::
+//fixme
     VisMF::Write(*u_mac[0],"umac");
     VisMF::Write(*v_mac[0],"vmac");
 //

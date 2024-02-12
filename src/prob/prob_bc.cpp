@@ -3,11 +3,11 @@
 using namespace amrex;
 
 // This function is used to prepare both the nodal projection and advection for
-// mixed BCs (i.e. position dependent BCs). The necessarily value to indicate an
+// mixed BCs (i.e. position dependent BCs). The necessary value to indicate an
 // outflow BC differs between advection and the NodalProj, so we pass it in
 void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
                              Array4<int> const& mask, int lev,
-                             int outflow_val)
+                             int outflow_val, std::string field)
 {
     if (1100 == m_probtype || 1101 == m_probtype || 1102 == m_probtype)
     {
@@ -20,6 +20,9 @@ void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
         }
         Box const& domain = geom[lev].Domain();
         int half_num_cells  = domain.length(direction) / 2;
+
+        // for this problem, bcs are same for all fields, only ncomp varies
+        int ncomp =  field == "velocity" ? AMREX_SPACEDIM : 1;
 
         Orientation::Side side = ori.faceDir();
         if (side == Orientation::low) {
