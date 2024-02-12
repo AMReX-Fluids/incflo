@@ -2,8 +2,12 @@
 
 using namespace amrex;
 
+// This function is used to prepare both the nodal projection and advection for
+// mixed BCs (i.e. position dependent BCs). The necessarily value to indicate an
+// outflow BC differs between advection and the NodalProj, so we pass it in
 void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
-                            Array4<int> const& mask, int lev)
+                             Array4<int> const& mask, int lev,
+                             int outflow_val)
 {
     if (1100 == m_probtype || 1101 == m_probtype || 1102 == m_probtype)
     {
@@ -23,21 +27,21 @@ void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
             {
                 if (direction == 0) {
                     if (i <= half_num_cells) {
-                        mask(i,j,k,0) = 0; // outflow on bottom
+                        mask(i,j,k,0) = outflow_val; // outflow on bottom
                     } else {
                         mask(i,j,k,0) = BCType::ext_dir; // inflow on top
                     }
                 }
                 else if (direction == 1) {
                     if (j <= half_num_cells) {
-                        mask(i,j,k,0) = 0;
+                        mask(i,j,k,0) = outflow_val;
                     } else {
                         mask(i,j,k,0) = BCType::ext_dir;
                     }
                 }
                 else if (direction == 2) {
                     if (k <= half_num_cells) {
-                        mask(i,j,k,0) = 0;
+                        mask(i,j,k,0) = outflow_val;
                     } else {
                         mask(i,j,k,0) = BCType::ext_dir;
                     }
@@ -48,21 +52,21 @@ void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
             {
                 if (direction == 0) {
                     if (i > half_num_cells) {
-                        mask(i,j,k,0) = 0; // outflow on top
+                        mask(i,j,k,0) = outflow_val; // outflow on top
                     } else {
                         mask(i,j,k,0) = BCType::ext_dir;  // inflow on bottom
                     }
                 }
                 else if (direction == 1) {
                     if (j > half_num_cells) {
-                        mask(i,j,k,0) = 0;
+                        mask(i,j,k,0) = outflow_val;
                     } else {
                         mask(i,j,k,0) = BCType::ext_dir;
                     }
                 }
                 else if (direction == 2) {
                     if (k > half_num_cells) {
-                        mask(i,j,k,0) = 0;
+                        mask(i,j,k,0) = outflow_val;
                     } else {
                         mask(i,j,k,0) = BCType::ext_dir;
                     }

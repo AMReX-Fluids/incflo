@@ -6,41 +6,41 @@
 
 using namespace amrex;
 
-iMultiFab
-incflo::make_ccBC_mask(int lev)
-{
-    // BC info stored in ghost cell.
-    iMultiFab new_mask(grids[lev], dmap[lev], 1, 1);
-// No expectation in MLMG for there to be valid data where there is no Robin BC
-    //new_mask = 0;
+// iMultiFab
+// incflo::make_ccBC_mask(int lev)
+// {
+//     // BC info stored in ghost cell.
+//     iMultiFab new_mask(grids[lev], dmap[lev], 1, 1);
+// // No expectation in MLMG for there to be valid data where there is no Robin BC
+//     //new_mask = 0;
 
-    Geometry const& gm = Geom(lev);
-    Box const& domain = gm.Domain();
-    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        Orientation olo(dir,Orientation::low);
-        Orientation ohi(dir,Orientation::high);
-        if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
-            Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
-            Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-            for (MFIter mfi(new_mask); mfi.isValid(); ++mfi) {
-                Box blo = mfi.growntilebox() & dlo;
-                Box bhi = mfi.growntilebox() & dhi;
-                Array4<int> const& mask_arr = new_mask.array(mfi);
-                if (blo.ok()) {
-                    prob_set_BC_MF(olo, blo, mask_arr, lev);
-                }
-                if (bhi.ok()) {
-                    prob_set_BC_MF(ohi, bhi, mask_arr, lev);
-                }
-            }
-        }
-    }
+//     Geometry const& gm = Geom(lev);
+//     Box const& domain = gm.Domain();
+//     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+//         Orientation olo(dir,Orientation::low);
+//         Orientation ohi(dir,Orientation::high);
+//         if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+//             Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
+//             Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
+// #ifdef _OPENMP
+// #pragma omp parallel if (Gpu::notInLaunchRegion())
+// #endif
+//             for (MFIter mfi(new_mask); mfi.isValid(); ++mfi) {
+//                 Box blo = mfi.growntilebox() & dlo;
+//                 Box bhi = mfi.growntilebox() & dhi;
+//                 Array4<int> const& mask_arr = new_mask.array(mfi);
+//                 if (blo.ok()) {
+//                     prob_set_BC_MF(olo, blo, mask_arr, lev);
+//                 }
+//                 if (bhi.ok()) {
+//                     prob_set_BC_MF(ohi, bhi, mask_arr, lev);
+//                 }
+//             }
+//         }
+//     }
 
-    return new_mask;
-}
+//     return new_mask;
+// }
 
 iMultiFab
 incflo::make_nodalBC_mask(int lev)
@@ -49,6 +49,9 @@ incflo::make_nodalBC_mask(int lev)
     iMultiFab new_mask(amrex::convert(grids[lev], IntVect::TheNodeVector()), dmap[lev], 1, 0);
     // Overset mask needs to be defined everywhere
     new_mask = 1;
+    // NodalProj expects outflow regions to be indcatied with a 0. This is treated as a boolean
+    // mask, so any other regions can have any other int value
+    int outflow = 0;
 
     Geometry const& gm = Geom(lev);
     Box const& domain = gm.Domain();
@@ -66,10 +69,10 @@ incflo::make_nodalBC_mask(int lev)
                 Box bhi = mfi.validbox() & dhi;
                 Array4<int> const& mask_arr = new_mask.array(mfi);
                 if (blo.ok()) {
-                    prob_set_BC_MF(olo, blo, mask_arr, lev);
+                    prob_set_BC_MF(olo, blo, mask_arr, lev, outflow);
                 }
                 if (bhi.ok()) {
-                    prob_set_BC_MF(ohi, bhi, mask_arr, lev);
+                    prob_set_BC_MF(ohi, bhi, mask_arr, lev, outflow);
                 }
             }
         }
@@ -78,54 +81,56 @@ incflo::make_nodalBC_mask(int lev)
     return new_mask;
 }
 
-// void
-// incflo::make_ccBC_mask(int lev,
-//                        const BoxArray& ba, // do we really need to pass these, use member vars? - i think we need to pass to be safe when calling from RemakeLevel...
-//                        const DistributionMapping& dm)
-// {
-//     bool has_mixedBC = false;
-//     for (OrientationIter oit; oit; ++oit) {
-//         if (m_bc_type[oit()] == BC::mixed )
-//         {
-//             has_mixedBC = true;
-//             break;
-//         }
-//     }
+std::unique_ptr<iMultiFab>
+incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> bcs) //, int scomp, int ncomp)
+{
+    int ncomp = bcs.size();
+    // BC info stored in ghost cells to avoid any ambiguity
+    std::unique_ptr<iMultiFab> BC_MF(new iMultiFab(grids[lev], dmap[lev], ncomp, 1));
+    // initialize to 0 == BCType::int_dir, not sure this is needed really
+    *BC_MF = 0;
+    // For advection, we use FOEXTRAP for outflow regions per incflo::init_bcs()
+    int outflow = BCType::foextrap;
 
-//     if (!has_mixedBC) { return; }
+    Box const& domain = geom[lev].Domain();
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        Orientation olo(dir,Orientation::low);
+        Orientation ohi(dir,Orientation::high);
 
+        Box dlo = adjCellLo(domain,dir);
+        Box dhi = adjCellHi(domain,dir);
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(*BC_MF); mfi.isValid(); ++mfi) {
+            Box blo = mfi.growntilebox() & dlo;
+            Box bhi = mfi.growntilebox() & dhi;
+            Array4<int> const& mask_arr = BC_MF->array(mfi);
+            if (m_bc_type[olo] == BC::mixed) {
+                prob_set_BC_MF(olo, blo, mask_arr, lev, outflow);
+            } else {
+                amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    for (int n = 0; n < ncomp; n++) {
+                        mask_arr(i,j,k,n) = bcs[n].lo(dir);
+                    }
+                });
+            }
+            if (m_bc_type[ohi] == BC::mixed) {
+                prob_set_BC_MF(ohi, bhi, mask_arr, lev, outflow);
+            } else {
+                amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    for (int n = 0; n < ncomp; n++) {
+                        mask_arr(i,j,k,n) = bcs[n].hi(dir);
+                    }
+                });
+            }
+        }
+    }
 
-//     // BC info stored in ghost cell.
-//     std::unique_ptr<iMultiFab> new_mask(new iMultiFab(ba, dm, 1, 1));
-//     *new_mask = 0;
-
-//     Geometry const& gm = Geom(lev);
-//     Box const& domain = gm.Domain();
-//     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-//         Orientation olo(dir,Orientation::low);
-//         Orientation ohi(dir,Orientation::high);
-//         if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
-//             Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
-//             Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
-// #ifdef _OPENMP
-// #pragma omp parallel if (Gpu::notInLaunchRegion())
-// #endif
-//             for (MFIter mfi(*new_mask); mfi.isValid(); ++mfi) {
-//                 Box blo = mfi.growntilebox() & dlo;
-//                 Box bhi = mfi.growntilebox() & dhi;
-//                 Array4<int> const& mask_arr = new_mask->array(mfi);
-//                 if (blo.ok()) {
-//                     prob_set_BC_MF(olo, blo, mask_arr, lev);
-//                 }
-//                 if (bhi.ok()) {
-//                     prob_set_BC_MF(ohi, bhi, mask_arr, lev);
-//                 }
-//             }
-//         }
-//     }
-
-//     m_BC_MF[lev] = std::move(new_mask);
-// }
+    return BC_MF;
+}
 
 // void
 // incflo::make_nodalBC_mask(int lev,
