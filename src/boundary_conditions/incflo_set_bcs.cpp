@@ -69,10 +69,10 @@ incflo::make_nodalBC_mask(int lev)
                 Box bhi = mfi.validbox() & dhi;
                 Array4<int> const& mask_arr = new_mask.array(mfi);
                 if (blo.ok()) {
-                    prob_set_BC_MF(olo, blo, mask_arr, lev, outflow, "velocity");
+                    prob_set_BC_MF(olo, blo, mask_arr, lev, outflow, "projection");
                 }
                 if (bhi.ok()) {
-                    prob_set_BC_MF(ohi, bhi, mask_arr, lev, outflow, "velocity");
+                    prob_set_BC_MF(ohi, bhi, mask_arr, lev, outflow, "projection");
                 }
             }
         }
@@ -82,7 +82,7 @@ incflo::make_nodalBC_mask(int lev)
 }
 
 std::unique_ptr<iMultiFab>
-incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> bcs,
+incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec>& bcs,
                    std::string field)
 {
     int ncomp = bcs.size();
@@ -131,6 +131,65 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> bcs,
     }
 
     return BC_MF;
+}
+
+Vector<std::unique_ptr<MultiFab>>
+incflo::make_diffusion_robinBC_MFs(int lev, MultiFab& phi)
+{
+    int nghost = 1;
+
+    Vector<std::unique_ptr<MultiFab>> robin(3);
+    for (int n = 0; n < 3; n++) {
+        robin[n].reset(new MultiFab(grids[lev], dmap[lev], 1, 1));
+    }
+
+    MultiFab& robin_a = *robin[0];
+    MultiFab& robin_b = *robin[1];
+    MultiFab& robin_f = *robin[2];
+// fixme - for vis, init robin MFs, although i don't know that this is generally needed
+    robin_a = 0;
+    robin_b = 0;
+    robin_f = 0;
+
+    // only ghost cells of robin BC arrays are used in MLMG
+    // bc in ghost cells that are outside the domain.
+    Box const& domain = Geom(lev).Domain();
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        Orientation olo(dir,Orientation::low);
+        Orientation ohi(dir,Orientation::high);
+
+        if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+            Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
+            Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            // FIXME - don't think we want tiling here...
+            for (MFIter mfi(robin_a,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+                Box const& gbx = amrex::grow(mfi.validbox(),nghost);
+                Box blo = gbx & dlo;
+                Box bhi = gbx & dhi;
+                Array4<Real> const& a_arr     = robin_a.array(mfi);
+                Array4<Real> const& b_arr     = robin_b.array(mfi);
+                Array4<Real> const& f_arr     = robin_f.array(mfi);
+                Array4<Real const> const& bcv = phi.const_array(mfi);
+
+                // Robin BC:   a u + b du/dn = f  -- inflow,  Dirichlet a=1, b=0, f=bcv
+                //                                -- outflow, Neumann   a=0, b=1, f=0
+                // Only need to fill Robin BC sides, MLMG will check for Robin BC first
+                if (blo.ok()) {
+                    // fixme -- here i think we need to go to physbcfunct here
+// phi has already had boundry filled, so can just use that here
+                    prob_set_diffusion_robinBCs(olo, blo, a_arr, b_arr, f_arr, bcv, lev);
+                }
+                if (bhi.ok()) {
+                    prob_set_diffusion_robinBCs(ohi, bhi, a_arr, b_arr, f_arr, bcv, lev);
+                }
+            }
+        }
+    }
+
+    return robin;
 }
 
 // void

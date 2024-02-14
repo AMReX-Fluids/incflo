@@ -111,9 +111,11 @@ public:
     ///////////////////////////////////////////////////////////////////////////
 
     std::unique_ptr<amrex::iMultiFab> make_BC_MF (int lev,
-                                                  amrex::Gpu::DeviceVector<amrex::BCRec> bcs,
+                                                  amrex::Gpu::DeviceVector<amrex::BCRec>& bcs,
                                                   std::string field);
     amrex::iMultiFab make_nodalBC_mask (int lev);
+    amrex::Vector<std::unique_ptr<amrex::MultiFab>> make_diffusion_robinBC_MFs(int lev,
+                                                                               amrex::MultiFab& phi);
     // void make_ccBC_mask (int lev, const amrex::BoxArray& ba,
     //                      const amrex::DistributionMapping& dm);
     // void make_nodalBC_mask (int lev, const amrex::BoxArray& ba,
@@ -227,6 +229,12 @@ public:
                                 amrex::Array4<amrex::Real> const& robin_b,
                                 amrex::Array4<amrex::Real> const& robin_f,
                                 int lev);
+    void prob_set_diffusion_robinBCs (amrex::Orientation ori, amrex::Box const& bx,
+                                      amrex::Array4<amrex::Real> const& robin_a,
+                                      amrex::Array4<amrex::Real> const& robin_b,
+                                      amrex::Array4<amrex::Real> const& robin_f,
+                                      amrex::Array4<amrex::Real const> const& bcval,
+                                      int lev);
 
 #include "incflo_prob_I.H"
 #include "incflo_prob_usr_I.H"

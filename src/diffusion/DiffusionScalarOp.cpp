@@ -366,8 +366,19 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
                 // For when we use the stencil for centroid values
                 // m_eb_vel_solve_op->setPhiOnCentroid();
 
-                m_eb_vel_solve_op->setLevelBC(lev, &phi[lev]);
+                if ( m_incflo->m_has_mixedBC ) {
+                    auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, phi[lev]);
 
+                    // VisMF::Write(robin_a, "dra");
+                    // VisMF::Write(robin_b, "drb");
+                    // VisMF::Write(robin_f, "drf");
+
+                    m_eb_vel_solve_op->setLevelBC(lev, &phi[lev],
+                                                  robin[0].get(), robin[1].get(), robin[2].get());
+                }
+                else {
+                    m_eb_vel_solve_op->setLevelBC(lev, &phi[lev]);
+                }
             } else
 #endif
             {
@@ -577,8 +588,21 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
             for (int lev = 0; lev <= finest_level; ++lev) {
                 divtau_single.emplace_back(divtau_tmp[lev],amrex::make_alias,comp,1);
-                   vel_single.emplace_back(       vel[lev],amrex::make_alias,comp,1);
-                m_eb_vel_apply_op->setLevelBC(lev, &vel_single[lev]);
+                vel_single.emplace_back(       vel[lev],amrex::make_alias,comp,1);
+
+                if ( m_incflo->m_has_mixedBC ) {
+                    auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, vel_single[lev]);
+
+                    // VisMF::Write(robin_a, "dra");
+                    // VisMF::Write(robin_b, "drb");
+                    // VisMF::Write(robin_f, "drf");
+
+                    m_eb_vel_apply_op->setLevelBC(lev, &vel_single[lev],
+                                                  robin[0].get(), robin[1].get(), robin[2].get());
+                }
+                else {
+                    m_eb_vel_apply_op->setLevelBC(lev, &vel_single[lev]);
+                }
 
                 Array<MultiFab,AMREX_SPACEDIM> b =
                     m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);

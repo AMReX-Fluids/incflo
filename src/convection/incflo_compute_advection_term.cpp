@@ -340,7 +340,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int face_comp = 0;
             int ncomp = AMREX_SPACEDIM;
             bool is_velocity = true;
-            Array4<int const> const& velbc_arr = (*velBC_MF).const_array(mfi);
+            Array4<int const> const& velbc_arr = velBC_MF ? (*velBC_MF).const_array(mfi)
+                                                          : Array4<int const>{};
             HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
                                                      (m_advect_momentum) ? rhovel[lev].array(mfi) : vel[lev]->const_array(mfi),
                                                      AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
@@ -380,7 +381,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 face_comp = AMREX_SPACEDIM;
                 ncomp = 1;
                 is_velocity = false;
-                Array4<int const> const& densbc_arr = (*densBC_MF).const_array(mfi);
+                Array4<int const> const& densbc_arr = densBC_MF ? (*densBC_MF).const_array(mfi)
+                                                                : Array4<int const>{};
                 HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
                                                          density[lev]->const_array(mfi),
                                                          AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
@@ -434,7 +436,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                    face_comp = AMREX_SPACEDIM+1;
                 ncomp = m_ntrac;
                 is_velocity = false;
-                Array4<int const> const& tracbc_arr = (*tracBC_MF).const_array(mfi);
+                Array4<int const> const& tracbc_arr = tracBC_MF ? (*tracBC_MF).const_array(mfi)
+                                                                : Array4<int const>{};
                 HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi, ro_trac,
                                           AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
                                                        flux_y[lev].array(mfi,face_comp),
@@ -705,5 +708,5 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     } // lev
 //fixme
     VisMF::Write(*conv_u[0],"conv");
-//
+    VisMF::Write(*conv_r[0],"conr");
 }
