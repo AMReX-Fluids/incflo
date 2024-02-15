@@ -375,21 +375,18 @@ incflo::InitialRedistribution ()
         // We also need any physical boundary conditions imposed if we are
         //    calling state redistribution (because that calls the slope routine)
 
-        EB_set_covered(ld.velocity, 0, AMREX_SPACEDIM, ld.velocity.nGrow(), 0.0);
         ld.velocity.FillBoundary(geom[lev].periodicity());
         MultiFab::Copy(ld.velocity_o, ld.velocity, 0, 0, AMREX_SPACEDIM, ld.velocity.nGrow());
         fillpatch_velocity(lev, m_t_new[lev], ld.velocity_o, 3);
 
         if (!m_constant_density)
         {
-            EB_set_covered(ld.density, 0, 1, ld.density.nGrow(), 0.0);
             ld.density.FillBoundary(geom[lev].periodicity());
             MultiFab::Copy(ld.density_o, ld.density, 0, 0, 1, ld.density.nGrow());
             fillpatch_density(lev, m_t_new[lev], ld.density_o, 3);
         }
         if (m_advect_tracer)
         {
-            EB_set_covered(ld.tracer, 0, m_ntrac, ld.tracer.nGrow(), 0.0);
             ld.tracer.FillBoundary(geom[lev].periodicity());
             MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, 1, ld.tracer.nGrow());
             fillpatch_tracer(lev, m_t_new[lev], ld.tracer_o, 3);
