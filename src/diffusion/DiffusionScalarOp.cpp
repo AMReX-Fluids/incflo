@@ -223,10 +223,6 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
                 if ( m_incflo->m_has_mixedBC ) {
                     auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, phi[lev]);
 
-                    // VisMF::Write(robin_a, "dra");
-                    // VisMF::Write(robin_b, "drb");
-                    // VisMF::Write(robin_f, "drf");
-
                     m_eb_scal_solve_op->setLevelBC(lev, &phi[lev],
                                                    robin[0].get(), robin[1].get(), robin[2].get());
                 }
@@ -382,10 +378,6 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
                 if ( m_incflo->m_has_mixedBC ) {
                     auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, phi[lev]);
 
-                    // VisMF::Write(robin_a, "dra");
-                    // VisMF::Write(robin_b, "drb");
-                    // VisMF::Write(robin_f, "drf");
-
                     m_eb_vel_solve_op->setLevelBC(lev, &phi[lev],
                                                   robin[0].get(), robin[1].get(), robin[2].get());
                 }
@@ -492,11 +484,6 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
                 if ( m_incflo->m_has_mixedBC ) {
                     auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, scalar_comp[lev]);
-
-                    // VisMF::Write(scalar_comp[0], "sc");
-                    // VisMF::Write(*robin[0], "dra");
-                    // VisMF::Write(*robin[1], "drb");
-                    // VisMF::Write(*robin[2], "drf");
 
                     m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev],
                                                    robin[0].get(), robin[1].get(), robin[2].get());
@@ -620,10 +607,6 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
                 if ( m_incflo->m_has_mixedBC ) {
                     auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, vel_single[lev]);
 
-                    // VisMF::Write(robin_a, "dra");
-                    // VisMF::Write(robin_b, "drb");
-                    // VisMF::Write(robin_f, "drf");
-
                     m_eb_vel_apply_op->setLevelBC(lev, &vel_single[lev],
                                                   robin[0].get(), robin[1].get(), robin[2].get());
                 }
@@ -643,12 +626,12 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-        amrex::single_level_redistribute(divtau_tmp[lev],
+            amrex::single_level_redistribute(divtau_tmp[lev],
                                              *a_divtau[lev], 0, a_divtau[lev]->nComp(),
                                              m_incflo->Geom(lev));
             // auto const& bc = m_incflo->get_velocity_bcrec_device_ptr();
             // m_incflo->redistribute_term(*a_divtau[lev], divtau_tmp[lev], *a_vel[lev],
-        //                 bc, lev);
+            //                 bc, lev);
         }
     }
     else

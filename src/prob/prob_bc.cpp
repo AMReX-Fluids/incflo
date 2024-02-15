@@ -88,9 +88,7 @@ void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
     }
 }
 
-// FIXME - need one like this for diffusion, but then it really needs to be going to the PhysBCFunct
-// Because we need the Dirichelet val, right?
-// For MAC, the BC is on phi, so always 0 or 1, I think
+// For MAC, the BC is on phi, so always 0 or 1
 void incflo::prob_set_MAC_robinBCs (Orientation ori, Box const& bx,
                                     Array4<Real> const& robin_a,
                                     Array4<Real> const& robin_b,
@@ -188,6 +186,7 @@ void incflo::prob_set_MAC_robinBCs (Orientation ori, Box const& bx,
     }
 }
 
+// For diffusion, we also pass in the dirichlet bc
 void incflo::prob_set_diffusion_robinBCs (Orientation ori, Box const& bx,
                                           Array4<Real> const& robin_a,
                                           Array4<Real> const& robin_b,

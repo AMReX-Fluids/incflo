@@ -706,7 +706,4 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     } // mfi
 #endif
     } // lev
-//fixme
-    VisMF::Write(*conv_u[0],"conv");
-    VisMF::Write(*conv_r[0],"conr");
 }

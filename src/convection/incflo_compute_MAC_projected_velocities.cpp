@@ -127,7 +127,7 @@ incflo::compute_MAC_projected_velocities (
                 MultiFab robin_b (grids[lev],dmap[lev],1,nghost,MFInfo(),Factory(lev));
                 MultiFab robin_f (grids[lev],dmap[lev],1,nghost,MFInfo(),Factory(lev));
 
-                // fixme - for vis, init robin MFs, although i don't know that this is generally needed
+                // fixme? - for vis, init robin MFs, although i don't know that this is generally needed
                 robin_a = 0;
                 robin_b = 0;
                 robin_f = 0;
@@ -145,7 +145,7 @@ incflo::compute_MAC_projected_velocities (
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-                    // FIXME - don't think we want tiling here...
+                    // FIXME - do we want tiling here...
                         for (MFIter mfi(robin_a,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
                             Box const& gbx = amrex::grow(mfi.validbox(),nghost);
                             Box blo = gbx & dlo;
@@ -197,19 +197,14 @@ incflo::compute_MAC_projected_velocities (
             l_advection_type = "Godunov";
         }
 
-// FIXME - need to create the BC MF here. This is a iMF vs a Real MF, so can't use
-        // the robin BC info from MAC. This is because if we want this to be extensible to
-        // full position dependent BCs, would need the MF to hold the BCType, which are enums,
-// so ints...
+// FIXME? - need to create the BC MF here. This is a iMF vs a Real MF, so can't use
+        // the robin BC info from MAC. This is because we need this to hold the BCType,
+        // which are enums, so ints
         //
         std::unique_ptr<iMultiFab> BC_MF;
         if (m_has_mixedBC) {
             BC_MF = make_BC_MF(lev, m_bcrec_velocity_d, "velocity");
         }
-//fixme
-    VisMF::Write(*vel[0],"vin");
-    //amrex::Write(*BC_MF,"bcmf");
-//
 
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
@@ -225,10 +220,6 @@ incflo::compute_MAC_projected_velocities (
                                       l_advection_type, PPM::default_limiter, BC_MF.get());
     }
 
-//fixme
-    VisMF::Write(*u_mac[0],"umac");
-    VisMF::Write(*v_mac[0],"vmac");
-//
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
     for (int lev=0; lev <= finest_level; ++lev)
     {
@@ -267,9 +258,6 @@ incflo::compute_MAC_projected_velocities (
     } else {
         macproj->project(m_mac_mg_rtol,m_mac_mg_atol);
     }
-//fixme
-    VisMF::Write(*u_mac[0],"umacp");
-    VisMF::Write(*v_mac[0],"vmacp");
     // Note that the macproj->project call above ensures that the MAC velocities are averaged down --
     //      we don't need to do that again here
 }
