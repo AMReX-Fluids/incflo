@@ -53,6 +53,7 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                      m_incflo->DistributionMap(0,finest_level),
                                                      info_apply, ebfact);
             m_eb_scal_apply_op->setMaxOrder(m_mg_maxorder);
+
             m_eb_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
                                             m_incflo->get_diffuse_scalar_bc(Orientation::high));
         }
@@ -219,7 +220,19 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 
 #ifdef AMREX_USE_EB
             if (m_eb_scal_solve_op) {
-                m_eb_scal_solve_op->setLevelBC(lev, &phi[lev]);
+                if ( m_incflo->m_has_mixedBC ) {
+                    auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, phi[lev]);
+
+                    // VisMF::Write(robin_a, "dra");
+                    // VisMF::Write(robin_b, "drb");
+                    // VisMF::Write(robin_f, "drf");
+
+                    m_eb_scal_solve_op->setLevelBC(lev, &phi[lev],
+                                                   robin[0].get(), robin[1].get(), robin[2].get());
+                }
+                else {
+                    m_eb_scal_solve_op->setLevelBC(lev, &phi[lev]);
+                }
 
                 // For when we use the stencil for centroid values
                 // m_eb_scal_solve_op->setPhiOnCentroid();
@@ -476,7 +489,21 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);
 
                 m_eb_scal_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
-                m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev]);
+
+                if ( m_incflo->m_has_mixedBC ) {
+                    auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, scalar_comp[lev]);
+
+                    // VisMF::Write(scalar_comp[0], "sc");
+                    // VisMF::Write(*robin[0], "dra");
+                    // VisMF::Write(*robin[1], "drb");
+                    // VisMF::Write(*robin[2], "drf");
+
+                    m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev],
+                                                   robin[0].get(), robin[1].get(), robin[2].get());
+                }
+                else {
+                    m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev]);
+                }
             }
 
             MLMG mlmg(*m_eb_scal_apply_op);
@@ -485,12 +512,12 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-        amrex::single_level_redistribute(laps_tmp[lev],
-                         *a_laps[lev], 0, m_incflo->m_ntrac,
+            amrex::single_level_redistribute(laps_tmp[lev],
+                                             *a_laps[lev], 0, m_incflo->m_ntrac,
                                              m_incflo->Geom(lev));
-        // auto const& bc = m_incflo->get_tracer_bcrec_device_ptr();
+            // auto const& bc = m_incflo->get_tracer_bcrec_device_ptr();
             // m_incflo->redistribute_term(*a_laps[lev], laps_tmp[lev], *a_scalar[lev],
-        //                 bc, lev);
+            //                 bc, lev);
         }
     }
     else

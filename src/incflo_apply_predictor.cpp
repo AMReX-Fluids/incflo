@@ -139,11 +139,6 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     if (need_divtau() || use_tensor_correction )
     {
-        // FIXME - deal with viscosity later...
-        // auto divtau = get_divtau_old();
-        // for (int lev = 0; lev <= finest_level; ++lev) {
-        //     *divtau[lev] = 0.;
-        // }
         compute_divtau(get_divtau_old(),get_velocity_old_const(),
                        get_density_old_const(),GetVecOfConstPtrs(vel_eta));
     }
@@ -153,13 +148,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     if (m_advect_tracer && need_divtau())
     {
-        // FIXME - deal with diffusion later...
-        auto laps = get_laps_old();
-        for (int lev = 0; lev <= finest_level; ++lev) {
-            *laps[lev] = 0.;
-        }
-        // compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
-        //              GetVecOfConstPtrs(tra_eta));
+        compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
+                     GetVecOfConstPtrs(tra_eta));
     }
 
     // **********************************************************************************************
