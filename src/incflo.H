@@ -591,11 +591,6 @@ private:
         periodic, mixed, undefined
     };
 
-// FIXME - don;t think this is the way to go, just use flag and make when needed since different
-    // code routines need the info in different containers...
-    // mask for mixed BCs: 1 = inflow (Neumann for NodalProj, Dirichlet for advection),
-    //                     0 = outflow (Homogeneous Dirichlet for NodalProj, FOEXTRAP for advection)
-    amrex::Vector<std::unique_ptr<amrex::iMultiFab> > m_BC_MF;
     bool m_has_mixedBC = false;
 
     amrex::GpuArray<BC                         , AMREX_SPACEDIM*2> m_bc_type;
@@ -607,7 +602,6 @@ private:
     amrex::Vector<amrex::Real>                                     m_bc_eb_velocity;
 
     // amrex::Vector cannot be used on gpu, so ...
-    // FIXME? can probably let go of this an treat like vel...
     amrex::GpuArray<amrex::Real const*, AMREX_SPACEDIM*2> m_bc_tracer_d;
     amrex::Gpu::DeviceVector<amrex::Real> m_bc_tracer_raii;
     //

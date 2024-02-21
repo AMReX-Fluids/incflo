@@ -118,7 +118,6 @@ void incflo::ClearLevel (int lev)
     BL_PROFILE("incflo::ClearLevel()");
     m_leveldata[lev].reset();
     m_factory[lev].reset();
-    m_BC_MF[lev].reset();
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
     macproj.reset();

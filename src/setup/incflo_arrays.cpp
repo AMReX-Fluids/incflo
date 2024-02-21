@@ -59,6 +59,4 @@ void incflo::ResizeArrays ()
     m_leveldata.resize(max_level+1);
 
     m_factory.resize(max_level+1);
-
-    //m_BC_MF.resize(max_level+1);
 }
