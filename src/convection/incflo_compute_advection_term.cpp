@@ -372,7 +372,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                      is_velocity, fluxes_are_area_weighted,
                                                      m_advection_type, PPM::default_limiter, velbc_arr);
 
-
             // ************************************************************************
             // Density
             // ************************************************************************

@@ -91,7 +91,6 @@ incflo::compute_MAC_projected_velocities (
     //
     // Initialize (or redefine the beta in) the MacProjector
     //
-    Print()<<"Mac proj needs init? "<<macproj->needInitialization()<<std::endl;
     if (macproj->needInitialization())
     {
         LPInfo lp_info;
@@ -112,61 +111,12 @@ incflo::compute_MAC_projected_velocities (
         }
         macproj->setDomainBC(get_mac_projection_bc(Orientation::low), get_mac_projection_bc(Orientation::high));
 
-        // Not sure exactly where this goes. Does it only need initialization? set every time???
-        // initProj only take as many levels as 1/rho, so if a level is added, would have to
-        // re-init proj anyway.
-        // robin_a, etc needs to exist to finest_level
-        // Values need to be in the ghost cells, although the BC is considered on face.
         if ( m_has_mixedBC ) {
-            int nghost = 1;
-
             for (int lev = 0; lev <= finest_level; ++lev)
             {
-                // define and fill Robin BC a, b, and f
-                MultiFab robin_a (grids[lev],dmap[lev],1,nghost,MFInfo(),Factory(lev));
-                MultiFab robin_b (grids[lev],dmap[lev],1,nghost,MFInfo(),Factory(lev));
-                MultiFab robin_f (grids[lev],dmap[lev],1,nghost,MFInfo(),Factory(lev));
-
-                // fixme? - for vis, init robin MFs, although i don't know that this is generally needed
-                robin_a = 0;
-                robin_b = 0;
-                robin_f = 0;
-
-                // only ghost cells of robin BC arrays are used in MLMG
-                // bc in ghost cells that are outside the domain.
-                Box const& domain = Geom(lev).Domain();
-                for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-                    Orientation olo(dir,Orientation::low);
-                    Orientation ohi(dir,Orientation::high);
-
-                    if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
-                        Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
-                        Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-                    // FIXME - do we want tiling here...
-                        for (MFIter mfi(robin_a,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-                            Box const& gbx = amrex::grow(mfi.validbox(),nghost);
-                            Box blo = gbx & dlo;
-                            Box bhi = gbx & dhi;
-                            Array4<Real> const& a_arr     = robin_a.array(mfi);
-                            Array4<Real> const& b_arr     = robin_b.array(mfi);
-                            Array4<Real> const& f_arr     = robin_f.array(mfi);
-
-                            // Robin BC:   a u + b du/dn = f  -- inflow,  Neumann   a=0, b=1, f=0
-                            //                                -- outflow, Dirichlet a=1, b=0, f=0
-                            // Only need to fill Robin BC sides, MLMG will check for Robin BC first
-                            if (blo.ok()) {
-                                prob_set_MAC_robinBCs(olo, blo, a_arr, b_arr, f_arr, lev);
-                            }
-                            if (bhi.ok()) {
-                                prob_set_MAC_robinBCs(ohi, bhi, a_arr, b_arr, f_arr, lev);
-                            }
-                        }
-                    }
-                }
-                macproj->setLevelBC(lev, nullptr, &robin_a, &robin_b, &robin_f);
+                auto const robin = make_robinBC_MFs(lev);
+                macproj->setLevelBC(lev, nullptr,
+                                    &robin[0], &robin[1], &robin[2]);
             }
         }
     } else {
@@ -197,12 +147,16 @@ incflo::compute_MAC_projected_velocities (
             l_advection_type = "Godunov";
         }
 
-// FIXME? - need to create the BC MF here. This is a iMF vs a Real MF, so can't use
-        // the robin BC info from MAC. This is because we need this to hold the BCType,
-        // which are enums, so ints
-        //
         std::unique_ptr<iMultiFab> BC_MF;
         if (m_has_mixedBC) {
+            // Create a MF to hold the BCType info. Note that this is different than the
+            // bcs for the MAC projection because the MAC operates on phi, this is velocity.
+            //
+            // TODO? Could consider creating an incflo member variable to save the BC_MF
+            //     amrex::Vector<std::unique_ptr<amrex::iMultiFab> > m_BC_MF;
+            // Could stack components as vel, density, tracer, and then could use for
+            // scalars' advective step as well. But not sure it really matters one way or
+            // the other.
             BC_MF = make_BC_MF(lev, m_bcrec_velocity_d, "velocity");
         }
 

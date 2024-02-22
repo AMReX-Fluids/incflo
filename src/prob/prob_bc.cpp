@@ -88,13 +88,13 @@ void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
     }
 }
 
-// For MAC, the BC is on phi, so always 0 or 1
 void incflo::prob_set_MAC_robinBCs (Orientation ori, Box const& bx,
                                     Array4<Real> const& robin_a,
                                     Array4<Real> const& robin_b,
                                     Array4<Real> const& robin_f,
                                     int lev)
 {
+    // For MAC, the BC is on phi, so always 0 or 1
     // Robin BC:   a u + b du/dn = f  -- inflow,  Neumann   a=0, b=1, f=0
     //                                -- outflow, Dirichlet a=1, b=0, f=0
 
@@ -186,7 +186,6 @@ void incflo::prob_set_MAC_robinBCs (Orientation ori, Box const& bx,
     }
 }
 
-// For diffusion, we also pass in the dirichlet bc
 void incflo::prob_set_diffusion_robinBCs (Orientation ori, Box const& bx,
                                           Array4<Real> const& robin_a,
                                           Array4<Real> const& robin_b,
@@ -194,6 +193,7 @@ void incflo::prob_set_diffusion_robinBCs (Orientation ori, Box const& bx,
                                           Array4<Real const> const& bcval,
                                           int lev)
 {
+    // For diffusion, we also pass in the dirichlet bc (bcval)
     // Robin BC:   a u + b du/dn = f  -- inflow,  Dirichlet a=1, b=0, f=bcval
     //                                -- outflow, Neumann   a=0, b=1, f=0
 

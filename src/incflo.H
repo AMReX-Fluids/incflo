@@ -114,8 +114,7 @@ public:
                                                   amrex::Gpu::DeviceVector<amrex::BCRec>& bcs,
                                                   std::string field);
     amrex::iMultiFab make_nodalBC_mask (int lev);
-    amrex::Vector<std::unique_ptr<amrex::MultiFab>> make_diffusion_robinBC_MFs(int lev,
-                                                                               amrex::MultiFab& phi);
+    amrex::Vector<amrex::MultiFab> make_robinBC_MFs(int lev, amrex::MultiFab* phi = nullptr);
     // void make_ccBC_mask (int lev, const amrex::BoxArray& ba,
     //                      const amrex::DistributionMapping& dm);
     // void make_nodalBC_mask (int lev, const amrex::BoxArray& ba,

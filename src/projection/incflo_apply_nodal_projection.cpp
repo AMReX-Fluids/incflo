@@ -161,50 +161,6 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
         for(int lev = 0; lev <= finest_level; ++lev)
         {
             const auto mask = make_nodalBC_mask(lev);
-//             // MLNodeLap does not require any ghost cells...
-//             std::unique_ptr<iMultiFab> nodal_mask(new iMultiFab(amrex::convert(ba,IntVect::TheNodeVector()),
-//                                                                 dm, 1, 0));
-//             *nodal_mask = 1;
-
-//             Box const& domain = Geom(lev).Domain();
-//             for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-//                 Orientation olo(dir,Orientation::low);
-//                 Orientation ohi(dir,Orientation::high);
-//                 if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
-//                     Box dlo = (m_bc_type[olo] == BC::mixed) ? surroundingNodes(bdryLo(domain,dir)) : Box();
-//                     Box dhi = (m_bc_type[ohi] == BC::mixed) ? surroundingNodes(bdryHi(domain,dir)) : Box();
-// #ifdef _OPENMP
-// #pragma omp parallel if (Gpu::notInLaunchRegion())
-// #endif
-//                     for (MFIter mfi(*nodal_mask); mfi.isValid(); ++mfi) {
-//                         Box blo = mfi.validbox() & dlo;
-//                         Box bhi = mfi.validbox() & dhi;
-//                         Array4<int      > const& nodal_arr = nodal_mask->array(mfi);
-//                         Array4<int const> const& bcs_arr = m_mixedBC_mask[lev]->const_array(mfi);
-//                         if (blo.ok()) {
-//                             // nodal_mask is the same as the mixedBC_mask, except with vals on
-//                             // on BC face rather than in cell-centered ghosts
-//                             // So, lo side i_nd->i_cc-1, hi side i_nd=i_cc
-
-//                             //FIXME, theres a corner cell issue here :(
-//                             // maybe answer is to just go to make_mask fn in prob...
-//                             Dim3 shift = IntVect::TheDimensionVector(dir).dim3();
-
-//                             amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-//                             {
-//                                 nodal_arr(i,j,k) = bcs_arr(i-shift.x, j-shift.y, k-shift.z);
-//                             });
-//                         }
-//                         if (bhi.ok()) {
-//                             amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-//                             {
-//                                 nodal_arr(i,j,k) = bcs_arr(i, j, k);
-//                             });
-//                         }
-//                     }
-//                 }
-//             }
-
             nodal_projector->getLinOp().setOversetMask(lev, mask);
         }
     }

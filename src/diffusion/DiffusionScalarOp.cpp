@@ -221,10 +221,10 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 #ifdef AMREX_USE_EB
             if (m_eb_scal_solve_op) {
                 if ( m_incflo->m_has_mixedBC ) {
-                    auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, phi[lev]);
+                    auto const robin = m_incflo->make_robinBC_MFs(lev, &phi[lev]);
 
                     m_eb_scal_solve_op->setLevelBC(lev, &phi[lev],
-                                                   robin[0].get(), robin[1].get(), robin[2].get());
+                                                   &robin[0], &robin[1], &robin[2]);
                 }
                 else {
                     m_eb_scal_solve_op->setLevelBC(lev, &phi[lev]);
@@ -376,10 +376,10 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
                 // m_eb_vel_solve_op->setPhiOnCentroid();
 
                 if ( m_incflo->m_has_mixedBC ) {
-                    auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, phi[lev]);
+                    auto const robin = m_incflo->make_robinBC_MFs(lev, &phi[lev]);
 
                     m_eb_vel_solve_op->setLevelBC(lev, &phi[lev],
-                                                  robin[0].get(), robin[1].get(), robin[2].get());
+                                                  &robin[0], &robin[1], &robin[2]);
                 }
                 else {
                     m_eb_vel_solve_op->setLevelBC(lev, &phi[lev]);
@@ -483,10 +483,10 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                 m_eb_scal_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
 
                 if ( m_incflo->m_has_mixedBC ) {
-                    auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, scalar_comp[lev]);
+                    auto const robin = m_incflo->make_robinBC_MFs(lev, &scalar_comp[lev]);
 
                     m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev],
-                                                   robin[0].get(), robin[1].get(), robin[2].get());
+                                                   &robin[0], &robin[1], &robin[2]);
                 }
                 else {
                     m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev]);
@@ -605,10 +605,10 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
                 vel_single.emplace_back(       vel[lev],amrex::make_alias,comp,1);
 
                 if ( m_incflo->m_has_mixedBC ) {
-                    auto const robin = m_incflo->make_diffusion_robinBC_MFs(lev, vel_single[lev]);
+                    auto const robin = m_incflo->make_robinBC_MFs(lev, &vel_single[lev]);
 
                     m_eb_vel_apply_op->setLevelBC(lev, &vel_single[lev],
-                                                  robin[0].get(), robin[1].get(), robin[2].get());
+                                                  &robin[0], &robin[1], &robin[2]);
                 }
                 else {
                     m_eb_vel_apply_op->setLevelBC(lev, &vel_single[lev]);
