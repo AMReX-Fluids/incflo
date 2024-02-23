@@ -2,12 +2,14 @@
 
 using namespace amrex;
 
-// This function is used to prepare both the nodal projection and advection for
-// mixed BCs (i.e. position dependent BCs). The necessary value to indicate an
-// outflow BC differs between advection and the NodalProj, so we pass it in
+// Specify mixed BCs for both the nodal projection and advection. The necessary value
+// to indicate an in/outflow BC differs between advection and the NodalProj, so we pass it.
+// Note that the advection BCs are on the velocity and scalars, whereas for the Nodal
+// Projection we're creating an overset mask that operates on the solve for phi (~pressure)
 void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
                              Array4<int> const& mask, int lev,
-                             int outflow_val, std::string field)
+                             int inflow_val, int outflow_val,
+                             std::string field)
 {
     if (1100 == m_probtype || 1101 == m_probtype || 1102 == m_probtype)
     {
@@ -33,21 +35,21 @@ void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
                         if (i <= half_num_cells) {
                             mask(i,j,k,n) = outflow_val; // outflow on bottom
                         } else {
-                            mask(i,j,k,n) = BCType::ext_dir; // inflow on top
+                            mask(i,j,k,n) = inflow_val; // inflow on top
                         }
                     }
                     else if (direction == 1) {
                         if (j <= half_num_cells) {
                             mask(i,j,k,n) = outflow_val;
                         } else {
-                            mask(i,j,k,n) = BCType::ext_dir;
+                            mask(i,j,k,n) = inflow_val;
                         }
                     }
                     else if (direction == 2) {
                         if (k <= half_num_cells) {
                             mask(i,j,k,n) = outflow_val;
                         } else {
-                            mask(i,j,k,n) = BCType::ext_dir;
+                            mask(i,j,k,n) = inflow_val;
                         }
                     }
                 }
@@ -60,21 +62,21 @@ void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
                         if (i > half_num_cells) {
                             mask(i,j,k,n) = outflow_val; // outflow on top
                         } else {
-                            mask(i,j,k,n) = BCType::ext_dir;  // inflow on bottom
+                            mask(i,j,k,n) = inflow_val;  // inflow on bottom
                         }
                     }
                     else if (direction == 1) {
                         if (j > half_num_cells) {
                             mask(i,j,k,n) = outflow_val;
                         } else {
-                            mask(i,j,k,n) = BCType::ext_dir;
+                            mask(i,j,k,n) = inflow_val;
                         }
                     }
                     else if (direction == 2) {
                         if (k > half_num_cells) {
                             mask(i,j,k,n) = outflow_val;
                         } else {
-                            mask(i,j,k,n) = BCType::ext_dir;
+                            mask(i,j,k,n) = inflow_val;
                         }
                     }
                 }
@@ -94,7 +96,7 @@ void incflo::prob_set_MAC_robinBCs (Orientation ori, Box const& bx,
                                     Array4<Real> const& robin_f,
                                     int lev)
 {
-    // For MAC, the BC is on phi, so always 0 or 1
+    // For the MAC Projection, the BC is on phi (~pressure), so always homogeneous
     // Robin BC:   a u + b du/dn = f  -- inflow,  Neumann   a=0, b=1, f=0
     //                                -- outflow, Dirichlet a=1, b=0, f=0
 

@@ -6,15 +6,17 @@
 
 using namespace amrex;
 
+// Make the iMultiFab needed by the Nodal Projection to support mixed BCs
 iMultiFab
 incflo::make_nodalBC_mask(int lev)
 {
-    // MLNodeLap does not require any ghost cells...
+    // We use the solver's overset mask to implement mixed BCs. The mask is nodal, and
+    // so exists on the boundary face, where 0 indicates a Dirichlet boundary condition
+    // (i,e, no solve needed for that point because we know the solution there already).
+    // Because it's an overset mask and not a BC, we must fill the entire MF.
     iMultiFab new_mask(amrex::convert(grids[lev], IntVect::TheNodeVector()), dmap[lev], 1, 0);
-    // Overset mask needs to be defined everywhere
     new_mask = 1;
-    // NodalProj expects outflow regions to be indcatied with a 0. This is treated as a boolean
-    // mask, so any other regions can have any other int value
+    int inflow = 1;
     int outflow = 0;
 
     Geometry const& gm = Geom(lev);
@@ -33,10 +35,10 @@ incflo::make_nodalBC_mask(int lev)
                 Box bhi = mfi.validbox() & dhi;
                 Array4<int> const& mask_arr = new_mask.array(mfi);
                 if (blo.ok()) {
-                    prob_set_BC_MF(olo, blo, mask_arr, lev, outflow, "projection");
+                    prob_set_BC_MF(olo, blo, mask_arr, lev, inflow, outflow, "projection");
                 }
                 if (bhi.ok()) {
-                    prob_set_BC_MF(ohi, bhi, mask_arr, lev, outflow, "projection");
+                    prob_set_BC_MF(ohi, bhi, mask_arr, lev, inflow, outflow, "projection");
                 }
             }
         }
@@ -45,17 +47,20 @@ incflo::make_nodalBC_mask(int lev)
     return new_mask;
 }
 
-// This function makes a position dependent BC MF for the advection routines
+// Make a position dependent BC MultiFab for the advection routines to support
+// mixed BCs.
 std::unique_ptr<iMultiFab>
 incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec>& bcs,
                    std::string field)
 {
     int ncomp = bcs.size();
-    // BC info stored in ghost cells to avoid any ambiguity
+    // The advection routines expect that the BC type is stored in the first ghost
+    // cell of a cell-centered MF.
     std::unique_ptr<iMultiFab> BC_MF(new iMultiFab(grids[lev], dmap[lev], ncomp, 1));
     // initialize to 0 == BCType::int_dir, not sure this is needed really
     *BC_MF = 0;
     // For advection, we use FOEXTRAP for outflow regions per incflo::init_bcs()
+    int inflow = BCType::ext_dir;
     int outflow = BCType::foextrap;
 
     Box const& domain = geom[lev].Domain();
@@ -71,24 +76,24 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec>& bcs,
         for (MFIter mfi(*BC_MF); mfi.isValid(); ++mfi) {
             Box blo = mfi.growntilebox() & dlo;
             Box bhi = mfi.growntilebox() & dhi;
-            Array4<int> const& mask_arr = BC_MF->array(mfi);
+            Array4<int> const& bc_arr = BC_MF->array(mfi);
             if (m_bc_type[olo] == BC::mixed) {
-                prob_set_BC_MF(olo, blo, mask_arr, lev, outflow, field);
+                prob_set_BC_MF(olo, blo, bc_arr, lev, inflow, outflow, field);
             } else {
                 amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < ncomp; n++) {
-                        mask_arr(i,j,k,n) = bcs[n].lo(dir);
+                        bc_arr(i,j,k,n) = bcs[n].lo(dir);
                     }
                 });
             }
             if (m_bc_type[ohi] == BC::mixed) {
-                prob_set_BC_MF(ohi, bhi, mask_arr, lev, outflow, field);
+                prob_set_BC_MF(ohi, bhi, bc_arr, lev, inflow, outflow, field);
             } else {
                 amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < ncomp; n++) {
-                        mask_arr(i,j,k,n) = bcs[n].hi(dir);
+                        bc_arr(i,j,k,n) = bcs[n].hi(dir);
                     }
                 });
             }
@@ -98,11 +103,15 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec>& bcs,
     return BC_MF;
 }
 
-// TODO There's probably a way to combine this with above function rather than repeating
-// much of the same code...
+// Create the MutliFabs needed by the linear solver to define Robin BCs, which incflo
+// uses to support mixed BCs in the MAC Projection and diffusion.
 Vector<MultiFab>
-incflo::make_robinBC_MFs(int lev, MultiFab* phi)
+incflo::make_robinBC_MFs(int lev, MultiFab* state)
 {
+    // MLMG defines the Robin BC with
+    //     a u + b du/dn = f
+    // The values are stored in the first ghost cell, although the BC is considered on
+    // the face. Only the ghost cells of robin BC arrays are used in MLMG.
     int nghost = 1;
 
     Vector<MultiFab> robin(3);
@@ -114,9 +123,6 @@ incflo::make_robinBC_MFs(int lev, MultiFab* phi)
     MultiFab& robin_b = robin[1];
     MultiFab& robin_f = robin[2];
 
-    // define and fill Robin BC a, b, and f
-    // BC values are stored in the ghost cells, although the BC is considered on face.
-    // Only the ghost cells of robin BC arrays are used in MLMG.
     Box const& domain = Geom(lev).Domain();
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
         Orientation olo(dir,Orientation::low);
@@ -138,10 +144,11 @@ incflo::make_robinBC_MFs(int lev, MultiFab* phi)
                 Array4<Real> const& b_arr     = robin_b.array(mfi);
                 Array4<Real> const& f_arr     = robin_f.array(mfi);
 
-                if (phi) {
-                    // phi has filled boundry, so can use its ghost cells for the BC values
-                    Array4<Real const> const& bcv = phi->const_array(mfi);
-                    // Diffusion
+                if (state) {
+                    // state has filled boundry, so can use its ghost cells for the BC values
+                    Array4<Real const> const& bcv = state->const_array(mfi);
+                    // Diffusion, solving for velocity, density, tracer
+                    //
                     // Robin BC:   a u + b du/dn = f  -- inflow,  Dirichlet a=1, b=0, f=bcv
                     //                                -- outflow, Neumann   a=0, b=1, f=0
                     if (blo.ok()) {
@@ -151,7 +158,8 @@ incflo::make_robinBC_MFs(int lev, MultiFab* phi)
                         prob_set_diffusion_robinBCs(ohi, bhi, a_arr, b_arr, f_arr, bcv, lev);
                     }
                 } else {
-                    // MAC
+                    // MAC, solving for phi (~pressure)
+                    //
                     // Robin BC:   a u + b du/dn = f  -- inflow,  Neumann   a=0, b=1, f=0
                     //                                -- outflow, Dirichlet a=1, b=0, f=0
                     if (blo.ok()) {
