@@ -669,40 +669,39 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         drdt_tmp.FillBoundary(geom[lev].periodicity());
         dtdt_tmp.FillBoundary(geom[lev].periodicity());
 
-//Was this OMP intentionally left off?
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
         for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
-        Box const& bx = mfi.tilebox();
+            Box const& bx = mfi.tilebox();
 
-        // velocity
-        auto const& bc_vel = get_velocity_bcrec_device_ptr();
-        redistribute_term(mfi, *conv_u[lev], dvdt_tmp,
-                  (m_advect_momentum) ? rhovel[lev] : *vel[lev],
-                  bc_vel, lev);
+            // velocity
+            auto const& bc_vel = get_velocity_bcrec_device_ptr();
+            redistribute_term(mfi, *conv_u[lev], dvdt_tmp,
+                              (m_advect_momentum) ? rhovel[lev] : *vel[lev],
+                              bc_vel, lev);
 
-        // density
-        if (!m_constant_density) {
-        auto const& bc_den = get_density_bcrec_device_ptr();
-        redistribute_term(mfi, *conv_r[lev], drdt_tmp,
-                  *density[lev], bc_den, lev);
-        } else {
-        auto const& drdt = conv_r[lev]->array(mfi);
-        amrex::ParallelFor(bx,
+            // density
+            if (!m_constant_density) {
+                auto const& bc_den = get_density_bcrec_device_ptr();
+                redistribute_term(mfi, *conv_r[lev], drdt_tmp,
+                                  *density[lev], bc_den, lev);
+            } else {
+                auto const& drdt = conv_r[lev]->array(mfi);
+                amrex::ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {
-            drdt(i,j,k) = 0.;
-        });
-        }
+                {
+                    drdt(i,j,k) = 0.;
+                });
+            }
 
-        if (m_advect_tracer) {
-        auto const& bc_tra = get_tracer_bcrec_device_ptr();
-        redistribute_term(mfi, *conv_t[lev], dtdt_tmp,
-                  rhotrac[lev], bc_tra, lev);
-        }
-    } // mfi
+            if (m_advect_tracer) {
+                auto const& bc_tra = get_tracer_bcrec_device_ptr();
+                redistribute_term(mfi, *conv_t[lev], dtdt_tmp,
+                                  rhotrac[lev], bc_tra, lev);
+            }
+        } // mfi
 #endif
     } // lev
 }
