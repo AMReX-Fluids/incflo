@@ -111,10 +111,10 @@ public:
     ///////////////////////////////////////////////////////////////////////////
 
     std::unique_ptr<amrex::iMultiFab> make_BC_MF (int lev,
-                                                  amrex::Gpu::DeviceVector<amrex::BCRec>& bcs,
-                                                  std::string field);
+                                                  amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
+                                                  std::string const& field);
     amrex::iMultiFab make_nodalBC_mask (int lev);
-    amrex::Vector<amrex::MultiFab> make_robinBC_MFs(int lev, amrex::MultiFab* phi = nullptr);
+    amrex::Vector<amrex::MultiFab> make_robinBC_MFs(int lev, amrex::MultiFab* state = nullptr);
     // void make_ccBC_mask (int lev, const amrex::BoxArray& ba,
     //                      const amrex::DistributionMapping& dm);
     // void make_nodalBC_mask (int lev, const amrex::BoxArray& ba,
