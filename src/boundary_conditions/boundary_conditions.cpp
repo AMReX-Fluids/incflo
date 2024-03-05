@@ -255,7 +255,8 @@ void incflo::init_bcs ()
             auto const bct = m_bc_type[ori];
             if (bct == BC::pressure_inflow  ||
                 bct == BC::pressure_outflow ||
-                bct == BC::no_slip_wall)
+                bct == BC::no_slip_wall ||
+                bct == BC::mixed)
             {
                 if (side == Orientation::low) {
                     m_bcrec_density[0].setLo(dir, BCType::foextrap);
@@ -306,7 +307,8 @@ void incflo::init_bcs ()
             Orientation::Side side = ori.faceDir();
             auto const bct = m_bc_type[ori];
             if (bct == BC::pressure_inflow  ||
-                bct == BC::pressure_outflow)
+                bct == BC::pressure_outflow ||
+                bct == BC::mixed)
             {
                 if (side == Orientation::low) {
                     for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::foextrap);
