@@ -53,7 +53,7 @@ std::unique_ptr<iMultiFab>
 incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
                    std::string const& field)
 {
-    auto ncomp = bcs.size();
+    auto ncomp = static_cast<int>(bcs.size());
     // The advection routines expect that the BC type is stored in the first ghost
     // cell of a cell-centered MF.
     std::unique_ptr<iMultiFab> BC_MF(new iMultiFab(grids[lev], dmap[lev], ncomp, 1));
@@ -82,7 +82,7 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
             } else {
                 amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    for (unsigned int n = 0; n < ncomp; n++) {
+                    for (int n = 0; n < ncomp; n++) {
                         bc_arr(i,j,k,n) = bcs[n].lo(dir);
                     }
                 });
@@ -92,7 +92,7 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
             } else {
                 amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    for (unsigned int n = 0; n < ncomp; n++) {
+                    for (int n = 0; n < ncomp; n++) {
                         bc_arr(i,j,k,n) = bcs[n].hi(dir);
                     }
                 });
