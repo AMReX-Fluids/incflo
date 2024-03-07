@@ -6,10 +6,10 @@ using namespace amrex;
 // to indicate an in/outflow BC differs between advection and the NodalProj, so we pass it.
 // Note that the advection BCs are on the velocity and scalars, whereas for the Nodal
 // Projection we're creating an overset mask that operates on the solve for phi (~pressure)
-void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
+void incflo::prob_set_BC_MF (Orientation const& ori, Box const& bx,
                              Array4<int> const& mask, int lev,
                              int inflow_val, int outflow_val,
-                             std::string field)
+                             std::string const& field)
 {
     if (1100 == m_probtype || 1101 == m_probtype || 1102 == m_probtype)
     {
@@ -90,7 +90,7 @@ void incflo::prob_set_BC_MF (Orientation ori, Box const& bx,
     }
 }
 
-void incflo::prob_set_MAC_robinBCs (Orientation ori, Box const& bx,
+void incflo::prob_set_MAC_robinBCs (Orientation const& ori, Box const& bx,
                                     Array4<Real> const& robin_a,
                                     Array4<Real> const& robin_b,
                                     Array4<Real> const& robin_f,
@@ -188,7 +188,7 @@ void incflo::prob_set_MAC_robinBCs (Orientation ori, Box const& bx,
     }
 }
 
-void incflo::prob_set_diffusion_robinBCs (Orientation ori, Box const& bx,
+void incflo::prob_set_diffusion_robinBCs (Orientation const& ori, Box const& bx,
                                           Array4<Real> const& robin_a,
                                           Array4<Real> const& robin_b,
                                           Array4<Real> const& robin_f,

@@ -220,15 +220,15 @@ public:
     ///////////////////////////////////////////////////////////////////////////
 
     void prob_init_fluid (int lev);
-    void prob_set_BC_MF (amrex::Orientation ori, amrex::Box const& bx,
+    void prob_set_BC_MF (amrex::Orientation const& ori, amrex::Box const& bx,
                          amrex::Array4<int> const& mask, int lev,
-                         int inflow_val, int outflow_val, std::string field);
-    void prob_set_MAC_robinBCs (amrex::Orientation ori, amrex::Box const& bx,
+                         int inflow_val, int outflow_val, std::string const& field);
+    void prob_set_MAC_robinBCs (amrex::Orientation const& ori, amrex::Box const& bx,
                                 amrex::Array4<amrex::Real> const& robin_a,
                                 amrex::Array4<amrex::Real> const& robin_b,
                                 amrex::Array4<amrex::Real> const& robin_f,
                                 int lev);
-    void prob_set_diffusion_robinBCs (amrex::Orientation ori, amrex::Box const& bx,
+    void prob_set_diffusion_robinBCs (amrex::Orientation const& ori, amrex::Box const& bx,
                                       amrex::Array4<amrex::Real> const& robin_a,
                                       amrex::Array4<amrex::Real> const& robin_b,
                                       amrex::Array4<amrex::Real> const& robin_f,
