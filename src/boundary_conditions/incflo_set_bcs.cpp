@@ -77,13 +77,14 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
             Box blo = mfi.growntilebox() & dlo;
             Box bhi = mfi.growntilebox() & dhi;
             Array4<int> const& bc_arr = BC_MF->array(mfi);
+            const auto bc_ptr = bcs.data();
             if (m_bc_type[olo] == BC::mixed) {
                 prob_set_BC_MF(olo, blo, bc_arr, lev, inflow, outflow, field);
             } else {
                 amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < ncomp; n++) {
-                        bc_arr(i,j,k,n) = bcs[n].lo(dir);
+                        bc_arr(i,j,k,n) = bc_ptr[n].lo(dir);
                     }
                 });
             }
@@ -93,7 +94,7 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
                 amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < ncomp; n++) {
-                        bc_arr(i,j,k,n) = bcs[n].hi(dir);
+                        bc_arr(i,j,k,n) = bc_ptr[n].hi(dir);
                     }
                 });
             }
