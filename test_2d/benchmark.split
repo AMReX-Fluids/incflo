@@ -1,71 +1,68 @@
-amrex.fpe_trap_invalid = 1
-
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-max_step                =  10000            # Max number of time steps
+max_step                =  50           # Max number of time steps
 steady_state            =  0            # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-#incflo.fixed_dt             =   -1.e-5       # Use this constant dt if > 0
 incflo.cfl = 0.45
-
-#incflo.do_initial_proj      =   1
-#incflo.initial_iterations   =   0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =   100           # Steps between plot files
+amr.plot_int            =   100         # Steps between plot files
 amr.plt_regtest         =   1
 
-amr.check_int = 100
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #
 #.......................................#
-incflo.gravity          =   0.  0.      # Gravitational force (3D)
+incflo.gravity          =   0.  0.  0.  # Gravitational force (3D)
 incflo.ro_0             =   1.          # Reference density 
 
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
-incflo.mu               =   0.001        # Dynamic viscosity coefficient
-incflo.use_tensor_solve = false
+incflo.mu               =   0.01        # Dynamic viscosity coefficient
+incflo.use_tensor_solve =   false
+incflo.advect_momentum  =   true
+incflo.constant_density =   false
 
-incflo.constant_density =   false        #
+incflo.advect_tracer    =   true
+incflo.ntrac            =   1           # Number of tracers
+incflo.mu_s             =   0.001       # Scalar diffusion coefficient
 
 incflo.advection_type        =  "Godunov" 
-#incflo.diffusion_type        =  0
+incflo.diffusion_type        =  1       # Crank-Nicolson
 incflo.redistribution_type   =  "StateRedist" 
-
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   32 32       # Grid cells at coarsest AMRlevel
-amr.max_level           =   0           # Max AMR level in hierarchy 
+amr.n_cell              =   32 32 8     # Grid cells at coarsest AMRlevel
+amr.max_level           =   1           # Max AMR level in hierarchy 
 amr.max_grid_size_x     =   1024
 amr.max_grid_size_y     =   1024
 amr.max_grid_size_z     =   1024
-#amr.blocking_factor     =   8
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
-geometry.prob_lo        =  -1. -1.      # Lo corner coordinates
-geometry.prob_hi        =   1.  1.     # Hi corner coordinates
-geometry.is_periodic    =   0   0       # Periodicity x y z (0/1)
+geometry.prob_lo        =  -1. -1. -.25 # Lo corner coordinates
+geometry.prob_hi        =   1.  1.  .25 # Hi corner coordinates
+geometry.is_periodic    =   0   0   1   # Periodicity x y z (0/1)
 
 # Boundary conditions
 xlo.type                =   "mixed"
 xlo.velocity            =   1.0  0.0  0.0
 xlo.pressure            =   0.0
 xlo.density             =   2.0
+xlo.tracer              =   2.0
 
 xhi.type                =   "mixed"
 xhi.velocity            =   1.0  0.0  0.0
 xhi.pressure            =   0.0
 xhi.density             =   2.0
+xhi.tracer              =   2.0
 
 ylo.type                =   "nsw"
 yhi.type                =   "nsw"
@@ -74,17 +71,19 @@ yhi.type                =   "nsw"
 incflo.geometry = "box"
 box.internal_flow = false
 
-box.Lo =  -1.1  -0.10  
-box.Hi =  1.10   0.10   
+box.Lo = -0.4  -0.2  -1.1
+box.Hi =  1.1   0.2   1.1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
 incflo.probtype = 1101
 
-incflo.ic_u             =   1.0         #
+incflo.ic_u             =   0.0         #
 incflo.ic_v             =   0.0         #
+incflo.ic_w             =   0.0         #
 incflo.ic_p             =   0.0         #
+incflo.ic_t             =   0.0         #
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              VERBOSITY                #
@@ -92,9 +91,3 @@ incflo.ic_p             =   0.0         #
 incflo.verbose            =   1         # incflo itself
 mac_proj.verbose          =   1         # MAC Projector
 nodal_proj.verbose        =   1         # Nodal Projector
-
-
-#.......................................#
-#               EB FLOW                 #
-#.......................................#
-eb_flow.vel_mag        =  0.0 
