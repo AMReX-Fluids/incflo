@@ -114,7 +114,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
             amrex::Vector<amrex::BCRec> inflow_bcr;
             inflow_bcr.resize(AMREX_SPACEDIM);
             for (OrientationIter oit; oit; ++oit) {
-                if (m_bc_type[oit()] == BC::mass_inflow || m_bc_type[oit()] == BC::mixed) {
+                if (m_bc_type[oit()] == BC::mass_inflow) {
                     AMREX_D_TERM(inflow_bcr[0].set(oit(), BCType::ext_dir);,
                                  inflow_bcr[1].set(oit(), BCType::ext_dir);,
                                  inflow_bcr[2].set(oit(), BCType::ext_dir));
@@ -125,8 +125,6 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
                 (geom[lev], inflow_bcr, IncfloVelFill{m_probtype, m_bc_velocity});
             physbc(*vel[lev], 0, AMREX_SPACEDIM, nghost, time, 0);
 
-            // Note that we wouldn't need this if we trusted users to supply inflow data
-            // that obeys periodicity
             // We make sure to only fill "nghost" ghost cells so we don't accidentally
             // over-write good ghost cell values with unfilled ghost cell values
             vel[lev]->EnforcePeriodicity(0, AMREX_SPACEDIM, nghost, geom[lev].periodicity());
