@@ -25,8 +25,8 @@ incflo::make_nodalBC_mask(int lev)
         Orientation olo(dir,Orientation::low);
         Orientation ohi(dir,Orientation::high);
         if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
-            Box dlo = (m_bc_type[olo] == BC::mixed) ? surroundingNodes(bdryLo(domain,dir)) : Box();
-            Box dhi = (m_bc_type[ohi] == BC::mixed) ? surroundingNodes(bdryHi(domain,dir)) : Box();
+            Box dlo = (m_bc_type[olo] == BC::mixed) ? surroundingNodes(bdryLo(domain,dir)) : Box().setType(IndexType::TheNodeType());
+            Box dhi = (m_bc_type[ohi] == BC::mixed) ? surroundingNodes(bdryHi(domain,dir)) : Box().setType(IndexType::TheNodeType());
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
