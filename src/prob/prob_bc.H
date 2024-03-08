@@ -40,13 +40,12 @@ struct IncfloVelFill
         {
             const amrex::BCRec& bc = bcr[bcomp+nc];
 
-            //if (1100 == probtype || 1101 == probtype || 1102 == probtype)
             if (1101 == probtype && i < domain_box.smallEnd(0))
             {
                 int direction = 1;
                 int half_num_cells = domain_box.length(direction) / 2;
                 if (j > half_num_cells) {
-                    // Here is the dirichlet portion; we take the inflow BC specified in inputs file
+                    // Here is the dirichlet portion
                     vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
                 }
             }
@@ -55,7 +54,7 @@ struct IncfloVelFill
                 int direction = 1;
                 int half_num_cells = domain_box.length(direction) / 2;
                 if (j <= half_num_cells) {
-                    // Here we take minus the inflow BC specified in inputs file
+                    // Here we take minus the inflow BC
                     vel(i,j,k,dcomp+nc) = -bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
                 }
             }
@@ -63,7 +62,7 @@ struct IncfloVelFill
             {
                 int direction = 2;
                 int half_num_cells = domain_box.length(direction) / 2;
-                if (2 > half_num_cells) {
+                if (k > half_num_cells) {
                     // Here is the dirichlet portion; we take the inflow BC specified in inputs file
                     vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
                 }
@@ -219,7 +218,6 @@ struct IncfloDenFill
         }
         else if (1102 == probtype && i < domain_box.smallEnd(0))
         {
-            // this probtype uses mixed BC on x faces
             int direction = 2;
             int half_num_cells = domain_box.length(direction) / 2;
             if (k > half_num_cells) {
@@ -313,6 +311,24 @@ struct IncfloTracFill
                 int direction = 1;
                 int half_num_cells = domain_box.length(direction) / 2;
                 if (j <= half_num_cells) {
+                    tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][n];
+                }
+            }
+            else if (1102 == probtype && i < domain_box.smallEnd(0))
+            {
+                // this probtype uses mixed BC on x faces
+                int direction = 2;
+                int half_num_cells = domain_box.length(direction) / 2;
+                if (k > half_num_cells) {
+                    // Here is the dirichlet portion; we take the inflow BC specified in inputs file
+                    tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][n];
+                }
+            }
+            else if (1102 == probtype && i > domain_box.bigEnd(0))
+            {
+                int direction = 2;
+                int half_num_cells = domain_box.length(direction) / 2;
+                if (k <= half_num_cells) {
                     tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][n];
                 }
             }
