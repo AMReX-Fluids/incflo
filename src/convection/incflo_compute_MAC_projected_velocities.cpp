@@ -126,7 +126,7 @@ incflo::compute_MAC_projected_velocities (
         } else
 #endif
         {
-            macproj->updateBeta(GetVecOfArrOfConstPtrs(inv_rho));
+            macproj->updateCoeffs(GetVecOfArrOfConstPtrs(inv_rho));
         }
     }
 
