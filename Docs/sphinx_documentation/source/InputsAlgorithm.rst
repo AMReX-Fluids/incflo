@@ -26,4 +26,7 @@ The following inputs must be preceded by "incflo."
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  mu_s                |  scalar diffusivity                                                   |  Real(s)    |  0.0         |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
+|  use_tensor_solve    |  In velocity solve, use multicomponent :math:`\nabla \cdot \tau`      |  bool       |  true        |
+|                      |  otherwise use separate solves for each velocity component            |             |              |
++----------------------+-----------------------------------------------------------------------+-------------+--------------+
 
