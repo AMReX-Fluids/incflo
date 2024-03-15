@@ -59,7 +59,7 @@ void incflo::InitData ()
         InitialRedistribution();
 #endif
 
-        if (m_do_initial_proj) {
+    if (m_do_initial_proj) {
             InitialProjection();
         }
 
@@ -211,11 +211,11 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 #endif
 
     m_leveldata[lev] = std::make_unique<LevelData>(grids[lev], dmap[lev], *m_factory[lev],
-                                         m_ntrac, nghost_state(),
-                                         m_advection_type,
-                                         m_diff_type==DiffusionType::Implicit,
-                                           use_tensor_correction,
-                                         m_advect_tracer);
+                                                   m_ntrac, nghost_state(),
+                                                   m_advection_type,
+                                                   m_diff_type==DiffusionType::Implicit,
+                                                   use_tensor_correction,
+                                                   m_advect_tracer);
 
     m_t_new[lev] = time;
     m_t_old[lev] = time - Real(1.e200);
@@ -223,6 +223,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
     if (m_restart_file.empty()) {
         prob_init_fluid(lev);
     }
+    //make_mixedBC_mask(lev, grids[lev], dmap[lev]);
 
 #ifdef AMREX_USE_EB
     macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level),

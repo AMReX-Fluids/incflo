@@ -22,10 +22,12 @@ void incflo::make_eb_twocylinders()
     Real radius2 = 0.5;
     Vector<Real> centervec1(3);
     Vector<Real> centervec2(3);
+    bool inside = false;
 
     // Get information from inputs file.                               *
     ParmParse pp("twocylinders");
 
+    pp.query("internal_flow", inside);
     pp.query("direction1", direction1);
     pp.query("direction2", direction2);
     pp.query("radius1", radius1);
@@ -59,7 +61,8 @@ void incflo::make_eb_twocylinders()
     // Build the implicit function as a union of two cylinders
     EB2::CylinderIF cyl1(radius1, direction1, center1, false);
     EB2::CylinderIF cyl2(radius2, direction2, center2, false);
-    auto twocylinders = EB2::makeUnion(cyl1, cyl2);
+    auto twocylinders = inside ? EB2::makeComplement(EB2::makeUnion(cyl1, cyl2))
+                               : EB2::makeUnion(cyl1, cyl2);
 
     // Generate GeometryShop
     auto gshop = EB2::makeShop(twocylinders);

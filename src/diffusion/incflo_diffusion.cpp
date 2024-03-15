@@ -193,6 +193,13 @@ incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcep
                 r[dir][dir] = LinOpBCType::Dirichlet;
                 break;
             }
+            case BC::mixed:
+            {
+                AMREX_D_TERM(r[0][dir] = LinOpBCType::Robin;,
+                             r[1][dir] = LinOpBCType::Robin;,
+                             r[2][dir] = LinOpBCType::Robin;);
+                break;
+            }
             default:
                 amrex::Abort("get_diffuse_tensor_bc: undefined BC type");
             };
@@ -235,6 +242,11 @@ incflo::get_diffuse_scalar_bc (Orientation::Side side) const noexcept
             case BC::mass_inflow:
             {
                 r[dir] = LinOpBCType::Dirichlet;
+                break;
+            }
+            case BC::mixed:
+            {
+                r[dir] = LinOpBCType::Robin;
                 break;
             }
             default:

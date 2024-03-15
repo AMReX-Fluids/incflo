@@ -6,6 +6,177 @@
 
 using namespace amrex;
 
+// Make the iMultiFab needed by the Nodal Projection to support mixed BCs
+iMultiFab
+incflo::make_nodalBC_mask(int lev)
+{
+    // We use the solver's overset mask to implement mixed BCs. The mask is nodal, and
+    // so exists on the boundary face, where 0 indicates a Dirichlet boundary condition
+    // (i,e, no solve needed for that point because we know the solution there already).
+    // Because it's an overset mask and not a BC, we must fill the entire MF.
+    iMultiFab new_mask(amrex::convert(grids[lev], IntVect::TheNodeVector()), dmap[lev], 1, 0);
+    new_mask = 1;
+    int inflow = 1;
+    int outflow = 0;
+
+    Geometry const& gm = Geom(lev);
+    Box const& domain = gm.Domain();
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        Orientation olo(dir,Orientation::low);
+        Orientation ohi(dir,Orientation::high);
+        if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+            Box dlo = (m_bc_type[olo] == BC::mixed) ? surroundingNodes(bdryLo(domain,dir)) : Box().setType(IndexType::TheNodeType());
+            Box dhi = (m_bc_type[ohi] == BC::mixed) ? surroundingNodes(bdryHi(domain,dir)) : Box().setType(IndexType::TheNodeType());
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            for (MFIter mfi(new_mask); mfi.isValid(); ++mfi) {
+                Box blo = mfi.validbox() & dlo;
+                Box bhi = mfi.validbox() & dhi;
+                Array4<int> const& mask_arr = new_mask.array(mfi);
+                if (blo.ok()) {
+                    prob_set_BC_MF(olo, blo, mask_arr, lev, inflow, outflow, "projection");
+                }
+                if (bhi.ok()) {
+                    prob_set_BC_MF(ohi, bhi, mask_arr, lev, inflow, outflow, "projection");
+                }
+            }
+        }
+    }
+
+    return new_mask;
+}
+
+// Make a position dependent BC MultiFab for the advection routines to support
+// mixed BCs.
+std::unique_ptr<iMultiFab>
+incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
+                   std::string const& field)
+{
+    auto ncomp = static_cast<int>(bcs.size());
+    // The advection routines expect that the BC type is stored in the first ghost
+    // cell of a cell-centered MF.
+    std::unique_ptr<iMultiFab> BC_MF(new iMultiFab(grids[lev], dmap[lev], ncomp, 1));
+    // initialize to 0 == BCType::int_dir, not sure this is needed really
+    *BC_MF = 0;
+    // For advection, we use FOEXTRAP for outflow regions per incflo::init_bcs()
+    int inflow = BCType::ext_dir;
+    int outflow = BCType::foextrap;
+
+    Box const& domain = geom[lev].Domain();
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        Orientation olo(dir,Orientation::low);
+        Orientation ohi(dir,Orientation::high);
+
+        Box dlo = adjCellLo(domain,dir);
+        Box dhi = adjCellHi(domain,dir);
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(*BC_MF); mfi.isValid(); ++mfi) {
+            Box blo = mfi.growntilebox() & dlo;
+            Box bhi = mfi.growntilebox() & dhi;
+            Array4<int> const& bc_arr = BC_MF->array(mfi);
+            BCRec const* const bc_ptr = bcs.data();
+            if (m_bc_type[olo] == BC::mixed) {
+                prob_set_BC_MF(olo, blo, bc_arr, lev, inflow, outflow, field);
+            } else {
+                amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    for (int n = 0; n < ncomp; n++) {
+                        bc_arr(i,j,k,n) = bc_ptr[n].lo(dir);
+                    }
+                });
+            }
+            if (m_bc_type[ohi] == BC::mixed) {
+                prob_set_BC_MF(ohi, bhi, bc_arr, lev, inflow, outflow, field);
+            } else {
+                amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    for (int n = 0; n < ncomp; n++) {
+                        bc_arr(i,j,k,n) = bc_ptr[n].hi(dir);
+                    }
+                });
+            }
+        }
+    }
+
+    return BC_MF;
+}
+
+// Create the MutliFabs needed by the linear solver to define Robin BCs, which incflo
+// uses to support mixed BCs in the MAC Projection and diffusion.
+Vector<MultiFab>
+incflo::make_robinBC_MFs(int lev, MultiFab* state)
+{
+    // MLMG defines the Robin BC with
+    //     a u + b du/dn = f
+    // The values are stored in the first ghost cell, although the BC is considered on
+    // the face. Only the ghost cells of robin BC arrays are used in MLMG.
+    int nghost = 1;
+
+    Vector<MultiFab> robin(3);
+    for (int n = 0; n < 3; n++) {
+        robin[n].define(grids[lev], dmap[lev], 1, nghost);
+    }
+
+    MultiFab& robin_a = robin[0];
+    MultiFab& robin_b = robin[1];
+    MultiFab& robin_f = robin[2];
+
+    Box const& domain = Geom(lev).Domain();
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        Orientation olo(dir,Orientation::low);
+        Orientation ohi(dir,Orientation::high);
+
+        // Only need to fill Robin BC sides, MLMG will check for Robin BC first
+        if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+            Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
+            Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+            // FIXME - do we want tiling here...
+            for (MFIter mfi(robin_a,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+                Box const& gbx = amrex::grow(mfi.validbox(),nghost);
+                Box blo = gbx & dlo;
+                Box bhi = gbx & dhi;
+                Array4<Real> const& a_arr     = robin_a.array(mfi);
+                Array4<Real> const& b_arr     = robin_b.array(mfi);
+                Array4<Real> const& f_arr     = robin_f.array(mfi);
+
+                if (state) {
+                    // state has filled boundry, so can use its ghost cells for the BC values
+                    Array4<Real const> const& bcv = state->const_array(mfi);
+                    // Diffusion, solving for velocity, density, tracer
+                    //
+                    // Robin BC:   a u + b du/dn = f  -- inflow,  Dirichlet a=1, b=0, f=bcv
+                    //                                -- outflow, Neumann   a=0, b=1, f=0
+                    if (blo.ok()) {
+                        prob_set_diffusion_robinBCs(olo, blo, a_arr, b_arr, f_arr, bcv, lev);
+                    }
+                    if (bhi.ok()) {
+                        prob_set_diffusion_robinBCs(ohi, bhi, a_arr, b_arr, f_arr, bcv, lev);
+                    }
+                } else {
+                    // MAC, solving for phi (~pressure)
+                    //
+                    // Robin BC:   a u + b du/dn = f  -- inflow,  Neumann   a=0, b=1, f=0
+                    //                                -- outflow, Dirichlet a=1, b=0, f=0
+                    if (blo.ok()) {
+                        prob_set_MAC_robinBCs(olo, blo, a_arr, b_arr, f_arr, lev);
+                    }
+                    if (bhi.ok()) {
+                        prob_set_MAC_robinBCs(ohi, bhi, a_arr, b_arr, f_arr, lev);
+                    }
+                }
+            }
+        }
+    }
+
+    return robin;
+}
+
 #ifdef AMREX_USE_EB
 void
 incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int nghost)

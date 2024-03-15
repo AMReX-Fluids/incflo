@@ -53,6 +53,7 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                      m_incflo->DistributionMap(0,finest_level),
                                                      info_apply, ebfact);
             m_eb_scal_apply_op->setMaxOrder(m_mg_maxorder);
+
             m_eb_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
                                             m_incflo->get_diffuse_scalar_bc(Orientation::high));
         }
@@ -185,6 +186,11 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 #ifdef AMREX_USE_EB
         if (m_eb_scal_solve_op)
         {
+            if ( m_incflo->m_has_mixedBC && comp>0 ) {
+                // Must reset scalars (and Acoef, done below) to reuse solver with Robin BC
+                m_eb_scal_solve_op->setScalars(1.0, dt);
+            }
+
             for (int lev = 0; lev <= finest_level; ++lev) {
                 Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_scalar_eta_to_faces(lev, comp, *eta[lev]);
                 m_eb_scal_solve_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
@@ -219,7 +225,20 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 
 #ifdef AMREX_USE_EB
             if (m_eb_scal_solve_op) {
-                m_eb_scal_solve_op->setLevelBC(lev, &phi[lev]);
+                if ( m_incflo->m_has_mixedBC ) {
+                    if ( comp>0 ) {
+                        // Must reset Acoef to reuse solver with Robin BC
+                        m_eb_scal_solve_op->setACoeffs(lev, *density[lev]);
+                    }
+
+                    auto const robin = m_incflo->make_robinBC_MFs(lev, &phi[lev]);
+
+                    m_eb_scal_solve_op->setLevelBC(lev, &phi[lev],
+                                                   &robin[0], &robin[1], &robin[2]);
+                }
+                else {
+                    m_eb_scal_solve_op->setLevelBC(lev, &phi[lev]);
+                }
 
                 // For when we use the stencil for centroid values
                 // m_eb_scal_solve_op->setPhiOnCentroid();
@@ -366,8 +385,15 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
                 // For when we use the stencil for centroid values
                 // m_eb_vel_solve_op->setPhiOnCentroid();
 
-                m_eb_vel_solve_op->setLevelBC(lev, &phi[lev]);
+                if ( m_incflo->m_has_mixedBC ) {
+                    auto const robin = m_incflo->make_robinBC_MFs(lev, &phi[lev]);
 
+                    m_eb_vel_solve_op->setLevelBC(lev, &phi[lev],
+                                                  &robin[0], &robin[1], &robin[2]);
+                }
+                else {
+                    m_eb_vel_solve_op->setLevelBC(lev, &phi[lev]);
+                }
             } else
 #endif
             {
@@ -446,14 +472,14 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
         // For when we use the stencil for centroid values
         // m_eb_scal_apply_op->setPhiOnCentroid();
 
-        // This should have no effect since the first scalar is 0
-        for (int lev = 0; lev <= finest_level; ++lev) {
-            m_eb_scal_apply_op->setACoeffs(lev, *a_density[lev]);
-        }
-
         // FIXME? Can we do the solve together now?
         for (int comp = 0; comp < m_incflo->m_ntrac; ++comp) {
             int eta_comp = comp;
+
+            if ( m_incflo->m_has_mixedBC && comp>0 ){
+                // Must reset scalars to use solver with Robin BC
+                m_eb_scal_apply_op->setScalars(0.0, -1.0);
+            }
 
             Vector<MultiFab> laps_comp;
             Vector<MultiFab> scalar_comp;
@@ -465,7 +491,17 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);
 
                 m_eb_scal_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
-                m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev]);
+
+                if ( m_incflo->m_has_mixedBC ) {
+
+                    auto const robin = m_incflo->make_robinBC_MFs(lev, &scalar_comp[lev]);
+
+                    m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev],
+                                                   &robin[0], &robin[1], &robin[2]);
+                }
+                else {
+                    m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev]);
+                }
             }
 
             MLMG mlmg(*m_eb_scal_apply_op);
@@ -474,12 +510,12 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-        amrex::single_level_redistribute(laps_tmp[lev],
-                         *a_laps[lev], 0, m_incflo->m_ntrac,
+            amrex::single_level_redistribute(laps_tmp[lev],
+                                             *a_laps[lev], 0, m_incflo->m_ntrac,
                                              m_incflo->Geom(lev));
-        // auto const& bc = m_incflo->get_tracer_bcrec_device_ptr();
+            // auto const& bc = m_incflo->get_tracer_bcrec_device_ptr();
             // m_incflo->redistribute_term(*a_laps[lev], laps_tmp[lev], *a_scalar[lev],
-        //                 bc, lev);
+            //                 bc, lev);
         }
     }
     else
@@ -558,17 +594,17 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
         // For when we use the stencil for centroid values
         // m_eb_vel_apply_op->setPhiOnCentroid();
 
-        // This should have no effect since the first scalar is 0
-        for (int lev = 0; lev <= finest_level; ++lev) {
-            m_eb_vel_apply_op->setACoeffs(lev, *a_density[lev]);
-        }
-
         int eta_comp = 0;
 
         for (int comp = 0; comp < a_divtau[0]->nComp(); ++comp)
         {
             Vector<MultiFab> divtau_single;
             Vector<MultiFab>    vel_single;
+
+            if ( m_incflo->m_has_mixedBC && comp>0 ){
+                // Must reset scalars to use solver with Robin BC
+                m_eb_vel_apply_op->setScalars(0.0, -1.0);
+            }
 
             // Because the different components may have different boundary conditions, we need to
             // reset these for each solve
@@ -577,8 +613,17 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
             for (int lev = 0; lev <= finest_level; ++lev) {
                 divtau_single.emplace_back(divtau_tmp[lev],amrex::make_alias,comp,1);
-                   vel_single.emplace_back(       vel[lev],amrex::make_alias,comp,1);
-                m_eb_vel_apply_op->setLevelBC(lev, &vel_single[lev]);
+                vel_single.emplace_back(       vel[lev],amrex::make_alias,comp,1);
+
+                if ( m_incflo->m_has_mixedBC ) {
+                    auto const robin = m_incflo->make_robinBC_MFs(lev, &vel_single[lev]);
+
+                    m_eb_vel_apply_op->setLevelBC(lev, &vel_single[lev],
+                                                  &robin[0], &robin[1], &robin[2]);
+                }
+                else {
+                    m_eb_vel_apply_op->setLevelBC(lev, &vel_single[lev]);
+                }
 
                 Array<MultiFab,AMREX_SPACEDIM> b =
                     m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);
@@ -592,12 +637,12 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
 
         for(int lev = 0; lev <= finest_level; lev++)
         {
-        amrex::single_level_redistribute(divtau_tmp[lev],
+            amrex::single_level_redistribute(divtau_tmp[lev],
                                              *a_divtau[lev], 0, a_divtau[lev]->nComp(),
                                              m_incflo->Geom(lev));
             // auto const& bc = m_incflo->get_velocity_bcrec_device_ptr();
             // m_incflo->redistribute_term(*a_divtau[lev], divtau_tmp[lev], *a_vel[lev],
-        //                 bc, lev);
+            //                 bc, lev);
         }
     }
     else

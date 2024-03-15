@@ -110,6 +110,16 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
+    std::unique_ptr<amrex::iMultiFab> make_BC_MF (int lev,
+                                                  amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
+                                                  std::string const& field);
+    amrex::iMultiFab make_nodalBC_mask (int lev);
+    amrex::Vector<amrex::MultiFab> make_robinBC_MFs(int lev, amrex::MultiFab* state = nullptr);
+    // void make_ccBC_mask (int lev, const amrex::BoxArray& ba,
+    //                      const amrex::DistributionMapping& dm);
+    // void make_nodalBC_mask (int lev, const amrex::BoxArray& ba,
+    //                         const amrex::DistributionMapping& dm);
+
 #ifdef AMREX_USE_EB
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
     void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
@@ -210,6 +220,20 @@ public:
     ///////////////////////////////////////////////////////////////////////////
 
     void prob_init_fluid (int lev);
+    void prob_set_BC_MF (amrex::Orientation const& ori, amrex::Box const& bx,
+                         amrex::Array4<int> const& mask, int lev,
+                         int inflow_val, int outflow_val, std::string const& field);
+    void prob_set_MAC_robinBCs (amrex::Orientation const& ori, amrex::Box const& bx,
+                                amrex::Array4<amrex::Real> const& robin_a,
+                                amrex::Array4<amrex::Real> const& robin_b,
+                                amrex::Array4<amrex::Real> const& robin_f,
+                                int lev);
+    void prob_set_diffusion_robinBCs (amrex::Orientation const& ori, amrex::Box const& bx,
+                                      amrex::Array4<amrex::Real> const& robin_a,
+                                      amrex::Array4<amrex::Real> const& robin_b,
+                                      amrex::Array4<amrex::Real> const& robin_f,
+                                      amrex::Array4<amrex::Real const> const& bcval,
+                                      int lev);
 
 #include "incflo_prob_I.H"
 #include "incflo_prob_usr_I.H"
@@ -563,8 +587,10 @@ private:
 
     enum struct BC {
         pressure_inflow, pressure_outflow, mass_inflow, no_slip_wall, slip_wall,
-        periodic, undefined
+        periodic, mixed, undefined
     };
+
+    bool m_has_mixedBC = false;
 
     amrex::GpuArray<BC                         , AMREX_SPACEDIM*2> m_bc_type;
     amrex::GpuArray<amrex::Real                , AMREX_SPACEDIM*2> m_bc_pressure;

@@ -84,6 +84,14 @@ void incflo::prob_init_fluid (int lev)
                         ld.tracer.array(mfi),
                         domain, dx, problo, probhi);
         }
+        else if (1100 == m_probtype || 1101 == m_probtype || 1102 == m_probtype)
+        {
+            init_jump(vbx, gbx,
+                      ld.velocity.array(mfi),
+                      ld.density.array(mfi),
+                      ld.tracer.array(mfi),
+                      domain, dx, problo, probhi);
+        }
         else if (111 == m_probtype || 112 == m_probtype || 113 == m_probtype)
         {
             init_boussinesq_bubble(vbx, gbx,
@@ -607,6 +615,7 @@ void incflo::init_tuscan (Box const& vbx, Box const& /*gbx*/,
                           GpuArray<Real, AMREX_SPACEDIM> const& /*dx*/,
                           GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
                           GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+
 {
     int half_num_cells = domain.length(AMREX_SPACEDIM-1) / 2;
     amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -619,7 +628,45 @@ void incflo::init_tuscan (Box const& vbx, Box const& /*gbx*/,
             tracer(i,j,k) = Real(0.0);
         } else {
             tracer(i,j,k) = Real(0.01);
-         }
+        }
+    });
+}
+
+void incflo::init_jump (Box const& vbx, Box const& /*gbx*/,
+                        Array4<Real> const& vel,
+                        Array4<Real> const& /*density*/,
+                        Array4<Real> const& /*tracer*/,
+                        Box const& domain,
+                        GpuArray<Real, AMREX_SPACEDIM> const& /*dx*/,
+                        GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
+                        GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
+{
+    int direction = 0;
+    if (1101 == m_probtype) {
+        direction = 1;
+    }
+    else if (1102 == m_probtype) {
+        direction = 2;
+    }
+
+    int half_num_cells = domain.length(direction) / 2;
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        if (direction == 0) {
+            if (i <= half_num_cells) {
+                vel(i,j,k,2) = -vel(i,j,k,2);
+            }
+        }
+        else if (direction == 1) {
+            if (j <= half_num_cells) {
+                vel(i,j,k,0) = -vel(i,j,k,0);
+            }
+        }
+        else if (direction == 2) {
+            if (k <= half_num_cells) {
+                vel(i,j,k,1) = -vel(i,j,k,1);
+            }
+        }
     });
 }
 

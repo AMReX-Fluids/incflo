@@ -91,6 +91,39 @@ void incflo::init_bcs ()
             // tracer has Dirichlet bcs
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }
+        else if (bc_type == "mixed" )
+        {
+            amrex::Print() << bcid << " set to mixed inflow outflow.\n";
+            m_has_mixedBC = true;
+#ifdef AMREX_USE_EB
+            // ReadParameters() already called
+            if (m_advection_type != "Godunov") { amrex::Abort("mixed BCs require Godunov"); }
+
+            ParmParse ipp("incflo");
+            std::string eb_geom = "null";
+            ipp.query("geometry", eb_geom);
+            eb_geom = amrex::toLower(eb_geom);
+            if (eb_geom == "null" || eb_geom == "all_regular")
+#endif
+            {
+                Abort("For now, mixed BCs must be separated by an EB");
+            }
+            Warning("Using BC type mixed requires that the Dirichlet and Neumann regions are separated by EB.");
+
+            m_bc_type[ori] = BC::mixed;
+
+            pp.get("pressure", m_bc_pressure[ori]);
+
+            std::vector<Real> v;
+            if (pp.queryarr("velocity", v, 0, AMREX_SPACEDIM)) {
+               for (int i=0; i<AMREX_SPACEDIM; i++){
+                   m_bc_velocity[ori][i] = v[i];
+               }
+            }
+
+            pp.query("density", m_bc_density[ori]);
+            pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
+        }
         else
         {
             m_bc_type[ori] = BC::undefined;
@@ -146,7 +179,9 @@ void incflo::init_bcs ()
             Orientation::Side side = ori.faceDir();
             auto const bct = m_bc_type[ori];
             if (bct == BC::pressure_inflow ||
-                bct == BC::pressure_outflow)
+                bct == BC::pressure_outflow ||
+                bct == BC::mixed ) // BC_mask will handle Dirichlet part.
+
             {
                 if (side == Orientation::low) {
                     AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::foextrap);,
@@ -220,7 +255,8 @@ void incflo::init_bcs ()
             auto const bct = m_bc_type[ori];
             if (bct == BC::pressure_inflow  ||
                 bct == BC::pressure_outflow ||
-                bct == BC::no_slip_wall)
+                bct == BC::no_slip_wall ||
+                bct == BC::mixed)
             {
                 if (side == Orientation::low) {
                     m_bcrec_density[0].setLo(dir, BCType::foextrap);
@@ -271,7 +307,8 @@ void incflo::init_bcs ()
             Orientation::Side side = ori.faceDir();
             auto const bct = m_bc_type[ori];
             if (bct == BC::pressure_inflow  ||
-                bct == BC::pressure_outflow)
+                bct == BC::pressure_outflow ||
+                bct == BC::mixed)
             {
                 if (side == Orientation::low) {
                     for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::foextrap);

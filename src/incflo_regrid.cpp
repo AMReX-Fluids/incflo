@@ -43,6 +43,8 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     m_leveldata[lev] = std::move(new_leveldata);
     m_factory[lev] = std::move(new_fact);
 
+    //make_mixedBC_mask(lev, ba, dm);
+
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
 
@@ -60,7 +62,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 // fill with existing fine and coarse data.
 // overrides the pure virtual function in AmrCore
 void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
-             const DistributionMapping& dm)
+                          const DistributionMapping& dm)
 {
     BL_PROFILE("incflo::RemakeLevel()");
 
@@ -93,6 +95,8 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 
     m_leveldata[lev] = std::move(new_leveldata);
     m_factory[lev] = std::move(new_fact);
+
+    //make_mixedBC_mask(lev, ba, dm);
 
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();

@@ -110,6 +110,15 @@ incflo::compute_MAC_projected_velocities (
             macproj->initProjector(lp_info, GetVecOfArrOfConstPtrs(inv_rho));
         }
         macproj->setDomainBC(get_mac_projection_bc(Orientation::low), get_mac_projection_bc(Orientation::high));
+
+        if ( m_has_mixedBC ) {
+            for (int lev = 0; lev <= finest_level; ++lev)
+            {
+                auto const robin = make_robinBC_MFs(lev);
+                macproj->setLevelBC(lev, nullptr,
+                                    &robin[0], &robin[1], &robin[2]);
+            }
+        }
     } else {
 #ifndef AMREX_USE_EB
         if (m_constant_density) {
@@ -117,7 +126,7 @@ incflo::compute_MAC_projected_velocities (
         } else
 #endif
         {
-            macproj->updateBeta(GetVecOfArrOfConstPtrs(inv_rho));
+            macproj->updateCoeffs(GetVecOfArrOfConstPtrs(inv_rho));
         }
     }
 
@@ -138,6 +147,19 @@ incflo::compute_MAC_projected_velocities (
             l_advection_type = "Godunov";
         }
 
+        std::unique_ptr<iMultiFab> BC_MF;
+        if (m_has_mixedBC) {
+            // Create a MF to hold the BCType info. Note that this is different than the
+            // bcs for the MAC projection because the MAC operates on phi, this is velocity.
+            //
+            // TODO? Could consider creating an incflo member variable to save the BC_MF
+            //     amrex::Vector<std::unique_ptr<amrex::iMultiFab> > m_BC_MF;
+            // Could stack components as vel, density, tracer, and then could use for
+            // scalars' advective step as well. But not sure it really matters one way or
+            // the other.
+            BC_MF = make_BC_MF(lev, m_bcrec_velocity_d, "velocity");
+        }
+
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
         HydroUtils::ExtrapVelToFaces(*vel[lev], *vel_forces[lev],
@@ -149,7 +171,7 @@ incflo::compute_MAC_projected_velocities (
                                       m_eb_flow.enabled ? get_velocity_eb()[lev] : nullptr,
 #endif
                                       m_godunov_ppm, m_godunov_use_forces_in_trans,
-                                      l_advection_type);
+                                      l_advection_type, PPM::default_limiter, BC_MF.get());
     }
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
@@ -190,7 +212,6 @@ incflo::compute_MAC_projected_velocities (
     } else {
         macproj->project(m_mac_mg_rtol,m_mac_mg_atol);
     }
-
     // Note that the macproj->project call above ensures that the MAC velocities are averaged down --
     //      we don't need to do that again here
 }

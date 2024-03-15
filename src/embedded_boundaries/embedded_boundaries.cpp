@@ -89,7 +89,7 @@ void incflo::MakeEBGeometry()
                    << " Will build all regular geometry." << std::endl;
         make_eb_regular();
     }
-    amrex::Print() << "Done making the geometry ebfactory.\n" << std::endl;
+    amrex::Print() << "Done making the EB geometry index space.\n" << std::endl;
 
     if (m_write_geom_chk) {
        const auto& is = amrex::EB2::IndexSpace::top();

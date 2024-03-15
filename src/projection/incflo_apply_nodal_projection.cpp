@@ -125,8 +125,6 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
                 (geom[lev], inflow_bcr, IncfloVelFill{m_probtype, m_bc_velocity});
             physbc(*vel[lev], 0, AMREX_SPACEDIM, nghost, time, 0);
 
-            // Note that we wouldn't need this if we trusted users to supply inflow data
-            // that obeys periodicity
             // We make sure to only fill "nghost" ghost cells so we don't accidentally
             // over-write good ghost cell values with unfilled ghost cell values
             vel[lev]->EnforcePeriodicity(0, AMREX_SPACEDIM, nghost, geom[lev].periodicity());
@@ -154,6 +152,17 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
           nodal_projector->getLinOp().setEBInflowVelocity(lev, *get_velocity_eb()[lev]);
        }
     }
+
+    if(m_has_mixedBC)
+    {
+        // We use an overset mask to effectively apply the mixed BC
+        for(int lev = 0; lev <= finest_level; ++lev)
+        {
+            const auto mask = make_nodalBC_mask(lev);
+            nodal_projector->getLinOp().setOversetMask(lev, mask);
+        }
+    }
+
 #endif
 
     nodal_projector->project(m_nodal_mg_rtol, m_nodal_mg_atol);
