@@ -1,10 +1,13 @@
 name: Build and Deploy
-on: [push]
-permissions:
+on: [push, pull_request]
   contents: write
+
+concurrency:
+  group: ${{ github.head_ref }}-docs
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
-    concurrency: ci-build-and-deploy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,7 +29,8 @@ jobs:
         if: github.event_name == 'push' && github.repository == 'AMReX-Fluids/incflo' && github.ref == 'refs/heads/development'
         uses: JamesIves/github-pages-deploy-action@4
         with:
-          BRANCH: gh-pages # The branch the action should deploy to.
-          FOLDER: Docs/sphinx_documentation/build/html # The folder the action should deploy.
-          TARGET_FOLDER: docs_html # The folder the action should deploy to.
-          CLEAN: false # Do not remove existing files from the deploy target.
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+          branch: gh-pages # The branch the action should deploy to.
+          folder: Docs/sphinx_documentation/build/html # The folder the action should deploy.
+          target_folder: docs_html # The folder the action should deploy to.
+          clean: false # Do not remove existing files from the deploy target.
