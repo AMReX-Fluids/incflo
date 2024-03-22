@@ -26,7 +26,7 @@ jobs:
 
       - name: Deploy
         if: github.event_name == 'push' && github.repository == 'AMReX-Fluids/incflo' && github.ref == 'refs/heads/development'
-        uses: JamesIves/github-pages-deploy-action@4
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
           ssh-key: ${{ secrets.DEPLOY_KEY }}
           branch: gh-pages # The branch the action should deploy to.
