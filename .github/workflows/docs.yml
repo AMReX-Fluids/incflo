@@ -1,6 +1,5 @@
 name: Build and Deploy
 on: [push, pull_request]
-  contents: write
 
 concurrency:
   group: ${{ github.head_ref }}-docs
