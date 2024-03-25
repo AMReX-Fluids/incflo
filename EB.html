@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Embedded Boundaries &mdash; incflo 24.04-dev documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=681a4282" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e503a28d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Debugging" href="Debugging.html" />
+    <link rel="prev" title="Time Step" href="TimeStep.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            incflo
+          </a>
+              <div class="version">
+                24.04-dev
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">incflo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Embedded Boundaries</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/EB.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="embedded-boundaries">
+<span id="chap-eb"></span><h1>Embedded Boundaries<a class="headerlink" href="#embedded-boundaries" title="Link to this heading"></a></h1>
+<p>incflo follows AMReX’s approach to embedded boundaries (EB), which is described in the
+<a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/EB_Chapter.html">AMReX EB documentation</a>.
+By default, incflo uses AMReX’s constructive solid geometry framework defined in the namespace <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">amrex</span><span class="o">::</span><span class="n">EB2</span></code>.
+Alternatively, the constructive solid geometry can also be created using OpenSCAD’s CSG file format by installing
+the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">csg</span><span class="o">-</span><span class="n">eb</span></code> library. To use this option, incflo must be built with the flag
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">USE_CSG</span><span class="o">=</span><span class="n">TRUE</span></code> and <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">CSGEB_HOME</span></code> must be set to where the library was installed.
+See <a class="reference external" href="https://mfix.netl.doe.gov/gitlab/exa/csg-eb">MFIX’s CSG-EB repository</a> for more details about this format.</p>
+<p>incflo provides several options of embedded boundary geometries. The inputs parameter <code class="docutils literal notranslate"><span class="pre">incflo.geometry</span> <span class="pre">=</span> <span class="pre">XXX</span></code>
+determines which geometry is selected by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">MakeEBGeometry</span><span class="p">()</span></code> within <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">embedded_boundaries</span></code>.
+The procedure to create your own EB geometry is described in the AMReX documentation on <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/EB.html#sec-eb-ebinit" title="(in amrex v24.04-dev)"><span>Initializing the Geometric Database</span></a>.
+As discussed in the AMReX documentation, note that when constructing the EB, we must specify a
+maxium coarsening level (<code class="docutils literal notranslate"><span class="pre">max_crse_level</span></code>):</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">EB2</span><span class="o">::</span><span class="n">Build</span><span class="p">(</span><span class="n">gshop</span><span class="p">,</span><span class="w"> </span><span class="n">geom</span><span class="p">[</span><span class="n">lev</span><span class="p">],</span><span class="w"> </span><span class="n">required_crse_lev</span><span class="p">,</span><span class="w"> </span><span class="n">max_crse_level</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>This specifies to which level of coarseness the EB is still defined. It might not be
+immediately obvious, but the multigrid solver (used in the fluid solve) also
+depends indirectly on this parameters. Choosing a value of <code class="docutils literal notranslate"><span class="pre">max_crse_level</span></code> that is too small might restrict
+how many levels the MLMG solver can use, and therefore give slightly different answers in the fluid solve.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="TimeStep.html" class="btn btn-neutral float-left" title="Time Step" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Debugging.html" class="btn btn-neutral float-right" title="Debugging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

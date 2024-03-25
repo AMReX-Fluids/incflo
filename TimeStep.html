@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Step &mdash; incflo 24.04-dev documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=681a4282" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=e503a28d"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Embedded Boundaries" href="EB.html" />
+    <link rel="prev" title="Fluid Variables" href="FluidEquations.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            incflo
+          </a>
+              <div class="version">
+                24.04-dev
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="FluidEquations.html">Fluid Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="FluidEquations.html#fluid-equations">Fluid Equations</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Time Step</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#mol">MOL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#godunov-methods">Godunov Methods</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">incflo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
+      <li class="breadcrumb-item active">Time Step</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/TimeStep.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="time-step">
+<h1>Time Step<a class="headerlink" href="#time-step" title="Link to this heading"></a></h1>
+<p>incflo has the option to treat advection using either the Method of Lines (MOL) or a Godunov
+approach.
+Here we discuss the basic workflow involved in a time step for each of these approaches.
+For details on how the convective terms are constructed, see the AMReX-Hydro documentation on <a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/Schemes.html#schemes" title="(in amrex-hydro v24.04-dev)"><span>Advection schemes</span></a>.
+For details on the projections, see the AMReX-Hydro documentation on <a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/Projections.html#projections" title="(in amrex-hydro v24.04-dev)"><span>Projection Methods</span></a>.</p>
+<section id="mol">
+<h2>MOL<a class="headerlink" href="#mol" title="Link to this heading"></a></h2>
+<p>MOL requires predictor-corrector methodology to achieve second order accuracy.
+In the predictor</p>
+<ul class="simple">
+<li><p>Define <span class="math notranslate nohighlight">\(U^{MAC,n}\)</span>, the face-centered (staggered) MAC velocity which is used for advection, using <span class="math notranslate nohighlight">\(U^n\)</span></p></li>
+<li><p>Define an approximation to the new-time state, <span class="math notranslate nohighlight">\((\rho U)^{\ast}\)</span> by setting</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\begin{split}(\rho U)^{\ast} =&amp; (\rho U)^n -
+\Delta t \left( \nabla \cdot (\rho U^{MAC} U) + \nabla {p}^{n-1/2} \right) \\ &amp;+
+\Delta t \left( \nabla \cdot \tau^n + \rho^{n+1/2} {\bf H}_U \right)\end{split}\]</div>
+<ul class="simple">
+<li><p>Project <span class="math notranslate nohighlight">\(U^{\ast}\)</span> by solving</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\nabla \cdot \frac{1}{\rho} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t}
+U^{\ast}+ \frac{1}{\rho} \nabla {p}^{n-1/2} \right)\]</div>
+<p>then defining</p>
+<div class="math notranslate nohighlight">
+\[U^{\ast \ast} = U^{\ast} - \frac{\Delta t}{\rho} \nabla \phi\]</div>
+<p>and</p>
+<div class="math notranslate nohighlight">
+\[{p}^{n+1/2, \ast} = \phi\]</div>
+<p>In the corrector</p>
+<ul class="simple">
+<li><p>Define <span class="math notranslate nohighlight">\(U^{MAC,\ast \ast}\)</span> at the “new” time using <span class="math notranslate nohighlight">\(U^{\ast \ast}\)</span></p></li>
+<li><p>Define a new approximation to the new-time state, <span class="math notranslate nohighlight">\((\rho U)^{\ast \ast \ast}\)</span> by setting</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\begin{split}(\rho U)^{\ast \ast \ast} =&amp; (\rho U)^n - \frac{\Delta t}{2} \left( \nabla \cdot (\rho U^{MAC} U)^n + \nabla \cdot (\rho U^{MAC} U)^{\ast \ast}\right) \\
+&amp;+ \frac{\Delta t}{2} \left( \nabla \cdot \tau^n + \nabla \cdot \tau^{\ast \ast \ast} \right) + \Delta t \left( - \nabla {p}^{n+1/2,\ast} + \rho^{n+1/2} {\bf H}_U \right)\end{split}\]</div>
+<ul class="simple">
+<li><p>Project <span class="math notranslate nohighlight">\(U^{\ast \ast \ast}\)</span> by solving</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\nabla \cdot \frac{1}{\rho} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t} U^{\ast \ast \ast} + \frac{1}{\rho} \nabla {p}^{n+1/2,\ast} \right)\]</div>
+<p>then defining</p>
+<div class="math notranslate nohighlight">
+\[U^{n+1} = U^{\ast \ast \ast} - \frac{\Delta t}{\rho} \nabla \phi\]</div>
+<p>and</p>
+<div class="math notranslate nohighlight">
+\[{p}^{n+1/2} = \phi\]</div>
+</section>
+<section id="godunov-methods">
+<h2>Godunov Methods<a class="headerlink" href="#godunov-methods" title="Link to this heading"></a></h2>
+<p>When we use a time-centered Godunov approach (i.e. the <code class="docutils literal notranslate"><span class="pre">Godunov</span></code> or <code class="docutils literal notranslate"><span class="pre">BDS</span></code> options),
+we no longer need the predictor and corrector steps.</p>
+<ul>
+<li><p>Define the time-centered face-centered (staggered) MAC velocity which is used for advection: <span class="math notranslate nohighlight">\(U^{MAC,n+1/2}\)</span></p></li>
+<li><p>Define the new-time density, <span class="math notranslate nohighlight">\(\rho^{n+1} = \rho^n - \Delta t (\rho^{n+1/2,pred} U^{MAC,n+1/2})\)</span> by setting</p></li>
+<li><p>Define an approximation to the new-time state, <span class="math notranslate nohighlight">\((\rho U)^{\ast}\)</span> by setting</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}(\rho^{n+1} U^{\ast}) &amp;= (\rho^n U^n) -
+\Delta t \left( \nabla \cdot (\rho U^{MAC} U) + \nabla {p}^{n-1/2} \right)  \\
+&amp;+ \frac{\Delta t}{2} ( \nabla \cdot \tau^n +  \nabla \cdot \tau^\ast)
+ + \Delta t \; \rho^{n+1/2} {\bf H}_U\end{split}\]</div>
+<p>(for implicit diffusion, which is the current default)</p>
+</li>
+<li><p>Project <span class="math notranslate nohighlight">\(U^{\ast}\)</span> by solving</p></li>
+</ul>
+<div class="math notranslate nohighlight">
+\[\nabla \cdot \frac{1}{\rho} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t}
+U^{\ast}+ \frac{1}{\rho} \nabla {p}^{n-1/2} \right)\]</div>
+<p>then defining</p>
+<div class="math notranslate nohighlight">
+\[U^{n+1} = U^{\ast} - \frac{\Delta t}{\rho} \nabla \phi\]</div>
+<p>and</p>
+<div class="math notranslate nohighlight">
+\[{p}^{n+1/2} = \phi\]</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="FluidEquations.html" class="btn btn-neutral float-left" title="Fluid Variables" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="EB.html" class="btn btn-neutral float-right" title="Embedded Boundaries" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

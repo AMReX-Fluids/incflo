@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to incflo’s documentation! &mdash; incflo 24.04-dev documentation</title>
+  <title>Introduction &mdash; incflo 24.04-dev documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=681a4282" />
@@ -22,7 +22,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Introduction" href="Introduction.html" /> 
+    <link rel="next" title="Getting Started" href="GettingStarted.html" />
+    <link rel="prev" title="Welcome to incflo’s documentation!" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -33,7 +34,7 @@
 
           
           
-          <a href="#" class="icon icon-home">
+          <a href="index.html" class="icon icon-home">
             incflo
           </a>
               <div class="version">
@@ -48,8 +49,8 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
@@ -64,17 +65,17 @@
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">incflo</a>
+          <a href="index.html">incflo</a>
       </nav>
 
       <div class="wy-nav-content">
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Welcome to incflo’s documentation!</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Introduction</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/Introduction.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -82,33 +83,41 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="welcome-to-incflo-s-documentation">
-<span id="incflo-doc-indx"></span><h1>Welcome to incflo’s documentation!<a class="headerlink" href="#welcome-to-incflo-s-documentation" title="Link to this heading"></a></h1>
-<p>incflo is an AMReX-based simulation code for modeling
-the variable density incompressible Navier-Stokes equations in the presence
-of complex geometries.  It includes adaptive mesh refinement (AMR)
-but without subcycling in time.</p>
-<p>For an AMReX-based incompressible flow code with subcycling in time, please see <a class="reference external" href="https://amrex-fluids.github.io/IAMR/">IAMR</a></p>
-<p>Active development in incflo is ongoing in the development branch.</p>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
-<li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<p>incflo is a massively parallel code for solving the incompressible Navier-Stokes
+equations in 2-D or 3-D,  with the option for an embedded boundary (cut cell) representation of
+of complex geometries.</p>
+<p>It is built on top of <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/index.html#amrex-doc-indx" title="(in amrex v24.04-dev)"><span class="xref std std-ref">AMReX</span></a>, a publicly available software framework designed for building
+massively parallel block-structured adaptive mesh refinement (AMR)
+applications. It also utilizes <a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/index.html#amrex-hydro-indx" title="(in amrex-hydro v24.04-dev)"><span class="xref std std-ref">AMReX-Hydro</span></a>, a set of routines that support the construction
+of convective terms for incompressible and low Mach number flow modeling in cartesian coordinates
+with (or without) embedded boundaries and R-Z coordinate systems.</p>
+<p>Another AMReX-based code, <a class="reference external" href="https://amrex-fluids.github.io/IAMR/index.html#iamr-doc-indx" title="(in IAMR v23.11-dev)"><span class="xref std std-ref">IAMR</span></a>, also solves the variable-density incompressible
+Navier-Stokes equations in 2-D or 3-D but is based on a subcycling-in-time approach.</p>
+<p>Key software and algorithmic features of incflo include:</p>
+<ul class="simple">
+<li><p>Fluid velocity, density and tracers are defined at cell centroids; pressure is defined at nodes.</p></li>
+<li><p>Possible advection algorithms: a Method-Of-Lines (MOL) approach and a Godunov-method algorithm.
+Both use an intermediate MAC projection for face-centered advection velocities</p></li>
+<li><p>Incompressibility of the fluid is imposed through the use of a projection at the end of the time step</p></li>
+<li><p>Implicit or explicit discretization of viscous terms with variable viscosity</p></li>
+<li><p>The representation of the complex geometry uses the embedded boundary, or cut-cell, approach</p></li>
+<li><p>Hybrid parallelization via MPI+X where X = OpenMP for multicore machines, and CUDA/HIP/DCP++ for CPU/GPU systems</p></li>
+<li><p>Parallel I/O using AMReX native I/O or HDF5.</p></li>
+<li><p>Plotfile format supported by AmrVis, VisIt, ParaView, and yt.</p></li>
 </ul>
-</div>
+<p>The incflo source code can be found at <a class="reference external" href="https://github.com/AMReX-Fluids/incflo/">https://github.com/AMReX-Fluids/incflo/</a>.
+incflo heavily leverages AMReX (see <a class="reference external" href="https://amrex-codes.github.io/">https://amrex-codes.github.io/</a>) which is supported by
+ECP as part of the AMReX Co-Design Center.</p>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="Introduction.html" class="btn btn-neutral float-right" title="Introduction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to incflo’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="GettingStarted.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
