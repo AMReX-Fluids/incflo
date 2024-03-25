@@ -21,16 +21,21 @@ incflo::make_nodalBC_mask(int lev)
 
     Geometry const& gm = Geom(lev);
     Box const& domain = gm.Domain();
-    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        Orientation olo(dir,Orientation::low);
-        Orientation ohi(dir,Orientation::high);
-        if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
-            Box dlo = (m_bc_type[olo] == BC::mixed) ? surroundingNodes(bdryLo(domain,dir)) : Box().setType(IndexType::TheNodeType());
-            Box dhi = (m_bc_type[ohi] == BC::mixed) ? surroundingNodes(bdryHi(domain,dir)) : Box().setType(IndexType::TheNodeType());
+
+    MFItInfo mfi_info;
+    if (Gpu::notInLaunchRegion()) { mfi_info.SetDynamic(true); }
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-            for (MFIter mfi(new_mask); mfi.isValid(); ++mfi) {
+    for (MFIter mfi(new_mask, mfi_info); mfi.isValid(); ++mfi) {
+        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+            Orientation olo(dir,Orientation::low);
+            Orientation ohi(dir,Orientation::high);
+            if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+                Box dlo = (m_bc_type[olo] == BC::mixed) ? surroundingNodes(bdryLo(domain,dir))
+                                                        : Box().setType(IndexType::TheNodeType());
+                Box dhi = (m_bc_type[ohi] == BC::mixed) ? surroundingNodes(bdryHi(domain,dir))
+                                                        : Box().setType(IndexType::TheNodeType());
                 Box blo = mfi.validbox() & dlo;
                 Box bhi = mfi.validbox() & dhi;
                 Array4<int> const& mask_arr = new_mask.array(mfi);
@@ -64,16 +69,19 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
     int outflow = BCType::foextrap;
 
     Box const& domain = geom[lev].Domain();
-    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        Orientation olo(dir,Orientation::low);
-        Orientation ohi(dir,Orientation::high);
 
-        Box dlo = adjCellLo(domain,dir);
-        Box dhi = adjCellHi(domain,dir);
+    MFItInfo mfi_info;
+    if (Gpu::notInLaunchRegion()) { mfi_info.SetDynamic(true); }
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-        for (MFIter mfi(*BC_MF); mfi.isValid(); ++mfi) {
+    for (MFIter mfi(*BC_MF, mfi_info); mfi.isValid(); ++mfi) {
+        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+            Orientation olo(dir,Orientation::low);
+            Orientation ohi(dir,Orientation::high);
+
+            Box dlo = adjCellLo(domain,dir);
+            Box dhi = adjCellHi(domain,dir);
             Box blo = mfi.growntilebox() & dlo;
             Box bhi = mfi.growntilebox() & dhi;
             Array4<int> const& bc_arr = BC_MF->array(mfi);
@@ -125,19 +133,21 @@ incflo::make_robinBC_MFs(int lev, MultiFab* state)
     MultiFab& robin_f = robin[2];
 
     Box const& domain = Geom(lev).Domain();
-    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        Orientation olo(dir,Orientation::low);
-        Orientation ohi(dir,Orientation::high);
 
-        // Only need to fill Robin BC sides, MLMG will check for Robin BC first
-        if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
-            Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
-            Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
+    MFItInfo mfi_info;
+    if (Gpu::notInLaunchRegion()) { mfi_info.SetDynamic(true); }
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-            // FIXME - do we want tiling here...
-            for (MFIter mfi(robin_a,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+    for (MFIter mfi(robin_a, mfi_info); mfi.isValid(); ++mfi) {
+        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+            Orientation olo(dir,Orientation::low);
+            Orientation ohi(dir,Orientation::high);
+
+            // Only need to fill Robin BC sides, MLMG will check for Robin BC first
+            if (m_bc_type[olo] == BC::mixed || m_bc_type[ohi] == BC::mixed) {
+                Box dlo = (m_bc_type[olo] == BC::mixed) ? adjCellLo(domain,dir) : Box();
+                Box dhi = (m_bc_type[ohi] == BC::mixed) ? adjCellHi(domain,dir) : Box();
                 Box const& gbx = amrex::grow(mfi.validbox(),nghost);
                 Box blo = gbx & dlo;
                 Box bhi = gbx & dhi;
