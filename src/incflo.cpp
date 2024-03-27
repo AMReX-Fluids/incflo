@@ -59,7 +59,7 @@ void incflo::InitData ()
         InitialRedistribution();
 #endif
 
-    if (m_do_initial_proj) {
+        if (m_do_initial_proj) {
             InitialProjection();
         }
 
