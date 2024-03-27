@@ -388,7 +388,7 @@ incflo::InitialRedistribution ()
         if (m_advect_tracer)
         {
             ld.tracer.FillBoundary(geom[lev].periodicity());
-            MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, 1, ld.tracer.nGrow());
+            MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, m_ntrac, ld.tracer.nGrow());
             fillpatch_tracer(lev, m_t_new[lev], ld.tracer_o, 3);
         }
 
