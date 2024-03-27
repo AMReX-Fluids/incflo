@@ -434,7 +434,6 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
 
 void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                                       Vector<MultiFab const*> const& a_scalar,
-                                      Vector<MultiFab const*> const& a_density,
                                       Vector<MultiFab const*> const& a_eta)
 {
     BL_PROFILE("DiffusionScalarOp::compute_laps");
@@ -523,11 +522,6 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
     {
         // We want to return div (mu grad)) phi
         m_reg_scal_apply_op->setScalars(0.0, -1.0);
-
-        // This should have no effect since the first scalar is 0
-        for (int lev = 0; lev <= finest_level; ++lev) {
-            m_reg_scal_apply_op->setACoeffs(lev, *a_density[lev]);
-        }
 
         for (int comp = 0; comp < m_incflo->m_ntrac; ++comp) {
 
@@ -650,11 +644,6 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
     {
         // We want to return div (mu grad)) phi
         m_reg_vel_apply_op->setScalars(0.0, -1.0);
-
-        // This should have no effect since the first scalar is 0
-        for (int lev = 0; lev <= finest_level; ++lev) {
-            m_reg_vel_apply_op->setACoeffs(lev, *a_density[lev]);
-        }
 
         int eta_comp = 0;
         Vector<MultiFab> divtau_single;

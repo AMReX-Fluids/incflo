@@ -148,8 +148,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     if (m_advect_tracer && need_divtau())
     {
-        compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
-                     GetVecOfConstPtrs(tra_eta));
+        compute_laps(get_laps_old(), get_tracer_old_const(), GetVecOfConstPtrs(tra_eta));
     }
 
     // **********************************************************************************************
@@ -244,7 +243,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
 
     // *************************************************************************************
-    // Compute (or if Godunov, re-compute) the tracer forcing terms (forcing for (rho s), not for s)
+    // Compute (or if Godunov, re-compute) the tracer forcing terms
+    // (forcing for (rho s) if conservative)
     // *************************************************************************************
     if (m_advect_tracer)
        compute_tra_forces(GetVecOfPtrs(tra_forces), GetVecOfConstPtrs(density_nph));
@@ -272,6 +272,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real const> const& dtdt_o  = ld.conv_tracer_o.const_array(mfi);
                 Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
                                                                   : Array4<Real const>{};
+                auto iconserv = get_tracer_iconserv_device_ptr();
 
                 if (m_diff_type == DiffusionType::Explicit)
                 {
@@ -279,15 +280,22 @@ void incflo::ApplyPredictor (bool incremental_projection)
                                                                      : Array4<Real const>{};
                     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
+                        // If conservative
                         // (rho trac)^new = (rho trac)^old + dt * (
-                        //                   div(rho trac u) + div (mu grad trac) + rho * f_t
+                        //                   div(rho trac u) + div (mu grad trac) + rho * f_t )
+                        // else non-conservative
+                        // (trac)^new = (trac)^old + dt * (
+                        //               u dot grad trac + div (mu grad trac) + f_t )
                         for (int n = 0; n < l_ntrac; ++n)
                         {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n) );
-
-                            tra_new /= rho(i,j,k);
-                            tra(i,j,k,n) = tra_new;
+                            if ( iconserv[n] ) {
+                                Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
+                                    ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n) );
+                                tra(i,j,k,n) = tra_new/rho(i,j,k);
+                            } else {
+                                tra(i,j,k,n) = tra_o(i,j,k,n) + l_dt *
+                                    ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n) );
+                            }
                         }
                     });
                 }
@@ -299,11 +307,14 @@ void incflo::ApplyPredictor (bool incremental_projection)
                     {
                         for (int n = 0; n < l_ntrac; ++n)
                         {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + m_half * laps_o(i,j,k,n) );
-
-                            tra_new /= rho(i,j,k);
-                            tra(i,j,k,n) = tra_new;
+                            if ( iconserv[n] ) {
+                                Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
+                                    ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + m_half * laps_o(i,j,k,n) );
+                                tra(i,j,k,n) = tra_new/rho(i,j,k);
+                            } else {
+                                tra(i,j,k,n) = tra_o(i,j,k,n) + l_dt *
+                                    ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + m_half * laps_o(i,j,k,n) );
+                            }
                         }
                     });
                 }
@@ -313,11 +324,15 @@ void incflo::ApplyPredictor (bool incremental_projection)
                     {
                         for (int n = 0; n < l_ntrac; ++n)
                         {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) );
+                            if ( iconserv[n] ) {
+                                Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
+                                    ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) );
+                                tra(i,j,k,n) = tra_new/rho(i,j,k);
+                            } else {
+                                tra(i,j,k,n) = tra_o(i,j,k,n) + l_dt *
+                                    ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) );
+                            }
 
-                            tra_new /= rho(i,j,k);
-                            tra(i,j,k,n) = tra_new;
                         }
                     });
                 }

@@ -136,6 +136,10 @@ void incflo::ReadParameters ()
             amrex::Abort("We currently require at least one tracer");
         }
 
+        // Advect scalars conservatively?
+        m_iconserv_tracer.resize(m_ntrac, 1);
+        pp.queryarr("trac_is_conservative", m_iconserv_tracer, 0, m_ntrac );
+
         // Scalar diffusion coefficients
         m_mu_s.resize(m_ntrac, 0.0);
         pp.queryarr("mu_s", m_mu_s, 0, m_ntrac );
@@ -388,7 +392,7 @@ incflo::InitialRedistribution ()
         if (m_advect_tracer)
         {
             ld.tracer.FillBoundary(geom[lev].periodicity());
-            MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, 1, ld.tracer.nGrow());
+            MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, m_ntrac, ld.tracer.nGrow());
             fillpatch_tracer(lev, m_t_new[lev], ld.tracer_o, 3);
         }
 
