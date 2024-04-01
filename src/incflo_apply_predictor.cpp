@@ -180,12 +180,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Define local variables for lambda to capture.
     // *************************************************************************************
     Real l_dt = m_dt;
-    bool l_constant_density = m_constant_density;
 
     // *************************************************************************************
     // Update density first
     // *************************************************************************************
-    if (l_constant_density)
+    if (m_constant_density)
     {
         for (int lev = 0; lev <= finest_level; lev++)
             MultiFab::Copy(density_nph[lev], m_leveldata[lev]->density_o, 0, 0, 1, 1);
@@ -270,6 +269,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                 Array4<Real> const& tra           = ld.tracer.array(mfi);
                 Array4<Real const> const& rho     = ld.density.const_array(mfi);
                 Array4<Real const> const& dtdt_o  = ld.conv_tracer_o.const_array(mfi);
+                // fixme? I think l_ntrac has to be >0 to get here...
                 Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
                                                                   : Array4<Real const>{};
                 auto iconserv = get_tracer_iconserv_device_ptr();

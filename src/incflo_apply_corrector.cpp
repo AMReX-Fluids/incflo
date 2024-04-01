@@ -165,13 +165,12 @@ void incflo::ApplyCorrector()
     // Define local variables for lambda to capture.
     // *************************************************************************************
     Real l_dt = m_dt;
-    bool l_constant_density = m_constant_density;
     int l_ntrac = (m_advect_tracer) ? m_ntrac : 0;
 
     // *************************************************************************************
     // Update density first
     // *************************************************************************************
-    if (l_constant_density)
+    if (m_constant_density)
     {
         for (int lev = 0; lev <= finest_level; lev++)
             MultiFab::Copy(density_nph[lev], m_leveldata[lev]->density_o, 0, 0, 1, 0);
