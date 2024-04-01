@@ -244,6 +244,7 @@ void incflo::ApplyCorrector()
                 Array4<Real const> const& dtdt    = ld.conv_tracer.const_array(mfi);
                 Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
                                                                 : Array4<Real const>{};
+                auto iconserv = get_tracer_iconserv_device_ptr();
 
                 if (m_diff_type == DiffusionType::Explicit)
                 {
@@ -255,13 +256,19 @@ void incflo::ApplyCorrector()
                     {
                         for (int n = 0; n < l_ntrac; ++n)
                         {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
-                                  m_half*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
-                                 +m_half*(laps_o(i,j,k,n) +   laps(i,j,k,n))
-                                   +    tra_f(i,j,k,n) );
+                            if ( iconserv[n] ) {
+                                Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
+                                     m_half*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
+                                    +m_half*(laps_o(i,j,k,n) +   laps(i,j,k,n))
+                                    +    tra_f(i,j,k,n) );
 
-                            tra_new /= rho(i,j,k);
-                            tra(i,j,k,n) = tra_new;
+                                tra(i,j,k,n) = tra_new / rho(i,j,k);
+                            } else {
+                                tra(i,j,k,n) = tra_o(i,j,k,n) + l_dt * (
+                                     m_half*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
+                                    +m_half*(laps_o(i,j,k,n) +   laps(i,j,k,n))
+                                    +    tra_f(i,j,k,n) );
+                            }
                         }
                     });
                 }
@@ -273,14 +280,19 @@ void incflo::ApplyCorrector()
                     {
                         for (int n = 0; n < l_ntrac; ++n)
                         {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
-                                  m_half*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
-                                 +m_half*(laps_o(i,j,k,n)                  )
-                                   +    tra_f(i,j,k,n) );
+                            if ( iconserv[n] ) {
+                                Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
+                                     m_half*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
+                                    +m_half*(laps_o(i,j,k,n)                  )
+                                    +    tra_f(i,j,k,n) );
 
-                            tra_new /= rho(i,j,k);
-                            tra(i,j,k,n) = tra_new;
-                        }
+                                tra(i,j,k,n) = tra_new / rho(i,j,k);
+                            } else {
+                                tra(i,j,k,n) = tra_o(i,j,k,n) + l_dt * (
+                                     m_half*(  dtdt(i,j,k,n) + dtdt_o(i,j,k,n))
+                                    +m_half*(laps_o(i,j,k,n)                  )
+                                    +    tra_f(i,j,k,n) );
+                            }
                     });
                 }
                 else if (m_diff_type == DiffusionType::Implicit)
@@ -289,13 +301,17 @@ void incflo::ApplyCorrector()
                     {
                         for (int n = 0; n < l_ntrac; ++n)
                         {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
-                                  m_half*(  dtdt(i,j,k,n)+dtdt_o(i,j,k,n))
-                                 +      tra_f(i,j,k,n) );
+                            if ( iconserv[n] ) {
+                                Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt * (
+                                     m_half*(  dtdt(i,j,k,n)+dtdt_o(i,j,k,n))
+                                    +      tra_f(i,j,k,n) );
 
-                            tra_new /= rho(i,j,k);
-                            tra(i,j,k,n) = tra_new;
-                        }
+                                tra(i,j,k,n) = tra_new / rho(i,j,k);
+                            } else {
+                                tra(i,j,k,n) = tra_o(i,j,k,n) + l_dt * (
+                                     m_half*(  dtdt(i,j,k,n)+dtdt_o(i,j,k,n))
+                                    +      tra_f(i,j,k,n) );
+                            }
                     });
                 }
             } // mfi
