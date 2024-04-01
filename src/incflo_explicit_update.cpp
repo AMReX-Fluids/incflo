@@ -25,7 +25,7 @@ void incflo::tracer_explicit_update (Vector<MultiFab> const& tra_forces)
             Array4<Real const> const& dtdt_o  = ld.conv_tracer_o.const_array(mfi);
             Array4<Real const> const& tra_f   = tra_forces[lev].const_array(mfi);
 
-            auto iconserv = get_tracer_iconserv_device_ptr();
+            auto const* iconserv = get_tracer_iconserv_device_ptr();
 
             if (m_diff_type == DiffusionType::Explicit)
             {
@@ -116,7 +116,7 @@ void incflo::tracer_explicit_update_corrector (Vector<MultiFab> const& tra_force
             Array4<Real const> const& dtdt_o  = ld.conv_tracer_o.const_array(mfi);
             Array4<Real const> const& dtdt    = ld.conv_tracer.const_array(mfi);
             Array4<Real const> const& tra_f   = tra_forces[lev].const_array(mfi);
-            auto iconserv = get_tracer_iconserv_device_ptr();
+            auto const* iconserv = get_tracer_iconserv_device_ptr();
 
             if (m_diff_type == DiffusionType::Explicit)
             {

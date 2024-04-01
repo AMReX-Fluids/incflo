@@ -445,7 +445,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 Array4<Real const> rho     = density[lev]->const_array(mfi);
                 Array4<Real      > trac_tmp;
 
-                auto iconserv = get_tracer_iconserv_device_ptr();
+                auto const* iconserv = get_tracer_iconserv_device_ptr();
                 if ( any_conserv_trac ) {
                     trac_tmp = rhotrac[lev].array(mfi);
 

@@ -8,7 +8,7 @@ void incflo::compute_tra_forces (Vector<MultiFab*> const& tra_forces,
     // NOTE: this routine must return the force term for the update of (rho s), NOT just s.
     if (m_advect_tracer) {
 
-        auto iconserv = get_tracer_iconserv_device_ptr();
+        auto const* iconserv = get_tracer_iconserv_device_ptr();
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
