@@ -176,10 +176,6 @@ void incflo::ComputeMagVel (int lev, Real /*time*/, MultiFab& magvel, MultiFab c
             const auto& flag_fab = flags.const_array();
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                constexpr Real c0 = Real(-1.5);
-                constexpr Real c1 = Real( 2.0);
-                constexpr Real c2 = Real(-0.5);
-
                 if (flag_fab(i,j,k).isCovered())
                 {
                     magvel_fab(i,j,k) = Real(0.0);
