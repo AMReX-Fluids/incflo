@@ -181,12 +181,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Define local variables for lambda to capture.
     // *************************************************************************************
     Real l_dt = m_dt;
-    bool l_constant_density = m_constant_density;
 
     // *************************************************************************************
     // Update density first
     // *************************************************************************************
-    if (l_constant_density)
+    if (m_constant_density)
     {
         for (int lev = 0; lev <= finest_level; lev++)
             MultiFab::Copy(density_nph[lev], m_leveldata[lev]->density_o, 0, 0, 1, 1);
@@ -244,7 +243,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
 
     // *************************************************************************************
-    // Compute (or if Godunov, re-compute) the tracer forcing terms (forcing for (rho s), not for s)
+    // Compute (or if Godunov, re-compute) the tracer forcing terms
+    // (forcing for (rho s) if conservative)
     // *************************************************************************************
     if (m_advect_tracer)
        compute_tra_forces(GetVecOfPtrs(tra_forces), GetVecOfConstPtrs(density_nph));
@@ -252,78 +252,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     // Update the tracer next
     // *************************************************************************************
-    int l_ntrac = (m_advect_tracer) ? m_ntrac : 0;
-
     if (m_advect_tracer)
     {
-        for (int lev = 0; lev <= finest_level; lev++)
-        {
-            auto& ld = *m_leveldata[lev];
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-            for (MFIter mfi(ld.tracer,TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                Box const& bx = mfi.tilebox();
-                Array4<Real const> const& tra_o   = ld.tracer_o.const_array(mfi);
-                Array4<Real const> const& rho_o   = ld.density_o.const_array(mfi);
-                Array4<Real> const& tra           = ld.tracer.array(mfi);
-                Array4<Real const> const& rho     = ld.density.const_array(mfi);
-                Array4<Real const> const& dtdt_o  = ld.conv_tracer_o.const_array(mfi);
-                Array4<Real const> const& tra_f   = (l_ntrac > 0) ? tra_forces[lev].const_array(mfi)
-                                                                  : Array4<Real const>{};
-
-                if (m_diff_type == DiffusionType::Explicit)
-                {
-                    Array4<Real const> const& laps_o = (l_ntrac > 0) ? ld.laps_o.const_array(mfi)
-                                                                     : Array4<Real const>{};
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                    {
-                        // (rho trac)^new = (rho trac)^old + dt * (
-                        //                   div(rho trac u) + div (mu grad trac) + rho * f_t
-                        for (int n = 0; n < l_ntrac; ++n)
-                        {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + laps_o(i,j,k,n) );
-
-                            tra_new /= rho(i,j,k);
-                            tra(i,j,k,n) = tra_new;
-                        }
-                    });
-                }
-                else if (m_diff_type == DiffusionType::Crank_Nicolson)
-                {
-                    Array4<Real const> const& laps_o = (l_ntrac > 0) ? ld.laps_o.const_array(mfi)
-                                                                     : Array4<Real const>{};
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                    {
-                        for (int n = 0; n < l_ntrac; ++n)
-                        {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) + m_half * laps_o(i,j,k,n) );
-
-                            tra_new /= rho(i,j,k);
-                            tra(i,j,k,n) = tra_new;
-                        }
-                    });
-                }
-                else if (m_diff_type == DiffusionType::Implicit)
-                {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                    {
-                        for (int n = 0; n < l_ntrac; ++n)
-                        {
-                            Real tra_new = rho_o(i,j,k)*tra_o(i,j,k,n) + l_dt *
-                                ( dtdt_o(i,j,k,n) + tra_f(i,j,k,n) );
-
-                            tra_new /= rho(i,j,k);
-                            tra(i,j,k,n) = tra_new;
-                        }
-                    });
-                }
-            } // mfi
-        } // lev
-    } // if (m_advect_tracer)
+        tracer_explicit_update(tra_forces);
+    }
 
     // *************************************************************************************
     // Solve diffusion equation for tracer
