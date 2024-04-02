@@ -233,6 +233,7 @@ void incflo::ReadIOParameters()
         m_plt_macphi     = 0;
         m_plt_eta        = 0;
         m_plt_vort       = 0;
+        m_plt_magvel     = 0;
         m_plt_strainrate = 0;
         m_plt_divu       = 0;
         m_plt_vfrac      = 0;
@@ -253,6 +254,7 @@ void incflo::ReadIOParameters()
     pp.query("plt_p_nd",       m_plt_p_nd  );
     pp.query("plt_macphi",     m_plt_macphi);
     pp.query("plt_eta",        m_plt_eta   );
+    pp.query("plt_magvel",     m_plt_magvel);
     pp.query("plt_vort",       m_plt_vort  );
     pp.query("plt_strainrate", m_plt_strainrate);
     pp.query("plt_divu",       m_plt_divu  );

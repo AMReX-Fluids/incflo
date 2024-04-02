@@ -1,5 +1,5 @@
-#ifndef DERIVE_K_H_
-#define DERIVE_K_H_
+#ifndef INCFLO_DERIVE_K_H_
+#define INCFLO_DERIVE_K_H_
 
 #include <AMReX_FArrayBox.H>
 #include <cmath>

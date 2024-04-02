@@ -143,6 +143,65 @@ Real incflo::ComputeKineticEnergy ()
 }
 
 #if (AMREX_SPACEDIM == 2)
+void incflo::ComputeMagVel (int lev, Real /*time*/, MultiFab& magvel, MultiFab const& vel)
+{
+    BL_PROFILE("incflo::ComputeMagVel");
+
+#ifdef AMREX_USE_EB
+    const auto& fact = EBFactory(lev);
+    const auto& flags_mf = fact.getMultiEBCellFlagFab();
+#endif
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for(MFIter mfi(vel, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        Box bx = mfi.tilebox();
+        Array4<Real const> const& ccvel_fab = vel.const_array(mfi);
+        Array4<Real> const& magvel_fab = magvel.array(mfi);
+
+#ifdef AMREX_USE_EB
+        const EBCellFlagFab& flags = flags_mf[mfi];
+        auto typ = flags.getType(bx);
+        if (typ == FabType::covered)
+        {
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                magvel_fab(i,j,k) = Real(0.0);
+            });
+        }
+        else
+        {
+            const auto& flag_fab = flags.const_array();
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                constexpr Real c0 = Real(-1.5);
+                constexpr Real c1 = Real( 2.0);
+                constexpr Real c2 = Real(-0.5);
+
+                if (flag_fab(i,j,k).isCovered())
+                {
+                    magvel_fab(i,j,k) = Real(0.0);
+                }
+                else
+                {
+                    Real u = ccvel_fab(i,j,k,0);
+                    Real v = ccvel_fab(i,j,k,1);
+                    magvel_fab(i,j,k) = std::sqrt(u*u + v*v);
+                }
+            });
+        }
+#else
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                Real u = ccvel_fab(i,j,k,0);
+                Real v = ccvel_fab(i,j,k,1);
+                magvel_fab(i,j,k) = std::sqrt(u*u + v*v);
+            });
+#endif
+    } // mfi
+}
 void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab const& vel)
 {
     BL_PROFILE("incflo::ComputeVorticity");
@@ -245,6 +304,63 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
 }
 
 #elif (AMREX_SPACEDIM == 3)
+void incflo::ComputeMagVel (int lev, Real /*time*/, MultiFab& magvel, MultiFab const& vel)
+{
+    BL_PROFILE("incflo::ComputeMagVel");
+
+#ifdef AMREX_USE_EB
+    const auto& fact = EBFactory(lev);
+    const auto& flags_mf = fact.getMultiEBCellFlagFab();
+#endif
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for(MFIter mfi(vel, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        Box bx = mfi.tilebox();
+        Array4<Real const> const& ccvel_fab = vel.const_array(mfi);
+        Array4<Real> const& magvel_fab = magvel.array(mfi);
+
+#ifdef AMREX_USE_EB
+        const EBCellFlagFab& flags = flags_mf[mfi];
+        auto typ = flags.getType(bx);
+        if (typ == FabType::covered)
+        {
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                magvel_fab(i,j,k) = Real(0.0);
+            });
+        }
+        else
+        {
+            const auto& flag_fab = flags.const_array();
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                if (flag_fab(i,j,k).isCovered())
+                {
+                    magvel_fab(i,j,k) = Real(0.0);
+                }
+                else
+                {
+                    Real u = ccvel_fab(i,j,k,0);
+                    Real v = ccvel_fab(i,j,k,1);
+                    Real w = ccvel_fab(i,j,k,2);
+                    magvel_fab(i,j,k) = std::sqrt(u*u + v*v + w*w);
+                }
+            });
+        }
+#else
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                Real u = ccvel_fab(i,j,k,0);
+                Real v = ccvel_fab(i,j,k,1);
+                Real w = ccvel_fab(i,j,k,2);
+                magvel_fab(i,j,k) = std::sqrt(u*u + v*v + w*w);
+            });
+#endif
+    } // mfi
+}
 void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab const& vel)
 {
     BL_PROFILE("incflo::ComputeVorticity");
