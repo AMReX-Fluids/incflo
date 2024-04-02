@@ -15,6 +15,11 @@ Bdirs += src/rheology
 Bdirs += src/setup
 Bdirs += src/utilities
 
+ifeq ($(USE_PARTICLES), TRUE)
+  DEFINES += -DINCFLO_USE_PARTICLES
+  Bdirs += src/particles
+endif
+
 ifeq ($(USE_EB), TRUE)
   Bdirs += src/embedded_boundaries
   USERSuffix += .EB
@@ -52,6 +57,10 @@ VPATH_LOCATIONS   += $(Blocs)
 
 #These are the directories in AMReX
 Pdirs := Base AmrCore Boundary LinearSolvers/MLMG
+
+ifeq ($(USE_PARTICLES), TRUE)
+  Pdirs += Particle
+endif
 
 ifeq ($(USE_EB), TRUE)
   Pdirs += EB

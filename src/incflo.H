@@ -13,6 +13,10 @@
 #include <AMReX_EBMultiFabUtil.H>
 #endif
 
+#ifdef INCFLO_USE_PARTICLES
+#include "ParticleData.H"
+#endif
+
 #include <DiffusionTensorOp.H>
 #include <DiffusionScalarOp.H>
 
@@ -540,6 +544,27 @@ private:
     int m_plt_error_w     = 0;
     int m_plt_error_p     = 0;
     int m_plt_error_mac_p = 0;
+
+#ifdef INCFLO_USE_PARTICLES
+    // Particle container with all particle species
+    ParticleData particleData;
+
+    // variables and functions for tracers particles
+    bool  m_use_tracer_particles; /*!< tracer particles that advect with flow */
+
+    /*! Read tracer and hydro particles parameters */
+    void readTracersParams();
+
+    /*! Initialize tracer and hydro particles */
+    void initializeTracers ( amrex::ParGDBBase*,
+                             const amrex::Vector<std::unique_ptr<amrex::MultiFab>>& );
+    /*! Evolve tracers and hydro particles */
+    void evolveTracers( int,
+                        amrex::Real,
+                        amrex::Vector<amrex::Vector<amrex::MultiFab>>&,
+                        const amrex::Vector<std::unique_ptr<amrex::MultiFab>>& );
+
+#endif
 
     struct LevelData {
         LevelData () = default;
