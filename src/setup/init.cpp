@@ -28,7 +28,7 @@ void incflo::ReadParameters ()
     } // end prefix amr
 
     { // Prefix incflo
-    ParmParse pp("incflo");
+        ParmParse pp("incflo");
 
         pp.query("verbose", m_verbose);
 
@@ -135,10 +135,6 @@ void incflo::ReadParameters ()
         if (m_ntrac < 1) {
             amrex::Abort("We currently require at least one tracer");
         }
-
-        // Advect scalars conservatively?
-        m_iconserv_tracer.resize(m_ntrac, 1);
-        pp.queryarr("trac_is_conservative", m_iconserv_tracer, 0, m_ntrac );
 
         // Scalar diffusion coefficients
         m_mu_s.resize(m_ntrac, 0.0);

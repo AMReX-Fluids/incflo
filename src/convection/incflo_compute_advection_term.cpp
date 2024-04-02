@@ -28,6 +28,10 @@ void incflo::init_advection ()
     m_iconserv_density.resize(1, 1);
     m_iconserv_density_d.resize(1, 1);
 
+    // Advect scalars conservatively?
+    m_iconserv_tracer.resize(m_ntrac, 1);
+    ParmParse pp("incflo");
+    pp.queryarr("trac_is_conservative", m_iconserv_tracer, 0, m_ntrac );
     m_iconserv_tracer_d.resize(m_ntrac);
     // copy
 #ifdef AMREX_USE_GPU

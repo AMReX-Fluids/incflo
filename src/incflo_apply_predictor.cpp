@@ -148,7 +148,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     if (m_advect_tracer && need_divtau())
     {
-        compute_laps(get_laps_old(), get_tracer_old_const(), GetVecOfConstPtrs(tra_eta));
+        compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
+                     GetVecOfConstPtrs(tra_eta));
     }
 
     // **********************************************************************************************

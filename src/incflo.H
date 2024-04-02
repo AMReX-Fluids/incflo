@@ -197,10 +197,10 @@ public:
     average_scalar_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
 
     // FIXME? compute_laps never used density in any meaningful way, but
-    // if anything derives from incflo, then just removing density is a
-    // breaking change....
+    // then removing density would break anything downstream....
     void compute_laps (amrex::Vector<amrex::MultiFab      *> const& laps,
                        amrex::Vector<amrex::MultiFab const*> const& scalar,
+                       amrex::Vector<amrex::MultiFab const*> const& density,
                        amrex::Vector<amrex::MultiFab const*> const& eta);
 
     void diffuse_scalar (amrex::Vector<amrex::MultiFab      *> const& scalar,
