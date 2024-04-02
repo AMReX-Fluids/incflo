@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gridding and Load Balancing &mdash; incflo 24.04-dev documentation</title>
+  <title>Gridding and Load Balancing &mdash; incflo 24.05-dev documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=681a4282" />
@@ -16,7 +16,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=e503a28d"></script>
+        <script src="_static/documentation_options.js?v=18739dcb"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -38,7 +38,7 @@
             incflo
           </a>
               <div class="version">
-                24.04-dev
+                24.05-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -89,16 +89,16 @@
 computational domain into individual rectangular grids, and how to distribute
 those grids to MPI ranks.  There can be grids of different sizes,
 more than one grid per MPI rank, and different strategies for distributing the grids to MPI ranks.</p>
-<p>AMReX’s docmumentation on <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/ManagingGridHierarchy_Chapter.html#chap-managinggridhierarchy" title="(in amrex v24.04-dev)"><span>Gridding and Load Balancing</span></a> contains further details.
-See <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/GridCreation.html#sec-grid-creation" title="(in amrex v24.04-dev)"><span>Grid Creation</span></a> for grids are created, i.e. how the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">BoxArray</span></code> on which
+<p>AMReX’s docmumentation on <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/ManagingGridHierarchy_Chapter.html#chap-managinggridhierarchy" title="(in amrex v24.05-dev)"><span>Gridding and Load Balancing</span></a> contains further details.
+See <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/GridCreation.html#sec-grid-creation" title="(in amrex v24.05-dev)"><span>Grid Creation</span></a> for grids are created, i.e. how the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">BoxArray</span></code> on which
 <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">MultiFabs</span></code> will be built is defined at each level.
-See <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/LoadBalancing.html#sec-load-balancing" title="(in amrex v24.04-dev)"><span>Load Balancing</span></a> for the strategies AMReX supports for distributing
+See <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/LoadBalancing.html#sec-load-balancing" title="(in amrex v24.05-dev)"><span>Load Balancing</span></a> for the strategies AMReX supports for distributing
 grids to MPI ranks, i.e. defining the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">DistributionMapping</span></code> with which
 <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">MultiFabs</span></code> at that level will be built.</p>
 <p>When running on multicore machines with OpenMP, we can also control the distribution of
 work by setting the size of grid tiles (by defining <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">fabarray</span><span class="p">.</span><span class="n">mfiter_tile_size</span></code>).
 We can also specify the strategy for assigning tiles to OpenMP threads.
-See <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/Basics.html#sec-basics-mfiter-tiling" title="(in amrex v24.04-dev)"><span>MFIter with Tiling</span></a> for more about tiling.</p>
+See <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/Basics.html#sec-basics-mfiter-tiling" title="(in amrex v24.05-dev)"><span>MFIter with Tiling</span></a> for more about tiling.</p>
 </section>
 
 
