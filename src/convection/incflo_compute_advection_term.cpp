@@ -28,9 +28,19 @@ void incflo::init_advection ()
     m_iconserv_density.resize(1, 1);
     m_iconserv_density_d.resize(1, 1);
 
-    // We update (rho * tracer), not tracer itself, hence we update conservatively
+    // Advect scalars conservatively?
     m_iconserv_tracer.resize(m_ntrac, 1);
-    m_iconserv_tracer_d.resize(m_ntrac, 1);
+    ParmParse pp("incflo");
+    pp.queryarr("trac_is_conservative", m_iconserv_tracer, 0, m_ntrac );
+    m_iconserv_tracer_d.resize(m_ntrac);
+    // copy
+#ifdef AMREX_USE_GPU
+    Gpu::htod_memcpy
+#else
+    std::memcpy
+#endif
+        (m_iconserv_tracer_d.data(), m_iconserv_tracer.data(), sizeof(int)*m_ntrac);
+
 }
 
 void
@@ -80,6 +90,21 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > fluxes(finest_level+1);
     Vector<Array<MultiFab*,AMREX_SPACEDIM> >  faces(finest_level+1);
 
+    bool any_conserv_trac = false;
+    for (auto& i : m_iconserv_tracer){
+        if ( i == 1 ) {
+            any_conserv_trac = true;
+            break;
+        }
+    }
+    bool any_convective_trac = false;
+    for (auto& i : m_iconserv_tracer){
+        if ( i == 0 ) {
+            any_convective_trac = true;
+            break;
+        }
+    }
+
     for (int lev = 0; lev <= finest_level; ++lev) {
         AMREX_D_TERM(
            face_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
@@ -94,7 +119,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         if (m_advect_momentum)
             rhovel[lev].define(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,
                                vel[lev]->nGrow(),MFInfo(),Factory(lev));
-        if (m_advect_tracer && m_ntrac > 0)
+        if (m_advect_tracer && m_ntrac > 0 && any_conserv_trac)
             rhotrac[lev].define(vel[lev]->boxArray(),dmap[lev],tracer[lev]->nComp(),
                                 tracer[lev]->nGrow(),MFInfo(),Factory(lev));
 
@@ -151,7 +176,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         if (nghost_force() > 0)
             fillpatch_force(m_cur_time, vel_forces, nghost_force());
 
-        // Note this is forcing for (rho s), not for s
+        // Note that for conservative tracers, this is forcing for (rho s)
+        // and for non-conservative, this is forcing for s
         if (m_advect_tracer)
         {
             compute_tra_forces(tra_forces, get_density_old_const());
@@ -409,7 +435,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             }
 
             // ************************************************************************
-            // (Rho*Tracer)
+            // Tracer
             // ************************************************************************
             // Make a FAB holding (rho * tracer) that is the same size as the original tracer FAB
             if (m_advect_tracer && (m_ntrac>0)) {
@@ -421,13 +447,22 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
                 Array4<Real const> tra     =  tracer[lev]->const_array(mfi);
                 Array4<Real const> rho     = density[lev]->const_array(mfi);
-                Array4<Real      > ro_trac = rhotrac[lev].array(mfi);
+                Array4<Real      > trac_tmp;
 
-                amrex::ParallelFor(bxg, m_ntrac,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                {
-                    ro_trac(i,j,k,n) = rho(i,j,k) * tra(i,j,k,n);
-                });
+                auto const* iconserv = get_tracer_iconserv_device_ptr();
+                if ( any_conserv_trac ) {
+                    trac_tmp = rhotrac[lev].array(mfi);
+
+                    amrex::ParallelFor(bxg, m_ntrac,
+                    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                    {
+                        if ( iconserv[n] ){
+                            trac_tmp(i,j,k,n) = rho(i,j,k) * tra(i,j,k,n);
+                        } else {
+                            trac_tmp(i,j,k,n) = tra(i,j,k,n);
+                        }
+                    });
+                }
 
                 if (m_constant_density)
                    face_comp = AMREX_SPACEDIM;
@@ -437,7 +472,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 is_velocity = false;
                 Array4<int const> const& tracbc_arr = tracBC_MF ? (*tracBC_MF).const_array(mfi)
                                                                 : Array4<int const>{};
-                HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi, ro_trac,
+                HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
+                                          any_conserv_trac ? trac_tmp : tracer[lev]->const_array(mfi),
                                           AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
                                                        flux_y[lev].array(mfi,face_comp),
                                                        flux_z[lev].array(mfi,face_comp)),
@@ -616,13 +652,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
           } // mfi
         } // not constant density
 
-        // Note: (rho*trac) is always updated conservatively -- we do not provide an option for
-        //       updating (rho*trac) convectively
         if (m_advect_tracer && m_ntrac > 0)
         {
           int flux_comp = (m_constant_density) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
 
-//Was this OMP intentionally left off?
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -650,15 +683,31 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact->getBndryNormal().const_array(mfi) : Array4<Real const>{});
 #else
-                auto const& update_arr  = conv_t[lev]->array(mfi);
-                HydroUtils::ComputeDivergence(bx, update_arr,
-                                              AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
-                                                           flux_y[lev].const_array(mfi,flux_comp),
-                                                           flux_z[lev].const_array(mfi,flux_comp)),
-                                              m_ntrac, geom[lev], mult,
-                                              fluxes_are_area_weighted);
+            auto const& update_arr  = conv_t[lev]->array(mfi);
+            HydroUtils::ComputeDivergence(bx, update_arr,
+                                          AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
+                                                       flux_y[lev].const_array(mfi,flux_comp),
+                                                       flux_z[lev].const_array(mfi,flux_comp)),
+                                          m_ntrac, geom[lev], mult,
+                                          fluxes_are_area_weighted);
 #endif
 
+            if ( any_convective_trac )
+            {
+                // If convective, we define u dot grad trac = div (u trac) - trac div(u)
+                HydroUtils::ComputeConvectiveTerm(bx, m_ntrac, mfi,
+                                                  tracer[lev]->array(mfi,0),
+                                                  AMREX_D_DECL(face_x[lev].array(mfi),
+                                                               face_y[lev].array(mfi),
+                                                               face_z[lev].array(mfi)),
+                                                  divu[lev].array(mfi),
+                                                  update_arr,
+                                                  get_tracer_iconserv_device_ptr(),
+#ifdef AMREX_USE_EB
+                                                  *ebfact,
+#endif
+                                                  m_advection_type);
+            }
           } // mfi
         } // advect tracer
 
@@ -699,7 +748,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             if (m_advect_tracer) {
                 auto const& bc_tra = get_tracer_bcrec_device_ptr();
                 redistribute_term(mfi, *conv_t[lev], dtdt_tmp,
-                                  rhotrac[lev], bc_tra, lev);
+                                  any_conserv_trac ? rhotrac[lev] : *tracer[lev],
+                                  bc_tra, lev);
             }
         } // mfi
 #endif

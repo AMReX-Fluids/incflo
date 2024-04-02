@@ -28,7 +28,7 @@ void incflo::ReadParameters ()
     } // end prefix amr
 
     { // Prefix incflo
-    ParmParse pp("incflo");
+        ParmParse pp("incflo");
 
         pp.query("verbose", m_verbose);
 
