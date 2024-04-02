@@ -150,6 +150,8 @@ void incflo::ComputeMagVel (int lev, Real /*time*/, MultiFab& magvel, MultiFab c
 #ifdef AMREX_USE_EB
     const auto& fact = EBFactory(lev);
     const auto& flags_mf = fact.getMultiEBCellFlagFab();
+#else
+    amrex::ignore_unused(lev);
 #endif
 
 #ifdef _OPENMP
@@ -307,6 +309,8 @@ void incflo::ComputeMagVel (int lev, Real /*time*/, MultiFab& magvel, MultiFab c
 #ifdef AMREX_USE_EB
     const auto& fact = EBFactory(lev);
     const auto& flags_mf = fact.getMultiEBCellFlagFab();
+#else
+    amrex::ignore_unused(lev);
 #endif
 
 #ifdef _OPENMP
