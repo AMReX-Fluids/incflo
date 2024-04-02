@@ -159,7 +159,7 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-#ifdef USE_EB
+#ifndef USE_EB
     static
 #endif
     void ComputeMagVel (int lev, amrex::Real time, amrex::MultiFab& magvel,
