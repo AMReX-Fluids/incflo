@@ -121,7 +121,7 @@ void incflo::ApplyCorrector()
         }
     }
 
-    // **********************************************************************************************
+    // *************************************************************************************
     // Compute the MAC-projected velocities at all levels
     // *************************************************************************************
     bool include_pressure_gradient = !(m_use_mac_phi_in_godunov);
@@ -131,9 +131,8 @@ void incflo::ApplyCorrector()
     compute_MAC_projected_velocities(get_velocity_new_const(), get_density_new_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), new_time);
-    // **********************************************************************************************
+    // *************************************************************************************
     // Compute the explicit "new" advective terms R_u^(n+1,*), R_r^(n+1,*) and R_t^(n+1,*)
-    // Note that "get_conv_tracer_new" returns div(rho u tracer)
     // *************************************************************************************
     compute_convective_term(get_conv_velocity_new(), get_conv_density_new(), get_conv_tracer_new(),
                             get_velocity_new_const(), get_density_new_const(), get_tracer_new_const(),
