@@ -87,7 +87,7 @@ void incflo::fillpatch_tracer (int lev, Real time, MultiFab& tracer, int ng)
         FillPatchSingleLevel(tracer, IntVect(ng), time,
                              {&(m_leveldata[lev]->tracer_o),
                               &(m_leveldata[lev]->tracer)},
-                             {m_t_old[lev], m_t_new[lev]}, 0, 0, 1, geom[lev],
+                             {m_t_old[lev], m_t_new[lev]}, 0, 0, m_ntrac, geom[lev],
                              physbc, 0);
     } else {
         const auto& bcrec = get_tracer_bcrec();
