@@ -144,14 +144,24 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
                                    Real dt)
 {
     //
-    //      alpha a - beta div ( b grad )   <--->   rho - dt div ( mu grad )
+    // Solves
+    //      alpha a - beta div ( b grad )
     //
-    // So the constants and variable coefficients are:
-    //
+    // So for conservative: d(rho tra) / dt - div mu grad tra = -div(U rho tra) + rho H -->
+    //                      ( rho - dt div mu grad ) tra^(n+1) = rho tra^(*,n+1)
     //      alpha: 1
-    //      beta: dt
     //      a: rho
+    //      beta: dt
     //      b: mu
+    //      RHS: density * tracer
+    //
+    // So for non- conservative: d tra / dt - div mu grad tra = -U dot grad tra + H -->
+    //                           ( 1 - dt div mu grad ) tra^(n+1) = tra^(*,n+1)
+    //      alpha: 1
+    //      a: 1
+    //      beta: dt
+    //      b: mu
+    //      RHS: tracer
 
     if (m_verbose > 0) {
         amrex::Print() << "Diffusing scalars one at a time ..." << std::endl;
@@ -159,17 +169,23 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 
     const int finest_level = m_incflo->finestLevel();
 
-    Vector<MultiFab> rhs(finest_level+1);
+    Vector<MultiFab> rhs_c(finest_level+1);
+    // Note only conservative uses this rhs_c container
     for (int lev = 0; lev <= finest_level; ++lev) {
-        rhs[lev].define(tracer[lev]->boxArray(), tracer[lev]->DistributionMap(), 1, 0);
+        rhs_c[lev].define(tracer[lev]->boxArray(), tracer[lev]->DistributionMap(), 1, 0);
     }
 
+    auto iconserv = m_incflo->get_tracer_iconserv();
 #ifdef AMREX_USE_EB
     if (m_eb_scal_solve_op)
     {
         m_eb_scal_solve_op->setScalars(1.0, dt);
         for (int lev = 0; lev <= finest_level; ++lev) {
-            m_eb_scal_solve_op->setACoeffs(lev, *density[lev]);
+            if ( iconserv[0] ) {
+                m_eb_scal_solve_op->setACoeffs(lev, *density[lev]);
+            } else {
+                m_eb_scal_solve_op->setACoeffs(lev, 1.0);
+            }
         }
     }
     else
@@ -177,7 +193,11 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
     {
         m_reg_scal_solve_op->setScalars(1.0, dt);
         for (int lev = 0; lev <= finest_level; ++lev) {
-            m_reg_scal_solve_op->setACoeffs(lev, *density[lev]);
+            if ( iconserv[0] ) {
+                m_reg_scal_solve_op->setACoeffs(lev, *density[lev]);
+            } else {
+                m_reg_scal_solve_op->setACoeffs(lev, 1.0);
+            }
         }
     }
 
@@ -192,6 +212,16 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
             }
 
             for (int lev = 0; lev <= finest_level; ++lev) {
+                // Only reset Acoeff if necessary.
+                if (comp > 0 &&
+                    ( m_incflo->m_has_mixedBC || (iconserv[comp] != iconserv[comp-1]) ) ) {
+                    if ( iconserv[comp] ) {
+                        m_eb_scal_solve_op->setACoeffs(lev, *density[lev]);
+                    } else {
+                        m_eb_scal_solve_op->setACoeffs(lev, 1.0);
+                    }
+                }
+
                 Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_scalar_eta_to_faces(lev, comp, *eta[lev]);
                 m_eb_scal_solve_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
             }
@@ -200,37 +230,47 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
 #endif
         {
             for (int lev = 0; lev <= finest_level; ++lev) {
+                if ( comp > 0 && (iconserv[comp] != iconserv[comp-1]) ) {
+                    if ( iconserv[comp] ) {
+                        m_reg_scal_solve_op->setACoeffs(lev, *density[lev]);
+                    } else {
+                        m_reg_scal_solve_op->setACoeffs(lev, 1.0);
+                    }
+                }
+
                 Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_scalar_eta_to_faces(lev, comp, *eta[lev]);
                 m_reg_scal_solve_op->setBCoeffs(lev, GetArrOfConstPtrs(b));
             }
         }
 
         Vector<MultiFab> phi;
+        Vector<MultiFab> rhs;
         for (int lev = 0; lev <= finest_level; ++lev) {
             phi.emplace_back(*tracer[lev], amrex::make_alias, comp, 1);
+
+            if ( !iconserv[comp] ) {
+                rhs.emplace_back(*tracer[lev], amrex::make_alias, comp, 1);
+            } else {
+                rhs.emplace_back(rhs_c[lev], amrex::make_alias, 0, 1);
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-            for (MFIter mfi(rhs[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-                Box const& bx = mfi.tilebox();
-                Array4<Real> const& rhs_a = rhs[lev].array(mfi);
-                Array4<Real const> const& tra_a = tracer[lev]->const_array(mfi,comp);
-                Array4<Real const> const& rho_a = density[lev]->const_array(mfi);
-                amrex::ParallelFor(bx,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                {
-                    rhs_a(i,j,k) = rho_a(i,j,k) * tra_a(i,j,k);
-                });
+                for (MFIter mfi(rhs[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+                    Box const& bx = mfi.tilebox();
+                    Array4<Real> const& rhs_a = rhs[lev].array(mfi);
+                    Array4<Real const> const& tra_a = tracer[lev]->const_array(mfi,comp);
+                    Array4<Real const> const& rho_a = density[lev]->const_array(mfi);
+                    amrex::ParallelFor(bx,
+                    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        rhs_a(i,j,k) = rho_a(i,j,k) * tra_a(i,j,k);
+                    });
+                }
             }
 
 #ifdef AMREX_USE_EB
             if (m_eb_scal_solve_op) {
                 if ( m_incflo->m_has_mixedBC ) {
-                    if ( comp>0 ) {
-                        // Must reset Acoef to reuse solver with Robin BC
-                        m_eb_scal_solve_op->setACoeffs(lev, *density[lev]);
-                    }
-
                     auto const robin = m_incflo->make_robinBC_MFs(lev, &phi[lev]);
 
                     m_eb_scal_solve_op->setLevelBC(lev, &phi[lev],
@@ -441,17 +481,6 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
     int finest_level = m_incflo->finestLevel();
 
-    // FIXME - Why do we need this copy?
-    Vector<MultiFab> scalar(finest_level+1);
-    for (int lev = 0; lev <= finest_level; ++lev) {
-        AMREX_ASSERT(a_scalar[lev]->nComp() == a_laps[lev]->nComp());
-        scalar[lev].define(a_scalar[lev]->boxArray(),
-                           a_scalar[lev]->DistributionMap(),
-                           m_incflo->m_ntrac, 1, MFInfo(),
-                           a_scalar[lev]->Factory());
-        MultiFab::Copy(scalar[lev], *a_scalar[lev], 0, 0, m_incflo->m_ntrac, 1);
-    }
-
 #ifdef AMREX_USE_EB
     if (m_eb_scal_apply_op)
     {
@@ -477,7 +506,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
             int eta_comp = comp;
 
             if ( m_incflo->m_has_mixedBC && comp>0 ){
-                // Must reset scalars to use solver with Robin BC
+                // Must reset scalars to reuse solver with Robin BC
                 m_eb_scal_apply_op->setScalars(0.0, -1.0);
             }
 
@@ -485,7 +514,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
             Vector<MultiFab> scalar_comp;
             for (int lev = 0; lev <= finest_level; ++lev) {
                 laps_comp.emplace_back(laps_tmp[lev],amrex::make_alias,comp,1);
-                scalar_comp.emplace_back(scalar[lev],amrex::make_alias,comp,1);
+                scalar_comp.emplace_back(*a_scalar[lev],amrex::make_alias,comp,1);
 
                 Array<MultiFab,AMREX_SPACEDIM>
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);
@@ -532,7 +561,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
             Vector<MultiFab> scalar_comp;
             for (int lev = 0; lev <= finest_level; ++lev) {
                 laps_comp.emplace_back(*a_laps[lev],amrex::make_alias,comp,1);
-                scalar_comp.emplace_back(scalar[lev],amrex::make_alias,comp,1);
+                scalar_comp.emplace_back(*a_scalar[lev],amrex::make_alias,comp,1);
                 Array<MultiFab,AMREX_SPACEDIM>
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);
 
