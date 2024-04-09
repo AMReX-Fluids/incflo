@@ -137,11 +137,14 @@
 <p>Incompressibility constraint:</p>
 <div class="math notranslate nohighlight">
 \[\nabla \cdot U = 0\]</div>
-<p>Tracer(s):</p>
+<p>Tracer(s): for conservative,</p>
 <div class="math notranslate nohighlight">
 \[\frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  =  \nabla \cdot \mu_s \nabla s + \rho H_s\]</div>
+<p>or, for non-conservative,</p>
+<div class="math notranslate nohighlight">
+\[\frac{\partial s}{\partial t} + U \cdot \nabla s  =  \nabla \cdot \mu_s \nabla s + H_s\]</div>
 <p>By default, <span class="math notranslate nohighlight">\(H_s = 0\)</span> and <span class="math notranslate nohighlight">\({\bf H}_U = {\bf 0}\)</span>.
-If gravity is set during runtime, then <span class="math notranslate nohighlight">\({\bf H}_U\)</span> defaults to <span class="math notranslate nohighlight">\(\rho {\bf g}\)</span></p>
+If gravity is set during runtime, then <span class="math notranslate nohighlight">\({\bf H}_U\)</span> defaults to <span class="math notranslate nohighlight">\(\rho {\bf g}\)</span>.</p>
 </section>
 
 

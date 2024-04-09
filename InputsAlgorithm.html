@@ -123,37 +123,42 @@
 <td><p>bool</p></td>
 <td><p>false</p></td>
 </tr>
-<tr class="row-odd"><td><p>ntrac</p></td>
+<tr class="row-odd"><td><p>trac_is_conservative</p></td>
+<td><p>Is tracer conserved? If specified, one entry required per tracer</p></td>
+<td><p>int</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p>ntrac</p></td>
 <td><p>number of tracers</p></td>
 <td><p>int</p></td>
 <td><p>1</p></td>
 </tr>
-<tr class="row-even"><td><p>constant_density</p></td>
+<tr class="row-odd"><td><p>constant_density</p></td>
 <td><p>Only evolve the continuity equation if false</p></td>
 <td><p>bool</p></td>
 <td><p>true</p></td>
 </tr>
-<tr class="row-odd"><td><p>rho_0</p></td>
+<tr class="row-even"><td><p>rho_0</p></td>
 <td><p>density (if constant)</p></td>
 <td><p>Real</p></td>
 <td><p>1.0</p></td>
 </tr>
-<tr class="row-even"><td><p>diffusion_type</p></td>
+<tr class="row-odd"><td><p>diffusion_type</p></td>
 <td><p>Diffusion type (0 = Explicit, 1 = Crank-Nicholson, 2 = Implicit)</p></td>
 <td><p>int</p></td>
 <td><p>2 (Implicit)</p></td>
 </tr>
-<tr class="row-odd"><td><p>mu</p></td>
+<tr class="row-even"><td><p>mu</p></td>
 <td><p>viscosity (if constant)</p></td>
 <td><p>Real</p></td>
 <td><p>1.0</p></td>
 </tr>
-<tr class="row-even"><td><p>mu_s</p></td>
+<tr class="row-odd"><td><p>mu_s</p></td>
 <td><p>scalar diffusivity</p></td>
 <td><p>Real(s)</p></td>
 <td><p>0.0</p></td>
 </tr>
-<tr class="row-odd"><td><p>use_tensor_solve</p></td>
+<tr class="row-even"><td><p>use_tensor_solve</p></td>
 <td><p>In velocity solve, use multicomponent <span class="math notranslate nohighlight">\(\nabla \cdot \tau\)</span>
 otherwise use separate solves for each velocity component</p></td>
 <td><p>bool</p></td>
