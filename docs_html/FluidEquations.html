@@ -1,20 +1,22 @@
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" >
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fluid Variables &mdash; incflo 23.00-dev documentation</title>
-      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-      <link rel="stylesheet" href="_static/theme_overrides.css" type="text/css" />
+  <title>Fluid Variables &mdash; incflo 24.05-dev documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=681a4282" />
+
+  
   <!--[if lt IE 9]>
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=0b3700fb"></script>
+        <script src="_static/documentation_options.js?v=18739dcb"></script>
         <script src="_static/doctools.js?v=888ff710"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
         <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -37,7 +39,7 @@
             incflo
           </a>
               <div class="version">
-                23.00-dev
+                24.05-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -135,11 +137,14 @@
 <p>Incompressibility constraint:</p>
 <div class="math notranslate nohighlight">
 \[\nabla \cdot U = 0\]</div>
-<p>Tracer(s):</p>
+<p>Tracer(s): for conservative,</p>
 <div class="math notranslate nohighlight">
 \[\frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  =  \nabla \cdot \mu_s \nabla s + \rho H_s\]</div>
+<p>or, for non-conservative,</p>
+<div class="math notranslate nohighlight">
+\[\frac{\partial s}{\partial t} + U \cdot \nabla s  =  \nabla \cdot \mu_s \nabla s + H_s\]</div>
 <p>By default, <span class="math notranslate nohighlight">\(H_s = 0\)</span> and <span class="math notranslate nohighlight">\({\bf H}_U = {\bf 0}\)</span>.
-If gravity is set during runtime, then <span class="math notranslate nohighlight">\({\bf H}_U\)</span> defaults to <span class="math notranslate nohighlight">\(\rho {\bf g}\)</span></p>
+If gravity is set during runtime, then <span class="math notranslate nohighlight">\({\bf H}_U\)</span> defaults to <span class="math notranslate nohighlight">\(\rho {\bf g}\)</span>.</p>
 </section>
 
 

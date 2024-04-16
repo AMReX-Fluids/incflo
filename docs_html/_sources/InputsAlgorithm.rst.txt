@@ -14,6 +14,8 @@ The following inputs must be preceded by "incflo."
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  advect_tracer       |  evolve the tracer equation(s)?                                       |  bool       |  false       |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
+|  trac_is_conservative|  Is tracer conserved? If specified, one entry required per tracer     |  int        |  1           |
++----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  ntrac               |  number of tracers                                                    |  int        |  1           |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  constant_density    |  Only evolve the continuity equation if false                         |  bool       |  true        |
@@ -25,5 +27,8 @@ The following inputs must be preceded by "incflo."
 |  mu                  |  viscosity (if constant)                                              |  Real       |  1.0         |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  mu_s                |  scalar diffusivity                                                   |  Real(s)    |  0.0         |
++----------------------+-----------------------------------------------------------------------+-------------+--------------+
+|  use_tensor_solve    |  In velocity solve, use multicomponent :math:`\nabla \cdot \tau`      |  bool       |  true        |
+|                      |  otherwise use separate solves for each velocity component            |             |              |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 

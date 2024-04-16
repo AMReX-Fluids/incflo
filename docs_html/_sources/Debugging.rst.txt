@@ -68,4 +68,4 @@ files for different processes.  For example,
 Also see AMReX's documentation on :ref:`amrex:sec:basics:debugging` for further suggestions.
 
 If you believe you've encountered a bug or incorrect behavior in incflo, please report the issue
-on incflo's github page `here <https://github.com/AMReX-Codes/incflo/issues>`_ .
+on incflo's github page `here <https://github.com/AMReX-Fluids/incflo/issues>`_ .

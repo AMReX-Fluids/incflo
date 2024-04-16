@@ -50,6 +50,7 @@ Setting basic boundary conditions can be specified by inputs preceded by "xlo", 
 |                    | * 'po'  or 'pressure_outflow'                                             |             |           |
 |                    | * 'mi'  or 'mass_inflow'                                                  |             |           |
 |                    | * 'nsw' or 'no_slip_wall'                                                 |             |           |
+|                    | * 'mixed'                                                                 |             |           |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
 | pressure           | Sets boundary pressure for pressure inflows, outflows and mass inflows    |    Real     |  None     |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
@@ -60,5 +61,14 @@ Setting basic boundary conditions can be specified by inputs preceded by "xlo", 
 | tracer             | Sets boundary tracer for mass inflows                                     |    Real     |  0.0      |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
 
+   The 'mixed' boundary type allows for inflow and outflow on the same domain face.
+   The implementation requires that there is EB separating the inflow and outflow regions,
+   and only currently treats constant viscosity (i.e. requires the inputs file contains  ``incflo.use_tensor_solve = false``).
+   It does allow for non-constant scalar diffusivity. To create a new problem setup with mixed BCs, one must additionally
+   specify the Dirchlet and Neumann areas in ``prob/prob_bc.cpp`` In this file there are functions to set the needed BC info for the diffusion solver, the MAC projection, and with the same function, the nodal projection and advection. Comments in the code provide a detailed explaination for each instance. For addditional details on mixed BCs, also see AMReX-Hydro's documentation (:ref:`bcs`).
 
+..
+   To create a new setup:
+   initial conditions go in prob/prob_init_fluid.cpp
+   inflow boundary conditions are set in prob/prob_bc.H -- the BCType for mixed bc is set at foextrap here to allow the outflow to get appropriately filled, which would already have happened before reaching these functions.
 
