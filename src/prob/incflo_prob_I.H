@@ -3,6 +3,15 @@
 
 // This header is include by incflo.H.  These functions are members of incflo class.
 
+    static void init_rotating_flow  (amrex::Box const& vbx, amrex::Box const& gbx,
+                                     amrex::Array4<amrex::Real> const& vel,
+                                     amrex::Array4<amrex::Real> const& density,
+                                     amrex::Array4<amrex::Real> const& tracer,
+                                     amrex::Box const& domain,
+                                     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dx,
+                                     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& problo,
+                                     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& probhi);
+
     static void init_taylor_green (amrex::Box const& vbx, amrex::Box const& gbx,
                             amrex::Array4<amrex::Real> const& vel,
                             amrex::Array4<amrex::Real> const& density,

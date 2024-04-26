@@ -109,6 +109,10 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 #else
     macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
 #endif
+
+#ifdef INCFLO_USE_PARTICLES
+    particleData.Redistribute();
+#endif
 }
 
 // Delete level data

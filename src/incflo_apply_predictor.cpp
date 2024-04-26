@@ -510,6 +510,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // **********************************************************************************************
     ApplyProjection(GetVecOfConstPtrs(density_nph),new_time,m_dt,incremental_projection);
 
+#ifdef INCFLO_USE_PARTICLES
+    // **************************************************************************************
+    // Update the particle positions
+    // **************************************************************************************
+    if (m_advection_type != "MOL") {
+        evolveTracerParticles(AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
+                                           GetVecOfConstPtrs(w_mac)));
+    }
+#endif
+
 #ifdef AMREX_USE_EB
     // **********************************************************************************************
     //

@@ -82,5 +82,9 @@ void incflo::Advance()
     {
         amrex::Print() << "Time per step " << end_step << std::endl;
     }
+
+#ifdef INCFLO_USE_PARTICLES
+    particleData.Redistribute();
+#endif
 }
 

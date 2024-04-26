@@ -56,10 +56,22 @@ void incflo::InitData ()
         InitFromScratch(m_cur_time);
 
 #ifdef AMREX_USE_EB
+        const auto& ebfact = EBFactory(0);
+#endif
+
+#ifdef INCFLO_USE_PARTICLES
+        initializeTracerParticles( (ParGDBBase*)GetParGDB()
+#ifdef AMREX_USE_EB
+                                  ,ebfact
+#endif
+                                 );
+#endif
+
+#ifdef AMREX_USE_EB
         InitialRedistribution();
 #endif
 
-    if (m_do_initial_proj) {
+        if (m_do_initial_proj) {
             InitialProjection();
         }
 
@@ -88,6 +100,10 @@ void incflo::InitData ()
     {
         // Read starting configuration from chk file.
         ReadCheckpointFile();
+
+#ifdef INCFLO_USE_PARTICLES
+        particleData.Redistribute();
+#endif
 
         if (m_plotfile_on_restart)
         {

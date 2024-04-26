@@ -99,6 +99,10 @@ void incflo::WriteCheckPointFile() const
         VisMF::Write(m_leveldata[lev]->p_nd,
                      amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_nd"));
     }
+
+#ifdef INCFLO_USE_PARTICLES
+   particleData.Checkpoint(checkpointname);
+#endif
 }
 
 void incflo::ReadCheckpointFile()
@@ -221,6 +225,10 @@ void incflo::ReadCheckpointFile()
         VisMF::Read(m_leveldata[lev]->p_nd,
                     amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "p_nd"));
     }
+
+#ifdef INCFLO_USE_PARTICLES
+   particleData.Restart((ParGDBBase*)GetParGDB(),m_restart_file);
+#endif
 
     amrex::Print() << "Restart complete" << std::endl;
 }
@@ -372,8 +380,7 @@ void incflo::WritePlotFile()
     if(m_plt_error_w) ncomp += 1;
 #endif
 
-    // Error in nodal pressure (computed vs exact)
-    if(m_plt_error_p) ncomp += 1;
+    // Error in nodal pressure (computed vs exact) if(m_plt_error_p) ncomp += 1;
 
     // Error in MAC pressure (computed vs exact)
     if(m_plt_error_mac_p) ncomp += 1;
@@ -396,6 +403,11 @@ void incflo::WritePlotFile()
 #ifdef AMREX_USE_EB
     // Cut cell volume fraction
     if(m_plt_vfrac) ++ncomp;
+#endif
+
+#ifdef INCFLO_USE_PARTICLES
+    // Number of particles per cell
+    if(m_plt_particle_count) ++ncomp;
 #endif
 
     Vector<MultiFab> mf(finest_level + 1);
@@ -435,7 +447,7 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("gpx");
         ++icomp;
     }
-    if (m_plt_gpy) {
+if (m_plt_gpy) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->gp, 1, icomp, 1, 0);
         }
@@ -614,6 +626,21 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("divu");
         ++icomp;
     }
+
+#ifdef INCFLO_USE_PARTICLES
+    if (m_plt_particle_count) {
+        const auto& particles_namelist( particleData.getNames() );
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            MultiFab temp_dat(mf[lev].boxArray(), mf[lev].DistributionMap(), 1, 0);
+            temp_dat.setVal(0);
+            particleData[particles_namelist[0]]->Increment(temp_dat, lev);
+            MultiFab::Copy(mf[lev], temp_dat, 0, icomp, 1, 0);
+        }
+        pltscaVarsName.push_back("particle_count");
+        ++icomp;
+    }
+#endif
+
 #ifdef AMREX_USE_EB
     if (m_plt_vfrac) {
         for (int lev = 0; lev <= finest_level; ++lev) {
@@ -641,4 +668,8 @@ void incflo::WritePlotFile()
     amrex::WriteMultiLevelPlotfile(plotfilename, finest_level + 1, GetVecOfConstPtrs(mf),
                                    pltscaVarsName, Geom(), m_cur_time, istep, refRatio());
     WriteJobInfo(plotfilename);
+
+#ifdef INCFLO_USE_PARTICLES
+    particleData.Checkpoint(plotfilename);
+#endif
 }

@@ -23,6 +23,9 @@ void incflo::ReadParameters ()
 #ifdef AMREX_USE_EB
         pp.query("refine_cutcells", m_refine_cutcells);
 #endif
+#ifdef INCFLO_USE_PARTICLES
+        pp.query("refine_particles", m_refine_particles);
+#endif
         pp.query("KE_int", m_KE_int);
 
     } // end prefix amr
@@ -191,6 +194,10 @@ void incflo::ReadParameters ()
        }
     } // end prefix eb_flow
 #endif
+
+#ifdef INCFLO_USE_PARTICLES
+    readTracersParams();
+#endif
 }
 
 void incflo::ReadIOParameters()
@@ -236,6 +243,9 @@ void incflo::ReadIOParameters()
         m_plt_strainrate = 0;
         m_plt_divu       = 0;
         m_plt_vfrac      = 0;
+#ifdef INCFLO_USE_PARTICLES
+        m_plt_particle_count = 1;
+#endif
     }
 
     // Which variables to write to plotfile
@@ -265,6 +275,10 @@ void incflo::ReadIOParameters()
     pp.query("plt_error_w",    m_plt_error_w );
     pp.query("plt_error_p",    m_plt_error_p );
     pp.query("plt_error_mac_p",m_plt_error_mac_p );
+
+#ifdef INCFLO_USE_PARTICLES
+    pp.query("plt_particle_count", m_plt_particle_count );
+#endif
 }
 
 //
