@@ -184,6 +184,7 @@ void incflo::prob_init_fluid (int lev)
                                ld.tracer.array(mfi),
                                domain, dx, problo, probhi);
 
+        }
         else
         {
             amrex::Abort("prob_init_fluid: unknown m_probtype");
