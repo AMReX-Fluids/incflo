@@ -35,9 +35,13 @@ Incompressibility constraint:
 
 .. math:: \nabla \cdot U = 0
 
-Tracer(s):
+Tracer(s): for conservative,
 
 .. math:: \frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  =  \nabla \cdot \mu_s \nabla s + \rho H_s
 
+or, for non-conservative,
+
+.. math:: \frac{\partial s}{\partial t} + U \cdot \nabla s  =  \nabla \cdot \mu_s \nabla s + H_s
+
 By default, :math:`H_s = 0` and :math:`{\bf H}_U = {\bf 0}`.
-If gravity is set during runtime, then :math:`{\bf H}_U` defaults to :math:`\rho {\bf g}`
+If gravity is set during runtime, then :math:`{\bf H}_U` defaults to :math:`\rho {\bf g}`.

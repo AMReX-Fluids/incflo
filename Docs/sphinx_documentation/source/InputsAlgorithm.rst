@@ -14,6 +14,8 @@ The following inputs must be preceded by "incflo."
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  advect_tracer       |  evolve the tracer equation(s)?                                       |  bool       |  false       |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
+|  trac_is_conservative|  Is tracer conserved? If specified, one entry required per tracer     |  int        |  1           |
++----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  ntrac               |  number of tracers                                                    |  int        |  1           |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  constant_density    |  Only evolve the continuity equation if false                         |  bool       |  true        |

@@ -1,4 +1,5 @@
 #ifndef INCFLO_H_
+#define INCFLO_H_
 
 #include <AMReX_AmrCore.H>
 #include <AMReX_MultiFabUtil.H>
@@ -85,8 +86,6 @@ public:
     // Delete level data
     void ClearLevel (int lev) override;
 
-// for cuda
-
     void ComputeDt (int initialization, bool explicit_diffusion);
 
     amrex::Real vol_wgt_sum (amrex::Vector<amrex::MultiFab*> const& mf, int icomp);
@@ -119,10 +118,6 @@ public:
                                                   std::string const& field);
     amrex::iMultiFab make_nodalBC_mask (int lev);
     amrex::Vector<amrex::MultiFab> make_robinBC_MFs(int lev, amrex::MultiFab* state = nullptr);
-    // void make_ccBC_mask (int lev, const amrex::BoxArray& ba,
-    //                      const amrex::DistributionMapping& dm);
-    // void make_nodalBC_mask (int lev, const amrex::BoxArray& ba,
-    //                         const amrex::DistributionMapping& dm);
 
 #ifdef AMREX_USE_EB
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
@@ -159,6 +154,9 @@ public:
                                                amrex::Vector<amrex::MultiFab*> const& w_mac),
                                   amrex::Vector<amrex::MultiFab*> const& vel_forces,
                                   amrex::Real time);
+
+    void tracer_explicit_update(amrex::Vector<amrex::MultiFab> const& tra_forces);
+    void tracer_explicit_update_corrector(amrex::Vector<amrex::MultiFab> const& tra_forces);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -203,6 +201,8 @@ public:
     [[nodiscard]] amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
     average_scalar_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
 
+    // FIXME? compute_laps never used density in any meaningful way, but
+    // then removing density would break anything downstream....
     void compute_laps (amrex::Vector<amrex::MultiFab      *> const& laps,
                        amrex::Vector<amrex::MultiFab const*> const& scalar,
                        amrex::Vector<amrex::MultiFab const*> const& density,
