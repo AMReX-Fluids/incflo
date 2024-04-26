@@ -56,7 +56,9 @@ void incflo::InitData ()
         InitFromScratch(m_cur_time);
 
 #ifdef AMREX_USE_EB
+#ifdef INCFLO_USE_PARTICLES
         const auto& ebfact = EBFactory(0);
+#endif
 #endif
 
 #ifdef INCFLO_USE_PARTICLES
