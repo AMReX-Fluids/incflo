@@ -380,7 +380,8 @@ void incflo::WritePlotFile()
     if(m_plt_error_w) ncomp += 1;
 #endif
 
-    // Error in nodal pressure (computed vs exact) if(m_plt_error_p) ncomp += 1;
+    // Error in nodal pressure (computed vs exact)
+    if(m_plt_error_p) ncomp += 1;
 
     // Error in MAC pressure (computed vs exact)
     if(m_plt_error_mac_p) ncomp += 1;
