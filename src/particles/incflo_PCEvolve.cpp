@@ -27,9 +27,9 @@ void incflo_PC::EvolveParticles ( int                                        a_l
 //
 void incflo_PC::AdvectWithFlow (int                                 a_lev,
                                 Real                                a_dt,
-                                const MultiFab* a_umac, const MultiFab* a_vmac, const MultiFab* a_wmac)
+                                AMREX_D_DECL(const MultiFab* a_umac, const MultiFab* a_vmac, const MultiFab* a_wmac))
 {
-    BL_PROFILE("incflo_PC::AdvectWithUmac()");
+    BL_PROFILE("incflo_PC::AdvectWithFlow()");
     AMREX_ASSERT(OK(a_lev, a_lev, a_umac[0].nGrow()-1));
     AMREX_ASSERT(a_lev >= 0 && a_lev < GetParticles().size());
 
@@ -43,9 +43,9 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
     const auto phi = geom.ProbHiArray();
     const auto dxi = geom.InvCellSizeArray();
 
-    bool is_periodic_in_x = geom.isPeriodic(0);
-    bool is_periodic_in_y = geom.isPeriodic(1);
-    bool is_periodic_in_z = geom.isPeriodic(2);
+    GpuArray<const int, AMREX_SPACEDIM> is_periodic = {AMREX_D_DECL(geom.isPeriodic(0),
+                                                                    geom.isPeriodic(1),
+                                                                    geom.isPeriodic(2))};
 
     for (int ipass = 0; ipass < 2; ipass++)
     {
@@ -90,14 +90,18 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
                         v_ptr[dim][i] = p.pos(dim);
                         p.pos(dim) += static_cast<ParticleReal>(ParticleReal(0.5)*a_dt*v[dim]);
 
-                        // Reflect off bottom boundary
-                        if (dim == 2 && !is_periodic_in_z && p.pos(dim) < plo[2])
+                        //
+                        // Reflect off low domain boundaries if not periodic
+                        //
+                        if (!is_periodic[dim] && p.pos(dim) < plo[dim])
                         {
                             p.pos(dim) = 2.0*plo[dim] - p.pos(dim);
                             v_ptr[dim][i] *= -1.0;
                         }
-                        // Reflect off top boundary
-                        if (dim == 2 && !is_periodic_in_z && p.pos(dim) > phi[2])
+                        //
+                        // Reflect off high domain boundaries if not periodic
+                        //
+                        if (!is_periodic[dim] && p.pos(dim) > phi[dim])
                         {
                             p.pos(dim) = 2.0*phi[dim] - p.pos(dim);
                             v_ptr[dim][i] *= -1.0;
@@ -109,14 +113,18 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
                         p.pos(dim) = v_ptr[dim][i] + static_cast<ParticleReal>(a_dt*v[dim]);
                         v_ptr[dim][i] = v[dim];
 
-                        // Reflect off bottom boundary
-                        if (dim == 2 && !is_periodic_in_z && p.pos(dim) < plo[2])
+                        //
+                        // Reflect off low domain boundaries if not periodic
+                        //
+                        if (!is_periodic[dim] && p.pos(dim) < plo[dim])
                         {
                             p.pos(dim) = 2.0*plo[dim] - p.pos(dim);
                             v_ptr[dim][i] *= -1.0;
                         }
-                        // Reflect off top boundary
-                        if (dim == 2 && !is_periodic_in_z && p.pos(dim) > phi[2])
+                        //
+                        // Reflect off high domain boundaries if not periodic
+                        //
+                        if (!is_periodic[dim] && p.pos(dim) > phi[dim])
                         {
                             p.pos(dim)     = 2.0*phi[dim] - p.pos(dim);
                             v_ptr[dim][i] *= -1.0;
@@ -129,38 +137,64 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
 
     ParmParse pp("cylinder");
 
-    Real cyl_radius;
-    pp.get("radius",cyl_radius);
+    Real cyl_radius = -1.;
+    pp.query("radius",cyl_radius);
 
-    Array<Real,3> cyl_center;
-    pp.get("center",cyl_center);
-    Real x_ctr = cyl_center[0];
-    Real y_ctr = cyl_center[1];
-    Real z_ctr = cyl_center[2];
+    //
+    // The code below is for the specific problem of flow inside a cylinder
+    //
+    // This is just one possible problem set-up but demonstrates how to remove
+    // particles if they leave a specified region.
+    //
+    if (cyl_radius > 0.) {
+        Array<Real,AMREX_SPACEDIM> cyl_center;
+        pp.get("center",cyl_center);
+        Real x_ctr = cyl_center[0];
+        Real y_ctr = cyl_center[1];
+#if (AMREX_SPACEDIM == 3)
+        Real z_ctr = cyl_center[2];
+#endif
 
-    // Remove particles that are outside of the cylindner
-    for (ParIterType pti(*this, a_lev); pti.isValid(); ++pti)
-    {
-        auto& ptile = ParticlesAt(a_lev, pti);
-        auto& aos  = ptile.GetArrayOfStructs();
-        auto& soa  = ptile.GetStructOfArrays();
-        const int n = aos.numParticles();
-        auto *p_pbox = aos().data();
+        int cyl_direction;
+        pp.get("direction",cyl_direction);
+        AMREX_ALWAYS_ASSERT(cyl_direction >= 0 && cyl_direction <= AMREX_SPACEDIM);
 
-        ParallelFor(n, [=] AMREX_GPU_DEVICE (int i)
+        // Remove particles that are outside of the cylindner
+        for (ParIterType pti(*this, a_lev); pti.isValid(); ++pti)
         {
-            ParticleType& p = p_pbox[i];
+            auto& ptile = ParticlesAt(a_lev, pti);
+            auto& aos  = ptile.GetArrayOfStructs();
+            auto& soa  = ptile.GetStructOfArrays();
+            const int n = aos.numParticles();
+            auto *p_pbox = aos().data();
 
-            Real x =  p.pos(0) - x_ctr;
-            Real y =  p.pos(1) - y_ctr;
+            ParallelFor(n, [=] AMREX_GPU_DEVICE (int i)
+            {
+                ParticleType& p = p_pbox[i];
 
-            Real r =  std::sqrt(x*x + y*y);
+                Real x =  p.pos(0) - x_ctr;
+                Real y =  p.pos(1) - y_ctr;
+#if (AMREX_SPACEDIM == 3)
+                Real z =  p.pos(2) - z_ctr;
+#endif
 
-            if (r > cyl_radius) {
-                p.id() = -1;
-            }
-        });
-    }
+                Real r;
+                if (cyl_direction == 2) {
+                    r =  std::sqrt(x*x + y*y);
+#if (AMREX_SPACEDIM == 3)
+                } else if (cyl_direction == 1) {
+                    r =  std::sqrt(x*x + z*z);
+                } else if (cyl_direction == 0) {
+                    r =  std::sqrt(y*y + z*z);
+#endif
+                }
+
+                if (r > cyl_radius) {
+                    p.id() = -1;
+                }
+            });
+        }
+    } // cyl_radius > 0
 
     if (m_verbose > 1)
     {

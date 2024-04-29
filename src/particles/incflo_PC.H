@@ -101,9 +101,9 @@ class incflo_PC : public amrex::ParticleContainer<  incflo_ParticlesRealIdxAoS::
         /*! Evolve particles for one time step */
         virtual void EvolveParticles (int,
                                       amrex::Real,
-                                      const amrex::MultiFab* a_u_mac,
-                                      const amrex::MultiFab* a_v_mac,
-                                      const amrex::MultiFab* a_w_mac);
+                                      AMREX_D_DECL(const amrex::MultiFab* a_u_mac,
+                                                   const amrex::MultiFab* a_v_mac,
+                                                   const amrex::MultiFab* a_w_mac));
 
         /*! Get real-type particle attribute names */
         virtual amrex::Vector<std::string> varNames () const
@@ -122,9 +122,9 @@ class incflo_PC : public amrex::ParticleContainer<  incflo_ParticlesRealIdxAoS::
         /*! Uses midpoint method to advance particles using flow velocity. */
         virtual void AdvectWithFlow ( int,
                                       amrex::Real,
-                                      const amrex::MultiFab* a_u_mac,
-                                      const amrex::MultiFab* a_v_mac,
-                                      const amrex::MultiFab* a_w_mac);
+                                      AMREX_D_DECL(const amrex::MultiFab* a_u_mac,
+                                                   const amrex::MultiFab* a_v_mac,
+                                                   const amrex::MultiFab* a_w_mac));
 
         /*! Compute mass density */
         virtual void massDensity ( amrex::MultiFab&, const int&, const int& a_comp = 0) const;

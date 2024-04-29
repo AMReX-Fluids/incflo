@@ -114,7 +114,7 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
             if (vf_arr(i,j,k) > 0.) {
 #endif
             if (i%2 == 0 && j%2 == 1) {
-            if (particle_init_domain.contains(RealVect(x,y,z))) {
+            if (particle_init_domain.contains(RealVect(AMREX_D_DECL(x,y,z)))) {
                 num_particles_arr(i,j,k) = particles_per_cell;
             }
             }
