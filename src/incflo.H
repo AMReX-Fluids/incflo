@@ -14,6 +14,10 @@
 #include <AMReX_EBMultiFabUtil.H>
 #endif
 
+#ifdef INCFLO_USE_PARTICLES
+#include "ParticleData.H"
+#endif
+
 #include <DiffusionTensorOp.H>
 #include <DiffusionScalarOp.H>
 
@@ -353,6 +357,7 @@ private:
     bool use_tensor_correction = false;
 
     // AMR / refinement settings
+    int m_refine_particles = 1;
     int m_refine_cutcells = 1;
     int m_regrid_int = -1;
 
@@ -540,6 +545,32 @@ private:
     int m_plt_error_w     = 0;
     int m_plt_error_p     = 0;
     int m_plt_error_mac_p = 0;
+
+#ifdef INCFLO_USE_PARTICLES
+    int m_plt_particle_count = 0;
+
+    // Particle container with all particle species
+    ParticleData particleData;
+
+    // variables and functions for tracers particles
+    bool  m_use_tracer_particles; /*!< tracer particles that advect with flow */
+
+    /*! Read tracer particles parameters */
+    void readTracerParticlesParams ();
+
+    /*! Initialize tracer particles */
+    void initializeTracerParticles (amrex::ParGDBBase* gdb
+#ifdef AMREX_USE_EB
+                            ,amrex::EBFArrayBoxFactory const& ebfact
+#endif
+                           );
+
+    /*! Evolve tracers and hydro particles */
+    void evolveTracerParticles (AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
+                                             amrex::Vector<amrex::MultiFab const*> const& v_mac,
+                                             amrex::Vector<amrex::MultiFab const*> const& w_mac));
+
+#endif
 
     struct LevelData {
         LevelData () = default;

@@ -176,11 +176,64 @@ void incflo::prob_init_fluid (int lev)
                                domain, dx, problo, probhi);
         }
 #endif
+        else if (2000 == m_probtype)
+        {
+            init_rotating_flow(vbx, gbx,
+                               ld.velocity.array(mfi),
+                               ld.density.array(mfi),
+                               ld.tracer.array(mfi),
+                               domain, dx, problo, probhi);
+
+        }
         else
         {
             amrex::Abort("prob_init_fluid: unknown m_probtype");
         };
     }
+}
+
+void incflo::init_rotating_flow (Box const& vbx, Box const& /*gbx*/,
+                                 Array4<Real> const& vel,
+                                 Array4<Real> const& /*density*/,
+                                 Array4<Real> const& tracer,
+                                 Box const& /*domain*/,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+{
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        Real x = Real(i+0.5)*dx[0] - 0.5;
+        Real y = Real(j+0.5)*dx[1] - 0.5;
+        Real r = std::sqrt(x*x + y*y);
+
+        Real r0 = 0.45;
+        Real const_val = 0.1;
+
+        // We want flow to be 0 at origin and at cylinder boundary
+        //    This will peak at half the radius
+        Real magvel = const_val * (r) * (r0-r);
+
+        // clockwise rotation with flow decreasing to 0 at cylinder boundary
+        vel(i,j,k,0) = -(y/r) * magvel;
+        vel(i,j,k,1) =  (x/r) * magvel;
+#if (AMREX_SPACEDIM == 3)
+        vel(i,j,k,2) = Real(0.0);
+#endif
+        Real x_t = Real(i+0.5)*dx[0] - 0.5;
+        Real y_t = Real(j+0.5)*dx[1] - 0.3;
+        Real z_t = Real(k+0.5)*dx[2] - 0.5;
+        Real r_t = std::sqrt(x_t*x_t + y_t*y_t + z_t*z_t);
+        Real width = 0.25;
+
+        tracer(i,j,k) = Real(0.5)*(Real(1.0)-std::tanh((r_t)/width));
+
+        //if (r_t < 0.2) {
+        //    tracer(i,j,k) = Real(1.0);
+        //} else {
+        //    tracer(i,j,k) = Real(0.0);
+       // }
+    });
 }
 
 void incflo::init_taylor_green (Box const& vbx, Box const& /*gbx*/,

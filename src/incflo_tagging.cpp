@@ -8,7 +8,7 @@ using namespace amrex;
 
 // tag cells for refinement
 // overrides the pure virtual function in AmrCore
-void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
+void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
 {
     BL_PROFILE("incflo::ErrorEst()");
 
@@ -45,30 +45,30 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
 
     const auto   tagval = TagBox::SET;
 
-    bool tag_rho = lev < rhoerr_v.size();
-    bool tag_gradrho = lev < gradrhoerr_v.size();
+    bool tag_rho = levc < rhoerr_v.size();
+    bool tag_gradrho = levc < gradrhoerr_v.size();
 
     if (tag_gradrho) {
-        fillpatch_density(lev, time, m_leveldata[lev]->density, 1);
+        fillpatch_density(levc, time, m_leveldata[levc]->density, 1);
     }
 
-    AMREX_D_TERM(const Real l_dx = geom[lev].CellSize(0);,
-                 const Real l_dy = geom[lev].CellSize(1);,
-                 const Real l_dz = geom[lev].CellSize(2););
+    AMREX_D_TERM(const Real l_dx = geom[levc].CellSize(0);,
+                 const Real l_dy = geom[levc].CellSize(1);,
+                 const Real l_dz = geom[levc].CellSize(2););
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-    for (MFIter mfi(m_leveldata[lev]->density,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    for (MFIter mfi(m_leveldata[levc]->density,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
         Box const& bx = mfi.tilebox();
         auto const& tag = tags.array(mfi);
 
         if (tag_rho || tag_gradrho)
         {
-            Array4<Real const> const& rho = m_leveldata[lev]->density.const_array(mfi);
-            Real rhoerr = tag_rho ? rhoerr_v[lev]: std::numeric_limits<Real>::max();
-            Real gradrhoerr = tag_gradrho ? gradrhoerr_v[lev] : std::numeric_limits<Real>::max();
+            Array4<Real const> const& rho = m_leveldata[levc]->density.const_array(mfi);
+            Real rhoerr = tag_rho ? rhoerr_v[levc]: std::numeric_limits<Real>::max();
+            Real gradrhoerr = tag_gradrho ? gradrhoerr_v[levc] : std::numeric_limits<Real>::max();
             amrex::ParallelFor(bx,
             [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
@@ -101,7 +101,7 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
             Real ylo = tag_region_lo[1];
             Real xhi = tag_region_hi[0];
             Real yhi = tag_region_hi[1];
-            auto const& problo = geom[lev].ProbLoArray();
+            auto const& problo = geom[levc].ProbLoArray();
 
 #if (AMREX_SPACEDIM == 2)
 
@@ -137,14 +137,65 @@ void incflo::ErrorEst (int lev, TagBoxArray& tags, Real time, int /*ngrow*/)
             });
 #endif
         }
-    }
+    } // mfi
 
 #ifdef AMREX_USE_EB
     m_refine_cutcells = true;
     // Refine on cut cells
     if (m_refine_cutcells)
     {
-        amrex::TagCutCells(tags, m_leveldata[lev]->velocity);
+        amrex::TagCutCells(tags, m_leveldata[levc]->velocity);
     }
+#endif
+
+#ifdef INCFLO_USE_PARTICLES
+    if (m_refine_particles)
+    {
+        //
+        // This allows dynamic refinement based on the number of particles per cell
+        //
+        // Note that we must count all the particles in levels both at and above the current,
+        //      since otherwise, e.g., if the particles are all at level 1, counting particles at
+        //      level 0 will not trigger refinement when regridding so level 1 will disappear,
+        //      then come back at the next regridding
+        //
+        const auto& particles_namelist( particleData.getNames() );
+        std::unique_ptr<MultiFab> mf = std::make_unique<MultiFab>(grids[levc], dmap[levc], 1, 0);
+        mf->setVal(0.0);
+        IntVect rr = IntVect::TheUnitVector();
+        for (int lev = levc; lev <= finest_level; lev++)
+        {
+            MultiFab temp_dat(grids[lev], dmap[lev], 1, 0); temp_dat.setVal(0);
+            particleData[particles_namelist[0]]->IncrementWithTotal(temp_dat, lev);
+
+            MultiFab temp_dat_crse(grids[levc], dmap[levc], 1, 0); temp_dat_crse.setVal(0);
+
+            if (lev == levc) {
+                MultiFab::Copy(*mf, temp_dat, 0, 0, 1, 0);
+            } else {
+                for (int d = 0; d < AMREX_SPACEDIM; d++) {
+                    rr[d] *= ref_ratio[levc][d];
+                }
+                average_down(temp_dat, temp_dat_crse, 0, 1, rr);
+                MultiFab::Add(*mf, temp_dat_crse, 0, 0, 1, 0);
+            }
+        } // lev
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(m_leveldata[levc]->density,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            Box const& bx = mfi.tilebox();
+            auto const&  mf_arr = mf->const_array(mfi);
+            auto const& tag_arr = tags.array(mfi);
+
+            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                if (mf_arr(i,j,k) > 0) {
+                    tag_arr(i,j,k) = tagval;
+                }
+            });
+        } // mfi
+    } // if m_refine_particles
 #endif
 }
