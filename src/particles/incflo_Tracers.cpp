@@ -7,7 +7,7 @@
 using namespace amrex;
 
 /*! Read tracer particles parameters */
-void incflo::readTracersParams ()
+void incflo::readTracerParticlesParams ()
 {
     ParmParse pp("incflo");
 

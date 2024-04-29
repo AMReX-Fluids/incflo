@@ -137,7 +137,7 @@ class incflo_PC : public amrex::ParticleContainer<  incflo_ParticlesRealIdxAoS::
             if (a_var_name == "mass_density") {
                 massDensity( a_mf, a_lev );
             } else {
-                a_mf.setVal(0.0);
+                amrex::Abort("this variable not defined in computeMeshVar");
             }
         }
 

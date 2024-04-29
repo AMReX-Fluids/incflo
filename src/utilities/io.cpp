@@ -447,7 +447,7 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("gpx");
         ++icomp;
     }
-if (m_plt_gpy) {
+    if (m_plt_gpy) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->gp, 1, icomp, 1, 0);
         }

@@ -556,7 +556,7 @@ private:
     bool  m_use_tracer_particles; /*!< tracer particles that advect with flow */
 
     /*! Read tracer particles parameters */
-    void readTracersParams ();
+    void readTracerParticlesParams ();
 
     /*! Initialize tracer particles */
     void initializeTracerParticles (amrex::ParGDBBase* gdb

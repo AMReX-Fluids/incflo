@@ -196,7 +196,7 @@ void incflo::ReadParameters ()
 #endif
 
 #ifdef INCFLO_USE_PARTICLES
-    readTracersParams();
+    readTracerParticlesParams();
 #endif
 }
 

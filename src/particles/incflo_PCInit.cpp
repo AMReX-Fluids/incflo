@@ -228,7 +228,7 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
     Real x_ctr = cyl_center[0];
     Real y_ctr = cyl_center[1];
 
-    // Remove particles that are outside of the cylindner
+    // Remove particles that are outside of the cylinder
     for (ParIterType pti(*this, lev); pti.isValid(); ++pti)
     {
         auto& ptile = ParticlesAt(lev, pti);
