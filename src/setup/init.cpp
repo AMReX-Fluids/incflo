@@ -48,6 +48,12 @@ void incflo::ReadParameters ()
             amrex::Abort("We require m_init_shrink <= 1.0");
         }
 
+        // This limits dt growth per time step
+        pp.query("dt_change_max", m_dt_change_max);
+        if ( m_dt_change_max < 1.0 || m_dt_change_max > 1.1 ) {
+            amrex::Abort("We require 1. < dt_change_max <= 1.1");
+        }
+
         // Physics
         pp.queryarr("delp", m_delp, 0, AMREX_SPACEDIM);
         pp.queryarr("gravity", m_gravity, 0, AMREX_SPACEDIM);

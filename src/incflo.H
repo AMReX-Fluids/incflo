@@ -342,6 +342,7 @@ private:
     amrex::Real m_cfl = amrex::Real(0.5);
     amrex::Real m_fixed_dt = amrex::Real(-1.);
     amrex::Real m_init_shrink = amrex::Real(0.1);
+    amrex::Real m_dt_change_max = amrex::Real(1.1);
 
     // Initial projection / iterations
     bool m_do_initial_proj    = true;
