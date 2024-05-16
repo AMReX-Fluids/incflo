@@ -188,17 +188,21 @@ void incflo::ReadCheckpointFile()
                                   Geom(lev).isPeriodic()));
     }
 
-    for(int lev = 0; lev <= finest_level; ++lev)
-    {
-        // read in level 'lev' BoxArray from Header
-        BoxArray ba;
-        ba.readFrom(is);
-        GotoNextLine(is);
+    if ( m_regrid_on_restart ) {
+        MakeNewGrids(m_cur_time);
+    } else {
+        for(int lev = 0; lev <= finest_level; ++lev)
+        {
+            // read in level 'lev' BoxArray from Header
+            BoxArray ba;
+            ba.readFrom(is);
+            GotoNextLine(is);
 
-        // Create distribution mapping
-        DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
+            // Create distribution mapping
+            DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
 
-        MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
+            MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
+        }
     }
 
     /***************************************************************************

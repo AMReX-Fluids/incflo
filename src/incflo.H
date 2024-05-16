@@ -520,6 +520,7 @@ private:
     std::string m_tag_file;
 
     bool m_plotfile_on_restart = false;
+    bool m_regrid_on_restart = false;
 
     amrex::Vector<amrex::Real> tag_region_lo;
     amrex::Vector<amrex::Real> tag_region_hi;
