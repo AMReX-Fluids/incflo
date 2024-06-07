@@ -252,6 +252,11 @@ public:
                          amrex::Real time, amrex::Real scaling_factor, bool incremental);
     void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> density,
                               amrex::Real time, amrex::Real scaling_factor, bool incremental);
+    void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> density,
+                              amrex::Vector<amrex::MultiFab      *> vel,
+                              amrex::Vector<amrex::MultiFab      *> divu_Source,
+                              amrex::Real time, amrex::Real scaling_factor, bool incremental,
+                              bool set_inflow_bc);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -345,7 +350,8 @@ private:
     amrex::Real m_dt_change_max = amrex::Real(1.1);
 
     // Initial projection / iterations
-    bool m_do_initial_proj    = true;
+    bool m_do_initial_proj          = true;
+    bool m_do_initial_pressure_proj = false;
     int  m_initial_iterations = 3;
 
     // Use Boussinesq approximation for buoyancy?
@@ -901,6 +907,7 @@ private:
     void ReadIOParameters ();
     void ResizeArrays (); // Resize arrays to fit (up to) max_level + 1 AMR levels
     void InitialProjection ();
+    void InitialPressureProjection ();
     void InitialIterations ();
 #ifdef AMREX_USE_EB
     void InitialRedistribution ();
