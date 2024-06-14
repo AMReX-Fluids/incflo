@@ -63,7 +63,7 @@ using namespace amrex;
 //
 //     vel = u** - dt * grad p / rho^nph
 //
-// It is assumed that the ghost cels of the old data have been filled and
+// It is assumed that the ghost cells of the old data have been filled and
 // the old and new data are the same in valid region.
 //
 void incflo::ApplyPredictor (bool incremental_projection)
@@ -139,6 +139,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
     // *************************************************************************************
     // Compute explicit viscous term
+    // Note that for !advect_momentum, this actually computes divtau / rho
     // *************************************************************************************
     if (need_divtau() || use_tensor_correction )
     {
@@ -160,7 +161,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     bool include_pressure_gradient = !(m_use_mac_phi_in_godunov);
     compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(),
-                       get_density_old_const(), get_tracer_old_const(), get_tracer_new_const(),
+                       get_density_old_const(), get_tracer_old_const(), get_tracer_old_const(),
                        include_pressure_gradient);
     compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
