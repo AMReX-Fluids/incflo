@@ -216,6 +216,7 @@ void incflo::ReadIOParameters()
     pp.query("restart", m_restart_file);
 
     pp.query("plotfile_on_restart", m_plotfile_on_restart);
+    pp.query("regrid_on_restart", m_regrid_on_restart);
 
     pp.query("plot_file", m_plot_file);
     pp.query("plot_int"       , m_plot_int);
