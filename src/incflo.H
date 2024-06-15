@@ -163,7 +163,8 @@ public:
     void tracer_explicit_update_corrector(amrex::Vector<amrex::MultiFab> const& tra_forces);
 
     void update_density  (StepType step_type);
-    void update_tracer   (StepType step_type, amrex::Vector<amrex::MultiFab>& tra_forces);
+    void update_tracer   (StepType step_type, amrex::Vector<amrex::MultiFab>& tra_eta,
+                                              amrex::Vector<amrex::MultiFab>& tra_forces);
     void update_velocity (StepType step_type, amrex::Vector<amrex::MultiFab>& vel_eta,
                                               amrex::Vector<amrex::MultiFab>& vel_forces);
 

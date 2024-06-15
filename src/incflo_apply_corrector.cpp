@@ -97,16 +97,21 @@ void incflo::ApplyCorrector()
     //    in constructing the advection term
     // **********************************************************************************************
     Vector<MultiFab> vel_forces, tra_forces;
-    Vector<MultiFab> vel_eta;
+    Vector<MultiFab> vel_eta   , tra_eta;
+
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel_forces.emplace_back(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_force(),
                                 MFInfo(), Factory(lev));
-        if (m_advect_tracer) {
-            tra_forces.emplace_back(grids[lev], dmap[lev], m_ntrac, nghost_force(),
-                                    MFInfo(), Factory(lev));
-        }
         vel_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
     }
+
+    if (m_advect_tracer) {
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            tra_forces.emplace_back(grids[lev], dmap[lev], m_ntrac, nghost_force(),
+                                    MFInfo(), Factory(lev));
+            tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, 1, MFInfo(), Factory(lev));
+        } //lev
+    } // if
 
     // *************************************************************************************
     // Compute the MAC-projected velocities at all levels
@@ -133,6 +138,7 @@ void incflo::ApplyCorrector()
     compute_viscosity(GetVecOfPtrs(vel_eta),
                       get_density_new(), get_velocity_new(),
                       new_time, 1);
+    compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
 
     // Here we create divtau of the (n+1,*) state that was computed in the predictor;
     //      we use this laps only if DiffusionType::Explicit
@@ -143,14 +149,14 @@ void incflo::ApplyCorrector()
     }
 
     // *************************************************************************************
-    // Update density first
+    // Update density
     // *************************************************************************************
     update_density(StepType::Corrector);
 
     // *************************************************************************************
-    // Update tracer next
+    // Update tracer
     // *************************************************************************************
-    update_tracer(StepType::Corrector, tra_forces);
+    update_tracer(StepType::Corrector, tra_eta, tra_forces);
 
     // *************************************************************************************
     // Update velocity

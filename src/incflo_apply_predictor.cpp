@@ -94,10 +94,13 @@ void incflo::ApplyPredictor (bool incremental_projection)
         }
     }
 
+    // *************************************************************************************
+    // Allocate space for half-time density
+    // *************************************************************************************
     // Forcing terms
     Vector<MultiFab> vel_forces, tra_forces;
 
-    Vector<MultiFab> vel_eta;
+    Vector<MultiFab> vel_eta, tra_eta;
 
     // *************************************************************************************
     // Allocate space for the forcing terms
@@ -111,6 +114,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
                                     MFInfo(), Factory(lev));
         }
         vel_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+        if (m_advect_tracer) {
+            tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, 1, MFInfo(), Factory(lev));
+        }
     }
 
     // *************************************************************************************
@@ -123,23 +129,38 @@ void incflo::ApplyPredictor (bool incremental_projection)
     compute_viscosity(GetVecOfPtrs(vel_eta),
                       get_density_old(), get_velocity_old(),
                       m_cur_time, 1);
+    compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
 
     // *************************************************************************************
     // Compute explicit viscous term
     // Note that for !advect_momentum, this actually computes divtau / rho
     // *************************************************************************************
-    if (need_divtau() || use_tensor_correction ) {
+    if (need_divtau() || use_tensor_correction )
+    {
         compute_divtau(get_divtau_old(),get_velocity_old_const(),
                        get_density_old_const(),GetVecOfConstPtrs(vel_eta));
     }
 
+    // *************************************************************************************
+    // Compute explicit diffusive terms
+    // *************************************************************************************
+    if (m_advect_tracer && need_divtau())
+    {
+        compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
+                     GetVecOfConstPtrs(tra_eta));
+    }
+
     // **********************************************************************************************
-    // Compute the MAC-projected velocities at all levels
+    // Compute the forcing terms
     // *************************************************************************************
     bool include_pressure_gradient = !(m_use_mac_phi_in_godunov);
     compute_vel_forces(GetVecOfPtrs(vel_forces), get_velocity_old_const(),
                        get_density_old_const(), get_tracer_old_const(), get_tracer_old_const(),
                        include_pressure_gradient);
+
+    // **********************************************************************************************
+    // Compute the MAC-projected velocities at all levels
+    // *************************************************************************************
     compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                      GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
@@ -162,20 +183,18 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     update_density(StepType::Predictor);
 
-    // *************************************************************************************
+    // **********************************************************************************************
     // Update tracer
-    // *************************************************************************************
-    update_tracer(StepType::Predictor, tra_forces);
+    // **********************************************************************************************
+    update_tracer(StepType::Predictor, tra_eta, tra_forces);
 
-    // *************************************************************************************
+    // **********************************************************************************************
     // Update velocity
-    // *************************************************************************************
+    // **********************************************************************************************
     update_velocity(StepType::Predictor, vel_eta, vel_forces);
 
     // **********************************************************************************************
-    //
     // Project velocity field, update pressure
-    //
     // **********************************************************************************************
     ApplyProjection(get_density_nph_const(),new_time,m_dt,incremental_projection);
 
@@ -191,9 +210,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
 
 #ifdef AMREX_USE_EB
     // **********************************************************************************************
-    //
     // Over-write velocity in cells with vfrac < 1e-4
-    //
     // **********************************************************************************************
     if (m_advection_type == "MOL")
         incflo_correct_small_cells(get_velocity_new(),
