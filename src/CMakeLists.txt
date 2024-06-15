@@ -15,6 +15,8 @@ target_sources(incflo
    incflo_tagging.cpp
    incflo_update_density.cpp
    incflo_update_tracer.cpp
+   incflo_update_velocity.cpp
+   incflo_utils.cpp
    main.cpp
    )
 

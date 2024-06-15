@@ -9,6 +9,8 @@ CEXE_sources += incflo_regrid.cpp
 CEXE_sources += incflo_tagging.cpp
 CEXE_sources += incflo_update_density.cpp
 CEXE_sources += incflo_update_tracer.cpp
+CEXE_sources += incflo_update_velocity.cpp
+CEXE_sources += incflo_utils.cpp
 CEXE_sources += main.cpp
 
 ifeq ($(USE_EB), TRUE)

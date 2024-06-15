@@ -162,8 +162,10 @@ public:
     void tracer_explicit_update(amrex::Vector<amrex::MultiFab> const& tra_forces);
     void tracer_explicit_update_corrector(amrex::Vector<amrex::MultiFab> const& tra_forces);
 
-    void update_density (StepType step_type);
-    void update_tracer  (StepType step_type, amrex::Vector<amrex::MultiFab>& tra_forces);
+    void update_density  (StepType step_type);
+    void update_tracer   (StepType step_type, amrex::Vector<amrex::MultiFab>& tra_forces);
+    void update_velocity (StepType step_type, amrex::Vector<amrex::MultiFab>& vel_eta,
+                                              amrex::Vector<amrex::MultiFab>& vel_forces);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -753,6 +755,7 @@ private:
     amrex::Vector<amrex::MultiFab*> get_tracer_eb () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_new () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_density_nph () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_mac_phi () noexcept;
@@ -776,6 +779,7 @@ private:
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_eb () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_old_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_new_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_nph_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_old_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_new_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_vel_forces_const () const noexcept;
