@@ -11,8 +11,10 @@ target_sources(incflo
    incflo_correct_small_cells.cpp
    incflo_redistribute.cpp
    incflo_explicit_update.cpp
-   incflo_tagging.cpp
    incflo_regrid.cpp
+   incflo_tagging.cpp
+   incflo_update_density.cpp
+   incflo_update_tracer.cpp
    main.cpp
    )
 
