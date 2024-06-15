@@ -21,6 +21,10 @@
 #include <DiffusionTensorOp.H>
 #include <DiffusionScalarOp.H>
 
+enum struct StepType {
+    Predictor, Corrector
+};
+
 class incflo : public amrex::AmrCore
 {
 public:
@@ -131,8 +135,8 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ApplyPredictor(bool incremental_projection = false);
-    void ApplyCorrector();
+    void ApplyPredictor (bool incremental_projection = false);
+    void ApplyCorrector ();
     void compute_convective_term (amrex::Vector<amrex::MultiFab*> const& conv_u,
                                   amrex::Vector<amrex::MultiFab*> const& conv_r,
                                   amrex::Vector<amrex::MultiFab*> const& conv_t,
@@ -157,6 +161,9 @@ public:
 
     void tracer_explicit_update(amrex::Vector<amrex::MultiFab> const& tra_forces);
     void tracer_explicit_update_corrector(amrex::Vector<amrex::MultiFab> const& tra_forces);
+
+    void update_density (StepType step_type);
+    void update_tracer  (StepType step_type, amrex::Vector<amrex::MultiFab>& tra_forces);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -589,6 +596,7 @@ private:
         amrex::MultiFab density;
         amrex::MultiFab density_eb;
         amrex::MultiFab density_o;
+        amrex::MultiFab density_nph;
         amrex::MultiFab tracer;
         amrex::MultiFab tracer_eb;
         amrex::MultiFab tracer_o;

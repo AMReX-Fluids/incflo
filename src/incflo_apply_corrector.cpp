@@ -107,7 +107,7 @@ void incflo::ApplyCorrector()
     //    in constructing the advection term
     // **********************************************************************************************
     Vector<MultiFab> vel_forces, tra_forces;
-    Vector<MultiFab> vel_eta, tra_eta;
+    Vector<MultiFab> vel_eta;
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel_forces.emplace_back(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_force(),
                                 MFInfo(), Factory(lev));
@@ -116,9 +116,6 @@ void incflo::ApplyCorrector()
                                     MFInfo(), Factory(lev));
         }
         vel_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
-        if (m_advect_tracer) {
-            tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, 1, MFInfo(), Factory(lev));
-        }
     }
 
     // *************************************************************************************
@@ -146,7 +143,6 @@ void incflo::ApplyCorrector()
     compute_viscosity(GetVecOfPtrs(vel_eta),
                       get_density_new(), get_velocity_new(),
                       new_time, 1);
-    compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
 
     // Here we create divtau of the (n+1,*) state that was computed in the predictor;
     //      we use this laps only if DiffusionType::Explicit
@@ -154,11 +150,6 @@ void incflo::ApplyCorrector()
     {
         compute_divtau(get_divtau_new(), get_velocity_new_const(),
                        get_density_new_const(), GetVecOfConstPtrs(vel_eta));
-    }
-
-    if (m_advect_tracer && m_diff_type == DiffusionType::Explicit) {
-        compute_laps(get_laps_new(), get_tracer_new_const(),
-                     get_density_new_const(), GetVecOfConstPtrs(tra_eta));
     }
 
     // *************************************************************************************
@@ -169,95 +160,12 @@ void incflo::ApplyCorrector()
     // *************************************************************************************
     // Update density first
     // *************************************************************************************
-    if (m_constant_density)
-    {
-        for (int lev = 0; lev <= finest_level; lev++)
-            MultiFab::Copy(density_nph[lev], m_leveldata[lev]->density_o, 0, 0, 1, 0);
-    } else {
-        for (int lev = 0; lev <= finest_level; lev++)
-        {
-            auto& ld = *m_leveldata[lev];
-#ifdef _OPENMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-            for (MFIter mfi(ld.velocity,TilingIfNotGPU()); mfi.isValid(); ++mfi)
-            {
-                Box const& bx = mfi.tilebox();
-                Array4<Real const> const& rho_o  = ld.density_o.const_array(mfi);
-                Array4<Real> const& rho_n        = ld.density.array(mfi);
-                Array4<Real> const& rho_nph      = density_nph[lev].array(mfi);
-                Array4<Real const> const& drdt_o = ld.conv_density_o.const_array(mfi);
-                Array4<Real const> const& drdt   = ld.conv_density.const_array(mfi);
-
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                {
-                    const Real rho_old = rho_o(i,j,k);
-
-                    Real rho_new = rho_old + l_dt * m_half*(drdt(i,j,k)+drdt_o(i,j,k));
-                    rho_nph(i,j,k) = m_half * (rho_old + rho_new);
-
-                    rho_n  (i,j,k) = rho_new;
-                });
-            } // mfi
-        } // lev
-
-        // Average down solution
-        for (int lev = finest_level-1; lev >= 0; --lev) {
-#ifdef AMREX_USE_EB
-            amrex::EB_average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
-                                   0, 1, refRatio(lev));
-#else
-            amrex::average_down(m_leveldata[lev+1]->density, m_leveldata[lev]->density,
-                                0, 1, refRatio(lev));
-#endif
-        }
-    } // not constant density
+    update_density(StepType::Corrector);
 
     // *************************************************************************************
-    // Compute the tracer forcing terms (forcing for (rho s), not for s)
+    // Update tracer next
     // *************************************************************************************
-    if (m_advect_tracer)
-        compute_tra_forces(GetVecOfPtrs(tra_forces),  GetVecOfConstPtrs(density_nph));
-
-    // *************************************************************************************
-    // Update the tracer next (note that dtdt already has rho in it)
-    // (rho trac)^new = (rho trac)^old + dt * (
-    //                   div(rho trac u) + div (mu grad trac) + rho * f_t
-    // *************************************************************************************
-    if (m_advect_tracer)
-    {
-        tracer_explicit_update_corrector(tra_forces);
-    }
-
-    // *************************************************************************************
-    // Solve diffusion equation for tracer
-    // *************************************************************************************
-    if ( m_advect_tracer )
-    {
-        if (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit)
-        {
-            const int ng_diffusion = 1;
-            for (int lev = 0; lev <= finest_level; ++lev)
-                fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
-
-            Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : m_half*m_dt;
-            diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
-        }
-        else
-        {
-            // Need to average down tracer since the diffusion solver didn't do it for us.
-            for (int lev = finest_level-1; lev >= 0; --lev) {
-#ifdef AMREX_USE_EB
-                amrex::EB_average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
-                                       0, m_ntrac, refRatio(lev));
-#else
-                amrex::average_down(m_leveldata[lev+1]->tracer, m_leveldata[lev]->tracer,
-                                    0, m_ntrac, refRatio(lev));
-#endif
-            }
-        }
-    } // if (m_advect_tracer)
-
+    update_tracer(StepType::Corrector, tra_forces);
 
     // *************************************************************************************
     // Define the forcing terms to use in the final update (using half-time density)
