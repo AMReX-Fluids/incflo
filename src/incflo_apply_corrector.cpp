@@ -69,8 +69,6 @@ void incflo::ApplyCorrector()
 {
     BL_PROFILE("incflo::ApplyCorrector");
 
-    constexpr Real m_half = Real(0.5);
-
     // We use the new time value for things computed on the "*" state
     Real new_time = m_cur_time + m_dt;
 
