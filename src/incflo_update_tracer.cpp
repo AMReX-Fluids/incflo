@@ -11,6 +11,10 @@ void incflo::update_tracer (StepType step_type, Vector<MultiFab>& tra_eta, Vecto
     if (m_advect_tracer)
     {
         // *************************************************************************************
+        // Compute diffusion coefficient for tracer
+        // *************************************************************************************
+
+        // *************************************************************************************
         // Compute the tracer forcing terms (forcing for (rho s), not for s)
         // *************************************************************************************
         compute_tra_forces(GetVecOfPtrs(tra_forces),  get_density_nph_const());
@@ -18,11 +22,20 @@ void incflo::update_tracer (StepType step_type, Vector<MultiFab>& tra_eta, Vecto
         // *************************************************************************************
         // Compute explicit diffusive term (if corrector)
         // *************************************************************************************
-        if (step_type == StepType::Corrector && m_diff_type == DiffusionType::Explicit) {
-            compute_laps(get_laps_new(), get_tracer_new_const(), get_density_new_const(),
-                         GetVecOfConstPtrs(tra_eta));
+        if (step_type == StepType::Corrector)
+        {
+            compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
+            if (m_diff_type == DiffusionType::Explicit) {
+                compute_laps(get_laps_new(), get_tracer_new_const(), get_density_new_const(),
+                             GetVecOfConstPtrs(tra_eta));
+            }
         }
 
+        // *************************************************************************************
+        // Update the tracer next (note that dtdt already has rho in it)
+        // (rho trac)^new = (rho trac)^old + dt * (
+        //                   div(rho trac u) + div (mu grad trac) + rho * f_t
+        // *************************************************************************************
         if (step_type == StepType::Predictor) {
             tracer_explicit_update(tra_forces);
         } else if (step_type == StepType::Corrector) {

@@ -69,6 +69,8 @@ void incflo::ApplyCorrector()
 {
     BL_PROFILE("incflo::ApplyCorrector");
 
+    constexpr Real m_half = Real(0.5);
+
     // We use the new time value for things computed on the "*" state
     Real new_time = m_cur_time + m_dt;
 
@@ -97,21 +99,19 @@ void incflo::ApplyCorrector()
     //    in constructing the advection term
     // **********************************************************************************************
     Vector<MultiFab> vel_forces, tra_forces;
-    Vector<MultiFab> vel_eta   , tra_eta;
-
+    Vector<MultiFab> vel_eta, tra_eta;
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel_forces.emplace_back(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_force(),
                                 MFInfo(), Factory(lev));
-        vel_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
-    }
-
-    if (m_advect_tracer) {
-        for (int lev = 0; lev <= finest_level; ++lev) {
+        if (m_advect_tracer) {
             tra_forces.emplace_back(grids[lev], dmap[lev], m_ntrac, nghost_force(),
                                     MFInfo(), Factory(lev));
+        }
+        vel_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+        if (m_advect_tracer) {
             tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, 1, MFInfo(), Factory(lev));
-        } //lev
-    } // if
+        }
+    }
 
     // *************************************************************************************
     // Compute the MAC-projected velocities at all levels
@@ -135,10 +135,7 @@ void incflo::ApplyCorrector()
     // *************************************************************************************
     // Compute viscosity / diffusive coefficients
     // *************************************************************************************
-    compute_viscosity(GetVecOfPtrs(vel_eta),
-                      get_density_new(), get_velocity_new(),
-                      new_time, 1);
-    compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
+    compute_viscosity(GetVecOfPtrs(vel_eta), get_density_new(), get_velocity_new(), new_time, 1);
 
     // Here we create divtau of the (n+1,*) state that was computed in the predictor;
     //      we use this laps only if DiffusionType::Explicit
@@ -164,8 +161,8 @@ void incflo::ApplyCorrector()
     update_velocity(StepType::Corrector, vel_eta, vel_forces);
 
     // **********************************************************************************************
-    //
     // Project velocity field, update pressure
+    // **********************************************************************************************
     bool incremental_projection = false;
     ApplyProjection(get_density_nph_const(), new_time,m_dt,incremental_projection);
 

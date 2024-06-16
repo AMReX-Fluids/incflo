@@ -120,16 +120,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
     }
 
     // *************************************************************************************
-    // We now define the forcing terms to use in the Godunov prediction inside the predictor
-    // *************************************************************************************
-
-    // *************************************************************************************
     // Compute viscosity / diffusive coefficients
     // *************************************************************************************
     compute_viscosity(GetVecOfPtrs(vel_eta),
                       get_density_old(), get_velocity_old(),
                       m_cur_time, 1);
-    compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
 
     // *************************************************************************************
     // Compute explicit viscous term
@@ -142,12 +137,15 @@ void incflo::ApplyPredictor (bool incremental_projection)
     }
 
     // *************************************************************************************
-    // Compute explicit diffusive terms
+    // Compute explicit diffusive term -- note this is used inside compute_convective_term
     // *************************************************************************************
-    if (m_advect_tracer && need_divtau())
+    if (m_advect_tracer)
     {
-        compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
-                     GetVecOfConstPtrs(tra_eta));
+        compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
+        if (need_divtau()) {
+            compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
+                         GetVecOfConstPtrs(tra_eta));
+        }
     }
 
     // **********************************************************************************************
@@ -170,6 +168,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     //      Compute the explicit advective terms R_u^(n+1/2), R_s^(n+1/2) and R_t^(n+1/2)
     // if (advection_type == "MOL"                )
     //      Compute the explicit advective terms R_u^n      , R_s^n       and R_t^n
+    // Note that if advection_type != "MOL" then we call compute_tra_forces inside this routine
     // *************************************************************************************
     compute_convective_term(get_conv_velocity_old(), get_conv_density_old(), get_conv_tracer_old(),
                             get_velocity_old_const(), get_density_old_const(), get_tracer_old_const(),
