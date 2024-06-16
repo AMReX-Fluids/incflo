@@ -269,7 +269,6 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                                          vel(i,j,k,2) = rho_old(i,j,k) * vel_o(i,j,k,2) + l_dt * (
                                                         l_half*(dvdt_o(i,j,k,2) +   dvdt(i,j,k,2))
                                                       + rho_nph(i,j,k) * vel_f(i,j,k,2) + divtau(i,j,k,2)););
-                                if (i == 20 and j == 36) amrex::Print() <<" MOM " << vel(i,j,k,0) << std::endl;
 
                             AMREX_D_TERM(vel(i,j,k,0) /= rho_new(i,j,k);,
                                          vel(i,j,k,1) /= rho_new(i,j,k);,
