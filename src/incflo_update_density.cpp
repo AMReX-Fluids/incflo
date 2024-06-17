@@ -27,7 +27,6 @@ void incflo::update_density (StepType step_type)
                 Box const& bx = mfi.tilebox();
                 Array4<Real const> const& rho_old  = ld.density_o.const_array(mfi);
                 Array4<Real      > const& rho_new  = ld.density.array(mfi);
-                Array4<Real      > const& rho_nph  = ld.density_nph.array(mfi);
                 Array4<Real const> const& drdt_o = ld.conv_density_o.const_array(mfi);
 
                 if (step_type == StepType::Predictor) {
