@@ -10,12 +10,8 @@ void incflo::update_density (StepType step_type)
 
     Real l_dt = m_dt;
 
-    if (m_constant_density)
+    if (!m_constant_density)
     {
-        for (int lev = 0; lev <= finest_level; lev++)
-            MultiFab::Copy(m_leveldata[lev]->density_nph, m_leveldata[lev]->density_o, 0, 0, 1, ng);
-
-    } else {
         for (int lev = 0; lev <= finest_level; lev++)
         {
             auto& ld = *m_leveldata[lev];
@@ -43,16 +39,6 @@ void incflo::update_density (StepType step_type)
                     });
                 }
             } // mfi
-
-            if (ng > 0) {
-                fillpatch_density(lev, m_t_new[lev], ld.density, ng);
-            }
-
-            // Define half-time density
-            MultiFab::LinComb(ld.density_nph,
-                              Real(0.5), ld.density  , 0,
-                              Real(0.5), ld.density_o, 0,
-                              0, 1, ng);
         } // lev
 
         // Average down solution
@@ -65,5 +51,21 @@ void incflo::update_density (StepType step_type)
                                 0, 1, refRatio(lev));
 #endif
         }
-    } // not constant density
+
+        for (int lev = 0; lev <= finest_level; lev++)
+        {
+            // Fill ghost cells of new-time density if needed (we assume ghost cells of old density are already filled)
+            if (ng > 0) {
+                fillpatch_density(lev, m_t_new[lev], ld.density, ng);
+            }
+
+            // Define half-time density after the average down
+            MultiFab::LinComb(ld.density_nph, Real(0.5), ld.density, 0, Real(0.5), ld.density_o, 0, 0, 1, ng);
+        }
+
+    } else {
+        for (int lev = 0; lev <= finest_level; lev++) {
+            MultiFab::Copy(m_leveldata[lev]->density_nph, m_leveldata[lev]->density_o, 0, 0, 1, ng);
+        }
+    }
 }
