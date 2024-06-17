@@ -54,6 +54,8 @@ void incflo::update_density (StepType step_type)
 
         for (int lev = 0; lev <= finest_level; lev++)
         {
+            auto& ld = *m_leveldata[lev];
+
             // Fill ghost cells of new-time density if needed (we assume ghost cells of old density are already filled)
             if (ng > 0) {
                 fillpatch_density(lev, m_t_new[lev], ld.density, ng);
