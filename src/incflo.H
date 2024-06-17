@@ -21,6 +21,10 @@
 #include <DiffusionTensorOp.H>
 #include <DiffusionScalarOp.H>
 
+enum struct StepType {
+    Predictor, Corrector
+};
+
 class incflo : public amrex::AmrCore
 {
 public:
@@ -131,8 +135,8 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ApplyPredictor(bool incremental_projection = false);
-    void ApplyCorrector();
+    void ApplyPredictor (bool incremental_projection = false);
+    void ApplyCorrector ();
     void compute_convective_term (amrex::Vector<amrex::MultiFab*> const& conv_u,
                                   amrex::Vector<amrex::MultiFab*> const& conv_r,
                                   amrex::Vector<amrex::MultiFab*> const& conv_t,
@@ -157,6 +161,12 @@ public:
 
     void tracer_explicit_update(amrex::Vector<amrex::MultiFab> const& tra_forces);
     void tracer_explicit_update_corrector(amrex::Vector<amrex::MultiFab> const& tra_forces);
+
+    void update_density  (StepType step_type);
+    void update_tracer   (StepType step_type, amrex::Vector<amrex::MultiFab>& tra_eta,
+                                              amrex::Vector<amrex::MultiFab>& tra_forces);
+    void update_velocity (StepType step_type, amrex::Vector<amrex::MultiFab>& vel_eta,
+                                              amrex::Vector<amrex::MultiFab>& vel_forces);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -201,11 +211,8 @@ public:
     [[nodiscard]] amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
     average_scalar_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
 
-    // FIXME? compute_laps never used density in any meaningful way, but
-    // then removing density would break anything downstream....
     void compute_laps (amrex::Vector<amrex::MultiFab      *> const& laps,
                        amrex::Vector<amrex::MultiFab const*> const& scalar,
-                       amrex::Vector<amrex::MultiFab const*> const& density,
                        amrex::Vector<amrex::MultiFab const*> const& eta);
 
     void diffuse_scalar (amrex::Vector<amrex::MultiFab      *> const& scalar,
@@ -589,6 +596,7 @@ private:
         amrex::MultiFab density;
         amrex::MultiFab density_eb;
         amrex::MultiFab density_o;
+        amrex::MultiFab density_nph;
         amrex::MultiFab tracer;
         amrex::MultiFab tracer_eb;
         amrex::MultiFab tracer_o;
@@ -745,6 +753,7 @@ private:
     amrex::Vector<amrex::MultiFab*> get_tracer_eb () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_new () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_density_nph () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_mac_phi () noexcept;
@@ -768,6 +777,7 @@ private:
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_eb () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_old_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_new_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_nph_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_old_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_new_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_vel_forces_const () const noexcept;
