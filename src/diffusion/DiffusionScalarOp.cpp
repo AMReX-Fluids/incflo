@@ -474,7 +474,6 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
 
 void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                                       Vector<MultiFab const*> const& a_scalar,
-                                      Vector<MultiFab const*> const& /*a_density*/,
                                       Vector<MultiFab const*> const& a_eta)
 {
     BL_PROFILE("DiffusionScalarOp::compute_laps");
