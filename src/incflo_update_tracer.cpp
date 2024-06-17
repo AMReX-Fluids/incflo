@@ -26,8 +26,7 @@ void incflo::update_tracer (StepType step_type, Vector<MultiFab>& tra_eta, Vecto
         {
             compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
             if (m_diff_type == DiffusionType::Explicit) {
-                compute_laps(get_laps_new(), get_tracer_new_const(), get_density_new_const(),
-                             GetVecOfConstPtrs(tra_eta));
+                compute_laps(get_laps_new(), get_tracer_new_const(), GetVecOfConstPtrs(tra_eta));
             }
         }
 

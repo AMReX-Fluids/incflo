@@ -143,8 +143,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     {
         compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),1);
         if (need_divtau()) {
-            compute_laps(get_laps_old(), get_tracer_old_const(), get_density_old_const(),
-                         GetVecOfConstPtrs(tra_eta));
+            compute_laps(get_laps_old(), get_tracer_old_const(), GetVecOfConstPtrs(tra_eta));
         }
     }
 

@@ -135,8 +135,7 @@ void incflo::ApplyCorrector()
     // *************************************************************************************
     compute_viscosity(GetVecOfPtrs(vel_eta), get_density_new(), get_velocity_new(), new_time, 1);
 
-    // Here we create divtau of the (n+1,*) state that was computed in the predictor;
-    //      we use this laps only if DiffusionType::Explicit
+    // Here we create divtau of the (n+1,*) state that was computed in the predictor
     if ( (m_diff_type == DiffusionType::Explicit) || use_tensor_correction )
     {
         compute_divtau(get_divtau_new(), get_velocity_new_const(),
