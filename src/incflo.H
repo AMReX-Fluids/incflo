@@ -586,7 +586,7 @@ private:
         LevelData (amrex::BoxArray const& ba,
                    amrex::DistributionMapping const& dm,
                    amrex::FabFactory<amrex::FArrayBox> const& fact,
-                   incflo* a_incflo);
+                   incflo* my_incflo);
         // cell-centered multifabs
         amrex::MultiFab velocity;
         amrex::MultiFab velocity_o;
