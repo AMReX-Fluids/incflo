@@ -29,7 +29,10 @@ incflo.mu               =  0.001        # Dynamic viscosity coefficient
 
 incflo.constant_density =  false        #
 incflo.advect_tracer    =  true         #
-incflo.mu_s             =  0.1
+incflo.ntrac            =  2
+incflo.mu_s             =  0.1  0.1
+incflo.trac_is_conservative =  1  0
+
 
 incflo.diffusion_type   = 1             #  Crank-Nicolson (instead of Implicit)
 
@@ -75,7 +78,7 @@ incflo.write_eb_surface = false
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.probtype                 = 12
+incflo.probtype                 = 122
 incflo.test_tracer_conservation = true
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
