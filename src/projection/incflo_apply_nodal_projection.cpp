@@ -91,9 +91,9 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
     }
 }
 
-void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
-                                   Vector<MultiFab      *> vel,
-                                   Vector<MultiFab      *> /*divu_Source*/, // only incompressible for now
+void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
+                                   Vector<MultiFab      *>        vel,
+                                   Vector<MultiFab      *> const& /*divu_Source*/, // only incompressible for now
                                    Real time, Real scaling_factor, bool incremental,
                                    bool set_inflow_bc)
 {

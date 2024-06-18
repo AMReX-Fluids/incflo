@@ -259,9 +259,9 @@ public:
                          amrex::Real time, amrex::Real scaling_factor, bool incremental);
     void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> density,
                               amrex::Real time, amrex::Real scaling_factor, bool incremental);
-    void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> density,
-                              amrex::Vector<amrex::MultiFab      *> vel,
-                              amrex::Vector<amrex::MultiFab      *> divu_Source,
+    void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> const& density,
+                              amrex::Vector<amrex::MultiFab      *>        vel,
+                              amrex::Vector<amrex::MultiFab      *> const& divu_Source,
                               amrex::Real time, amrex::Real scaling_factor, bool incremental,
                               bool set_inflow_bc);
 
