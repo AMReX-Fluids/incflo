@@ -229,11 +229,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 #endif
 
     m_leveldata[lev] = std::make_unique<LevelData>(grids[lev], dmap[lev], *m_factory[lev],
-                                                   m_ntrac, nghost_state(),
-                                                   m_advection_type,
-                                                   m_diff_type==DiffusionType::Implicit,
-                                                   use_tensor_correction,
-                                                   m_advect_tracer);
+                                                   this);
 
     m_t_new[lev] = time;
     m_t_old[lev] = time - Real(1.e200);
