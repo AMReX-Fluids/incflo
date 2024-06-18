@@ -570,9 +570,9 @@ private:
     /*! Initialize tracer particles */
     void initializeTracerParticles (amrex::ParGDBBase* gdb
 #ifdef AMREX_USE_EB
-                            ,amrex::EBFArrayBoxFactory const& ebfact
+                                   ,amrex::EBFArrayBoxFactory const& ebfact
 #endif
-                           );
+                                   );
 
     /*! Evolve tracers and hydro particles */
     void evolveTracerParticles (AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
@@ -586,9 +586,7 @@ private:
         LevelData (amrex::BoxArray const& ba,
                    amrex::DistributionMapping const& dm,
                    amrex::FabFactory<amrex::FArrayBox> const& fact,
-                   int ntrac, int ng_state,
-                   const std::string& advection_type, bool implicit_diffusion,
-                   bool use_tensor_correction, bool advect_tracer);
+                   incflo* a_incflo);
         // cell-centered multifabs
         amrex::MultiFab velocity;
         amrex::MultiFab velocity_o;
