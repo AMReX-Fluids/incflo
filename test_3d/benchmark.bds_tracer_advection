@@ -29,6 +29,8 @@ incflo.mu               =  0.001        # Dynamic viscosity coefficient
 
 incflo.constant_density =  false        #
 incflo.advect_tracer    =  true         #
+incflo.ntrac            =  2
+incflo.trac_is_conservative =  1  0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
@@ -57,7 +59,7 @@ geometry.is_periodic    =   0   1  0       # Periodicity x y z (0/1)
 # Boundary conditions
 zlo.type                =   "mi"
 zlo.velocity            =   4. 2. 3.
-zlo.tracer              =   1.
+zlo.tracer              =   1. 0.5
 zhi.type                =   "po"
 zhi.pressure            =   0.0
 
@@ -71,7 +73,7 @@ incflo.geometry = "all_regular"
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.probtype                 = 12
+incflo.probtype                 = 122
 incflo.test_tracer_conservation = true
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
