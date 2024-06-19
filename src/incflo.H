@@ -1,4 +1,5 @@
 #ifndef INCFLO_H_
+#define INCFLO_H_
 
 #include <AMReX_AmrCore.H>
 #include <AMReX_MultiFabUtil.H>
@@ -13,8 +14,16 @@
 #include <AMReX_EBMultiFabUtil.H>
 #endif
 
+#ifdef INCFLO_USE_PARTICLES
+#include "ParticleData.H"
+#endif
+
 #include <DiffusionTensorOp.H>
 #include <DiffusionScalarOp.H>
+
+enum struct StepType {
+    Predictor, Corrector
+};
 
 class incflo : public amrex::AmrCore
 {
@@ -126,8 +135,8 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ApplyPredictor(bool incremental_projection = false);
-    void ApplyCorrector();
+    void ApplyPredictor (bool incremental_projection = false);
+    void ApplyCorrector ();
     void compute_convective_term (amrex::Vector<amrex::MultiFab*> const& conv_u,
                                   amrex::Vector<amrex::MultiFab*> const& conv_r,
                                   amrex::Vector<amrex::MultiFab*> const& conv_t,
@@ -152,6 +161,12 @@ public:
 
     void tracer_explicit_update(amrex::Vector<amrex::MultiFab> const& tra_forces);
     void tracer_explicit_update_corrector(amrex::Vector<amrex::MultiFab> const& tra_forces);
+
+    void update_density  (StepType step_type);
+    void update_tracer   (StepType step_type, amrex::Vector<amrex::MultiFab>& tra_eta,
+                                              amrex::Vector<amrex::MultiFab>& tra_forces);
+    void update_velocity (StepType step_type, amrex::Vector<amrex::MultiFab>& vel_eta,
+                                              amrex::Vector<amrex::MultiFab>& vel_forces);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -201,11 +216,8 @@ public:
     [[nodiscard]] amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
     average_scalar_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
 
-    // FIXME? compute_laps never used density in any meaningful way, but
-    // then removing density would break anything downstream....
     void compute_laps (amrex::Vector<amrex::MultiFab      *> const& laps,
                        amrex::Vector<amrex::MultiFab const*> const& scalar,
-                       amrex::Vector<amrex::MultiFab const*> const& density,
                        amrex::Vector<amrex::MultiFab const*> const& eta);
 
     void diffuse_scalar (amrex::Vector<amrex::MultiFab      *> const& scalar,
@@ -342,6 +354,7 @@ private:
     amrex::Real m_cfl = amrex::Real(0.5);
     amrex::Real m_fixed_dt = amrex::Real(-1.);
     amrex::Real m_init_shrink = amrex::Real(0.1);
+    amrex::Real m_dt_change_max = amrex::Real(1.1);
 
     // Initial projection / iterations
     bool m_do_initial_proj    = true;
@@ -357,6 +370,7 @@ private:
     bool use_tensor_correction = false;
 
     // AMR / refinement settings
+    int m_refine_particles = 1;
     int m_refine_cutcells = 1;
     int m_regrid_int = -1;
 
@@ -518,6 +532,7 @@ private:
     std::string m_tag_file;
 
     bool m_plotfile_on_restart = false;
+    bool m_regrid_on_restart = false;
 
     amrex::Vector<amrex::Real> tag_region_lo;
     amrex::Vector<amrex::Real> tag_region_hi;
@@ -546,14 +561,38 @@ private:
     int m_plt_error_p     = 0;
     int m_plt_error_mac_p = 0;
 
+#ifdef INCFLO_USE_PARTICLES
+    int m_plt_particle_count = 0;
+
+    // Particle container with all particle species
+    ParticleData particleData;
+
+    // variables and functions for tracers particles
+    bool  m_use_tracer_particles; /*!< tracer particles that advect with flow */
+
+    /*! Read tracer particles parameters */
+    void readTracerParticlesParams ();
+
+    /*! Initialize tracer particles */
+    void initializeTracerParticles (amrex::ParGDBBase* gdb
+#ifdef AMREX_USE_EB
+                                   ,amrex::EBFArrayBoxFactory const& ebfact
+#endif
+                                   );
+
+    /*! Evolve tracers and hydro particles */
+    void evolveTracerParticles (AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
+                                             amrex::Vector<amrex::MultiFab const*> const& v_mac,
+                                             amrex::Vector<amrex::MultiFab const*> const& w_mac));
+
+#endif
+
     struct LevelData {
         LevelData () = default;
         LevelData (amrex::BoxArray const& ba,
                    amrex::DistributionMapping const& dm,
                    amrex::FabFactory<amrex::FArrayBox> const& fact,
-                   int ntrac, int ng_state,
-                   const std::string& advection_type, bool implicit_diffusion,
-                   bool use_tensor_correction, bool advect_tracer);
+                   incflo* my_incflo);
         // cell-centered multifabs
         amrex::MultiFab velocity;
         amrex::MultiFab velocity_o;
@@ -561,6 +600,7 @@ private:
         amrex::MultiFab density;
         amrex::MultiFab density_eb;
         amrex::MultiFab density_o;
+        amrex::MultiFab density_nph;
         amrex::MultiFab tracer;
         amrex::MultiFab tracer_eb;
         amrex::MultiFab tracer_o;
@@ -717,6 +757,7 @@ private:
     amrex::Vector<amrex::MultiFab*> get_tracer_eb () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_density_new () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_density_nph () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tracer_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_mac_phi () noexcept;
@@ -740,6 +781,7 @@ private:
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_eb () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_old_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_new_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_density_nph_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_old_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tracer_new_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_vel_forces_const () const noexcept;

@@ -23,6 +23,9 @@ void incflo::ReadParameters ()
 #ifdef AMREX_USE_EB
         pp.query("refine_cutcells", m_refine_cutcells);
 #endif
+#ifdef INCFLO_USE_PARTICLES
+        pp.query("refine_particles", m_refine_particles);
+#endif
         pp.query("KE_int", m_KE_int);
 
     } // end prefix amr
@@ -43,6 +46,12 @@ void incflo::ReadParameters ()
         pp.query("init_shrink", m_init_shrink);
         if (m_init_shrink > 1.0) {
             amrex::Abort("We require m_init_shrink <= 1.0");
+        }
+
+        // This limits dt growth per time step
+        pp.query("dt_change_max", m_dt_change_max);
+        if ( m_dt_change_max < 1.0 || m_dt_change_max > 1.1 ) {
+            amrex::Abort("We require 1. < dt_change_max <= 1.1");
         }
 
         // Physics
@@ -191,6 +200,10 @@ void incflo::ReadParameters ()
        }
     } // end prefix eb_flow
 #endif
+
+#ifdef INCFLO_USE_PARTICLES
+    readTracerParticlesParams();
+#endif
 }
 
 void incflo::ReadIOParameters()
@@ -203,6 +216,7 @@ void incflo::ReadIOParameters()
     pp.query("restart", m_restart_file);
 
     pp.query("plotfile_on_restart", m_plotfile_on_restart);
+    pp.query("regrid_on_restart", m_regrid_on_restart);
 
     pp.query("plot_file", m_plot_file);
     pp.query("plot_int"       , m_plot_int);
@@ -237,6 +251,9 @@ void incflo::ReadIOParameters()
         m_plt_strainrate = 0;
         m_plt_divu       = 0;
         m_plt_vfrac      = 0;
+#ifdef INCFLO_USE_PARTICLES
+        m_plt_particle_count = 1;
+#endif
     }
 
     // Which variables to write to plotfile
@@ -267,6 +284,10 @@ void incflo::ReadIOParameters()
     pp.query("plt_error_w",    m_plt_error_w );
     pp.query("plt_error_p",    m_plt_error_p );
     pp.query("plt_error_mac_p",m_plt_error_mac_p );
+
+#ifdef INCFLO_USE_PARTICLES
+    pp.query("plt_particle_count", m_plt_particle_count );
+#endif
 }
 
 //

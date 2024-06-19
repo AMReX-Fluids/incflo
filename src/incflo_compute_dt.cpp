@@ -229,9 +229,9 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
         dt_new = Real(0.5) * m_dt;
     }
 
-    // Don't let the timestep grow by more than 10% per step
+    // Don't let the timestep grow by more than m_dt_change_max per step
     // unless the previous time step was unduly shrunk to match m_plot_per_exact
-    Real allowed_change_factor = Real(1.1);
+    Real allowed_change_factor = m_dt_change_max;
     if( (m_dt > Real(0.0)) && !(m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
     {
         dt_new = amrex::min(dt_new, allowed_change_factor * m_prev_dt);

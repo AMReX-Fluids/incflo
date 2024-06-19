@@ -107,21 +107,24 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
     for (int lev = 0; lev <= finest_level; ++lev) {
         AMREX_D_TERM(
-           face_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
-           face_y[lev].define(v_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
-           face_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev)););
+           face_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),u_mac[lev]->Factory());,
+           face_y[lev].define(v_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),v_mac[lev]->Factory());,
+           face_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),w_mac[lev]->Factory()););
         AMREX_D_TERM(
-           flux_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
-           flux_y[lev].define(v_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev));,
-           flux_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),Factory(lev)););
+           flux_x[lev].define(u_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),u_mac[lev]->Factory());,
+           flux_y[lev].define(v_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),v_mac[lev]->Factory());,
+           flux_z[lev].define(w_mac[lev]->boxArray(),dmap[lev],n_flux_comp,0,MFInfo(),w_mac[lev]->Factory()););
 
-        divu[lev].define(vel[lev]->boxArray(),dmap[lev],1,4,MFInfo(),Factory(lev));
-        if (m_advect_momentum)
+        divu[lev].define(vel[lev]->boxArray(),dmap[lev],1,4,MFInfo(),vel[lev]->Factory());
+
+        if (m_advect_momentum) {
             rhovel[lev].define(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,
-                               vel[lev]->nGrow(),MFInfo(),Factory(lev));
-        if (m_advect_tracer && m_ntrac > 0 && any_conserv_trac)
-            rhotrac[lev].define(vel[lev]->boxArray(),dmap[lev],tracer[lev]->nComp(),
-                                tracer[lev]->nGrow(),MFInfo(),Factory(lev));
+                               vel[lev]->nGrow(),MFInfo(),vel[lev]->Factory());
+        }
+        if (m_advect_tracer && m_ntrac > 0 && any_conserv_trac) {
+            rhotrac[lev].define(tracer[lev]->boxArray(),dmap[lev],tracer[lev]->nComp(),
+                                tracer[lev]->nGrow(),MFInfo(),tracer[lev]->Factory());
+        }
 
         AMREX_D_TERM(faces[lev][0] = &face_x[lev];,
                      faces[lev][1] = &face_y[lev];,
@@ -697,9 +700,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 // If convective, we define u dot grad trac = div (u trac) - trac div(u)
                 HydroUtils::ComputeConvectiveTerm(bx, m_ntrac, mfi,
                                                   tracer[lev]->array(mfi,0),
-                                                  AMREX_D_DECL(face_x[lev].array(mfi),
-                                                               face_y[lev].array(mfi),
-                                                               face_z[lev].array(mfi)),
+                                                  AMREX_D_DECL(face_x[lev].array(mfi,flux_comp),
+                                                               face_y[lev].array(mfi,flux_comp),
+                                                               face_z[lev].array(mfi,flux_comp)),
                                                   divu[lev].array(mfi),
                                                   update_arr,
                                                   get_tracer_iconserv_device_ptr(),

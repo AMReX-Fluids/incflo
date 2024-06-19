@@ -57,10 +57,9 @@ incflo::compute_divtau(Vector<MultiFab      *> const& divtau,
 void
 incflo::compute_laps(Vector<MultiFab      *> const& laps,
                      Vector<MultiFab const*> const& scalar,
-                     Vector<MultiFab const*> const& density,
                      Vector<MultiFab const*> const& eta)
 {
-    get_diffusion_scalar_op()->compute_laps(laps, scalar, density, eta);
+    get_diffusion_scalar_op()->compute_laps(laps, scalar, eta);
 }
 
 void

@@ -66,6 +66,10 @@ void incflo::Advance()
         ApplyCorrector();
     }
 
+#ifdef INCFLO_USE_PARTICLES
+    particleData.Redistribute();
+#endif
+
 #if 0
     // This sums over all levels
     if (m_test_tracer_conservation) {

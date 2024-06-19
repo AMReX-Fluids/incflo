@@ -27,11 +27,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     std::unique_ptr<FabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
 #endif
     std::unique_ptr<LevelData> new_leveldata
-        (new LevelData(ba, dm, *new_fact, m_ntrac, nghost_state(),
-                       m_advection_type,
-                       m_diff_type==DiffusionType::Implicit,
-                       use_tensor_correction,
-                       m_advect_tracer));
+        (new LevelData(ba, dm, *new_fact, this));
     fillcoarsepatch_velocity(lev, time, new_leveldata->velocity, 0);
     fillcoarsepatch_density(lev, time, new_leveldata->density, 0);
     if (m_ntrac > 0) {
@@ -43,18 +39,17 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     m_leveldata[lev] = std::move(new_leveldata);
     m_factory[lev] = std::move(new_fact);
 
-    //make_mixedBC_mask(lev, ba, dm);
-
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
 
+    // Note: finest_level has not yet been updated and so we use lev
 #ifdef AMREX_USE_EB
-    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level),
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,lev),
                       MLMG::Location::FaceCentroid,  // Location of mac_vec
                       MLMG::Location::FaceCentroid,  // Location of beta
                       MLMG::Location::CellCenter  ); // Location of solution variable phi
 #else
-    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
+    macproj = std::make_unique<Hydro::MacProjector>(Geom(0,lev));
 #endif
 }
 
@@ -80,11 +75,7 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
     std::unique_ptr<FabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
 #endif
     std::unique_ptr<LevelData> new_leveldata
-        (new LevelData(ba, dm, *new_fact, m_ntrac, nghost_state(),
-                       m_advection_type,
-                       m_diff_type==DiffusionType::Implicit,
-                       use_tensor_correction,
-                       m_advect_tracer));
+        (new LevelData(ba, dm, *new_fact, this));
     fillpatch_velocity(lev, time, new_leveldata->velocity, 0);
     fillpatch_density(lev, time, new_leveldata->density, 0);
     if (m_ntrac > 0) {
@@ -108,6 +99,10 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
                       MLMG::Location::CellCenter  ); // Location of solution variable phi
 #else
     macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
+#endif
+
+#ifdef INCFLO_USE_PARTICLES
+    particleData.Redistribute();
 #endif
 }
 
