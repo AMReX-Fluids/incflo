@@ -228,7 +228,7 @@
 The implementation requires that there is EB separating the inflow and outflow regions,
 and only currently treats constant viscosity (i.e. requires the inputs file contains  <code class="docutils literal notranslate"><span class="pre">incflo.use_tensor_solve</span> <span class="pre">=</span> <span class="pre">false</span></code>).
 It does allow for non-constant scalar diffusivity. To create a new problem setup with mixed BCs, one must additionally
-specify the Dirchlet and Neumann areas in <code class="docutils literal notranslate"><span class="pre">prob/prob_bc.cpp</span></code> In this file there are functions to set the needed BC info for the diffusion solver, the MAC projection, and with the same function, the nodal projection and advection. Comments in the code provide a detailed explaination for each instance. For addditional details on mixed BCs, also see AMReX-Hydro’s documentation (<a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/bcs.html#bcs" title="(in amrex-hydro v24.04-dev)"><span>Boundary conditions</span></a>).</p>
+specify the Dirchlet and Neumann areas in <code class="docutils literal notranslate"><span class="pre">prob/prob_bc.cpp</span></code> In this file there are functions to set the needed BC info for the diffusion solver, the MAC projection, and with the same function, the nodal projection and advection. Comments in the code provide a detailed explaination for each instance. For addditional details on mixed BCs, also see AMReX-Hydro’s documentation (<a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/bcs.html#bcs" title="(in amrex-hydro v24.07-dev)"><span>Boundary conditions</span></a>).</p>
 </div></blockquote>
 </section>
 
