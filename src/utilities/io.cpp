@@ -393,6 +393,9 @@ void incflo::WritePlotFile()
     // Apparent viscosity
     if(m_plt_eta) ++ncomp;
 
+    // Magnitude of velocity
+    if(m_plt_magvel) ++ncomp;
+
     // Vorticity
     if(m_plt_vort) ++ncomp;
 
@@ -590,6 +593,15 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("eta");
         ++icomp;
     }
+    if (m_plt_magvel) {
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            MultiFab magvel(mf[lev], amrex::make_alias, icomp, 1);
+            ComputeMagVel(lev, m_cur_time, magvel, m_leveldata[lev]->velocity);
+        }
+        pltscaVarsName.push_back("magvel");
+        ++icomp;
+    }
+
     if (m_plt_vort) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             (m_leveldata[lev]->velocity).FillBoundary(geom[lev].periodicity());
