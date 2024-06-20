@@ -75,6 +75,10 @@ void incflo::InitData ()
 
         if (m_do_initial_proj) {
             InitialProjection();
+
+            if (m_do_initial_pressure_proj) {
+                InitialPressureProjection();
+            }
         }
 
         InitialIterations();

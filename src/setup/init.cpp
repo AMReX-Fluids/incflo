@@ -38,6 +38,7 @@ void incflo::ReadParameters ()
         pp.query("steady_state_tol", m_steady_state_tol);
         pp.query("initial_iterations", m_initial_iterations);
         pp.query("do_initial_proj", m_do_initial_proj);
+        pp.query("do_initial_pressure_proj", m_do_initial_pressure_proj);
 
         pp.query("fixed_dt", m_fixed_dt);
         pp.query("cfl", m_cfl);
@@ -345,26 +346,6 @@ void incflo::InitialProjection()
 {
     BL_PROFILE("incflo::InitialProjection()");
 
-    // *************************************************************************************
-    // Allocate space for the temporary MAC velocities
-    // *************************************************************************************
-    Vector<MultiFab> u_mac_tmp(finest_level+1), v_mac_tmp(finest_level+1), w_mac_tmp(finest_level+1);
-    int ngmac = nghost_mac();
-
-    for (int lev = 0; lev <= finest_level; ++lev) {
-        AMREX_D_TERM(u_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));,
-                     v_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev));,
-                     w_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
-                          1, ngmac, MFInfo(), Factory(lev)););
-        if (ngmac > 0) {
-            AMREX_D_TERM(u_mac_tmp[lev].setBndry(0.0);,
-                         v_mac_tmp[lev].setBndry(0.0);,
-                         w_mac_tmp[lev].setBndry(0.0););
-        }
-    }
-
     Real dummy_dt = 1.0;
     bool incremental = false;
     for (int lev = 0; lev <= finest_level; lev++)
@@ -379,6 +360,42 @@ void incflo::InitialProjection()
         m_leveldata[lev]->p_nd.setVal(0.0);
         m_leveldata[lev]->gp.setVal(0.0);
     }
+}
+
+// Project to enforce hydrostatic equilibrium
+void incflo::InitialPressureProjection()
+{
+    BL_PROFILE("incflo::InitialPressureProjection()");
+
+    if (m_verbose > 0) { Print() << " Initial pressure projection \n"; }
+
+    Real dummy_dt = 1.0;
+    int  nGhost = 1;
+
+    // fixme??? are density ghosts fill already???
+    //I think we only need to worry about this if doing outflow bcs...
+    for (int lev = 0; lev <= finest_level; lev++)
+    {
+        m_leveldata[lev]->density.FillBoundary(geom[lev].periodicity());
+    }
+
+    // Set the velocity to the gravity field
+    Vector<MultiFab> vel(finest_level + 1);
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        vel[lev].define(grids[lev], dmap[lev], AMREX_SPACEDIM, nGhost,
+                        MFInfo(), *m_factory[lev]);
+        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+            vel[lev].setVal(m_gravity[idim], idim, 1, 1);
+        }
+    }
+
+    // Cell-centered divergence condition source term
+    // Always zero this here
+    Vector<MultiFab*> Source(finest_level+1, nullptr);
+
+    ApplyNodalProjection(get_density_new_const(), GetVecOfPtrs(vel), Source,
+                         m_cur_time, dummy_dt, false /*incremental*/,
+                         true /*set_inflow_bc*/);
 }
 
 #ifdef AMREX_USE_EB
