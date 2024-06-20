@@ -174,11 +174,14 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ComputeVorticity (int lev, amrex::Real time, amrex::MultiFab& vort,
-                           amrex::MultiFab const& vel);
+#ifndef AMREX_USE_EB
+    static
+#endif
+    void ComputeMagVel    (int lev, amrex::Real time, amrex::MultiFab& magvel, amrex::MultiFab const& vel);
+    void ComputeVorticity (int lev, amrex::Real time, amrex::MultiFab&   vort, amrex::MultiFab const& vel);
     void ComputeDivU (amrex::Real time);
     void ComputeDrag ();
-    [[nodiscard]] static amrex::Real ComputeKineticEnergy () ;
+    [[nodiscard]] static amrex::Real ComputeKineticEnergy ();
 
     void DiffFromExact (int lev, amrex::Geometry& lev_geom, amrex::Real time, amrex::Real dt,
                         amrex::MultiFab& error, int soln_comp, int err_comp) const;
@@ -550,6 +553,7 @@ private:
     int m_plt_p_nd        = 0;
     int m_plt_macphi      = 0;
     int m_plt_eta         = 0;
+    int m_plt_magvel      = 1;
     int m_plt_vort        = 1;
     int m_plt_forcing     = 0;
     int m_plt_strainrate  = 0;
@@ -576,9 +580,9 @@ private:
     /*! Initialize tracer particles */
     void initializeTracerParticles (amrex::ParGDBBase* gdb
 #ifdef AMREX_USE_EB
-                            ,amrex::EBFArrayBoxFactory const& ebfact
+                                   ,amrex::EBFArrayBoxFactory const& ebfact
 #endif
-                           );
+                                   );
 
     /*! Evolve tracers and hydro particles */
     void evolveTracerParticles (AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
@@ -592,9 +596,7 @@ private:
         LevelData (amrex::BoxArray const& ba,
                    amrex::DistributionMapping const& dm,
                    amrex::FabFactory<amrex::FArrayBox> const& fact,
-                   int ntrac, int ng_state,
-                   const std::string& advection_type, bool implicit_diffusion,
-                   bool use_tensor_correction, bool advect_tracer);
+                   incflo* my_incflo);
         // cell-centered multifabs
         amrex::MultiFab velocity;
         amrex::MultiFab velocity_o;
