@@ -160,6 +160,8 @@ void incflo::Evolve()
         if (writeNow())
         {
             WritePlotFile();
+            get_volume_of_fluid()->WriteTecPlotFile (m_cur_time,m_nstep);
+	    get_volume_of_fluid()->write_tecplot_surface(m_cur_time,m_nstep);
             m_last_plt = m_nstep;
         }
 

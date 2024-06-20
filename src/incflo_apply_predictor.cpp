@@ -465,4 +465,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
                                    AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
                                    GetVecOfConstPtrs(w_mac)));
 #endif
+
+// use vof to advect tracer
+
+    tracer_vof_advection(get_tracer_new (), AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
+	                                     GetVecOfConstPtrs(w_mac)));
+
 }

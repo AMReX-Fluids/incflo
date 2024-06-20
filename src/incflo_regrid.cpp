@@ -45,6 +45,8 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
+	
+	p_volume_of_fluid.reset();
 
     // Note: finest_level has not yet been updated and so we use lev
 #ifdef AMREX_USE_EB
@@ -99,6 +101,8 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
+	
+	p_volume_of_fluid.reset();
 
 #ifdef AMREX_USE_EB
     macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level),
@@ -123,5 +127,6 @@ void incflo::ClearLevel (int lev)
     m_factory[lev].reset();
     m_diffusion_tensor_op.reset();
     m_diffusion_scalar_op.reset();
+	p_volume_of_fluid.reset();
     macproj.reset();
 }

@@ -185,6 +185,15 @@ void incflo::prob_init_fluid (int lev)
                                domain, dx, problo, probhi);
 
         }
+        else if (1109 == m_probtype)
+        {
+            droplet	       (vbx, gbx,
+                               ld.velocity.array(mfi),
+                               ld.density.array(mfi),
+                               ld.tracer.array(mfi),
+                               domain, dx, problo, probhi);
+
+        }
         else
         {
             amrex::Abort("prob_init_fluid: unknown m_probtype");
@@ -1090,6 +1099,49 @@ void incflo::init_burggraf (Box const& vbx, Box const& /*gbx*/,
         vel(i,j,k,1) = -8.0 * (4.0*x*x*x - 6.0 * x*x + 2.*x) * (y*y*y*y - y*y);
 #if (AMREX_SPACEDIM == 3)
         vel(i,j,k,2) = 0.0;
+#endif
+    });
+}
+
+void incflo::droplet 		(Box const& vbx, Box const& /*gbx*/,
+                                 Array4<Real> const& vel,
+                                 Array4<Real> const& /*density*/,
+                                 Array4<Real> const& tracer,
+                                 Box const& /*domain*/,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& problo,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& probhi)
+{
+    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        Real x = problo[0] + Real(i+0.5)*dx[0];
+        Real y = problo[1] + Real(j+0.5)*dx[1];
+        Real z = problo[2] + Real(k+0.5)*dx[2];
+
+        Real r = std::sqrt(x*x + y*y + z*z);
+
+	Real rad = 5.0*dx[0];
+	Real dia = 10.0*dx[0];
+
+	Real cenx = 0.5*(problo[0] + probhi[0]);
+	Real ceny = 0.5*(problo[1] + probhi[1]);
+	Real cenz = 0.5*(problo[2] + probhi[2]);
+
+	Real xs = x - cenx;	
+	Real ys = y - ceny;	
+	Real zs = z - cenz;
+
+	Real rs = (std::sqrt(xs*xs + ys*ys + zs*zs) - rad)/std::sqrt(dx[0]*dx[0] + dx[1]*dx[1] + dx[2]*dx[2]);
+
+	if (rs > 0.5) tracer(i,j,k) = 0.0;
+	else if (rs < -.5) tracer(i,j,k) = 1.0;
+	else tracer(i,j,k) = 0.5-rs;
+
+        // clockwise rotation with flow decreasing to 0 at cylinder boundary
+        vel(i,j,k,0) = Real(0.0);
+        vel(i,j,k,1) = Real(0.0);
+#if (AMREX_SPACEDIM == 3)
+        vel(i,j,k,2) = Real(0.0);
 #endif
     });
 }

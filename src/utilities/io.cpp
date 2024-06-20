@@ -339,8 +339,6 @@ void incflo::WritePlotFile()
 
     const std::string& plotfilename = amrex::Concatenate(m_plot_file, m_nstep);
 
-    amrex::Print() << "  Writing plotfile " << plotfilename << " at time " << m_cur_time << std::endl;
-
     int ncomp = 0;
 
     // Velocity components
@@ -674,3 +672,5 @@ void incflo::WritePlotFile()
     particleData.Checkpoint(plotfilename);
 #endif
 }
+
+
