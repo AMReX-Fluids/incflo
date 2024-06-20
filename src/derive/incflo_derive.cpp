@@ -145,7 +145,7 @@ Real incflo::ComputeKineticEnergy ()
 #ifdef AMREX_USE_EB
 void incflo::ComputeMagVel (int lev,
 #else
-static void incflo::ComputeMagVel (int /*lev*/,
+void incflo::ComputeMagVel (int /*lev*/,
 #endif
                             Real /*time*/,
                             MultiFab& magvel, MultiFab const& vel)
