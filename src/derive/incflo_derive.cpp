@@ -206,8 +206,8 @@ static void incflo::ComputeMagVel (int /*lev*/,
 #if (AMREX_SPACEDIM == 2)
                 magvel_fab(i,j,k) = std::sqrt(u*u + v*v);
 #elif (AMREX_SPACEDIM == 3)
-                    Real w = ccvel_fab(i,j,k,2);
-                    magvel_fab(i,j,k) = std::sqrt(u*u + v*v + w*w);
+                Real w = ccvel_fab(i,j,k,2);
+                magvel_fab(i,j,k) = std::sqrt(u*u + v*v + w*w);
 #endif
             });
 #endif
