@@ -76,7 +76,9 @@ void incflo::InitData ()
         if (m_do_initial_proj) {
             InitialProjection();
 
-            if (m_do_initial_pressure_proj) {
+            if (!m_constant_density
+                && std::abs(m_gravity.sum()) > std::numeric_limits<Real>::epsilon()
+                && !(m_ro_0 > std::numeric_limits<Real>::epsilon()) ) {
                 InitialPressureProjection();
             }
         }

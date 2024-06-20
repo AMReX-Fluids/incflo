@@ -38,7 +38,6 @@ void incflo::ReadParameters ()
         pp.query("steady_state_tol", m_steady_state_tol);
         pp.query("initial_iterations", m_initial_iterations);
         pp.query("do_initial_proj", m_do_initial_proj);
-        pp.query("do_initial_pressure_proj", m_do_initial_pressure_proj);
 
         pp.query("fixed_dt", m_fixed_dt);
         pp.query("cfl", m_cfl);
