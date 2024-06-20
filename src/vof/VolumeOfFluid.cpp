@@ -2,6 +2,11 @@
 #include <VolumeOfFluid.H>
 #include <AMReX_ParmParse.H>
 
+#ifdef AMREX_USE_EB
+#include <AMReX_EB2.H>
+#include <AMReX_EB2_IF.H>
+#endif
+
 using namespace amrex;
 #define EPS 1e-4
 #define THRESHOLD(c) {if ((c) < 0.) c = 0.; else if ((c) > 1.) c = 1.;}
@@ -14,13 +19,13 @@ VolumeOfFluid::VolumeOfFluid (incflo* a_incflo) : v_incflo(a_incflo)
 {
     finest_level = v_incflo->finestLevel();
     // *************************************************************************************
-    // Allocate space for the information of the interface segments 
-    // *************************************************************************************    
+    // Allocate space for the information of the interface segments
+    // *************************************************************************************
     for (int lev = 0; lev <= finest_level; ++lev){
         normal.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], AMREX_SPACEDIM, 1, MFInfo(), v_incflo->Factory(lev));
          alpha.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], 1, 1, MFInfo(), v_incflo->Factory(lev));
     }
-    
+
 
 }
 static XDim3 edge[12][2] = {
@@ -28,7 +33,7 @@ static XDim3 edge[12][2] = {
   {{0.,0.,0.},{0.,1.,0.}},{{0.,0.,1.},{0.,1.,1.}},{{1.,0.,1.},{1.,1.,1.}},{{1.,0.,0.},{1.,1.,0.}},
   {{0.,0.,0.},{0.,0.,1.}},{{1.,0.,0.},{1.,0.,1.}},{{1.,1.,0.},{1.,1.,1.}},{{0.,1.,0.},{0.,1.,1.}}
 };
-/* first index is the edge number, second index is the edge orientation 
+/* first index is the edge number, second index is the edge orientation
    (0 or 1), third index are the edges which this edge may connect to
    in order and the corresponding face direction */
 static int connect[12][2][4] = {
@@ -53,7 +58,7 @@ static void cube_plane_intersection (XDim3 cell, GpuArray <Real,AMREX_SPACEDIM> 
   XDim3 o;
   int i;
   for (i=0; i<AMREX_SPACEDIM; i++)
-    (&o.x)[i] = (&cell.x)[i]-Real(0.5)*dx[i];	  
+    (&o.x)[i] = (&cell.x)[i]-Real(0.5)*dx[i];
   for (i = 0; i < 12; i++) {
     XDim3 e, d;
 	Real h= i<4? dx[0]:(i<8?dx[1]:dx[2]);
@@ -87,7 +92,7 @@ using NODE_CUT=Array<XDim3, AMREX_SPACEDIM*(AMREX_SPACEDIM - 1) + 1>;
  *
  * Returns: the number of vertices (0 if the plane does not cut the cell).
  */
-static int vof_cut_cube_vertices (XDim3 cell, GpuArray <Real,AMREX_SPACEDIM> dx, 
+static int vof_cut_cube_vertices (XDim3 cell, GpuArray <Real,AMREX_SPACEDIM> dx,
                            XDim3 const * p,  XDim3 const *  n,
 			   NODE_CUT &  v, int d[12])
 {
@@ -96,7 +101,7 @@ static int vof_cut_cube_vertices (XDim3 cell, GpuArray <Real,AMREX_SPACEDIM> dx,
   int i;
 
   AMREX_ASSERT (p != NULL);
-  
+
 
 
   cube_plane_intersection (cell, dx, p, n, a, orient);
@@ -118,7 +123,7 @@ static int vof_cut_cube_vertices (XDim3 cell, GpuArray <Real,AMREX_SPACEDIM> dx,
 
 struct Segment{
   int nnodes;               /* number of nodes (2, 3 or 4) */
-#if AMREX_SPACEDIM==2  
+#if AMREX_SPACEDIM==2
   XDim3 node[2];          /* node coordinates */
 #else
   XDim3 node[4];
@@ -126,31 +131,31 @@ struct Segment{
   XDim3 mv;
   Real alpha, vof;
  // Constructor to initialize the Segment
-  Segment(int n, NODE_CUT const& nodes, XDim3 m, Real a, Real f, int ns=0) 
+  Segment(int n, NODE_CUT const& nodes, XDim3 m, Real a, Real f, int ns=0)
    : nnodes(n), mv (m), alpha (a), vof(f) {
-   for (int i = 0; i < n; ++i) 
+   for (int i = 0; i < n; ++i)
       node[i]= nodes[ns==0?i:(i + 3)%(n + 2)];
   }
 };
 
-static void add_segment (XDim3 const & cell, GpuArray <Real,AMREX_SPACEDIM> const & dx, 
-                         Real alpha, XDim3 const * o, XDim3 const * m, 
-			Vector<Segment> & segments, int & nt, Real vof)  
+static void add_segment (XDim3 const & cell, GpuArray <Real,AMREX_SPACEDIM> const & dx,
+                         Real alpha, XDim3 const * o, XDim3 const * m,
+			Vector<Segment> & segments, int & nt, Real vof)
 {
   int d[12];
   /* array of node coordinates for a cut face */
   NODE_CUT  nodecutface;
-  int inode, inode2, jnode_max_sintheta = 0, 
+  int inode, inode2, jnode_max_sintheta = 0,
   nnodecutface = vof_cut_cube_vertices (cell, dx, o, m, nodecutface, d);
   AMREX_ASSERT (nnodecutface <= 6);
   if (nnodecutface > 3) {   /* reorder faces if necessary */
-   /* Tecplot can think that opposite vertices of the quadrilateral surface 
-      element are connected. This may result in ugly X-shaped surface elements. 
-      Reorder the array of node if necessary, using bubble sort, 
-      to maximize the sine of the angle between the vector from each 
-      intersection point to the cell center and the vector from this point 
+   /* Tecplot can think that opposite vertices of the quadrilateral surface
+      element are connected. This may result in ugly X-shaped surface elements.
+      Reorder the array of node if necessary, using bubble sort,
+      to maximize the sine of the angle between the vector from each
+      intersection point to the cell center and the vector from this point
       to the next point in the array */
-    int i_switchnodes = 0;        /* counter to avoid infinite loop */    
+    int i_switchnodes = 0;        /* counter to avoid infinite loop */
     bool switchnodes = false;   /* logical variable used to reorder cut face nodes */
 
     do {
@@ -164,39 +169,39 @@ static void add_segment (XDim3 const & cell, GpuArray <Real,AMREX_SPACEDIM> cons
 	 /*  cycle through all other nodes (jnode) where cut face intersects cell edges */
 	     for (inode2 = 1; inode2 < nnodecutface; inode2++) {
 	       int jnode = (inode + inode2)%nnodecutface;
-	       XDim3 diff2 = {nodecutface[jnode].x - node.x, 
+	       XDim3 diff2 = {nodecutface[jnode].x - node.x,
 	 	 	              nodecutface[jnode].y - node.y,
 	 	 	              nodecutface[jnode].z - node.z};
 	       Real length_diff2 = vector_norm (&diff2);
 	       if (length_diff2 < 1e-20) /*Hua Tan(11-1-2016)*/
-	          return;  
-	       Real sintheta = ((diff1.y*diff2.z - diff1.z*diff2.y)*m->x + 
-	 	 	                (diff1.z*diff2.x - diff1.x*diff2.z)*m->y + 
+	          return;
+	       Real sintheta = ((diff1.y*diff2.z - diff1.z*diff2.y)*m->x +
+	 	 	                (diff1.z*diff2.x - diff1.x*diff2.z)*m->y +
 	 	 	                (diff1.x*diff2.y - diff1.y*diff2.x)*m->z)/
 	                        (length_diff1*length_diff2);
-		 
+
 	       if (sintheta > max_sintheta) {
 	         max_sintheta = sintheta;
 	         jnode_max_sintheta = jnode;
-	       }	  
-	      }	
+	       }
+	      }
 	     /* terminate if cannot find positive angle between cut face nodes */
-	     AMREX_ASSERT (max_sintheta != 0.);	
+	     AMREX_ASSERT (max_sintheta != 0.);
          inode2 = (inode + 1)%nnodecutface;
 	     if (jnode_max_sintheta != inode2) {
 	       node = nodecutface[jnode_max_sintheta];
 	       nodecutface[jnode_max_sintheta] = nodecutface[inode2];
-	       nodecutface[inode2] = node;	  
+	       nodecutface[inode2] = node;
 	       switchnodes = true;
 	     }
       } /* inode-loop */
-    } while (switchnodes && i_switchnodes < 1000);   /* avoid infinite loop */    
+    } while (switchnodes && i_switchnodes < 1000);   /* avoid infinite loop */
   } /* reorder faces if necessary */
  // Print()<<"inside add_segment"<<nnodecutface<<"\n";
-  if (nnodecutface < 3) 
-   return; 
- /* If there are more than 4 points in the array, 
-    divide the cut face into a quadrilateral face and 
+  if (nnodecutface < 3)
+   return;
+ /* If there are more than 4 points in the array,
+    divide the cut face into a quadrilateral face and
     either a quadrilateral or triangular face */
 
  /* assign data to nodeinfo array, increment number of wall faces and number of nodes */
@@ -213,7 +218,7 @@ static void add_segment (XDim3 const & cell, GpuArray <Real,AMREX_SPACEDIM> cons
 //   WallFace * face2 = g_malloc (sizeof (WallFace));
 
    nnodecutface -= 2;
-   
+
    nt += nnodecutface;
    segments.emplace_back(nnodecutface, nodecutface, *m, alpha, vof, 3);
  } /* cut face must be divided into 2 quadrilateral/triangular faces */
@@ -349,7 +354,7 @@ Real vof_plane_area_center (XDim3 const * m, Real alpha, XDim3 * p)
   if (n.y < 0.) {
     alpha -= n.y;
     n.y = - n.y;
-  }  
+  }
   if (n.z < 0.) {
     alpha -= n.z;
     n.z = - n.z;
@@ -430,7 +435,7 @@ Real vof_plane_area_center (XDim3 const * m, Real alpha, XDim3 * p)
  * vof_plane_alpha:
  *
  * Returns: the value @alpha such that the volume of a cubic cell
- * lying under the plane defined by @m.@x = @alpha is equal to @c. 
+ * lying under the plane defined by @m.@x = @alpha is equal to @c.
  */
 Real vof_plane_alpha (XDim3 * m, Real c)
 {
@@ -513,7 +518,7 @@ Real vof_plane_alpha (XDim3 * m, Real c)
 //# define F(x,y,z) f[x][y][z]
 #endif
 
-void stencil (AMREX_D_DECL(int const i, int const j, int const k), 
+void stencil (AMREX_D_DECL(int const i, int const j, int const k),
               Array4<Real const> const & v, Real F(3,3,3))
 {
   int x, y, z = 0;
@@ -552,23 +557,23 @@ void stencil (AMREX_D_DECL(int const i, int const j, int const k),
       if (f[2][y][z] < 0.) f[2][y][z] = f[1][y][z];
     }
 #endif /* 3D */
-}  
+}
 
-void 
+void
 VolumeOfFluid::tracer_vof_update(Vector<MultiFab*> const& tracer)
 {
     for (int lev = 0; lev <= finest_level; ++lev) {
         auto const& dx = v_incflo->geom[lev].CellSizeArray();
         auto const& problo = v_incflo->geom[lev].ProbLoArray();
         auto const& probhi = v_incflo->geom[lev].ProbHiArray();
-        
+
         auto& vof_mf = tracer[lev];
-        
+
         for (MFIter mfi(*vof_mf,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
             Box const& bx = mfi.tilebox();
             Array4<Real> const& vof = vof_mf->array(mfi);
-            Array4<Real> const& mv = normal[lev].array(mfi); 
-            Array4<Real> const& al = alpha[lev].array(mfi);        
+            Array4<Real> const& mv = normal[lev].array(mfi);
+            Array4<Real> const& al = alpha[lev].array(mfi);
             ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
               auto fvol = vof(i,j,k,0);
@@ -577,11 +582,11 @@ VolumeOfFluid::tracer_vof_update(Vector<MultiFab*> const& tracer)
                  AMREX_D_TERM(mv(i,j,k,0) = Real(0.);,
                               mv(i,j,k,1) = Real(0.);,
                               mv(i,j,k,2) = Real(0.););
-                 al(i,j,k) = fvol;                            
+                 al(i,j,k) = fvol;
               }
               else {
                 Real F(3,3,3);
-				XDim3 m; 
+				XDim3 m;
                 stencil (AMREX_D_DECL(i,j,k), vof, f);
                 mycs (f, &m.x);
                 Real n = 0.;
@@ -598,21 +603,21 @@ VolumeOfFluid::tracer_vof_update(Vector<MultiFab*> const& tracer)
 		for (int d = 0; d < AMREX_SPACEDIM; d++)
 	           (&m.x)[d]= mv(i,j,k,d);
 		al(i,j,k)= vof_plane_alpha (&m, fvol);
-				
+
 		//if (std::fabs(mv(i,j,k,1)) > 2)
 		//	Print() << " normal direction " << m[0]<<" "<<m[1]<<" "<<m[2]<<"("<<i<<","<<j<<","<<k<<")"
 		//    <<"vof"<<fvol<<"\n";
                 //amrex::Print() << " normal direction " << m[0]<<" "<<m[1]<<" "<<m[2]<<"("<<i<<","<<j<<","<<k<<")"<<"\n";
-              
+
               }
-            }); //  ParallelFor      
-        
-        
-        } // end MFIter  
-        
-        
-        
-        
+            }); //  ParallelFor
+
+
+        } // end MFIter
+
+
+
+
 
     }// end lev
 }
@@ -620,10 +625,10 @@ VolumeOfFluid::tracer_vof_update(Vector<MultiFab*> const& tracer)
 
 
 void
-VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer, 
+VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
                                     AMREX_D_DECL(Vector<MultiFab const*> const& u_mac,
                                                  Vector<MultiFab const*> const& v_mac,
-                                                 Vector<MultiFab const*> const& w_mac), 
+                                                 Vector<MultiFab const*> const& w_mac),
 				      Real dt)
 {
 
@@ -634,19 +639,86 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
 //////  Initialize the VOF value using the implicit surface function
 /////////////////////////////////////////////////////////////////////
 void
-VolumeOfFluid::tracer_vof_init_fraction(Vector<MultiFab*> const& tracer)
+tracer_vof_init_fraction(int lev, MultiFab& a_tracer, incflo const* a_incflo)
 {
+    int vof_init_with_eb = 1;
+    ParmParse pp("incflo");
+    pp.query("vof_init_with_eb", vof_init_with_eb);
 
+    Geometry const& geom = a_incflo->Geom(lev);
+    auto const& dx = geom.CellSizeArray();
+    auto const& problo = geom.ProbLoArray();
+    auto const& probhi = geom.ProbHiArray();
 
+#ifdef AMREX_USE_EB
+    if (vof_init_with_eb) {
+        if (lev == 0) {
+            Array<Real,AMREX_SPACEDIM> center{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
+                                                           0.5*(problo[1]+probhi[1]),
+                                                           0.5*(problo[2]+probhi[2]))};
+            Real radius = 5.0*dx[0];
+            bool fluid_is_inside = true;
+
+            EB2::SphereIF my_sphere(radius, center, fluid_is_inside);
+            auto gshop = EB2::makeShop(my_sphere);
+            int max_level = a_incflo->maxLevel();
+            EB2::Build(gshop, a_incflo->Geom(max_level), max_level, max_level);
+        }
+
+        auto fact = amrex::makeEBFabFactory(geom, a_tracer.boxArray(), a_tracer.DistributionMap(),
+                                            {1,0,0}, EBSupport::volume);
+        auto const& volfrac = fact->getVolFrac();
+        MultiFab::Copy(a_tracer, volfrac, 0, 0, 1, 0);
+
+        if (lev == a_incflo->finestLevel()) {
+            EB2::IndexSpace::pop();
+        }
+    } else
+#endif
+    {
+#ifdef AMRE_USE_OMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(a_tracer); mfi.isValid(); ++mfi)
+        {
+            Box const& vbx = mfi.validbox();
+            auto const& tracer = a_tracer.array(mfi);
+            amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                Real x = problo[0] + Real(i+0.5)*dx[0];
+                Real y = problo[1] + Real(j+0.5)*dx[1];
+                Real z = problo[2] + Real(k+0.5)*dx[2];
+
+                Real r = std::sqrt(x*x + y*y + z*z);
+
+                Real rad = 5.0*dx[0];
+                Real dia = 10.0*dx[0];
+
+                Real cenx = 0.5*(problo[0] + probhi[0]);
+                Real ceny = 0.5*(problo[1] + probhi[1]);
+                Real cenz = 0.5*(problo[2] + probhi[2]);
+
+                Real xs = x - cenx;
+                Real ys = y - ceny;
+                Real zs = z - cenz;
+
+                Real rs = (std::sqrt(xs*xs + ys*ys + zs*zs) - rad)/std::sqrt(dx[0]*dx[0] + dx[1]*dx[1] + dx[2]*dx[2]);
+
+                if (rs > 0.5) tracer(i,j,k) = 0.0;
+                else if (rs < -.5) tracer(i,j,k) = 1.0;
+                else tracer(i,j,k) = 0.5-rs;
+            });
+        }
+    }
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
-/////////  
+/////////
 ////////     output results in tecplot format
 ////////
 ///////////////////////////////////////////////////////////////////////////////////////////////
-void 
+void
 VolumeOfFluid::write_tecplot_surface(Real time, int nstep)
 {
 
@@ -655,7 +727,7 @@ VolumeOfFluid::write_tecplot_surface(Real time, int nstep)
     amrex::AllPrint() << " Output surface file at process#" << myproc<<"  " << nprocs << " at time " << time << std::endl;
     const std::string& tecplotfilename = amrex::Concatenate("tecplot_surface_", nstep)+
                                             (nprocs>1?("_"+ std::to_string(myproc)+".dat") : ".dat");
-    
+
 //    Print()<<"surface_plot"<< nstep<<"  "<< tecplotfilename<<"\n";
     std::ofstream TecplotFile;
     TecplotFile.open(tecplotfilename.c_str(), std::ios::out);
@@ -664,7 +736,7 @@ VolumeOfFluid::write_tecplot_surface(Real time, int nstep)
     TecplotFile << (AMREX_SPACEDIM== 2 ? "VARIABLES = \"X\", \"Y\"":"VARIABLES = \"X\", \"Y\", \"Z\"");
     //output varibles
     TecplotFile <<", \"F\""<<", \"m_x\""<<", \"m_y\""<<", \"m_z\""<<", \"alpha\""<<"\n";
-      
+
     for (int lev = 0; lev <= finest_level; ++lev) {
         auto& ld = *v_incflo->m_leveldata[lev];
         Box const& domain  = v_incflo->geom[lev].Domain();
@@ -679,14 +751,14 @@ VolumeOfFluid::write_tecplot_surface(Real time, int nstep)
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-          
+
 	for (MFIter mfi(ld.tracer); mfi.isValid(); ++mfi) {
           Box const& bx = mfi.validbox();
           const auto lo = lbound(bx);
-          const auto hi = ubound(bx);	  
+          const auto hi = ubound(bx);
 	      Array4<Real const> const& vof = ld.tracer.const_array(mfi);
-	      Array4<Real> const& mv = normal[lev].array(mfi); 
-          Array4<Real> const& al =  alpha[lev].array(mfi); 
+	      Array4<Real> const& mv = normal[lev].array(mfi);
+          Array4<Real> const& al =  alpha[lev].array(mfi);
           Vector<Segment> segments;
 		  int totalnodes = 0;
             for   (int k = lo.z; k <= hi.z; ++k) {
@@ -696,59 +768,59 @@ VolumeOfFluid::write_tecplot_surface(Real time, int nstep)
 
                if (!CELL_IS_FULL(fvol)){
                  Real   alpha;
-                 XDim3	m, p, cell; 
+                 XDim3	m, p, cell;
                  for (int d = 0; d < AMREX_SPACEDIM; d++) {
 	               (&m.x)[d]= mv(i,j,k,d);
 	               }
 		 alpha= al(i,j,k,0);
 		         vof_plane_area_center(&m, alpha, &p);
-                 /* convert the coord. of the center to the global sys*/ 
+                 /* convert the coord. of the center to the global sys*/
                  for (int dim = 0; dim < AMREX_SPACEDIM; dim++){
                     (&p.x)[dim] = problo[dim] + dx[dim]*((dim<1?i:dim<2?j:k)+(&p.x)[dim]);
 					(&cell.x)[dim] = problo[dim] + dx[dim]*((dim<1?i:dim<2?j:k)+Real(0.5));
-				 }					
+				 }
 		         add_segment (cell, dx, alpha, &p, &m, segments, totalnodes, fvol);
-				 				
+
                      //Print() << " normal direction " <<"("<<i<<","<<j<<","<<k<<")"<<" "<<fvol<<"\n";
-              
-              }					  
+
+              }
                     }
                   }
-                }               			 								 
- //           Print() << " Outside add_interface " << segments.size()<<" "<<totalnodes<<"\n";	
-			
+                }
+ //           Print() << " Outside add_interface " << segments.size()<<" "<<totalnodes<<"\n";
+
 	  std::string zonetitle=("Level_"+std::to_string(lev)+
 	                         "_Box_" +std::to_string(mfi.index())+
-	                         "_Proc_"+std::to_string(myproc)); 
+	                         "_Proc_"+std::to_string(myproc));
 	  TecplotFile <<(std::string("ZONE T=")+zonetitle);
 	  TecplotFile <<", DATAPACKING=POINT"<<", NODES="<<totalnodes<<", ELEMENTS="<<segments.size()
-	              <<", ZONETYPE=FEQUADRILATERAL" <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";			 
-			 
+	              <<", ZONETYPE=FEQUADRILATERAL" <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
+
 //	  AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
 	  int nn=0;
 	  for (const auto& seg : segments) {
 		for (int in = 0; in < seg.nnodes; in++)
 	       TecplotFile <<seg.node[in].x<<" "<<seg.node[in].y<<" "<<seg.node[in].z<<" "
-	                   <<seg.vof<<" "<<seg.mv.x<<"  "<<seg.mv.y<<"  "<<seg.mv.z<<"  "<<seg.alpha<<"\n"; 
-					   
-      }				
+	                   <<seg.vof<<" "<<seg.mv.x<<"  "<<seg.mv.y<<"  "<<seg.mv.z<<"  "<<seg.alpha<<"\n";
+
+      }
 	  int inode = 1;
-      for (const auto& seg : segments) {	    
+      for (const auto& seg : segments) {
          if (seg.nnodes == 4)
            TecplotFile <<inode<<" "<<inode + 1<<" "<<inode + 2<<" "<<inode + 3<<"\n";
          else if (seg.nnodes == 3)    /* triangular face */
            TecplotFile <<inode<<" "<<inode + 1<<" "<<inode + 2<<" "<<inode + 2<<"\n";
          else
            TecplotFile <<inode<<" "<<inode + 1<<"\n";
-         inode += seg.nnodes;		
-	  }		
-	} // end MFIter	
-						  
+         inode += seg.nnodes;
+	  }
+	} // end MFIter
+
     TecplotFile.close();
-  
-    
+
+
   } // end lev
-  
+
 }
 
 void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
@@ -760,7 +832,7 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
     //amrex::AllPrint() << " Output file at process#" << myproc<<"  " << nprocs << " at time " << time << std::endl;
     const std::string& tecplotfilename = amrex::Concatenate(m_tecplot_file, nstep)+
                                             (nprocs>1?("_"+ std::to_string(myproc)+".dat") : ".dat");
-    
+
 
     std::ofstream TecplotFile;
     TecplotFile.open(tecplotfilename.c_str(), std::ios::out);
@@ -769,7 +841,7 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
     TecplotFile << (AMREX_SPACEDIM== 2 ? "VARIABLES = \"X\", \"Y\"":"VARIABLES = \"X\", \"Y\", \"Z\"");
     //output varibles
     TecplotFile <<", \"F\""<<", \"m_x\""<<", \"m_y\""<<", \"m_z\""<<"\n";
-      
+
     for (int lev = 0; lev <= finest_level; ++lev) {
         auto& ld = *v_incflo->m_leveldata[lev];
         Box const& domain  = v_incflo->geom[lev].Domain();
@@ -777,23 +849,23 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
         auto const& problo = v_incflo->geom[lev].ProbLoArray();
         auto const& probhi = v_incflo->geom[lev].ProbHiArray();
         auto const& ijk_min= domain.smallEnd();
-        auto const& ijk_max= domain.bigEnd(); 
+        auto const& ijk_max= domain.bigEnd();
         const BoxArray& ba = ld.tracer.boxArray();  //cell-centered multifab
 	int nb = ba.size();
 	const DistributionMapping& dm = ld.tracer.DistributionMap();
 	std::string IJK = "IJK";
  //       amrex::Print() << " process#" << myproc<<"  " << ld.tracer.nGrow()<<" " << nb<<"\n";
 //amrex::Print() << " process#" << myproc<<"  " << (IJK[0]+std::string("= "))<<"\n";
-    //amrex::Print() << " process#" << myproc<<"  " << dm.size()<<"\n"; 
+    //amrex::Print() << " process#" << myproc<<"  " << dm.size()<<"\n";
     //Output data for each box in boxarray according to Tecplot data format
 //       for (int ibox = 0; ibox <nb; ++ibox) {
-//		// only works on the boxes that are active on current processor   
-//		 if (myproc == dm[ibox]) { 
-		  
+//		// only works on the boxes that are active on current processor
+//		 if (myproc == dm[ibox]) {
+
 //          Box const& bx = ba.get(ibox);
 //          auto const& ijk_min= bx.smallEnd();
-//          auto const& ijk_max= bx.bigEnd(); 
-//          amrex::AllPrint() << " process#" << myproc<<"  " << ibox<<ijk_min<<ijk_max<<"\n";		  
+//          auto const& ijk_max= bx.bigEnd();
+//          amrex::AllPrint() << " process#" << myproc<<"  " << ibox<<ijk_min<<ijk_max<<"\n";
 //          //define Zone header for tecplot
 //		  std::string zonetitle=("Level_"+std::to_string(lev)+"_Box_"+std::to_string(ibox));
 //		  // Zone title
@@ -808,27 +880,27 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
-          
+
 		  //for (MFIter mfi(ld.tracer,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
              //Box const& bx = mfi.tilebox();
-	for (MFIter mfi(ld.tracer); mfi.isValid(); ++mfi) {	 
+	for (MFIter mfi(ld.tracer); mfi.isValid(); ++mfi) {
           Box const& bx = mfi.validbox();
           const auto lo = lbound(bx);
           const auto hi = ubound(bx);
-			 
+
           auto const& ijk_min= bx.smallEnd();
-          auto const& ijk_max= bx.bigEnd(); 			 
-	  std::string zonetitle=("Level_"+std::to_string(lev)+"_Box_"+std::to_string(mfi.index())); 
+          auto const& ijk_max= bx.bigEnd();
+	  std::string zonetitle=("Level_"+std::to_string(lev)+"_Box_"+std::to_string(mfi.index()));
 	  TecplotFile <<(std::string("ZONE T=")+zonetitle);
-	  for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) 
+	  for (int dim = 0; dim < AMREX_SPACEDIM; ++dim)
              TecplotFile <<", "<<(IJK[dim]+std::string("="))<<(ijk_max[dim]-ijk_min[dim]+2);
 	  TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(AMREX_SPACEDIM+1)<<"-"<<7<<"]=CELLCENTERED)"
-		      <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";			 
-			 
+		      <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
+
 //	  AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
 	  Array4<Real const> const& tracer = ld.tracer.const_array(mfi);
 	  Array4<Real const> const& mv = normal[lev].const_array(mfi);
-	  
+
 	  int nn=0;
 	  //write coordinate variables
 	  for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
@@ -840,12 +912,12 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
 	 	 	  if (nn > 100) {
 	 	 		  TecplotFile <<"\n";
 	 	 		  nn=0;
-	 	 	  }						  
+	 	 	  }
                     }
                   }
-                }               			 								 
-	   }// 
-		 
+                }
+	   }//
+
           for     (int k = lo.z; k <= hi.z; ++k) {
             for   (int j = lo.y; j <= hi.y; ++j) {
               for (int i = lo.x; i <= hi.x; ++i) {
@@ -854,11 +926,11 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
 	 	        if (nn > 100) {
 	        	TecplotFile <<"\n";
 	        	nn=0;
-	 	        }	
+	 	        }
               }
             }
-          } 
-		  
+          }
+
 	  //write variables of the normal direction of the interface
 	  for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
                 for     (int k = lo.z; k <= hi.z; ++k) {
@@ -869,27 +941,27 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
 	 	 	  if (nn > 100) {
 	 	 		  TecplotFile <<"\n";
 	 	 		  nn=0;
-	 	 	  }						  
+	 	 	  }
                     }
                   }
-                }               			 								 
-	   }// 		  
-		  
-		  
-		  TecplotFile <<"\n";			 		  
-		} // end MFIter		 
-		  			
-//		  }// end box		
-//		
-//		
+                }
+	   }//
+
+
+		  TecplotFile <<"\n";
+		} // end MFIter
+
+//		  }// end box
+//
+//
 //		}
 	} // end lev
-			
-			
-			
-			
-    
+
+
+
+
+
     TecplotFile.close();
-  
-    
+
+
 }
