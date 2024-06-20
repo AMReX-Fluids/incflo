@@ -360,7 +360,8 @@ private:
     amrex::Real m_dt_change_max = amrex::Real(1.1);
 
     // Initial projection / iterations
-    bool m_do_initial_proj    = true;
+    bool m_do_initial_proj          = true;
+    bool m_do_initial_pressure_proj = false;
     int  m_initial_iterations = 3;
 
     // Use Boussinesq approximation for buoyancy?

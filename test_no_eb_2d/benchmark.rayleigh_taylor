@@ -38,6 +38,7 @@ incflo.advection_type   = "Godunov"
 
 incflo.constant_density = false
 incflo.ro_0             = 0             # Turn off background state
+incflo.do_initial_pressure_proj = 1     # to enforce hydrostatic equilibrium
 
 incflo.advect_tracer    = true
 
