@@ -725,102 +725,100 @@ VolumeOfFluid::write_tecplot_surface(Real time, int nstep)
     int myproc = ParallelDescriptor::MyProc();
     int nprocs = ParallelDescriptor::NProcs();
     amrex::AllPrint() << " Output surface file at process#" << myproc<<"  " << nprocs << " at time " << time << std::endl;
-    const std::string& tecplotfilename = amrex::Concatenate("tecplot_surface_", nstep)+
-                                            (nprocs>1?("_"+ std::to_string(myproc)+".dat") : ".dat");
+    const std::string& tecplotfilename = amrex::Concatenate("tecplot_surface_", nstep);
+
+    const int nfiles = 1;
+
+    for (NFilesIter nfi(nfiles, tecplotfilename, false, true); nfi.ReadyToWrite(); ++nfi)
+    {
 
 //    Print()<<"surface_plot"<< nstep<<"  "<< tecplotfilename<<"\n";
-    std::ofstream TecplotFile;
-    TecplotFile.open(tecplotfilename.c_str(), std::ios::out);
-    TecplotFile << "TITLE = \"incflow simulation from processer# " << myproc << "\" "<< "\n";
-    //spatial coordinates
-    TecplotFile << (AMREX_SPACEDIM== 2 ? "VARIABLES = \"X\", \"Y\"":"VARIABLES = \"X\", \"Y\", \"Z\"");
-    //output varibles
-    TecplotFile <<", \"F\""<<", \"m_x\""<<", \"m_y\""<<", \"m_z\""<<", \"alpha\""<<"\n";
+        auto& TecplotFile = (std::ofstream&) nfi.Stream();
 
-    for (int lev = 0; lev <= finest_level; ++lev) {
-        auto& ld = *v_incflo->m_leveldata[lev];
-        Box const& domain  = v_incflo->geom[lev].Domain();
-        auto const& dx     = v_incflo->geom[lev].CellSizeArray();
-        auto const& problo = v_incflo->geom[lev].ProbLoArray();
-        auto const& probhi = v_incflo->geom[lev].ProbHiArray();
-        const BoxArray& ba = ld.tracer.boxArray();  //cell-centered multifab
-	int nb = ba.size();
-	const DistributionMapping& dm = ld.tracer.DistributionMap();
+        TecplotFile << "TITLE = \"incflow simulation from processer# " << myproc << "\" "<< "\n";
+        //spatial coordinates
+        TecplotFile << (AMREX_SPACEDIM== 2 ? "VARIABLES = \"X\", \"Y\"":"VARIABLES = \"X\", \"Y\", \"Z\"");
+        //output varibles
+        TecplotFile <<", \"F\""<<", \"m_x\""<<", \"m_y\""<<", \"m_z\""<<", \"alpha\""<<"\n";
 
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            auto& ld = *v_incflo->m_leveldata[lev];
+            Box const& domain  = v_incflo->geom[lev].Domain();
+            auto const& dx     = v_incflo->geom[lev].CellSizeArray();
+            auto const& problo = v_incflo->geom[lev].ProbLoArray();
+            auto const& probhi = v_incflo->geom[lev].ProbHiArray();
+            const BoxArray& ba = ld.tracer.boxArray();  //cell-centered multifab
+            int nb = ba.size();
+            const DistributionMapping& dm = ld.tracer.DistributionMap();
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
+            for (MFIter mfi(ld.tracer); mfi.isValid(); ++mfi) {
+                Box const& bx = mfi.validbox();
+                const auto lo = lbound(bx);
+                const auto hi = ubound(bx);
+                Array4<Real const> const& vof = ld.tracer.const_array(mfi);
+                Array4<Real> const& mv = normal[lev].array(mfi);
+                Array4<Real> const& al =  alpha[lev].array(mfi);
+                Vector<Segment> segments;
+                int totalnodes = 0;
+                for (int k = lo.z; k <= hi.z; ++k) {
+                for (int j = lo.y; j <= hi.y; ++j) {
+                for (int i = lo.x; i <= hi.x; ++i) {
+                    auto fvol = vof(i,j,k,0);
 
-	for (MFIter mfi(ld.tracer); mfi.isValid(); ++mfi) {
-          Box const& bx = mfi.validbox();
-          const auto lo = lbound(bx);
-          const auto hi = ubound(bx);
-	      Array4<Real const> const& vof = ld.tracer.const_array(mfi);
-	      Array4<Real> const& mv = normal[lev].array(mfi);
-          Array4<Real> const& al =  alpha[lev].array(mfi);
-          Vector<Segment> segments;
-		  int totalnodes = 0;
-            for   (int k = lo.z; k <= hi.z; ++k) {
-             for  (int j = lo.y; j <= hi.y; ++j) {
-              for (int i = lo.x; i <= hi.x; ++i) {
-               auto fvol = vof(i,j,k,0);
+                    if (!CELL_IS_FULL(fvol)){
+                        Real   alpha;
+                        XDim3	m, p, cell;
+                        for (int d = 0; d < AMREX_SPACEDIM; d++) {
+                            (&m.x)[d]= mv(i,j,k,d);
+                        }
+                        alpha= al(i,j,k,0);
+                        vof_plane_area_center(&m, alpha, &p);
+                        /* convert the coord. of the center to the global sys*/
+                        for (int dim = 0; dim < AMREX_SPACEDIM; dim++){
+                            (&p.x)[dim] = problo[dim] + dx[dim]*((dim<1?i:dim<2?j:k)+(&p.x)[dim]);
+                            (&cell.x)[dim] = problo[dim] + dx[dim]*((dim<1?i:dim<2?j:k)+Real(0.5));
+                        }
+                        add_segment (cell, dx, alpha, &p, &m, segments, totalnodes, fvol);
 
-               if (!CELL_IS_FULL(fvol)){
-                 Real   alpha;
-                 XDim3	m, p, cell;
-                 for (int d = 0; d < AMREX_SPACEDIM; d++) {
-	               (&m.x)[d]= mv(i,j,k,d);
-	               }
-		 alpha= al(i,j,k,0);
-		         vof_plane_area_center(&m, alpha, &p);
-                 /* convert the coord. of the center to the global sys*/
-                 for (int dim = 0; dim < AMREX_SPACEDIM; dim++){
-                    (&p.x)[dim] = problo[dim] + dx[dim]*((dim<1?i:dim<2?j:k)+(&p.x)[dim]);
-					(&cell.x)[dim] = problo[dim] + dx[dim]*((dim<1?i:dim<2?j:k)+Real(0.5));
-				 }
-		         add_segment (cell, dx, alpha, &p, &m, segments, totalnodes, fvol);
+                        //Print() << " normal direction " <<"("<<i<<","<<j<<","<<k<<")"<<" "<<fvol<<"\n";
 
-                     //Print() << " normal direction " <<"("<<i<<","<<j<<","<<k<<")"<<" "<<fvol<<"\n";
-
-              }
                     }
-                  }
                 }
- //           Print() << " Outside add_interface " << segments.size()<<" "<<totalnodes<<"\n";
+                }
+                }
+                //           Print() << " Outside add_interface " << segments.size()<<" "<<totalnodes<<"\n";
 
-	  std::string zonetitle=("Level_"+std::to_string(lev)+
-	                         "_Box_" +std::to_string(mfi.index())+
-	                         "_Proc_"+std::to_string(myproc));
-	  TecplotFile <<(std::string("ZONE T=")+zonetitle);
-	  TecplotFile <<", DATAPACKING=POINT"<<", NODES="<<totalnodes<<", ELEMENTS="<<segments.size()
-	              <<", ZONETYPE=FEQUADRILATERAL" <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
+                std::string zonetitle=("Level_"+std::to_string(lev)+
+                                       "_Box_" +std::to_string(mfi.index())+
+                                       "_Proc_"+std::to_string(myproc));
+                TecplotFile <<(std::string("ZONE T=")+zonetitle);
+                TecplotFile <<", DATAPACKING=POINT"<<", NODES="<<totalnodes<<", ELEMENTS="<<segments.size()
+                            <<", ZONETYPE=FEQUADRILATERAL" <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
 
 //	  AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
-	  int nn=0;
-	  for (const auto& seg : segments) {
-		for (int in = 0; in < seg.nnodes; in++)
-	       TecplotFile <<seg.node[in].x<<" "<<seg.node[in].y<<" "<<seg.node[in].z<<" "
-	                   <<seg.vof<<" "<<seg.mv.x<<"  "<<seg.mv.y<<"  "<<seg.mv.z<<"  "<<seg.alpha<<"\n";
+                int nn=0;
+                for (const auto& seg : segments) {
+                    for (int in = 0; in < seg.nnodes; in++)
+                        TecplotFile <<seg.node[in].x<<" "<<seg.node[in].y<<" "<<seg.node[in].z<<" "
+                                    <<seg.vof<<" "<<seg.mv.x<<"  "<<seg.mv.y<<"  "<<seg.mv.z<<"  "<<seg.alpha<<"\n";
 
-      }
-	  int inode = 1;
-      for (const auto& seg : segments) {
-         if (seg.nnodes == 4)
-           TecplotFile <<inode<<" "<<inode + 1<<" "<<inode + 2<<" "<<inode + 3<<"\n";
-         else if (seg.nnodes == 3)    /* triangular face */
-           TecplotFile <<inode<<" "<<inode + 1<<" "<<inode + 2<<" "<<inode + 2<<"\n";
-         else
-           TecplotFile <<inode<<" "<<inode + 1<<"\n";
-         inode += seg.nnodes;
-	  }
-	} // end MFIter
-
-    TecplotFile.close();
-
-
-  } // end lev
-
+                }
+                int inode = 1;
+                for (const auto& seg : segments) {
+                    if (seg.nnodes == 4)
+                        TecplotFile <<inode<<" "<<inode + 1<<" "<<inode + 2<<" "<<inode + 3<<"\n";
+                    else if (seg.nnodes == 3)    /* triangular face */
+                        TecplotFile <<inode<<" "<<inode + 1<<" "<<inode + 2<<" "<<inode + 2<<"\n";
+                    else
+                        TecplotFile <<inode<<" "<<inode + 1<<"\n";
+                    inode += seg.nnodes;
+                }
+            } // end MFIter
+        } // end lev
+    } // NFiles
 }
 
 void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
@@ -830,30 +828,32 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
     int myproc = ParallelDescriptor::MyProc();
     int nprocs = ParallelDescriptor::NProcs();
     //amrex::AllPrint() << " Output file at process#" << myproc<<"  " << nprocs << " at time " << time << std::endl;
-    const std::string& tecplotfilename = amrex::Concatenate(m_tecplot_file, nstep)+
-                                            (nprocs>1?("_"+ std::to_string(myproc)+".dat") : ".dat");
+    const std::string& tecplotfilename = amrex::Concatenate(m_tecplot_file, nstep);
 
+    const int nfiles = 1;
 
-    std::ofstream TecplotFile;
-    TecplotFile.open(tecplotfilename.c_str(), std::ios::out);
-    TecplotFile << "TITLE = \"incflow simulation from processer# " << myproc << "\" "<< "\n";
-    //spatial coordinates
-    TecplotFile << (AMREX_SPACEDIM== 2 ? "VARIABLES = \"X\", \"Y\"":"VARIABLES = \"X\", \"Y\", \"Z\"");
-    //output varibles
-    TecplotFile <<", \"F\""<<", \"m_x\""<<", \"m_y\""<<", \"m_z\""<<"\n";
+    for (NFilesIter nfi(nfiles, tecplotfilename, false, true); nfi.ReadyToWrite(); ++nfi)
+    {
+        auto& TecplotFile = (std::ofstream&) nfi.Stream();
 
-    for (int lev = 0; lev <= finest_level; ++lev) {
-        auto& ld = *v_incflo->m_leveldata[lev];
-        Box const& domain  = v_incflo->geom[lev].Domain();
-        auto const& dx     = v_incflo->geom[lev].CellSizeArray();
-        auto const& problo = v_incflo->geom[lev].ProbLoArray();
-        auto const& probhi = v_incflo->geom[lev].ProbHiArray();
-        auto const& ijk_min= domain.smallEnd();
-        auto const& ijk_max= domain.bigEnd();
-        const BoxArray& ba = ld.tracer.boxArray();  //cell-centered multifab
-	int nb = ba.size();
-	const DistributionMapping& dm = ld.tracer.DistributionMap();
-	std::string IJK = "IJK";
+        TecplotFile << "TITLE = \"incflow simulation from processer# " << myproc << "\" "<< "\n";
+        //spatial coordinates
+        TecplotFile << (AMREX_SPACEDIM== 2 ? "VARIABLES = \"X\", \"Y\"":"VARIABLES = \"X\", \"Y\", \"Z\"");
+        //output varibles
+        TecplotFile <<", \"F\""<<", \"m_x\""<<", \"m_y\""<<", \"m_z\""<<"\n";
+
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            auto& ld = *v_incflo->m_leveldata[lev];
+            Box const& domain  = v_incflo->geom[lev].Domain();
+            auto const& dx     = v_incflo->geom[lev].CellSizeArray();
+            auto const& problo = v_incflo->geom[lev].ProbLoArray();
+            auto const& probhi = v_incflo->geom[lev].ProbHiArray();
+            auto const& ijk_min= domain.smallEnd();
+            auto const& ijk_max= domain.bigEnd();
+            const BoxArray& ba = ld.tracer.boxArray();  //cell-centered multifab
+            int nb = ba.size();
+            const DistributionMapping& dm = ld.tracer.DistributionMap();
+            std::string IJK = "IJK";
  //       amrex::Print() << " process#" << myproc<<"  " << ld.tracer.nGrow()<<" " << nb<<"\n";
 //amrex::Print() << " process#" << myproc<<"  " << (IJK[0]+std::string("= "))<<"\n";
     //amrex::Print() << " process#" << myproc<<"  " << dm.size()<<"\n";
@@ -883,85 +883,74 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
 
 		  //for (MFIter mfi(ld.tracer,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
              //Box const& bx = mfi.tilebox();
-	for (MFIter mfi(ld.tracer); mfi.isValid(); ++mfi) {
-          Box const& bx = mfi.validbox();
-          const auto lo = lbound(bx);
-          const auto hi = ubound(bx);
+            for (MFIter mfi(ld.tracer); mfi.isValid(); ++mfi) {
+                Box const& bx = mfi.validbox();
+                const auto lo = lbound(bx);
+                const auto hi = ubound(bx);
 
-          auto const& ijk_min= bx.smallEnd();
-          auto const& ijk_max= bx.bigEnd();
-	  std::string zonetitle=("Level_"+std::to_string(lev)+"_Box_"+std::to_string(mfi.index()));
-	  TecplotFile <<(std::string("ZONE T=")+zonetitle);
-	  for (int dim = 0; dim < AMREX_SPACEDIM; ++dim)
-             TecplotFile <<", "<<(IJK[dim]+std::string("="))<<(ijk_max[dim]-ijk_min[dim]+2);
-	  TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(AMREX_SPACEDIM+1)<<"-"<<7<<"]=CELLCENTERED)"
-		      <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
+                auto const& ijk_min= bx.smallEnd();
+                auto const& ijk_max= bx.bigEnd();
+                std::string zonetitle=("Level_"+std::to_string(lev)+"_Box_"+std::to_string(mfi.index()));
+                TecplotFile <<(std::string("ZONE T=")+zonetitle);
+                for (int dim = 0; dim < AMREX_SPACEDIM; ++dim)
+                    TecplotFile <<", "<<(IJK[dim]+std::string("="))<<(ijk_max[dim]-ijk_min[dim]+2);
+                TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(AMREX_SPACEDIM+1)<<"-"<<7<<"]=CELLCENTERED)"
+                            <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
 
 //	  AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
-	  Array4<Real const> const& tracer = ld.tracer.const_array(mfi);
-	  Array4<Real const> const& mv = normal[lev].const_array(mfi);
+                Array4<Real const> const& tracer = ld.tracer.const_array(mfi);
+                Array4<Real const> const& mv = normal[lev].const_array(mfi);
 
-	  int nn=0;
-	  //write coordinate variables
-	  for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
-                for     (int k = lo.z; k <= hi.z +1; ++k) {
-                  for   (int j = lo.y; j <= hi.y +1; ++j) {
+                int nn=0;
+                //write coordinate variables
+                for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
+                    for (int k = lo.z; k <= hi.z +1; ++k) {
+                    for (int j = lo.y; j <= hi.y +1; ++j) {
                     for (int i = lo.x; i <= hi.x +1; ++i) {
-                      TecplotFile << (problo[dim]+dx[dim]*(dim<1?i:dim<2?j:k))<<" ";
-	 	 	  ++nn;
-	 	 	  if (nn > 100) {
-	 	 		  TecplotFile <<"\n";
-	 	 		  nn=0;
-	 	 	  }
+                        TecplotFile << (problo[dim]+dx[dim]*(dim<1?i:dim<2?j:k))<<" ";
+                        ++nn;
+                        if (nn > 100) {
+                            TecplotFile <<"\n";
+                            nn=0;
+                        }
                     }
-                  }
+                    }
+                    }
+                }//
+
+                for (int k = lo.z; k <= hi.z; ++k) {
+                for (int j = lo.y; j <= hi.y; ++j) {
+                for (int i = lo.x; i <= hi.x; ++i) {
+                    TecplotFile << tracer(i,j,k,0)<<" ";
+                    ++nn;
+                    if (nn > 100) {
+                        TecplotFile <<"\n";
+                        nn=0;
+                    }
                 }
-	   }//
+                }
+                }
 
-          for     (int k = lo.z; k <= hi.z; ++k) {
-            for   (int j = lo.y; j <= hi.y; ++j) {
-              for (int i = lo.x; i <= hi.x; ++i) {
-                TecplotFile << tracer(i,j,k,0)<<" ";
-	 	        ++nn;
-	 	        if (nn > 100) {
-	        	TecplotFile <<"\n";
-	        	nn=0;
-	 	        }
-              }
-            }
-          }
-
-	  //write variables of the normal direction of the interface
-	  for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
-                for     (int k = lo.z; k <= hi.z; ++k) {
-                  for   (int j = lo.y; j <= hi.y; ++j) {
+                //write variables of the normal direction of the interface
+                for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
+                    for (int k = lo.z; k <= hi.z; ++k) {
+                    for (int j = lo.y; j <= hi.y; ++j) {
                     for (int i = lo.x; i <= hi.x; ++i) {
-                      TecplotFile << mv(i,j,k,dim)<<" ";
-	 	 	     ++nn;
-	 	 	  if (nn > 100) {
-	 	 		  TecplotFile <<"\n";
-	 	 		  nn=0;
-	 	 	  }
+                        TecplotFile << mv(i,j,k,dim)<<" ";
+                        ++nn;
+                        if (nn > 100) {
+                            TecplotFile <<"\n";
+                            nn=0;
+                        }
                     }
-                  }
-                }
-	   }//
+                    }
+                    }
+                }//
 
 
-		  TecplotFile <<"\n";
-		} // end MFIter
+                TecplotFile <<"\n";
+            } // end MFIter
 
-//		  }// end box
-//
-//
-//		}
-	} // end lev
-
-
-
-
-
-    TecplotFile.close();
-
-
+        } // end lev
+    }
 }
