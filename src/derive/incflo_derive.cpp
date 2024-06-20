@@ -142,15 +142,19 @@ Real incflo::ComputeKineticEnergy ()
     return 0;
 }
 
-void incflo::ComputeMagVel (int lev, Real /*time*/, MultiFab& magvel, MultiFab const& vel)
+#ifdef AMREX_USE_EB
+void incflo::ComputeMagVel (int lev,
+#else
+void incflo::ComputeMagVel (int /*lev*/,
+#endif
+                            Real /*time*/,
+                            MultiFab& magvel, MultiFab const& vel)
 {
     BL_PROFILE("incflo::ComputeMagVel");
 
 #ifdef AMREX_USE_EB
     auto const& fact = EBFactory(lev);
     auto const& flags_mf = fact.getMultiEBCellFlagFab();
-#else
-    amrex::ignore_unused(lev);
 #endif
 
 #ifdef _OPENMP

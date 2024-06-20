@@ -174,13 +174,11 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ComputeMagVel    (int lev, amrex::Real time, amrex::MultiFab& magvel,
-                           amrex::MultiFab const& vel);
-    void ComputeVorticity (int lev, amrex::Real time, amrex::MultiFab& vort,
-                           amrex::MultiFab const& vel);
+    void ComputeMagVel    (int lev, amrex::Real time, amrex::MultiFab& magvel, amrex::MultiFab const& vel);
+    void ComputeVorticity (int lev, amrex::Real time, amrex::MultiFab&   vort, amrex::MultiFab const& vel);
     void ComputeDivU (amrex::Real time);
     void ComputeDrag ();
-    [[nodiscard]] static amrex::Real ComputeKineticEnergy () ;
+    [[nodiscard]] static amrex::Real ComputeKineticEnergy ();
 
     void DiffFromExact (int lev, amrex::Geometry& lev_geom, amrex::Real time, amrex::Real dt,
                         amrex::MultiFab& error, int soln_comp, int err_comp) const;
