@@ -174,7 +174,7 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ComputeMagVel    (int lev, amrex::Real time, amrex::MultiFab& vort,
+    void ComputeMagVel    (int lev, amrex::Real time, amrex::MultiFab& magvel,
                            amrex::MultiFab const& vel);
     void ComputeVorticity (int lev, amrex::Real time, amrex::MultiFab& vort,
                            amrex::MultiFab const& vel);
