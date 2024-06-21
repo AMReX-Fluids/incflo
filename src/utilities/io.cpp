@@ -188,17 +188,21 @@ void incflo::ReadCheckpointFile()
                                   Geom(lev).isPeriodic()));
     }
 
-    for(int lev = 0; lev <= finest_level; ++lev)
-    {
-        // read in level 'lev' BoxArray from Header
-        BoxArray ba;
-        ba.readFrom(is);
-        GotoNextLine(is);
+    if ( m_regrid_on_restart ) {
+        MakeNewGrids(m_cur_time);
+    } else {
+        for(int lev = 0; lev <= finest_level; ++lev)
+        {
+            // read in level 'lev' BoxArray from Header
+            BoxArray ba;
+            ba.readFrom(is);
+            GotoNextLine(is);
 
-        // Create distribution mapping
-        DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
+            // Create distribution mapping
+            DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
 
-        MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
+            MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
+        }
     }
 
     /***************************************************************************
@@ -386,6 +390,9 @@ void incflo::WritePlotFile()
 
     // Apparent viscosity
     if(m_plt_eta) ++ncomp;
+
+    // Magnitude of velocity
+    if(m_plt_magvel) ++ncomp;
 
     // Vorticity
     if(m_plt_vort) ++ncomp;
@@ -584,6 +591,15 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("eta");
         ++icomp;
     }
+    if (m_plt_magvel) {
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            MultiFab magvel(mf[lev], amrex::make_alias, icomp, 1);
+            ComputeMagVel(lev, m_cur_time, magvel, m_leveldata[lev]->velocity);
+        }
+        pltscaVarsName.push_back("magvel");
+        ++icomp;
+    }
+
     if (m_plt_vort) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             (m_leveldata[lev]->velocity).FillBoundary(geom[lev].periodicity());

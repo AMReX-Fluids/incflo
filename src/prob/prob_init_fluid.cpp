@@ -100,7 +100,7 @@ void incflo::prob_init_fluid (int lev)
                                    ld.tracer.array(mfi),
                                    domain, dx, problo, probhi);
         }
-        else if (12 == m_probtype)
+        else if (12 == m_probtype || 122 == m_probtype)
         {
             init_periodic_tracer(vbx, gbx,
                                  ld.velocity.array(mfi),
@@ -816,30 +816,57 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
 
 void incflo::init_periodic_tracer (Box const& vbx, Box const& /*gbx*/,
                                    Array4<Real> const& vel,
-                                   Array4<Real> const& /*density*/,
+                                   Array4<Real> const& density,
                                    Array4<Real> const& tracer,
                                    Box const& /*domain*/,
                                    GpuArray<Real, AMREX_SPACEDIM> const& dx,
                                    GpuArray<Real, AMREX_SPACEDIM> const& problo,
-                                   GpuArray<Real, AMREX_SPACEDIM> const& probhi)
+                                   GpuArray<Real, AMREX_SPACEDIM> const& probhi) const
 {
     Real L = probhi[0]-problo[0];
     Real C = Real(2.0)*Real(3.1415926535897932) / L;
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+
+    if (m_probtype == 12)
     {
-        constexpr Real A = Real(1.0);
-        Real x = Real(i+0.5)*dx[0];
-        Real y = Real(j+0.5)*dx[1];
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            constexpr Real A = Real(1.0);
+            Real x = Real(i+0.5)*dx[0];
+            Real y = Real(j+0.5)*dx[1];
 #if (AMREX_SPACEDIM == 3)
-        Real z = Real(k+0.5)*dx[2];
+            Real z = Real(k+0.5)*dx[2];
 #else
-        Real z = 0.0_rt;
+            Real z = 0.0_rt;
 #endif
-        AMREX_D_TERM(vel(i,j,k,0) = Real(1.0);,
-                     vel(i,j,k,1) = Real(0.1)*(std::sin(C*(x+z) - Real(0.00042)) + Real(1.0)) * std::exp(y);,
-                     vel(i,j,k,2) = Real(0.1)*(std::sin(C*(x+y) - Real(0.00042)) + Real(1.0)) * std::exp(z););
-        tracer(i,j,k) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
-    });
+            AMREX_D_TERM(vel(i,j,k,0) = Real(1.0);,
+                         vel(i,j,k,1) = Real(0.1)*(std::sin(C*(x+z) - Real(0.00042)) + Real(1.0)) * std::exp(y);,
+                         vel(i,j,k,2) = Real(0.1)*(std::sin(C*(x+y) - Real(0.00042)) + Real(1.0)) * std::exp(z););
+            tracer(i,j,k,0) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
+        });
+    }
+    else if (m_probtype == 122)
+    {
+        Real B = Real(0.1);
+        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            constexpr Real A = Real(1.0);
+            Real x = Real(i+0.5)*dx[0];
+            Real y = Real(j+0.5)*dx[1];
+#if (AMREX_SPACEDIM == 3)
+            Real z = Real(k+0.5)*dx[2];
+#else
+            Real z = 0.0_rt;
+#endif
+            AMREX_D_TERM(vel(i,j,k,0) = Real(1.0);,
+                         vel(i,j,k,1) = Real(0.1)*(std::sin(C*(x+z) - Real(0.00042)) + Real(1.0)) * std::exp(y);,
+                         vel(i,j,k,2) = Real(0.1)*(std::sin(C*(x+y) - Real(0.00042)) + Real(1.0)) * std::exp(z););
+            density(i,j,k)  = A + B*(x + y + z);
+            tracer(i,j,k,0) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
+            tracer(i,j,k,1) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
+        });
+    } else {
+        Abort("Unknow periodic tracer probtype");
+    }
 }
 
 void incflo::init_double_shear_layer (Box const& vbx, Box const& /*gbx*/,

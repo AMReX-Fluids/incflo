@@ -69,6 +69,34 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
         }
     }
 
+    Vector<MultiFab*> vel;
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        vel.push_back(&(m_leveldata[lev]->velocity));
+    }
+
+    // Cell-centered divergence constraint source term, which is always zero for now
+    Vector<MultiFab* > Source(finest_level+1, nullptr);
+
+    bool set_inflow_bc = !proj_for_small_dt && !incremental;
+    ApplyNodalProjection(density, vel, Source, time, scaling_factor,
+                         incremental, set_inflow_bc);
+
+    // Define "vel" to be U^{n+1} rather than (U^{n+1}-U^n)
+    if (proj_for_small_dt || incremental)
+    {
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            MultiFab::Add(m_leveldata[lev]->velocity,
+                          m_leveldata[lev]->velocity_o, 0, 0, AMREX_SPACEDIM, 0);
+        }
+    }
+}
+
+void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
+                                   Vector<MultiFab      *>        vel,
+                                   Vector<MultiFab      *> const& /*divu_Source*/, // only incompressible for now
+                                   Real time, Real scaling_factor, bool incremental,
+                                   bool set_inflow_bc)
+{
     Vector<amrex::MultiFab> sigma(finest_level+1);
     if (!m_constant_density)
     {
@@ -97,7 +125,6 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
     auto bclo = get_nodal_projection_bc(Orientation::low);
     auto bchi = get_nodal_projection_bc(Orientation::high);
 
-    Vector<MultiFab*> vel;
     for (int lev = 0; lev <= finest_level; ++lev) {
 #ifdef AMREX_USE_EB
         if (m_eb_flow.enabled) {
@@ -106,9 +133,8 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
            set_eb_tracer(lev, time, *get_tracer_eb()[lev], 1);
         }
 #endif
-        vel.push_back(&(m_leveldata[lev]->velocity));
         vel[lev]->setBndry(0.0);
-        if (!proj_for_small_dt && !incremental) {
+        if (set_inflow_bc) {
             // Only the inflow boundary gets set here
             IntVect nghost(1);
             amrex::Vector<amrex::BCRec> inflow_bcr;
@@ -166,15 +192,6 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
 #endif
 
     nodal_projector->project(m_nodal_mg_rtol, m_nodal_mg_atol);
-
-    // Define "vel" to be U^{n+1} rather than (U^{n+1}-U^n)
-    if (proj_for_small_dt || incremental)
-    {
-        for (int lev = 0; lev <= finest_level; ++lev) {
-            MultiFab::Add(m_leveldata[lev]->velocity,
-                          m_leveldata[lev]->velocity_o, 0, 0, AMREX_SPACEDIM, 0);
-        }
-    }
 
     // Get phi and fluxes
     auto phi = nodal_projector->getPhi();

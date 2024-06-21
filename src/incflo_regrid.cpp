@@ -27,11 +27,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     std::unique_ptr<FabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
 #endif
     std::unique_ptr<LevelData> new_leveldata
-        (new LevelData(ba, dm, *new_fact, m_ntrac, nghost_state(),
-                       m_advection_type,
-                       m_diff_type==DiffusionType::Implicit,
-                       use_tensor_correction,
-                       m_advect_tracer));
+        (new LevelData(ba, dm, *new_fact, this));
     fillcoarsepatch_velocity(lev, time, new_leveldata->velocity, 0);
     fillcoarsepatch_density(lev, time, new_leveldata->density, 0);
     if (m_ntrac > 0) {
@@ -81,11 +77,7 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
     std::unique_ptr<FabFactory<FArrayBox> > new_fact(new FArrayBoxFactory());
 #endif
     std::unique_ptr<LevelData> new_leveldata
-        (new LevelData(ba, dm, *new_fact, m_ntrac, nghost_state(),
-                       m_advection_type,
-                       m_diff_type==DiffusionType::Implicit,
-                       use_tensor_correction,
-                       m_advect_tracer));
+        (new LevelData(ba, dm, *new_fact, this));
     fillpatch_velocity(lev, time, new_leveldata->velocity, 0);
     fillpatch_density(lev, time, new_leveldata->density, 0);
     if (m_ntrac > 0) {
