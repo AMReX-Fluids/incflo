@@ -28,7 +28,7 @@ void incflo::prob_set_BC_MF (Orientation const& ori, Box const& bx,
 
         Orientation::Side side = ori.faceDir();
         if (side == Orientation::low) {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 for ( int n = 0; n < ncomp; n++ ){
                     if (direction == 0) {
@@ -55,7 +55,7 @@ void incflo::prob_set_BC_MF (Orientation const& ori, Box const& bx,
                 }
             });
         } else {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 for ( int n = 0; n < ncomp; n++ ){
                     if (direction == 0) {
@@ -114,7 +114,7 @@ void incflo::prob_set_MAC_robinBCs (Orientation const& ori, Box const& bx,
 
         Orientation::Side side = ori.faceDir();
         if (side == Orientation::low) {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 robin_f(i,j,k) = 0.;
 
@@ -147,7 +147,7 @@ void incflo::prob_set_MAC_robinBCs (Orientation const& ori, Box const& bx,
                 }
             });
         } else {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 robin_f(i,j,k) = 0.;
 
@@ -213,7 +213,7 @@ void incflo::prob_set_diffusion_robinBCs (Orientation const& ori, Box const& bx,
 
         Orientation::Side side = ori.faceDir();
         if (side == Orientation::low) {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 if (direction == 0) {
                     if (i <= half_num_cells) {
@@ -250,7 +250,7 @@ void incflo::prob_set_diffusion_robinBCs (Orientation const& ori, Box const& bx,
                 }
             });
         } else {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 robin_f(i,j,k,0) = 0.;
 

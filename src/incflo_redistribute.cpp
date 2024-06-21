@@ -79,8 +79,7 @@ incflo::redistribute_term ( MFIter const& mfi,
         // This is scratch space if calling StateRedistribute
         //  but is used as the weights (here set to 1) if calling
         //  FluxRedistribute
-        amrex::ParallelFor(Box(scratch),
-        [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(Box(scratch), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             scratch(i,j,k) = 1.;
         });
@@ -95,8 +94,7 @@ incflo::redistribute_term ( MFIter const& mfi,
     }
     else
     {
-        amrex::ParallelFor(bx, ncomp,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        ParallelFor(bx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             out(i,j,k,n) = in(i,j,k,n);
         });

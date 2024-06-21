@@ -19,7 +19,7 @@ void incflo::compute_tra_forces (Vector<MultiFab*> const& tra_forces,
                 Array4<Real>       const& tra_f = tra_forces[lev]->array(mfi);
                 Array4<Real const> const& rho   =    density[lev]->const_array(mfi);
 
-                amrex::ParallelFor(bx, m_ntrac,
+                ParallelFor(bx, m_ntrac,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
                     // For now we don't have any external forces on the scalars
@@ -75,7 +75,7 @@ void incflo::compute_vel_forces_on_level (int lev,
                 //      first tracer rather than density
                 Array4<Real const> const& tra_o = tracer_old.const_array(mfi);
                 Array4<Real const> const& tra_n = tracer_new.const_array(mfi);
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     int n = 0; // Potential temperature
 
@@ -96,7 +96,7 @@ void incflo::compute_vel_forces_on_level (int lev,
 
             } else if (m_probtype == 16) {
                 Real Re = 1./m_mu;  // Note this assumes you are running exactly the problem set up, with U = 1 and L = 1 and rho = 1.
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     Real rhoinv = Real(1.0)/rho(i,j,k);
 
@@ -131,7 +131,7 @@ void incflo::compute_vel_forces_on_level (int lev,
                     vel_f(i,j,k,1) += 8.0 / Re * (24.0 * capF + 2.0 * fp * gpp + fppp * g) + 64.0 * (capF2 * capG1 - g * gp * capF1);
                 });
             } else {
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     Real rhoinv = Real(1.0)/rho(i,j,k);
 

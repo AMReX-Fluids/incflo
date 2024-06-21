@@ -316,6 +316,7 @@ public:
 
     static bool SteadyStateReached ();
 
+    void InitialPressureProjection ();
 
 private:
 
@@ -920,7 +921,6 @@ private:
     void ReadIOParameters ();
     void ResizeArrays (); // Resize arrays to fit (up to) max_level + 1 AMR levels
     void InitialProjection ();
-    void InitialPressureProjection ();
     void InitialIterations ();
 #ifdef AMREX_USE_EB
     void InitialRedistribution ();

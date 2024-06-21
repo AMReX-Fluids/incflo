@@ -399,7 +399,7 @@ void incflo::InitialPressureProjection()
                 Array4<Real const> const& rho_arr = ld.density.const_array(mfi);
                 Array4<Real      > const& vel_arr = vel[lev].array(mfi);
 
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     Real rhofac = (rho_arr(i,j,k) - rho0) / rho_arr(i,j,k);
                     AMREX_D_TERM(vel_arr(i,j,k,0) *= rhofac;,
