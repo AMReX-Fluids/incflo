@@ -384,10 +384,31 @@ void incflo::InitialPressureProjection()
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel[lev].define(grids[lev], dmap[lev], AMREX_SPACEDIM, nGhost,
                         MFInfo(), *m_factory[lev]);
+
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
             vel[lev].setVal(m_gravity[idim], idim, 1, 1);
         }
-    }
+
+        auto& ld = *m_leveldata[lev];
+
+        Real rho0 = m_ro_0;
+        if (rho0 > 0.0) {
+            for (MFIter mfi(ld.density,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                Box const& bx = mfi.growntilebox(1);
+                Array4<Real const> const& rho_arr = ld.density.const_array(mfi);
+                Array4<Real      > const& vel_arr = vel[lev].array(mfi);
+
+                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    Real rhofac = (rho_arr(i,j,k) - rho0) / rho_arr(i,j,k);
+                    AMREX_D_TERM(vel_arr(i,j,k,0) *= rhofac;,
+                                 vel_arr(i,j,k,1) *= rhofac;,
+                                 vel_arr(i,j,k,2) *= rhofac;);
+                });
+            } // mfi
+        } // rho0
+    } // lev
 
     // Cell-centered divergence condition source term
     // Always zero this here
