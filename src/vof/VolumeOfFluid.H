@@ -27,12 +27,6 @@ public:
 private:
 incflo* v_incflo; //incflo object
 int finest_level;
-#if AMREX_SPACEDIM == 2
-# define F(x,y,z) f[x][y]
-#else
-# define F(x,y,z) f[x][y][z]
-#endif
-
 void tracer_vof_update(amrex::Vector<amrex::MultiFab*> const& tracer);
 
 };
