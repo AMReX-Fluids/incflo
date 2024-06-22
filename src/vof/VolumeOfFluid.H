@@ -16,7 +16,7 @@ public:
                               AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
                                            amrex::Vector<amrex::MultiFab const*> const& v_mac,
                                            amrex::Vector<amrex::MultiFab const*> const& w_mac),
-		               amrex::Real dt);
+                       amrex::Real dt);
     void write_tecplot_surface(amrex::Real time, int nstep);
     void WriteTecPlotFile     (amrex::Real time, int nstep);
 

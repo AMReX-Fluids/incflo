@@ -201,12 +201,12 @@ public:
                            amrex::Real dt_diff);
 
     ///////////////////////////////////////////////////////////////////////////
-	//
-	//  tacer advection by VOF method
-	//
-	////////////////////////////////////////////////////////////////////////////
+    //
+    //  tacer advection by VOF method
+    //
+    ////////////////////////////////////////////////////////////////////////////
 
-    void tracer_vof_advection (amrex::Vector<amrex::MultiFab*> const& tracer, 
+    void tracer_vof_advection (amrex::Vector<amrex::MultiFab*> const& tracer,
                            AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
                                         amrex::Vector<amrex::MultiFab const*> const& v_mac,
                                         amrex::Vector<amrex::MultiFab const*> const& w_mac));
@@ -670,8 +670,8 @@ private:
 
     std::unique_ptr<DiffusionTensorOp> m_diffusion_tensor_op;
     std::unique_ptr<DiffusionScalarOp> m_diffusion_scalar_op;
-	
-	//vof class pointer
+
+    //vof class pointer
     std::unique_ptr<VolumeOfFluid> p_volume_of_fluid;
     //
     // end of member variables
@@ -752,8 +752,8 @@ private:
 
     DiffusionTensorOp* get_diffusion_tensor_op ();
     DiffusionScalarOp* get_diffusion_scalar_op ();
-	
-	VolumeOfFluid* get_volume_of_fluid ();
+
+    VolumeOfFluid* get_volume_of_fluid ();
 
     amrex::Vector<amrex::MultiFab*> get_velocity_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_velocity_new () noexcept;
