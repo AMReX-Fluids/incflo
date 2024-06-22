@@ -188,17 +188,21 @@ void incflo::ReadCheckpointFile()
                                   Geom(lev).isPeriodic()));
     }
 
-    for(int lev = 0; lev <= finest_level; ++lev)
-    {
-        // read in level 'lev' BoxArray from Header
-        BoxArray ba;
-        ba.readFrom(is);
-        GotoNextLine(is);
+    if ( m_regrid_on_restart ) {
+        MakeNewGrids(m_cur_time);
+    } else {
+        for(int lev = 0; lev <= finest_level; ++lev)
+        {
+            // read in level 'lev' BoxArray from Header
+            BoxArray ba;
+            ba.readFrom(is);
+            GotoNextLine(is);
 
-        // Create distribution mapping
-        DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
+            // Create distribution mapping
+            DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
 
-        MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
+            MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
+        }
     }
 
     /***************************************************************************
@@ -387,6 +391,9 @@ void incflo::WritePlotFile()
     // Apparent viscosity
     if(m_plt_eta) ++ncomp;
 
+    // Magnitude of velocity
+    if(m_plt_magvel) ++ncomp;
+
     // Vorticity
     if(m_plt_vort) ++ncomp;
 
@@ -442,6 +449,7 @@ void incflo::WritePlotFile()
     if (m_plt_gpx) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->gp, 0, icomp, 1, 0);
+            mf[lev].plus(m_gp0[0],icomp,1,0);
         }
         pltscaVarsName.push_back("gpx");
         ++icomp;
@@ -449,6 +457,7 @@ void incflo::WritePlotFile()
     if (m_plt_gpy) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->gp, 1, icomp, 1, 0);
+            mf[lev].plus(m_gp0[1],icomp,1,0);
         }
         pltscaVarsName.push_back("gpy");
         ++icomp;
@@ -457,6 +466,7 @@ void incflo::WritePlotFile()
     if (m_plt_gpz) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->gp, 2, icomp, 1, 0);
+            mf[lev].plus(m_gp0[2],icomp,1,0);
         }
         pltscaVarsName.push_back("gpz");
         ++icomp;
@@ -584,6 +594,15 @@ void incflo::WritePlotFile()
         pltscaVarsName.push_back("eta");
         ++icomp;
     }
+    if (m_plt_magvel) {
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            MultiFab magvel(mf[lev], amrex::make_alias, icomp, 1);
+            ComputeMagVel(lev, m_cur_time, magvel, m_leveldata[lev]->velocity);
+        }
+        pltscaVarsName.push_back("magvel");
+        ++icomp;
+    }
+
     if (m_plt_vort) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             (m_leveldata[lev]->velocity).FillBoundary(geom[lev].periodicity());

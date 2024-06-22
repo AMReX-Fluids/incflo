@@ -100,7 +100,7 @@ void incflo::prob_init_fluid (int lev)
                                    ld.tracer.array(mfi),
                                    domain, dx, problo, probhi);
         }
-        else if (12 == m_probtype)
+        else if (12 == m_probtype || 122 == m_probtype)
         {
             init_periodic_tracer(vbx, gbx,
                                  ld.velocity.array(mfi),
@@ -208,7 +208,7 @@ void incflo::init_rotating_flow (Box const& vbx, Box const& /*gbx*/,
                                  GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
                                  GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real x = Real(i+0.5)*dx[0] - 0.5;
         Real y = Real(j+0.5)*dx[1] - 0.5;
@@ -252,7 +252,7 @@ void incflo::init_taylor_green (Box const& vbx, Box const& /*gbx*/,
                                 GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
                                 GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real x = Real(i+0.5)*dx[0];
         Real y = Real(j+0.5)*dx[1];
@@ -274,7 +274,7 @@ void incflo::init_taylor_green3d (Box const& vbx, Box const& /*gbx*/,
                                   GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
                                   GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real x = Real(i+0.5)*dx[0];
         Real y = Real(j+0.5)*dx[1];
@@ -299,7 +299,7 @@ void incflo::init_taylor_vortex (Box const& vbx, Box const& /*gbx*/,
                                  GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
                                  GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real x = Real(i+0.5)*dx[0];
         Real y = Real(j+0.5)*dx[1];
@@ -324,7 +324,7 @@ void incflo::init_vortex_in_sphere (Box const& vbx, Box const& /*gbx*/,
                                GpuArray<Real, AMREX_SPACEDIM> const& problo,
                                GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real x = problo[0] + Real(i+0.5)*dx[0];
         Real y = problo[1] + Real(j+0.5)*dx[1];
@@ -386,7 +386,7 @@ void incflo::init_flow_in_box (Box const& vbx, Box const& /*gbx*/,
 #if (AMREX_SPACEDIM == 3)
     if (periodic_dir == 0)
     {
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real y = Real(j+0.5)*dx[1]*(yhi-ylo) + ylo;
             Real z = Real(k+0.5)*dx[2]*(zhi-zlo) + zlo;
@@ -401,7 +401,7 @@ void incflo::init_flow_in_box (Box const& vbx, Box const& /*gbx*/,
         });
     } else if (periodic_dir == 1)
     {
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real x = Real(i+0.5)*dx[0]*(xhi-xlo) + xlo;
             Real z = Real(k+0.5)*dx[2]*(zhi-zlo) + zlo;
@@ -417,7 +417,7 @@ void incflo::init_flow_in_box (Box const& vbx, Box const& /*gbx*/,
     } else if (periodic_dir == 2)
 #endif
     {
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real x = Real(i+0.5)*dx[0]*(xhi-xlo) + xlo;
             Real y = Real(j+0.5)*dx[1]*(yhi-ylo) + ylo;
@@ -450,7 +450,7 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
 {
 
 #if (AMREX_SPACEDIM == 2)
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         vel(i,j,k,0) = 1.;
         vel(i,j,k,1) = 0.5;
@@ -479,7 +479,7 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
     });
 
 #elif (AMREX_SPACEDIM == 3)
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         vel(i,j,k,0) = 1.;
         vel(i,j,k,1) = 0.5;
@@ -522,7 +522,7 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
                                           GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
 
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real x = (i+0.5)*dx[0];
         Real y = (j+0.5)*dx[1];
@@ -557,7 +557,7 @@ void incflo::init_couette (Box const& vbx, Box const& /*gbx*/,
                            GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
     Real num_cells_y = static_cast<Real>(domain.length(1));
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real y = Real(j+0.5) / num_cells_y;
         AMREX_D_TERM(vel(i,j,k,0) *= (y-Real(0.5));,
@@ -582,7 +582,7 @@ void incflo::init_channel_slant (Box const& vbx, Box const& /*gbx*/,
     ParmParse pp("cylinder");
     pp.get("direction",  direction);
 
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         if (density(i,j,k)>0) {
 
@@ -630,7 +630,7 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& /*gbx*/,
     const Real L_x    = probhi[0] - problo[0];
 
 #if (AMREX_SPACEDIM == 2)
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         vel(i,j,k,0) = Real(0.0);
         vel(i,j,k,1) = Real(0.0);
@@ -648,7 +648,7 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& /*gbx*/,
 #elif (AMREX_SPACEDIM == 3)
 
     const Real splity = Real(0.5)*(problo[1] + probhi[1]);
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         vel(i,j,k,0) = Real(0.0);
         vel(i,j,k,1) = Real(0.0);
@@ -678,7 +678,7 @@ void incflo::init_tuscan (Box const& vbx, Box const& /*gbx*/,
 
 {
     int half_num_cells = domain.length(AMREX_SPACEDIM-1) / 2;
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         AMREX_D_TERM(vel(i,j,k,0) = Real(0.0);,
                      vel(i,j,k,1) = Real(0.0);,
@@ -710,7 +710,7 @@ void incflo::init_jump (Box const& vbx, Box const& /*gbx*/,
     }
 
     int half_num_cells = domain.length(direction) / 2;
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         if (direction == 0) {
             if (i <= half_num_cells) {
@@ -747,7 +747,7 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
 
     if (111 == m_probtype)
     {
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             vel(i,j,k,0) = 0.0;
             vel(i,j,k,1) = 0.0;
@@ -772,7 +772,7 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
     }
 #if (AMREX_SPACEDIM == 3)
     else if (112 == m_probtype) {
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             vel(i,j,k,0) = Real(0.0);
             vel(i,j,k,1) = Real(0.0);
@@ -792,7 +792,7 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
                 tracer(i,j,k,0) = Real(0.01);
         });
     } else if (113 == m_probtype) {
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             vel(i,j,k,0) = 0.0;
             vel(i,j,k,1) = 0.0;
@@ -816,30 +816,57 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
 
 void incflo::init_periodic_tracer (Box const& vbx, Box const& /*gbx*/,
                                    Array4<Real> const& vel,
-                                   Array4<Real> const& /*density*/,
+                                   Array4<Real> const& density,
                                    Array4<Real> const& tracer,
                                    Box const& /*domain*/,
                                    GpuArray<Real, AMREX_SPACEDIM> const& dx,
                                    GpuArray<Real, AMREX_SPACEDIM> const& problo,
-                                   GpuArray<Real, AMREX_SPACEDIM> const& probhi)
+                                   GpuArray<Real, AMREX_SPACEDIM> const& probhi) const
 {
     Real L = probhi[0]-problo[0];
     Real C = Real(2.0)*Real(3.1415926535897932) / L;
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+
+    if (m_probtype == 12)
     {
-        constexpr Real A = Real(1.0);
-        Real x = Real(i+0.5)*dx[0];
-        Real y = Real(j+0.5)*dx[1];
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            constexpr Real A = Real(1.0);
+            Real x = Real(i+0.5)*dx[0];
+            Real y = Real(j+0.5)*dx[1];
 #if (AMREX_SPACEDIM == 3)
-        Real z = Real(k+0.5)*dx[2];
+            Real z = Real(k+0.5)*dx[2];
 #else
-        Real z = 0.0_rt;
+            Real z = 0.0_rt;
 #endif
-        AMREX_D_TERM(vel(i,j,k,0) = Real(1.0);,
-                     vel(i,j,k,1) = Real(0.1)*(std::sin(C*(x+z) - Real(0.00042)) + Real(1.0)) * std::exp(y);,
-                     vel(i,j,k,2) = Real(0.1)*(std::sin(C*(x+y) - Real(0.00042)) + Real(1.0)) * std::exp(z););
-        tracer(i,j,k) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
-    });
+            AMREX_D_TERM(vel(i,j,k,0) = Real(1.0);,
+                         vel(i,j,k,1) = Real(0.1)*(std::sin(C*(x+z) - Real(0.00042)) + Real(1.0)) * std::exp(y);,
+                         vel(i,j,k,2) = Real(0.1)*(std::sin(C*(x+y) - Real(0.00042)) + Real(1.0)) * std::exp(z););
+            tracer(i,j,k,0) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
+        });
+    }
+    else if (m_probtype == 122)
+    {
+        Real B = Real(0.1);
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            constexpr Real A = Real(1.0);
+            Real x = Real(i+0.5)*dx[0];
+            Real y = Real(j+0.5)*dx[1];
+#if (AMREX_SPACEDIM == 3)
+            Real z = Real(k+0.5)*dx[2];
+#else
+            Real z = 0.0_rt;
+#endif
+            AMREX_D_TERM(vel(i,j,k,0) = Real(1.0);,
+                         vel(i,j,k,1) = Real(0.1)*(std::sin(C*(x+z) - Real(0.00042)) + Real(1.0)) * std::exp(y);,
+                         vel(i,j,k,2) = Real(0.1)*(std::sin(C*(x+y) - Real(0.00042)) + Real(1.0)) * std::exp(z););
+            density(i,j,k)  = A + B*(x + y + z);
+            tracer(i,j,k,0) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
+            tracer(i,j,k,1) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
+        });
+    } else {
+        Abort("Unknow periodic tracer probtype");
+    }
 }
 
 void incflo::init_double_shear_layer (Box const& vbx, Box const& /*gbx*/,
@@ -856,7 +883,7 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& /*gbx*/,
     {
         constexpr Real m_fourth = Real(0.25);
         constexpr Real m_half   = Real(0.5);
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real x = Real(i+0.5) * dx[0];
             Real y = Real(j+0.5) * dx[1];
@@ -876,7 +903,7 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& /*gbx*/,
     else if (22 == m_probtype)
     {
         constexpr Real m_half = Real(0.5);
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real y = Real(j+0.5) * dx[1];
             Real z = Real(k+0.5) * dx[2];
@@ -894,7 +921,7 @@ void incflo::init_double_shear_layer (Box const& vbx, Box const& /*gbx*/,
     else if (23 == m_probtype)
     {
         constexpr Real m_half = Real(0.5);
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real x = Real(i+0.5) * dx[0];
             Real z = Real(k+0.5) * dx[2];
@@ -937,7 +964,7 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
     if (31 == m_probtype)
     {
         Real u = m_ic_u;
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real y = Real(j+0.5)*dyinv;
             AMREX_D_TERM(vel(i,j,k,0) = Real(6.0) * u * y * (Real(1.0)-y);,
@@ -956,7 +983,7 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
     else if (311 == m_probtype)
     {
         Real u = m_ic_u;
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real z = Real(k+0.5)*dzinv;
             AMREX_D_TERM(vel(i,j,k,0) = Real(6.0) * u * z * (Real(1.0)-z);,
@@ -974,7 +1001,7 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
     }
     else if (41 == m_probtype)
     {
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real z = Real(k+0.5)*dzinv;
             AMREX_D_TERM(vel(i,j,k,0) = Real(0.5)*z;,
@@ -993,7 +1020,7 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
     else if (32 == m_probtype)
     {
         Real v = m_ic_v;
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real z = Real(k+0.5)*dzinv;
             AMREX_D_TERM(vel(i,j,k,0) = Real(0.0);,
@@ -1012,7 +1039,7 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
     else if (322 == m_probtype)
     {
         Real v = m_ic_v;
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real x = Real(i+0.5)*dxinv;
             AMREX_D_TERM(vel(i,j,k,0) = Real(0.0);,
@@ -1033,7 +1060,7 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
 #if (AMREX_SPACEDIM == 3)
         Real w = m_ic_w;
 #endif
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
 #if (AMREX_SPACEDIM == 3)
             Real x = Real(i+0.5)*dxinv;
@@ -1056,7 +1083,7 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
 #if (AMREX_SPACEDIM == 3)
         Real w = m_ic_w;
 #endif
-        amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
 #if (AMREX_SPACEDIM == 3)
             Real y = Real(j+0.5)*dyinv;
@@ -1089,7 +1116,7 @@ void incflo::init_burggraf (Box const& vbx, Box const& /*gbx*/,
                             GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
                             GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
-    amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         Real x = Real(i+0.5)*dx[0];
         Real y = Real(j+0.5)*dx[1];

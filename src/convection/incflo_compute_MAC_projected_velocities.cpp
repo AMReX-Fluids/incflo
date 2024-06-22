@@ -36,7 +36,7 @@ incflo::compute_MAC_projected_velocities (
                     Array4<Real const> const& rho      = density[lev]->array(mfi);
                     Array4<Real const> const& divtau   = ld.divtau_o.const_array(mfi);
                     if (m_advect_momentum) {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel_f(i,j,k,0) += divtau(i,j,k,0)/rho(i,j,k);,
                                          vel_f(i,j,k,1) += divtau(i,j,k,1)/rho(i,j,k);,
@@ -44,7 +44,7 @@ incflo::compute_MAC_projected_velocities (
                         });
                     }
                     else {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel_f(i,j,k,0) += divtau(i,j,k,0);,
                                          vel_f(i,j,k,1) += divtau(i,j,k,1);,
@@ -80,7 +80,7 @@ incflo::compute_MAC_projected_velocities (
         EB_interp_CellCentroid_to_FaceCentroid (*density[lev], GetArrOfPtrs(inv_rho[lev]),
                                                 0, 0, 1, geom[lev], get_density_bcrec());
 #else
-        amrex::average_cellcenter_to_face(GetArrOfPtrs(inv_rho[lev]), *density[lev], geom[lev]);
+        average_cellcenter_to_face(GetArrOfPtrs(inv_rho[lev]), *density[lev], geom[lev]);
 #endif
 
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {

@@ -69,8 +69,7 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
             Array4<Real const> const& rho = m_leveldata[levc]->density.const_array(mfi);
             Real rhoerr = tag_rho ? rhoerr_v[levc]: std::numeric_limits<Real>::max();
             Real gradrhoerr = tag_gradrho ? gradrhoerr_v[levc] : std::numeric_limits<Real>::max();
-            amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 if (tag_rho && rho(i,j,k) > rhoerr) {
                     tag(i,j,k) = tagval;
@@ -105,8 +104,7 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
 
 #if (AMREX_SPACEDIM == 2)
 
-            amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                  Real x = problo[0] + (i+0.5)*l_dx;
                  Real y = problo[1] + (j+0.5)*l_dy;
@@ -122,8 +120,7 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
             Real zlo = tag_region_lo[2];
             Real zhi = tag_region_hi[2];
 
-            amrex::ParallelFor(bx,
-            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                  Real x = problo[0] + Real(i+0.5)*l_dx;
                  Real y = problo[1] + Real(j+0.5)*l_dy;
@@ -189,7 +186,7 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
             auto const&  mf_arr = mf->const_array(mfi);
             auto const& tag_arr = tags.array(mfi);
 
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 if (mf_arr(i,j,k) > 0) {
                     tag_arr(i,j,k) = tagval;

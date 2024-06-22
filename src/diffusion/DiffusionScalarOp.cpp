@@ -260,8 +260,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
                     Array4<Real> const& rhs_a = rhs[lev].array(mfi);
                     Array4<Real const> const& tra_a = tracer[lev]->const_array(mfi,comp);
                     Array4<Real const> const& rho_a = density[lev]->const_array(mfi);
-                    amrex::ParallelFor(bx,
-                    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         rhs_a(i,j,k) = rho_a(i,j,k) * tra_a(i,j,k);
                     });
@@ -412,8 +411,7 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
                 Array4<Real> const& rhs_a = rhs[lev].array(mfi);
                 Array4<Real const> const& vel_a = vel[lev]->const_array(mfi,comp);
                 Array4<Real const> const& rho_a = density[lev]->const_array(mfi);
-                amrex::ParallelFor(bx,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     rhs_a(i,j,k) = rho_a(i,j,k) * vel_a(i,j,k);
                 });
@@ -474,7 +472,6 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
 
 void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                                       Vector<MultiFab const*> const& a_scalar,
-                                      Vector<MultiFab const*> const& /*a_density*/,
                                       Vector<MultiFab const*> const& a_eta)
 {
     BL_PROFILE("DiffusionScalarOp::compute_laps");
@@ -715,8 +712,7 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
                 Box const& bx = mfi.tilebox();
                 Array4<Real> const& divtau_arr = a_divtau[lev]->array(mfi);
                 Array4<Real const> const& rho_arr = a_density[lev]->const_array(mfi);
-                amrex::ParallelFor(bx,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     Real rhoinv = Real(1.0)/rho_arr(i,j,k);
                     AMREX_D_TERM(divtau_arr(i,j,k,0) *= rhoinv;,
