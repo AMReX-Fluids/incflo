@@ -325,14 +325,14 @@ incflo::fixup_eta_on_domain_faces (int lev, Array<MultiFab,AMREX_SPACEDIM>& fc,
         if (!gm.isPeriodic(idim)) {
             Array4<Real> const& fca = fc[idim].array(mfi);
             if (bx.smallEnd(idim) == domain.smallEnd(idim)) {
-                amrex::ParallelFor(amrex::bdryLo(bx, idim),
+                ParallelFor(amrex::bdryLo(bx, idim),
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     fca(i,j,k) = cca(i,j,k);
                 });
             }
             if (bx.bigEnd(idim) == domain.bigEnd(idim)) {
-                amrex::ParallelFor(amrex::bdryHi(bx, idim),
+                ParallelFor(amrex::bdryHi(bx, idim),
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     fca(i,j,k) = cca(i-1,j,k);
@@ -344,14 +344,14 @@ incflo::fixup_eta_on_domain_faces (int lev, Array<MultiFab,AMREX_SPACEDIM>& fc,
         if (!gm.isPeriodic(idim)) {
             Array4<Real> const& fca = fc[idim].array(mfi);
             if (bx.smallEnd(idim) == domain.smallEnd(idim)) {
-                amrex::ParallelFor(amrex::bdryLo(bx, idim),
+                ParallelFor(amrex::bdryLo(bx, idim),
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     fca(i,j,k) = cca(i,j,k);
                 });
             }
             if (bx.bigEnd(idim) == domain.bigEnd(idim)) {
-                amrex::ParallelFor(amrex::bdryHi(bx, idim),
+                ParallelFor(amrex::bdryHi(bx, idim),
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     fca(i,j,k) = cca(i,j-1,k);
@@ -364,14 +364,14 @@ incflo::fixup_eta_on_domain_faces (int lev, Array<MultiFab,AMREX_SPACEDIM>& fc,
         if (!gm.isPeriodic(idim)) {
             Array4<Real> const& fca = fc[idim].array(mfi);
             if (bx.smallEnd(idim) == domain.smallEnd(idim)) {
-                amrex::ParallelFor(amrex::bdryLo(bx, idim),
+                ParallelFor(amrex::bdryLo(bx, idim),
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     fca(i,j,k) = cca(i,j,k);
                 });
             }
             if (bx.bigEnd(idim) == domain.bigEnd(idim)) {
-                amrex::ParallelFor(amrex::bdryHi(bx, idim),
+                ParallelFor(amrex::bdryHi(bx, idim),
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     fca(i,j,k) = cca(i,j,k-1);

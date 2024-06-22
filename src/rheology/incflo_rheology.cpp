@@ -107,7 +107,7 @@ void incflo::compute_viscosity_at_level (int /*lev*/,
                 auto typ = flag_fab.getType(bx);
                 if (typ == FabType::covered)
                 {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         eta_arr(i,j,k) = Real(0.0);
                     });
@@ -115,7 +115,7 @@ void incflo::compute_viscosity_at_level (int /*lev*/,
                 else if (typ == FabType::singlevalued)
                 {
                     auto const& flag_arr = flag_fab.const_array();
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         Real sr = incflo_strainrate_eb(i,j,k,AMREX_D_DECL(idx,idy,idz),vel_arr,flag_arr(i,j,k));
                         eta_arr(i,j,k) = non_newtonian_viscosity(sr);
@@ -124,7 +124,7 @@ void incflo::compute_viscosity_at_level (int /*lev*/,
                 else
 #endif
                 {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         Real sr = incflo_strainrate(i,j,k,AMREX_D_DECL(idx,idy,idz),vel_arr);
                         eta_arr(i,j,k) = non_newtonian_viscosity(sr);

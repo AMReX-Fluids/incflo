@@ -20,7 +20,7 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
             // When we enter this routine, this holds the computed solution
             Array4<Real> const& err = error.array(mfi);
 
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 constexpr Real  twopi = Real(2.0)*Real(3.1415926535897932);
                 constexpr Real fourpi = Real(4.0)*Real(3.1415926535897932);
@@ -75,7 +75,7 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
 
             Real omega = pi * pi * visc_coef;
 
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
 
                 Real x = Real(i+0.5)*dx[0];
@@ -117,7 +117,7 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
             // When we enter this routine, this holds the computed solution
             Array4<Real> const& err = error.array(mfi);
 
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 Real x = Real(i+0.5)*dx[0];
                 Real y = Real(j+0.5)*dx[1];

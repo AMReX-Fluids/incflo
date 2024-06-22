@@ -449,6 +449,7 @@ void incflo::WritePlotFile()
     if (m_plt_gpx) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->gp, 0, icomp, 1, 0);
+            mf[lev].plus(m_gp0[0],icomp,1,0);
         }
         pltscaVarsName.push_back("gpx");
         ++icomp;
@@ -456,6 +457,7 @@ void incflo::WritePlotFile()
     if (m_plt_gpy) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->gp, 1, icomp, 1, 0);
+            mf[lev].plus(m_gp0[1],icomp,1,0);
         }
         pltscaVarsName.push_back("gpy");
         ++icomp;
@@ -464,6 +466,7 @@ void incflo::WritePlotFile()
     if (m_plt_gpz) {
         for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->gp, 2, icomp, 1, 0);
+            mf[lev].plus(m_gp0[2],icomp,1,0);
         }
         pltscaVarsName.push_back("gpz");
         ++icomp;

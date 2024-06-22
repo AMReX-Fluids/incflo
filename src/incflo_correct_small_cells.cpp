@@ -50,7 +50,7 @@ incflo::incflo_correct_small_cells (Vector<MultiFab*      > const& vel_in,
 
              if (!m_eb_flow.enabled) {
                 // This FAB has cut cells -- we define the centroid value in terms of the MAC velocities onfaces
-                amrex::ParallelFor(bx,
+                ParallelFor(bx,
                   [vfrac_fab,AMREX_D_DECL(apx_fab,apy_fab,apz_fab),ccvel_fab,AMREX_D_DECL(umac_fab,vmac_fab,wmac_fab)]
                   AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
@@ -73,7 +73,7 @@ incflo::incflo_correct_small_cells (Vector<MultiFab*      > const& vel_in,
                 Array4<Real const> const& eb_vel = get_velocity_eb()[lev]->const_array(mfi);
 
                 // This FAB has cut cells -- we define the centroid value in terms of the MAC velocities onfaces
-                amrex::ParallelFor(bx,
+                ParallelFor(bx,
                   [vfrac_fab,AMREX_D_DECL(apx_fab,apy_fab,apz_fab),ccvel_fab,AMREX_D_DECL(umac_fab,vmac_fab,wmac_fab),eb_vel]
                   AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {

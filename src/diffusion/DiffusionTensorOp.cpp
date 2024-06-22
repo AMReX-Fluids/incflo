@@ -164,7 +164,7 @@ DiffusionTensorOp::diffuse_velocity (Vector<MultiFab*> const& velocity,
             Array4<Real> const& rhs_a = rhs[lev].array(mfi);
             Array4<Real const> const& vel_a = velocity[lev]->const_array(mfi);
             Array4<Real const> const& rho_a = density[lev]->const_array(mfi);
-            amrex::ParallelFor(bx,AMREX_SPACEDIM,
+            ParallelFor(bx,AMREX_SPACEDIM,
             [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
                 rhs_a(i,j,k,n) = rho_a(i,j,k) * vel_a(i,j,k,n);
@@ -301,8 +301,7 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
                 Box const& bx = mfi.tilebox();
                 Array4<Real> const& divtau_arr = a_divtau[lev]->array(mfi);
                 Array4<Real const> const& rho_arr = a_density[lev]->const_array(mfi);
-                    amrex::ParallelFor(bx,
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     Real rhoinv = Real(1.0)/rho_arr(i,j,k);
                     AMREX_D_TERM(divtau_arr(i,j,k,0) *= rhoinv;,

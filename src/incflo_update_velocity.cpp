@@ -46,7 +46,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                     Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
                     // Here divtau_o is the difference of tensor and scalar divtau_o!
                     if (m_advect_momentum) {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                          vel(i,j,k,1) *= rho_old(i,j,k);,
@@ -59,7 +59,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                                          vel(i,j,k,2) /= rho_new(i,j,k););
                         });
                     } else {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+divtau_o(i,j,k,0));,
                                          vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+divtau_o(i,j,k,1));,
@@ -68,7 +68,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                     }
                 } else {
                     if (m_advect_momentum) {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                          vel(i,j,k,1) *= rho_old(i,j,k);,
@@ -81,7 +81,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                                          vel(i,j,k,2) /= rho_new(i,j,k););
                         });
                     } else {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0));,
                                          vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1));,
@@ -95,7 +95,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
 
                 Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
                 if (m_advect_momentum) {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                      vel(i,j,k,1) *= rho_old(i,j,k);,
@@ -108,7 +108,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                                      vel(i,j,k,2) /= rho_new(i,j,k););
                     });
                 } else {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+l_half*divtau_o(i,j,k,0));,
                                      vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+l_half*divtau_o(i,j,k,1));,
@@ -120,7 +120,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
             {
                 Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
                 if (m_advect_momentum) {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         AMREX_D_TERM(vel(i,j,k,0) *= rho_old(i,j,k);,
                                      vel(i,j,k,1) *= rho_old(i,j,k);,
@@ -133,7 +133,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                                      vel(i,j,k,2) /= rho_new(i,j,k););
                     });
                 } else {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         AMREX_D_TERM(vel(i,j,k,0) += l_dt*(dvdt(i,j,k,0)+vel_f(i,j,k,0)+divtau_o(i,j,k,0));,
                                      vel(i,j,k,1) += l_dt*(dvdt(i,j,k,1)+vel_f(i,j,k,1)+divtau_o(i,j,k,1));,
@@ -178,7 +178,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                 Array4<Real const> const& divtau   = ld.divtau.const_array(mfi);
 
                 if (m_advect_momentum) {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
                                                     l_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0))
@@ -198,7 +198,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                                      vel(i,j,k,2) /= rho_new(i,j,k););
                     });
                 } else {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         AMREX_D_TERM(vel(i,j,k,0) = vel_o(i,j,k,0) + l_dt * (
                                                     l_half*(  dvdt_o(i,j,k,0)+  dvdt(i,j,k,0))
@@ -220,7 +220,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                 Array4<Real const> const& divtau_o = ld.divtau_o.const_array(mfi);
 
                 if (m_advect_momentum) {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
                                                     l_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0))
@@ -237,7 +237,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                                      vel(i,j,k,2) /= rho_new(i,j,k););
                     });
                 } else {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         AMREX_D_TERM(vel(i,j,k,0) = vel_o(i,j,k,0) + l_dt * (
                                                     l_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0))
@@ -258,7 +258,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                     Array4<Real const> const& divtau   = ld.divtau.const_array(mfi);
                     if (m_advect_momentum)
                     {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
                                                         l_half*(dvdt_o(i,j,k,0) +   dvdt(i,j,k,0))
@@ -275,7 +275,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                                          vel(i,j,k,2) /= rho_new(i,j,k););
                         });
                     } else {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel(i,j,k,0) = vel_o(i,j,k,0) + l_dt * (
                                                         l_half*(  dvdt_o(i,j,k,0) +   dvdt(i,j,k,0))
@@ -291,7 +291,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                 } else {
                     if (m_advect_momentum)
                     {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel(i,j,k,0) = rho_old(i,j,k) * vel_o(i,j,k,0) + l_dt * (
                                                         l_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0))
@@ -307,7 +307,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
                                          vel(i,j,k,2) /= rho_new(i,j,k););
                         });
                     } else {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel(i,j,k,0) = vel_o(i,j,k,0) + l_dt * (
                                                         l_half*(  dvdt_o(i,j,k,0)+dvdt(i,j,k,0)) + vel_f(i,j,k,0) );,

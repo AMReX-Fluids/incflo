@@ -73,7 +73,7 @@ void incflo::compute_strainrate_at_level (int /*lev*/,
                 auto typ = flag_fab.getType(bx);
                 if (typ == FabType::covered)
                 {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         sr_arr(i,j,k) = Real(0.0);
                     });
@@ -81,7 +81,7 @@ void incflo::compute_strainrate_at_level (int /*lev*/,
                 else if (typ == FabType::singlevalued)
                 {
                     auto const& flag_arr = flag_fab.const_array();
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         sr_arr(i,j,k) = incflo_strainrate_eb(i,j,k,AMREX_D_DECL(idx,idy,idz),vel_arr,flag_arr(i,j,k));
                     });
@@ -89,7 +89,7 @@ void incflo::compute_strainrate_at_level (int /*lev*/,
                 else
 #endif
                 {
-                    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         sr_arr(i,j,k) = incflo_strainrate(i,j,k,AMREX_D_DECL(idx,idy,idz),vel_arr);
                     });
@@ -171,7 +171,7 @@ void incflo::ComputeMagVel (int /*lev*/,
         auto typ = flags.getType(bx);
         if (typ == FabType::covered)
         {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 magvel_fab(i,j,k) = Real(0.0);
             });
@@ -240,7 +240,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         auto typ = flags.getType(bx);
         if (typ == FabType::covered)
         {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 vort_fab(i,j,k) = Real(0.0);
             });
@@ -248,7 +248,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         else if (typ == FabType::singlevalued)
         {
             const auto& flag_fab = flags.const_array();
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 constexpr Real c0 = Real(-1.5);
                 constexpr Real c1 = Real( 2.0);
@@ -306,7 +306,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         else
 #endif
         {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 Real vx = Real(0.5) * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
                 Real uy = Real(0.5) * (ccvel_fab(i,j+1,k,0) - ccvel_fab(i,j-1,k,0)) * idy;
@@ -343,7 +343,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         auto typ = flags.getType(bx);
         if (typ == FabType::covered)
         {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 vort_fab(i,j,k) = Real(0.0);
             });
@@ -351,7 +351,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         else if (typ == FabType::singlevalued)
         {
             const auto& flag_fab = flags.const_array();
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 constexpr Real c0 = Real(-1.5);
                 constexpr Real c1 = Real( 2.0);
@@ -447,7 +447,7 @@ void incflo::ComputeVorticity (int lev, Real /*time*/, MultiFab& vort, MultiFab 
         else
 #endif
         {
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 Real vx = Real(0.5) * (ccvel_fab(i+1,j,k,1) - ccvel_fab(i-1,j,k,1)) * idx;
                 Real wx = Real(0.5) * (ccvel_fab(i+1,j,k,2) - ccvel_fab(i-1,j,k,2)) * idx;
