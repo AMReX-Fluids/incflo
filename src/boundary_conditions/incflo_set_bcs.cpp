@@ -89,7 +89,7 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
             if (m_bc_type[olo] == BC::mixed) {
                 prob_set_BC_MF(olo, blo, bc_arr, lev, inflow, outflow, field);
             } else {
-                amrex::ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(blo, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < ncomp; n++) {
                         bc_arr(i,j,k,n) = bc_ptr[n].lo(dir);
@@ -99,7 +99,7 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
             if (m_bc_type[ohi] == BC::mixed) {
                 prob_set_BC_MF(ohi, bhi, bc_arr, lev, inflow, outflow, field);
             } else {
-                amrex::ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bhi, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < ncomp; n++) {
                         bc_arr(i,j,k,n) = bc_ptr[n].hi(dir);
@@ -189,7 +189,7 @@ incflo::make_robinBC_MFs(int lev, MultiFab* state)
 
 #ifdef AMREX_USE_EB
 void
-incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int nghost)
+incflo::set_eb_velocity (int lev, Real /*time*/, MultiFab& eb_vel, int nghost)
 {
     Geometry const& gm = Geom(lev);
     eb_vel.setVal(0.);
@@ -224,7 +224,7 @@ incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int ng
 
           bool has_comps = false;
           Real eb_vel_mag(0.0);
-          GpuArray<amrex::Real,3> eb_vel_comps{0.};
+          GpuArray<Real,3> eb_vel_comps{0.};
           // Flow is specified as a velocity magnitude
           if ( m_eb_flow.is_mag ) {
              eb_vel_mag = m_eb_flow.vel_mag;
@@ -281,7 +281,7 @@ incflo::set_eb_velocity (int lev, amrex::Real /*time*/, MultiFab& eb_vel, int ng
 }
 
 void
-incflo::set_eb_density (int lev, amrex::Real /*time*/, MultiFab& eb_density, int nghost)
+incflo::set_eb_density (int lev, Real /*time*/, MultiFab& eb_density, int nghost)
 {
     Geometry const& gm = Geom(lev);
     eb_density.setVal(0.);
@@ -350,7 +350,7 @@ incflo::set_eb_density (int lev, amrex::Real /*time*/, MultiFab& eb_density, int
 }
 
 void
-incflo::set_eb_tracer (int lev, amrex::Real /*time*/, MultiFab& eb_tracer, int nghost)
+incflo::set_eb_tracer (int lev, Real /*time*/, MultiFab& eb_tracer, int nghost)
 {
     Geometry const& gm = Geom(lev);
     eb_tracer.setVal(0.);

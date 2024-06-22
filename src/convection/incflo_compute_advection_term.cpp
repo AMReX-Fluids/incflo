@@ -154,7 +154,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                     Array4<Real const> const& rho      = density[lev]->array(mfi);
                     Array4<Real const> const& divtau   = ld.divtau_o.const_array(mfi);
                     if (m_advect_momentum) {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel_f(i,j,k,0) += divtau(i,j,k,0)/rho(i,j,k);,
                                          vel_f(i,j,k,1) += divtau(i,j,k,1)/rho(i,j,k);,
@@ -162,7 +162,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                         });
                     }
                     else {
-                        amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                         {
                             AMREX_D_TERM(vel_f(i,j,k,0) += divtau(i,j,k,0);,
                                          vel_f(i,j,k,1) += divtau(i,j,k,1);,
@@ -345,7 +345,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 Array4<Real const> rho     = density[lev]->const_array(mfi);
                 Array4<Real      > rho_vel =  rhovel[lev].array(mfi);
 
-                amrex::ParallelFor(bxg, AMREX_SPACEDIM,
+                ParallelFor(bxg, AMREX_SPACEDIM,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
                     rho_vel(i,j,k,n) = rho(i,j,k) * U(i,j,k,n);
@@ -358,7 +358,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                     Array4<Real const> vf        = vel_forces[lev]->const_array(mfi);
                     Array4<Real      > rho_vel_f =  rhovel_f.array();
 
-                    amrex::ParallelFor(fbx, AMREX_SPACEDIM,
+                    ParallelFor(fbx, AMREX_SPACEDIM,
                     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                     {
                         rho_vel_f(i,j,k,n) = rho(i,j,k) * vf(i,j,k,n);
@@ -456,7 +456,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 if ( any_conserv_trac ) {
                     trac_tmp = rhotrac[lev].array(mfi);
 
-                    amrex::ParallelFor(bxg, m_ntrac,
+                    ParallelFor(bxg, m_ntrac,
                     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                     {
                         if ( iconserv[n] ){
@@ -560,7 +560,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 Array4<Real const> rho     =  get_density_eb()[lev]->const_array(mfi);
                 Array4<Real      > rho_vel =  rhovel_fab.array();
 
-                amrex::ParallelFor(bxg, AMREX_SPACEDIM,
+                ParallelFor(bxg, AMREX_SPACEDIM,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
                     rho_vel(i,j,k,n) = rho(i,j,k) * U(i,j,k,n);
@@ -741,7 +741,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                   *density[lev], bc_den, lev);
             } else {
                 auto const& drdt = conv_r[lev]->array(mfi);
-                amrex::ParallelFor(bx,
+                ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     drdt(i,j,k) = 0.;

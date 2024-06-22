@@ -31,7 +31,7 @@ void incflo::tracer_explicit_update (Vector<MultiFab> const& tra_forces)
             {
                 Array4<Real const> const& laps_o = ld.laps_o.const_array(mfi);
 
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     // If conservative
                     // (rho trac)^new = (rho trac)^old + dt * (
@@ -56,7 +56,7 @@ void incflo::tracer_explicit_update (Vector<MultiFab> const& tra_forces)
             {
                 Array4<Real const> const& laps_o = ld.laps_o.const_array(mfi);
 
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < l_ntrac; ++n)
                     {
@@ -73,7 +73,7 @@ void incflo::tracer_explicit_update (Vector<MultiFab> const& tra_forces)
             }
             else if (m_diff_type == DiffusionType::Implicit)
             {
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < l_ntrac; ++n)
                     {
@@ -123,7 +123,7 @@ void incflo::tracer_explicit_update_corrector (Vector<MultiFab> const& tra_force
                 Array4<Real const> const& laps_o = ld.laps_o.const_array(mfi);
                 Array4<Real const> const& laps   = ld.laps.const_array(mfi);
 
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < l_ntrac; ++n)
                     {
@@ -147,7 +147,7 @@ void incflo::tracer_explicit_update_corrector (Vector<MultiFab> const& tra_force
             {
                 Array4<Real const> const& laps_o = ld.laps_o.const_array(mfi);
 
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < l_ntrac; ++n)
                     {
@@ -169,7 +169,7 @@ void incflo::tracer_explicit_update_corrector (Vector<MultiFab> const& tra_force
             }
             else if (m_diff_type == DiffusionType::Implicit)
             {
-                amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     for (int n = 0; n < l_ntrac; ++n)
                     {
