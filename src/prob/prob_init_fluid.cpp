@@ -858,7 +858,7 @@ void incflo::init_periodic_tracer (Box const& vbx, Box const& /*gbx*/,
             tracer(i,j,k,1) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
         });
     } else {
-        Abort("Unknow periodic tracer probtype");
+        Abort("Unknown periodic tracer probtype");
     }
 }
 

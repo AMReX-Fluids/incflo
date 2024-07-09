@@ -156,7 +156,7 @@ incflo::make_robinBC_MFs(int lev, MultiFab* state)
                 Array4<Real> const& f_arr     = robin_f.array(mfi);
 
                 if (state) {
-                    // state has filled boundry, so can use its ghost cells for the BC values
+                    // state has filled boundary, so can use its ghost cells for the BC values
                     Array4<Real const> const& bcv = state->const_array(mfi);
                     // Diffusion, solving for velocity, density, tracer
                     //

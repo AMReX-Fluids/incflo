@@ -224,7 +224,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             {
                 //
                 // BDS needs umac on physical boundaries.
-                // Godunov handles physical boundaries interally, but needs periodic ghosts filled.
+                // Godunov handles physical boundaries internally, but needs periodic ghosts filled.
                 // MOL doesn't need any umac ghost cells, so it doesn't get here.
                 //
                 Real fake_time = 0.;

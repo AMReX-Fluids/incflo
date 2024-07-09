@@ -85,7 +85,7 @@ cylinder.center    =  0.0  0.0  0.0
 incflo.probtype         =   6
 
 # Note that with this prob_type, ic_u is used to mean the velocity
-# along the direction of the cylinder, irregardless of the direction
+# along the direction of the cylinder, regardless of the direction
 # of the cylinder
 incflo.ic_u             = -0.5          #
 incflo.ic_v             =  0.8660254038 #

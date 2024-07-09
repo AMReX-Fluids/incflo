@@ -21,7 +21,7 @@ incflo provides several options of embedded boundary geometries. The inputs para
 determines which geometry is selected by :cpp:`incflo::MakeEBGeometry()` within :cpp:`incflo/src/embedded_boundaries`.
 The procedure to create your own EB geometry is described in the AMReX documentation on :ref:`amrex:sec:EB:ebinit`.
 As discussed in the AMReX documentation, note that when constructing the EB, we must specify a
-maxium coarsening level (``max_crse_level``):
+maximum coarsening level (``max_crse_level``):
 
 .. highlight:: c++
 
