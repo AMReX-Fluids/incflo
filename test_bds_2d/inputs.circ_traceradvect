@@ -1,4 +1,4 @@
-amrex.fpe_trap_invalid=1                # hav a trap to catch a bug
+amrex.fpe_trap_invalid=1                # have a trap to catch a bug
 incflo.probtype         =  14
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
