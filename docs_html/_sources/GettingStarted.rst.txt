@@ -370,4 +370,4 @@ files are used for restarting the code. For more information see the AMReX Docum
 Visualizing the Results
 =======================
 
-Options for visualizing the data are discussed in the AMReX Documenation on :ref:`amrex:Chap:Visualization`.
+Options for visualizing the data are discussed in the AMReX Documentation on :ref:`amrex:Chap:Visualization`.

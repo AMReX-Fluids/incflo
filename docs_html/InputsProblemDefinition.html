@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Problem Definition &mdash; incflo 24.07-dev documentation</title>
+  <title>Problem Definition &mdash; incflo 24.08-dev documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
       <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=681a4282" />
@@ -16,7 +16,7 @@
   
         <script src="_static/jquery.js?v=5d32c60e"></script>
         <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=39e2e506"></script>
+        <script src="_static/documentation_options.js?v=2064b023"></script>
         <script src="_static/doctools.js?v=9a2dae69"></script>
         <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -38,7 +38,7 @@
             incflo
           </a>
               <div class="version">
-                24.07-dev
+                24.08-dev
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -228,7 +228,7 @@
 The implementation requires that there is EB separating the inflow and outflow regions,
 and only currently treats constant viscosity (i.e. requires the inputs file contains  <code class="docutils literal notranslate"><span class="pre">incflo.use_tensor_solve</span> <span class="pre">=</span> <span class="pre">false</span></code>).
 It does allow for non-constant scalar diffusivity. To create a new problem setup with mixed BCs, one must additionally
-specify the Dirchlet and Neumann areas in <code class="docutils literal notranslate"><span class="pre">prob/prob_bc.cpp</span></code> In this file there are functions to set the needed BC info for the diffusion solver, the MAC projection, and with the same function, the nodal projection and advection. Comments in the code provide a detailed explaination for each instance. For addditional details on mixed BCs, also see AMReX-Hydro’s documentation (<a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/bcs.html#bcs" title="(in amrex-hydro v24.07-dev)"><span>Boundary conditions</span></a>).</p>
+specify the Dirchlet and Neumann areas in <code class="docutils literal notranslate"><span class="pre">prob/prob_bc.cpp</span></code> In this file there are functions to set the needed BC info for the diffusion solver, the MAC projection, and with the same function, the nodal projection and advection. Comments in the code provide a detailed explanation for each instance. For additional details on mixed BCs, also see AMReX-Hydro’s documentation (<a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/bcs.html#bcs" title="(in amrex-hydro v24.07-dev)"><span>Boundary conditions</span></a>).</p>
 </div></blockquote>
 </section>
 
