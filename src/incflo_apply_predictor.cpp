@@ -194,7 +194,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // **********************************************************************************************
     // Project velocity field, update pressure
     // **********************************************************************************************
-    ApplyProjection(get_density_nph_const(),new_time,m_dt,incremental_projection);
+//Hua    ApplyProjection(get_density_nph_const(),new_time,m_dt,incremental_projection);
 
 #ifdef INCFLO_USE_PARTICLES
     // **************************************************************************************
@@ -217,8 +217,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
 #endif
 
 // use vof to advect tracer
-
-    tracer_vof_advection(get_tracer_new (), AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
-                                         GetVecOfConstPtrs(w_mac)));
+    if (!incremental_projection)
+      tracer_vof_advection(get_tracer_new (), AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
+                           GetVecOfConstPtrs(w_mac)));
 
 }

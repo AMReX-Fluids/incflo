@@ -165,7 +165,7 @@
                     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& problo,
                     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& probhi) const;
 
-    void droplet (amrex::Box const& vbx, amrex::Box const& gbx,
+    void init_droplet (amrex::Box const& vbx, amrex::Box const& gbx,
                                amrex::Array4<amrex::Real> const& vel,
                                amrex::Array4<amrex::Real> const& density,
                                amrex::Array4<amrex::Real> const& tracer,

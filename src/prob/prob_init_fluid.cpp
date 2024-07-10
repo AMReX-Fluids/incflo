@@ -187,6 +187,12 @@ void incflo::prob_init_fluid (int lev)
         }
         else if (1109 == m_probtype)
         {
+            /*init_droplet(vbx, gbx,
+                               ld.velocity.array(mfi),
+                               ld.density.array(mfi),
+                               ld.tracer.array(mfi),
+                               domain, dx, problo, probhi);*/
+
         }
         else
         {
@@ -195,7 +201,7 @@ void incflo::prob_init_fluid (int lev)
     }
 
     if (1109 == m_probtype) {
-        tracer_vof_init_fraction(lev, ld.tracer, this);
+        get_volume_of_fluid ()->tracer_vof_init_fraction(lev, ld.tracer);
     }
 }
 
@@ -1124,6 +1130,29 @@ void incflo::init_burggraf (Box const& vbx, Box const& /*gbx*/,
         vel(i,j,k,1) = -8.0 * (4.0*x*x*x - 6.0 * x*x + 2.*x) * (y*y*y*y - y*y);
 #if (AMREX_SPACEDIM == 3)
         vel(i,j,k,2) = 0.0;
+#endif
+    });
+}
+
+void incflo::init_droplet (Box const& vbx, Box const& /*gbx*/,
+                            Array4<Real> const& vel,
+                            Array4<Real> const& /*density*/,
+                            Array4<Real> const& /*tracer*/,
+                            Box const& /*domain*/,
+                            GpuArray<Real, AMREX_SPACEDIM> const& dx,
+                            GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
+                            GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
+{
+    ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    {
+        Real x = Real(i+0.5)*dx[0];
+        Real y = Real(j+0.5)*dx[1];
+        Real z = Real(k+0.5)*dx[2];
+        Real pi = 3.14159265357;
+        vel(i,j,k,0) = 2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*0./3.);
+        vel(i,j,k,1) = -sin(2.*pi*x)*sin(pi*y)*sin(pi*y)*sin(2*pi*z)*cos(pi*0./3.);
+#if (AMREX_SPACEDIM == 3)
+        vel(i,j,k,2) = -sin(2.*pi*x)*sin(pi*z)*sin(pi*z)*sin(2*pi*y)*cos(pi*0./3.);
 #endif
     });
 }

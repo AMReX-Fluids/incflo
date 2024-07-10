@@ -1,20 +1,20 @@
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
-stop_time               =   -1.         # Max (simulated) time to evolve
-max_step                =   1        # Max number of time steps
+stop_time               =   3.1         # Max (simulated) time to evolve
+max_step                =   -1           # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #         TIME STEP COMPUTATION         #
 #.......................................#
-#incflo.fixed_dt        =   1.0e-7      # Use this constant dt if > 0
-incflo.cfl              =   0.45        # CFL factor
+incflo.fixed_dt        =   .0005         # Use this constant dt if > 0
+#incflo.cfl              =   0.5        # CFL factor
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =   1          # Steps between plot files
+amr.plot_int            =   100          # Steps between plot files
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
 
@@ -22,23 +22,23 @@ amr.restart             =   ""          # Checkpoint to restart from
 #               PHYSICS                 #
 #.......................................#
 incflo.gravity          =   0.  0.  0.  # Gravitational force (3D)
-incflo.ro_0             =   1.0     # Reference density 
-
+incflo.ro_0             =   1.0         # Reference density 
+incflo.ntrac            =   2
 incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   1.0         # Dynamic viscosity coefficient
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   32 32 32    # Grid cells at coarsest AMRlevel
+amr.n_cell              =   256 256 256  # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
-amr.max_grid_size       =   16 16 16
+amr.max_grid_size       =   32 32 32
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
 geometry.prob_lo        =   0.  0.  0.   # Lo corner coordinates
-geometry.prob_hi        =   1.  1.  1.   # Hi corner coordinates
+geometry.prob_hi        =   1.  1. 1.   # Hi corner coordinates
 geometry.is_periodic    =   1   1   1    # Periodicity x y z (0/1)
 
 
@@ -46,7 +46,9 @@ geometry.is_periodic    =   1   1   1    # Periodicity x y z (0/1)
 #           INITIAL CONDITIONS          #
 #.......................................#
 incflo.probtype         =   1109        #
-
+incflo.ic_u             =   1.
+incflo.ic_v             =   1.
+incflo.ic_w             =   1.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #          NUMERICAL PARAMETERS         #
 #.......................................#
@@ -58,6 +60,5 @@ amrex.fpe_trap_invalid  =   1           # Trap NaNs
 #.......................................#
 incflo.verbose          =   2           # incflo_level
 
-amrex.fpe_trap_invalid=1
 amrex.fpe_trap_overflow=1
 amrex.fpe_trap_zero=1

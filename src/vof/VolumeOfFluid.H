@@ -17,20 +17,25 @@ public:
                                            amrex::Vector<amrex::MultiFab const*> const& v_mac,
                                            amrex::Vector<amrex::MultiFab const*> const& w_mac),
                        amrex::Real dt);
+    void tracer_vof_init_fraction(int lev, amrex::MultiFab& a_tracer);
+    void tracer_vof_update(int lev, amrex::MultiFab & a_tracer);
     void write_tecplot_surface(amrex::Real time, int nstep);
     void WriteTecPlotFile     (amrex::Real time, int nstep);
+    void output_droplet (amrex::Real time, int nstep);
+    void apply_velocity_field(amrex::Real time, int nstep);
 
 // normal vector of interface
    amrex::Vector<amrex::MultiFab> normal;
 // the plane defined by @m.@x = @alpha
    amrex::Vector<amrex::MultiFab> alpha;
+// the tag for droplets
+   amrex::Vector<amrex::MultiFab> tag;
 private:
 incflo* v_incflo; //incflo object
 int finest_level;
-void tracer_vof_update(amrex::Vector<amrex::MultiFab*> const& tracer);
-
+int n_tag = 0;
 };
 
-void tracer_vof_init_fraction(int lev, amrex::MultiFab& a_tracer, incflo const* a_incflo);
+
 
 #endif
