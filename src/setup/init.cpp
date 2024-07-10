@@ -82,7 +82,7 @@ void incflo::ReadParameters ()
             m_redistribution_type != "StateRedist")
             amrex::Abort("redistribution type must be NoRedist, FluxRedist, or StateRedist");
 
-        if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Cant use PPM with EBGodunov");
+        if (m_advection_type == "Godunov" && m_godunov_ppm) amrex::Abort("Can't use PPM with EBGodunov");
         pp.query("write_geom_chk", m_write_geom_chk);
 #endif
 
