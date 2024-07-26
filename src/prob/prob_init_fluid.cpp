@@ -1149,10 +1149,10 @@ void incflo::init_droplet (Box const& vbx, Box const& /*gbx*/,
         Real y = Real(j+0.5)*dx[1];
         Real z = Real(k+0.5)*dx[2];
         Real pi = 3.14159265357;
-        vel(i,j,k,0) = 2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*0./3.);
-        vel(i,j,k,1) = -sin(2.*pi*x)*sin(pi*y)*sin(pi*y)*sin(2*pi*z)*cos(pi*0./3.);
+        vel(i,j,k,0) = 1.;//2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*0./3.);
+        vel(i,j,k,1) = 0.;//-sin(2.*pi*x)*sin(pi*y)*sin(pi*y)*sin(2*pi*z)*cos(pi*0./3.);
 #if (AMREX_SPACEDIM == 3)
-        vel(i,j,k,2) = -sin(2.*pi*x)*sin(pi*z)*sin(pi*z)*sin(2*pi*y)*cos(pi*0./3.);
+        vel(i,j,k,2) = 0.;//-sin(2.*pi*x)*sin(pi*z)*sin(pi*z)*sin(2*pi*y)*cos(pi*0./3.);
 #endif
     });
 }

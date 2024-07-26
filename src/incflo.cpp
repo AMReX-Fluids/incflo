@@ -156,7 +156,7 @@ void incflo::Evolve()
             }
         }
         get_volume_of_fluid()->output_droplet(m_cur_time,m_nstep);
-        get_volume_of_fluid()->apply_velocity_field(m_cur_time,m_nstep);
+    //    get_volume_of_fluid()->apply_velocity_field(m_cur_time,m_nstep);
         if (writeNow()){
             get_volume_of_fluid()->WriteTecPlotFile (m_cur_time,m_nstep);
             get_volume_of_fluid()->write_tecplot_surface(m_cur_time,m_nstep);

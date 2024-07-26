@@ -18,7 +18,7 @@ public:
                                            amrex::Vector<amrex::MultiFab const*> const& w_mac),
                        amrex::Real dt);
     void tracer_vof_init_fraction(int lev, amrex::MultiFab& a_tracer);
-    void tracer_vof_update(int lev, amrex::MultiFab & a_tracer);
+    void tracer_vof_update(int lev, amrex::MultiFab & a_tracer, amrex::Array<amrex::MultiFab, 2> & a_height);
     void write_tecplot_surface(amrex::Real time, int nstep);
     void WriteTecPlotFile     (amrex::Real time, int nstep);
     void output_droplet (amrex::Real time, int nstep);
@@ -28,6 +28,8 @@ public:
    amrex::Vector<amrex::MultiFab> normal;
 // the plane defined by @m.@x = @alpha
    amrex::Vector<amrex::MultiFab> alpha;
+// the heights used for calculation of curvature
+   amrex::Vector<amrex::Array<amrex::MultiFab, 2>> height;
 // the tag for droplets
    amrex::Vector<amrex::MultiFab> tag;
 private:
