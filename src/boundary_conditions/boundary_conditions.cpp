@@ -267,9 +267,17 @@ void incflo::init_bcs ()
             else if (bct == BC::slip_wall)
             {
                 if (side == Orientation::low) {
-                    m_bcrec_density[0].setLo(dir, BCType::hoextrap);
+                    if (m_advection_type == "BDS") {
+                        m_bcrec_density[0].setLo(dir, BCType::foextrap);
+                    } else{
+                        m_bcrec_density[0].setLo(dir, BCType::hoextrap);
+                    }
                 } else {
-                    m_bcrec_density[0].setHi(dir, BCType::hoextrap);
+                    if (m_advection_type == "BDS") {
+                        m_bcrec_density[0].setHi(dir, BCType::foextrap);
+                    } else {
+                        m_bcrec_density[0].setHi(dir, BCType::hoextrap);
+                    }
                 }
             }
             else if (bct == BC::mass_inflow)
