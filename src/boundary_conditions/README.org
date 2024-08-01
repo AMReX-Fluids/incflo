@@ -6,7 +6,8 @@
 | v_t    | foextrap | foextrap | ext_dir  | ext_dir (0) | hoextrap                              |
 | rho    | foextrap | foextrap | ext_dir  | foextrap    | if (advection_type == "BDS") foextrap |
 |        |          |          |          |             | else hoextrap                         |
-| scalar | foextrap | foextrap | ext_dir  | foextrap    | hoextrap                              |
+| scalar | foextrap | foextrap | ext_dir  | foextrap    | if (advection_type == "BDS") foextrap |
+|        |          |          |          |             | else hoextrap                         |
 | force  | foextrap | foextrap | foextrap | foextrap    | foextrap                              |
 
 * projection
