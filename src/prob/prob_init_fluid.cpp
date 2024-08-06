@@ -1001,6 +1001,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
                          vel(i,j,k,1) = Real(0.0);,
                          vel(i,j,k,2) = Real(0.0););
 
+            // HACK FOR TIME-DEPENDENT
+            vel(i,j,k,0) = 0.0;
+
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;

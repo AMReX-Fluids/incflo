@@ -19,7 +19,7 @@ struct IncfloVelFill
     AMREX_GPU_DEVICE
     void operator() (const amrex::IntVect& iv, amrex::Array4<amrex::Real> const& vel,
                      const int dcomp, const int num_comp,
-                     amrex::GeometryData const& geom, const amrex::Real /*time*/,
+                     amrex::GeometryData const& geom, const amrex::Real time,
                      const amrex::BCRec* bcr, const int bcomp,
                      const int orig_comp) const
     {
@@ -33,6 +33,7 @@ struct IncfloVelFill
 #else
         const int k = 0;
 #endif
+        if (j == 3) amrex::Print() << "TIME IN VELFILL " << time << std::endl;
 
         const amrex::Box& domain_box = geom.Domain();
 
@@ -80,7 +81,12 @@ struct IncfloVelFill
                         amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
                         vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * y * (amrex::Real(1.0)-y);
                     }
-#if (AMREX_SPACEDIM == 3)
+#if (AMREX_SPACEDIM == 2)
+                    else if (41 == probtype)
+                    {
+                        vel(i,j,k,dcomp+nc) = time;
+                    }
+#elif (AMREX_SPACEDIM == 3)
                     else if (311 == probtype)
                     {
                         amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
