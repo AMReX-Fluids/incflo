@@ -58,8 +58,9 @@ incflo::compute_MAC_projected_velocities (
 
         } // end m_godunov_include_diff_in_forcing
 
-        if (nghost_force() > 0)
+        if (nghost_force() > 0) {
             fillpatch_force(m_cur_time, vel_forces, nghost_force());
+        }
 
     } // end m_advection_type
 
@@ -143,7 +144,7 @@ incflo::compute_MAC_projected_velocities (
         // not this velocity extrapolation. So we'll use Godunov here instead.
         //
         std::string l_advection_type = m_advection_type;
-        if ( l_advection_type == "BDS" ) {
+        if ( m_advection_type == "BDS" ) {
             l_advection_type = "Godunov";
         }
 
@@ -182,6 +183,62 @@ incflo::compute_MAC_projected_velocities (
                      mac_vec[lev][2] = w_mac[lev];);
     }
 
+    //
+    // This loop is only necessary if there is time-dependent inflow but we don't have a good test for that
+    //      so we do it if there is any inflow face
+    //
+    for (int lev=0; lev <= finest_level; ++lev)
+    {
+        MultiFab time_dep_inflow_vel(vel[lev]->boxArray(),vel[lev]->DistributionMap(),1,1);
+        fillphysbc_velocity(lev, m_cur_time+0.5*l_dt, time_dep_inflow_vel, 1);
+
+        Box domain(geom[lev].Domain());
+        const auto dlo = lbound(domain);
+        const auto dhi = ubound(domain);
+
+        Array4<int const> const& bc_arr = BC_MF ? BC_MF->const_array(mfi) : Array4<int const> {};
+
+        for (MFIter mfi(time_dep_inflow_vel,false); mfi.isValid(); ++mfi)
+        {
+            Box const& bx = mfi.validbox();
+            auto   cc_arr = time_dep_inflow_vel.const_array(mfi);
+
+            BCRec const* const bc_ptr = m_bcrec_velocity.data();
+
+            auto umac_arr = mac_vec[lev][0]->array(mfi);
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+                if (i == dlo.x && bc_ptr[0].lo(0) == BCType::ext_dir) {
+                    umac_arr(i,j,k) = cc_arr(i-1,j,k,0);
+                }
+                if (i == dhi.x && bc_ptr[0].hi(0) == BCType::ext_dir) {
+                    umac_arr(i+1,j,k) = cc_arr(i+1,j,k,0);
+                }
+            });
+            auto vmac_arr = mac_vec[lev][1]->array(mfi);
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                if (j == dlo.y && bclo_y == BCType::ext_dir) {
+                    vmac_arr(i,j,k) = cc_arr(i,j-1,k,1);
+                }
+                if (j == dhi.y && bchi_y == BCType::ext_dir) {
+                    vmac_arr(i+1,j,k) = cc_arr(i,j+1,k,1);
+                }
+            });
+            auto wmac_arr = mac_vec[lev][2]->array(mfi);
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                if (k == dlo.z && bclo_z == BCType::ext_dir) {
+                    wmac_arr(i,j,k) = cc_arr(i,j,k-1,2);
+                }
+                if (k == dhi.z && bchi_z == BCType::ext_dir) {
+                    wmac_arr(i,j,k+1) = cc_arr(i,j,k+1,2);
+                }
+            });
+        } // mfi
+    } // lev
+
     macproj->setUMAC(mac_vec);
 
 #ifdef AMREX_USE_EB
@@ -214,4 +271,14 @@ incflo::compute_MAC_projected_velocities (
     }
     // Note that the macproj->project call above ensures that the MAC velocities are averaged down --
     //      we don't need to do that again here
+
+        for (MFIter mfi(*u_mac[0],false); mfi.isValid(); ++mfi)
+        {
+            Box const& bx = mfi.validbox();
+            auto umac_arr = u_mac[0]->const_array(mfi);
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int ) noexcept
+            {
+                if (j == 3 and i < 10) amrex::Print() << "AFTER: MAC VEL AT " << i << " " << umac_arr(i,j,0) << std::endl;
+            });
+        }
 }
