@@ -32,7 +32,7 @@ incflo.mu               =   1.0         # Dynamic viscosity coefficient
 #.......................................#
 amr.n_cell              =   16 16 16    # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
-amr.max_grid_size       =   16 16 16 
+amr.max_grid_size       =   128 128 128
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
@@ -46,9 +46,9 @@ geometry.is_periodic    =   1   1   1    # Periodicity x y z (0/1)
 #           INITIAL CONDITIONS          #
 #.......................................#
 incflo.probtype         =   1109        #
-incflo.ic_u             =   1.
-incflo.ic_v             =   1.
-incflo.ic_w             =   1.
+incflo.ic_u             =   0.
+incflo.ic_v             =   0.
+incflo.ic_w             =   0.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #          NUMERICAL PARAMETERS         #
 #.......................................#
@@ -62,3 +62,4 @@ incflo.verbose          =   2           # incflo_level
 
 amrex.fpe_trap_overflow=1
 amrex.fpe_trap_zero=1
+incflo.vof_init_with_eb=0
