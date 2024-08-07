@@ -369,6 +369,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             int face_comp = 0;
             int ncomp = AMREX_SPACEDIM;
             bool is_velocity = true;
+            bool allow_inflow_on_outflow = false;
             Array4<int const> const& velbc_arr = velBC_MF ? (*velBC_MF).const_array(mfi)
                                                           : Array4<int const>{};
             HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
@@ -399,7 +400,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
                                                      m_godunov_ppm, m_godunov_use_forces_in_trans,
                                                      is_velocity, fluxes_are_area_weighted,
-                                                     m_advection_type, PPM::default_limiter, velbc_arr);
+                                                     m_advection_type, PPM::default_limiter,
+                                                     allow_inflow_on_outflow, velbc_arr);
 
             // ************************************************************************
             // Density
@@ -409,6 +411,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 face_comp = AMREX_SPACEDIM;
                 ncomp = 1;
                 is_velocity = false;
+                allow_inflow_on_outflow = false;
                 Array4<int const> const& densbc_arr = densBC_MF ? (*densBC_MF).const_array(mfi)
                                                                 : Array4<int const>{};
                 HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
@@ -434,7 +437,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
                                                          m_godunov_ppm, m_godunov_use_forces_in_trans,
                                                          is_velocity, fluxes_are_area_weighted,
-                                                         m_advection_type, PPM::default_limiter, densbc_arr);
+                                                         m_advection_type, PPM::default_limiter,
+                                                         allow_inflow_on_outflow, densbc_arr);
             }
 
             // ************************************************************************
@@ -473,6 +477,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                    face_comp = AMREX_SPACEDIM+1;
                 ncomp = m_ntrac;
                 is_velocity = false;
+                allow_inflow_on_outflow = false;
                 Array4<int const> const& tracbc_arr = tracBC_MF ? (*tracBC_MF).const_array(mfi)
                                                                 : Array4<int const>{};
                 HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
@@ -499,7 +504,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 #endif
                                           m_godunov_ppm, m_godunov_use_forces_in_trans,
                                           is_velocity, fluxes_are_area_weighted,
-                                          m_advection_type, PPM::default_limiter, tracbc_arr);
+                                          m_advection_type, PPM::default_limiter,
+                                          allow_inflow_on_outflow, tracbc_arr);
             }
         } // mfi
     } // lev
