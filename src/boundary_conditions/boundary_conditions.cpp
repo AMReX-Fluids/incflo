@@ -267,9 +267,19 @@ void incflo::init_bcs ()
             else if (bct == BC::slip_wall)
             {
                 if (side == Orientation::low) {
-                    m_bcrec_density[0].setLo(dir, BCType::hoextrap);
+                    // BDS requires foextrap to avoid introduction of local max/min
+                    if (m_advection_type == "BDS") {
+                        m_bcrec_density[0].setLo(dir, BCType::foextrap);
+                    } else{
+                        m_bcrec_density[0].setLo(dir, BCType::hoextrap);
+                    }
                 } else {
-                    m_bcrec_density[0].setHi(dir, BCType::hoextrap);
+                    // BDS requires foextrap to avoid introduction of local max/min
+                    if (m_advection_type == "BDS") {
+                        m_bcrec_density[0].setHi(dir, BCType::foextrap);
+                    } else {
+                        m_bcrec_density[0].setHi(dir, BCType::hoextrap);
+                    }
                 }
             }
             else if (bct == BC::mass_inflow)
@@ -327,9 +337,25 @@ void incflo::init_bcs ()
             else if (bct == BC::slip_wall)
             {
                 if (side == Orientation::low) {
-                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::hoextrap);
+                    for (auto& b : m_bcrec_tracer) {
+                        // BDS requires foextrap to avoid introduction
+                        // of local max/min
+                        if (m_advection_type == "BDS") {
+                            b.setLo(dir, BCType::foextrap);
+                        } else {
+                            b.setLo(dir, BCType::hoextrap);
+                        }
+                    }
                 } else {
-                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::hoextrap);
+                    for (auto& b : m_bcrec_tracer) {
+                        // BDS requires foextrap to avoid introduction
+                        // of local max/min
+                        if (m_advection_type == "BDS") {
+                            b.setHi(dir, BCType::foextrap);
+                        } else {
+                            b.setHi(dir, BCType::hoextrap);
+                        }
+                    }
                 }
             }
             else if (bct == BC::mass_inflow)
