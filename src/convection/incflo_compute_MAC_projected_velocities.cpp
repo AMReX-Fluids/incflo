@@ -236,7 +236,7 @@ incflo::compute_MAC_projected_velocities (
                     vmac_arr(i,j,k) = cc_arr(i,j-1,k,1);
                 }
                 if (j == dhi.y && bc.hi(1) == BCType::ext_dir) {
-                    vmac_arr(i+1,j,k) = cc_arr(i,j+1,k,1);
+                    vmac_arr(i,j+1,k) = cc_arr(i,j+1,k,1);
                 }
             });
 #if (AMREX_SPACEDIM > 2)
