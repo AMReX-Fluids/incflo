@@ -186,7 +186,7 @@ incflo::compute_MAC_projected_velocities (
                      mac_vec[lev][2] = w_mac[lev];);
     }
 
-    auto bc_vel_d = get_velocity_bcrec_device_ptr();
+    const auto *bc_vel_d = get_velocity_bcrec_device_ptr();
 
     std::unique_ptr<iMultiFab> velBC_MF;
 
