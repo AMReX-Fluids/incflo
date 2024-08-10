@@ -33,8 +33,6 @@ struct IncfloVelFill
 #else
         const int k = 0;
 #endif
-        if (j == 3) amrex::Print() << "TIME IN VELFILL " << time << std::endl;
-
         const amrex::Box& domain_box = geom.Domain();
 
         for (int nc = 0; nc < num_comp; ++nc)
@@ -82,7 +80,7 @@ struct IncfloVelFill
                         vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * y * (amrex::Real(1.0)-y);
                     }
 #if (AMREX_SPACEDIM == 2)
-                    else if (41 == probtype)
+                    else if (42 == probtype)
                     {
                         vel(i,j,k,dcomp+nc) = time;
                     }
@@ -96,6 +94,10 @@ struct IncfloVelFill
                     {
                         amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
                         vel(i,j,k,dcomp+nc) =  amrex::Real(0.5) * z;
+                    }
+                    else if (42 == probtype)
+                    {
+                        vel(i,j,k,dcomp+nc) = time;
                     }
 #endif
                 }
