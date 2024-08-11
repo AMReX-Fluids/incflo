@@ -301,34 +301,36 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         // Define domain boundary conditions at half-time to be used for fluxes if using Godunov
         // *************************************************************************************
         //
-        MultiFab vel_nph, rho_nph, trac_nph;
+        MultiFab*  vel_nph = nullptr;
+        MultiFab*  rho_nph = nullptr;
+        MultiFab* trac_nph = nullptr;
         if (m_advection_type != "MOL") {
-            vel_nph.define(vel[lev]->boxArray(),vel[lev]->DistributionMap(),AMREX_SPACEDIM,1);
-            vel_nph.setVal(0.);
-            fillphysbc_velocity(lev, m_cur_time+0.5*m_dt, vel_nph, 1);
+            vel_nph->define(vel[lev]->boxArray(),vel[lev]->DistributionMap(),AMREX_SPACEDIM,1);
+            vel_nph->setVal(0.);
+            fillphysbc_velocity(lev, m_cur_time+0.5*m_dt, *vel_nph, 1);
 
             if ( !m_constant_density || m_advect_momentum ||
                 (m_advect_tracer && m_ntrac > 0) )
             {
-                rho_nph.define(density[lev]->boxArray(),density[lev]->DistributionMap(),1,1);
-                rho_nph.setVal(0.);
-                fillphysbc_density(lev, m_cur_time+0.5*m_dt, rho_nph, 1);
+                rho_nph->define(density[lev]->boxArray(),density[lev]->DistributionMap(),1,1);
+                rho_nph->setVal(0.);
+                fillphysbc_density(lev, m_cur_time+0.5*m_dt, *rho_nph, 1);
             }
 
             if ( m_advect_momentum ) {
                 for (int n = 0; n < AMREX_SPACEDIM; n++) {
-                    Multiply(vel_nph, rho_nph, 0, n, 1, 1);
+                    Multiply(*vel_nph, *rho_nph, 0, n, 1, 1);
                 }
             }
 
             if (m_advect_tracer && (m_ntrac>0)) {
-                trac_nph.define(tracer[lev]->boxArray(),tracer[lev]->DistributionMap(),m_ntrac,1);
-                trac_nph.setVal(0.);
-                fillphysbc_tracer(lev, m_cur_time+0.5*m_dt, trac_nph, 1);
+                trac_nph->define(tracer[lev]->boxArray(),tracer[lev]->DistributionMap(),m_ntrac,1);
+                trac_nph->setVal(0.);
+                fillphysbc_tracer(lev, m_cur_time+0.5*m_dt, *trac_nph, 1);
                 auto const* iconserv = get_tracer_iconserv_device_ptr();
                 for (int n = 0; n < m_ntrac; n++) {
                     if ( iconserv[n] ){
-                        Multiply(trac_nph, rho_nph, 0, n, 1, 1);
+                        Multiply(*trac_nph, *rho_nph, 0, n, 1, 1);
                     }
                 }
             }
@@ -415,7 +417,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                           : Array4<int const>{};
             HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
                                                      (m_advect_momentum) ? rhovel[lev].array(mfi) : vel[lev]->const_array(mfi),
-                                                     vel_nph.const_array(mfi),
+                                                     (vel_nph == nullptr) ? Array4<Real const>{} : vel_nph->const_array(mfi),
                                                      AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
                                                                   flux_y[lev].array(mfi,face_comp),
                                                                   flux_z[lev].array(mfi,face_comp)),
@@ -458,7 +460,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                                 : Array4<int const>{};
                 HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
                                                          density[lev]->const_array(mfi),
-                                                         rho_nph.const_array(mfi),
+                                                         (rho_nph == nullptr) ? Array4<Real const>{} : rho_nph->const_array(mfi),
                                                          AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
                                                                       flux_y[lev].array(mfi,face_comp),
                                                                       flux_z[lev].array(mfi,face_comp)),
@@ -525,7 +527,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                                 : Array4<int const>{};
                 HydroUtils::ComputeFluxesOnBoxFromState( bx, ncomp, mfi,
                                           any_conserv_trac ? trac_tmp : tracer[lev]->const_array(mfi),
-                                          trac_nph.const_array(mfi),
+                                          (trac_nph == nullptr) ? Array4<Real const>{} : trac_nph->const_array(mfi),
                                           AMREX_D_DECL(flux_x[lev].array(mfi,face_comp),
                                                        flux_y[lev].array(mfi,face_comp),
                                                        flux_z[lev].array(mfi,face_comp)),
