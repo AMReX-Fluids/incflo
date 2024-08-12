@@ -325,7 +325,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             if (m_advect_tracer && (m_ntrac>0)) {
                 trac_nph.setVal(0.);
                 fillphysbc_tracer(lev, m_cur_time+0.5*m_dt, trac_nph, 1);
-                auto const* iconserv = get_tracer_iconserv_device_ptr();
+                auto const& iconserv = get_tracer_iconserv();
                 for (int n = 0; n < m_ntrac; n++) {
                     if ( iconserv[n] ){
                         Multiply(trac_nph, rho_nph, 0, n, 1, 1);
