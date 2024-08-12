@@ -1,4 +1,5 @@
 #include <hydro_utils.H>
+#include <hydro_bcs_K.H>
 #include <incflo.H>
 #include <AMReX_MultiFabUtil.H>
 
@@ -58,8 +59,9 @@ incflo::compute_MAC_projected_velocities (
 
         } // end m_godunov_include_diff_in_forcing
 
-        if (nghost_force() > 0)
+        if (nghost_force() > 0) {
             fillpatch_force(m_cur_time, vel_forces, nghost_force());
+        }
 
     } // end m_advection_type
 
@@ -143,7 +145,7 @@ incflo::compute_MAC_projected_velocities (
         // not this velocity extrapolation. So we'll use Godunov here instead.
         //
         std::string l_advection_type = m_advection_type;
-        if ( l_advection_type == "BDS" ) {
+        if ( m_advection_type == "BDS" ) {
             l_advection_type = "Godunov";
         }
 
@@ -184,6 +186,76 @@ incflo::compute_MAC_projected_velocities (
                      mac_vec[lev][2] = w_mac[lev];);
     }
 
+    const auto *bc_vel_d = get_velocity_bcrec_device_ptr();
+
+    std::unique_ptr<iMultiFab> velBC_MF;
+
+    //
+    // This loop is only necessary if there is time-dependent inflow but we don't have a good test for that
+    //      so we do it if there is any inflow face
+    //
+    for (int lev=0; lev <= finest_level; ++lev)
+    {
+        MultiFab time_dep_inflow_vel(vel[lev]->boxArray(),vel[lev]->DistributionMap(),AMREX_SPACEDIM,1);
+        fillphysbc_velocity(lev, m_cur_time+0.5*l_dt, time_dep_inflow_vel, 1);
+
+        Box domain(geom[lev].Domain());
+        const auto dlo = lbound(domain);
+        const auto dhi = ubound(domain);
+
+        if (m_has_mixedBC) {
+            velBC_MF = make_BC_MF(lev, m_bcrec_velocity_d, "velocity");
+        }
+
+        for (MFIter mfi(time_dep_inflow_vel,false); mfi.isValid(); ++mfi)
+        {
+            Box const& bx = mfi.validbox();
+            auto   cc_arr = time_dep_inflow_vel.const_array(mfi);
+
+            Array4<int const> const& velbc_arr = velBC_MF ? (*velBC_MF).const_array(mfi)
+                                                          : Array4<int const>{};
+
+            auto umac_arr = mac_vec[lev][0]->array(mfi);
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                int n = 0;
+                const auto bc = HydroBC::getBC(i, j, k, n, domain, bc_vel_d, velbc_arr);
+                if (i == dlo.x && bc.lo(0) == BCType::ext_dir) {
+                    umac_arr(i,j,k) = cc_arr(i-1,j,k,0);
+                }
+                if (i == dhi.x && bc.hi(0) == BCType::ext_dir) {
+                    umac_arr(i+1,j,k) = cc_arr(i+1,j,k,0);
+                }
+            });
+            auto vmac_arr = mac_vec[lev][1]->array(mfi);
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                int n = 1;
+                const auto bc = HydroBC::getBC(i, j, k, n, domain, bc_vel_d, velbc_arr);
+                if (j == dlo.y && bc.lo(1) == BCType::ext_dir) {
+                    vmac_arr(i,j,k) = cc_arr(i,j-1,k,1);
+                }
+                if (j == dhi.y && bc.hi(1) == BCType::ext_dir) {
+                    vmac_arr(i,j+1,k) = cc_arr(i,j+1,k,1);
+                }
+            });
+#if (AMREX_SPACEDIM > 2)
+            auto wmac_arr = mac_vec[lev][2]->array(mfi);
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                int n = 2;
+                const auto bc = HydroBC::getBC(i, j, k, n, domain, bc_vel_d, velbc_arr);
+                if (k == dlo.z && bc.lo(2) == BCType::ext_dir) {
+                    wmac_arr(i,j,k) = cc_arr(i,j,k-1,2);
+                }
+                if (k == dhi.z && bc.hi(2) == BCType::ext_dir) {
+                    wmac_arr(i,j,k+1) = cc_arr(i,j,k+1,2);
+                }
+            });
+#endif
+        } // mfi
+    } // lev
+
     macproj->setUMAC(mac_vec);
 
 #ifdef AMREX_USE_EB
@@ -205,7 +277,6 @@ incflo::compute_MAC_projected_velocities (
         //     to change that so we reduce the cost of the MAC projection
         for (int lev=0; lev <= finest_level; ++lev)
             mac_phi[lev]->setVal(0.);
-            //mac_phi[lev]->mult(0.5,0,1,1);
 
         macproj->project(mac_phi,m_mac_mg_rtol,m_mac_mg_atol);
 

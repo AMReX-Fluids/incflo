@@ -59,13 +59,16 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
                    std::string const& field)
 {
     auto ncomp = static_cast<int>(bcs.size());
+
     // The advection routines expect that the BC type is stored in the first ghost
     // cell of a cell-centered MF.
     std::unique_ptr<iMultiFab> BC_MF(new iMultiFab(grids[lev], dmap[lev], ncomp, 1));
-    // initialize to 0 == BCType::int_dir, not sure this is needed really
+
+    // Initialize to 0 == BCType::int_dir, not sure this is needed really
     *BC_MF = 0;
+
     // For advection, we use FOEXTRAP for outflow regions per incflo::init_bcs()
-    int inflow = BCType::ext_dir;
+    int  inflow = BCType::ext_dir;
     int outflow = BCType::foextrap;
 
     Box const& domain = geom[lev].Domain();
@@ -86,6 +89,7 @@ incflo::make_BC_MF(int lev, amrex::Gpu::DeviceVector<amrex::BCRec> const& bcs,
             Box bhi = mfi.growntilebox() & dhi;
             Array4<int> const& bc_arr = BC_MF->array(mfi);
             BCRec const* const bc_ptr = bcs.data();
+
             if (m_bc_type[olo] == BC::mixed) {
                 prob_set_BC_MF(olo, blo, bc_arr, lev, inflow, outflow, field);
             } else {

@@ -158,7 +158,7 @@ void incflo::prob_init_fluid (int lev)
         }
         else if (31  == m_probtype || 32  == m_probtype || 33  == m_probtype ||
                  311 == m_probtype || 322 == m_probtype || 333 == m_probtype ||
-                 41  == m_probtype)
+                 41  == m_probtype || 42 == m_probtype)
         {
             init_plane_poiseuille(vbx, gbx,
                                   ld.velocity.array(mfi),
@@ -1008,6 +1008,17 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
             if (nt > 0 && i <= dhi.x/8)   tracer(i,j,k,0) = 1.0;
             if (nt > 1 && i <= dhi.x/2)   tracer(i,j,k,1) = 2.0;
             if (nt > 2 && i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
+        });
+    }
+    else if (42 == m_probtype)
+    {
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            vel(i,j,k,0) = 0.0;
+            const int nt = tracer.nComp();
+            for (int n = 0; n < nt; ++n) {
+                tracer(i,j,k,n) = 0.0;
+            }
         });
     }
     else if (32 == m_probtype)
