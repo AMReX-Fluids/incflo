@@ -197,6 +197,7 @@ incflo::compute_MAC_projected_velocities (
     for (int lev=0; lev <= finest_level; ++lev)
     {
         MultiFab time_dep_inflow_vel(vel[lev]->boxArray(),vel[lev]->DistributionMap(),AMREX_SPACEDIM,1);
+        time_dep_inflow_vel.setVal(0.);
         fillphysbc_velocity(lev, m_cur_time+0.5*l_dt, time_dep_inflow_vel, 1);
 
         Box domain(geom[lev].Domain());
