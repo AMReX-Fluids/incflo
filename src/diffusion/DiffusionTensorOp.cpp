@@ -59,6 +59,7 @@ DiffusionTensorOp::DiffusionTensorOp (incflo* a_incflo)
                                                 m_incflo->boxArray(0,finest_level),
                                                 m_incflo->DistributionMap(0,finest_level),
                                                 info_solve);
+            m_reg_solve_op->setGaussSeidel(m_mg_use_gauss_seidel);
             m_reg_solve_op->setMaxOrder(m_mg_maxorder);
             m_reg_solve_op->setDomainBC(m_incflo->get_diffuse_tensor_bc(Orientation::low),
                                         m_incflo->get_diffuse_tensor_bc(Orientation::high));
@@ -96,6 +97,8 @@ DiffusionTensorOp::readParameters ()
 
     pp.query("num_pre_smooth", m_num_pre_smooth);
     pp.query("num_post_smooth", m_num_post_smooth);
+
+    pp.query("use_gauss_seidel", m_mg_use_gauss_seidel);
 }
 
 void
