@@ -66,6 +66,7 @@ private:
     amrex::Real m_mg_rtol = amrex::Real(1.0e-11);
     amrex::Real m_mg_atol = amrex::Real(1.0e-14);
 #endif
+    bool m_mg_use_gauss_seidel = true;
     std::string m_bottom_solver = "bicgstab";
 };
 
