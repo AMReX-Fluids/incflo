@@ -1,7 +1,7 @@
 #include <incflo.H>
 
 using namespace amrex;
-
+#define VOF_NODATA std::numeric_limits<Real>::max()
 void incflo::compute_tra_forces (Vector<MultiFab*> const& tra_forces,
                                  Vector<MultiFab const*> const& density)
 {
@@ -148,4 +148,40 @@ void incflo::compute_vel_forces_on_level (int lev,
                 });
             }
     }
+    // add surface tension
+    //fixme: we just consider the surface tension for first tracer
+if(1){
+    if (m_vof_advect_tracer && m_sigma[0]!=0.){
+       VolumeOfFluid*  vof_p = get_volume_of_fluid ();
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+       for (MFIter mfi(vel_forces,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+       {
+          Box const& bx = mfi.tilebox();
+          Array4<Real>       const& vel_f = vel_forces.array(mfi);
+          Array4<Real const> const& rho   = density.const_array(mfi);
+          Array4<Real const> const& tra   = tracer_new.const_array(mfi);
+          Array4<Real const> const& kappa = vof_p->kappa[lev].const_array(mfi);
+          ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+          {
+            if(kappa(i,j,k,0)!=VOF_NODATA){
+              Real sig_kappa = m_sigma[0]*kappa(i,j,k,0)/rho(i,j,k);
+             //note: the minus sign is used because of the way curvature is calculated
+              AMREX_D_TERM(
+               vel_f(i,j,k,0) -= Real(0.5)*(tra(i+1,j,k,0)-tra(i-1,j,k,0))/dx[0]*sig_kappa;,
+               vel_f(i,j,k,1) -= Real(0.5)*(tra(i,j+1,k,0)-tra(i,j-1,k,0))/dx[1]*sig_kappa;,
+               vel_f(i,j,k,2) -= Real(0.5)*(tra(i,j,k+1,0)-tra(i,j,k-1,0))/dx[2]*sig_kappa;);
+            }
+          });
+
+
+       }
+
+
+
+    }
+
+}
 }

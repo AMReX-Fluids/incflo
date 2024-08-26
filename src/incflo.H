@@ -215,7 +215,7 @@ public:
 
     ///////////////////////////////////////////////////////////////////////////
     //
-    //  tacer advection by VOF method
+    //  tracer advection by VOF method
     //
     ////////////////////////////////////////////////////////////////////////////
 
@@ -223,6 +223,8 @@ public:
                            AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
                                         amrex::Vector<amrex::MultiFab const*> const& v_mac,
                                         amrex::Vector<amrex::MultiFab const*> const& w_mac));
+    void update_vof_density (amrex::Vector<amrex::MultiFab*> const& density,
+                             amrex::Vector<amrex::MultiFab*> const& tracer);
 
 
     [[nodiscard]] amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
@@ -291,11 +293,13 @@ public:
     void compute_viscosity (amrex::Vector<amrex::MultiFab*> const& eta,
                             amrex::Vector<amrex::MultiFab*> const& rho,
                             amrex::Vector<amrex::MultiFab*> const& vel,
+                            amrex::Vector<amrex::MultiFab*> const& tracer,
                             amrex::Real time, int nghost);
     void compute_viscosity_at_level (int lev,
                                      amrex::MultiFab* eta,
                                      amrex::MultiFab* rho,
                                      amrex::MultiFab* vel,
+                                     amrex::MultiFab* tracer,
                                      amrex::Geometry& lev_geom,
                                      amrex::Real time, int nghost);
     void compute_tracer_diff_coeff (amrex::Vector<amrex::MultiFab*> const& tra_eta, int nghost);
@@ -531,6 +535,13 @@ private:
     amrex::Real m_tau_0 = 0.0;
     amrex::Real m_papa_reg = 0.0;
     amrex::Real m_eta_0 = 0.0;
+
+    // VOF advection parameters
+    bool m_vof_advect_tracer = false;
+    // density of the phase represented by VOF=1
+    amrex::Vector<amrex::Real> m_ro_s;
+    // surface tension
+    amrex::Vector<amrex::Real> m_sigma;
 
     int m_plot_int = -1;
 

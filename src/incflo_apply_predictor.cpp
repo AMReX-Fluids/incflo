@@ -123,8 +123,12 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Compute viscosity / diffusive coefficients
     // *************************************************************************************
     compute_viscosity(GetVecOfPtrs(vel_eta),
-                      get_density_old(), get_velocity_old(),
+                      get_density_old(), get_velocity_old(),get_tracer_old(),
                       m_cur_time, 1);
+    //when VOF method is used to advect the tracer, density and viscosity of each cell will
+    // depend the VOF field value of the cell.
+    if (m_vof_advect_tracer)
+        update_vof_density (get_density_old(),get_tracer_old());
 
     // *************************************************************************************
     // Compute explicit viscous term
@@ -194,7 +198,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // **********************************************************************************************
     // Project velocity field, update pressure
     // **********************************************************************************************
-//Hua    ApplyProjection(get_density_nph_const(),new_time,m_dt,incremental_projection);
+    ApplyProjection(get_density_nph_const(),new_time,m_dt,incremental_projection);
 
 #ifdef INCFLO_USE_PARTICLES
     // **************************************************************************************

@@ -98,7 +98,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
                                    bool set_inflow_bc)
 {
     Vector<amrex::MultiFab> sigma(finest_level+1);
-    if (!m_constant_density)
+    if (!m_constant_density||m_vof_advect_tracer)
     {
         for (int lev = 0; lev <= finest_level; ++lev )
         {
@@ -160,7 +160,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
     LPInfo info;
     info.setMaxCoarseningLevel(m_nodal_mg_max_coarsening_level);
 
-    if (m_constant_density)
+    if (m_constant_density&&!m_vof_advect_tracer)
     {
         Real constant_sigma = scaling_factor / m_ro_0;
         nodal_projector = std::make_unique<Hydro::NodalProjector>(vel, constant_sigma,

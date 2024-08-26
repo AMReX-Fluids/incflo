@@ -123,7 +123,7 @@ incflo::compute_MAC_projected_velocities (
         }
     } else {
 #ifndef AMREX_USE_EB
-        if (m_constant_density) {
+        if (m_constant_density&&!m_vof_advect_tracer) {
             macproj->updateBeta(l_dt/m_ro_0);  // unnecessary unless m_ro_0 changes.
         } else
 #endif
@@ -176,6 +176,11 @@ incflo::compute_MAC_projected_velocities (
                                       m_godunov_ppm, m_godunov_use_forces_in_trans,
                                       l_advection_type, PPM::default_limiter,
                                       allow_inflow_on_outflow, BC_MF.get());
+
+        //add surface tension
+        //if(m_vof_advect_tracer)
+        //  get_volume_of_fluid ()->velocity_face_source(lev,AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]));
+
     }
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);

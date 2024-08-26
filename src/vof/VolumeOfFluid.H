@@ -1,8 +1,3 @@
-//struct TracerVOF {
-//  GfsVariableTracer parent;
-//
-//  GfsVariable * m[FTT_DIMENSION], * alpha;
-//};
 // Header file (VolumeOfFluid class)
 #ifndef INCFLO_VOF_
 #define INCFLO_VOF_
@@ -26,6 +21,8 @@ public:
     void WriteTecPlotFile     (amrex::Real time, int nstep);
     void output_droplet (amrex::Real time, int nstep);
     void apply_velocity_field(amrex::Real time, int nstep);
+    void velocity_face_source(int lev,AMREX_D_DECL(amrex::MultiFab& u_mac, amrex::MultiFab& v_mac,
+                                                   amrex::MultiFab& w_mac));
 
 // normal vector of interface
    amrex::Vector<amrex::MultiFab> normal;

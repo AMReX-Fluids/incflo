@@ -1578,10 +1578,10 @@ if(1){
           XDim3 m={0.,0.,0.};
           auto fvol = vof_arr(i,j,k,0);
           THRESHOLD(fvol);
-   if (i==5&&j==6&&k==8){
+   /*if (i==5&&j==6&&k==8){
        int dddd;
        Print()<<"------------"<<"\n";
-   }
+   }*/
           if (!height_normal (i,j,k, hb_arr, ht_arr, m)){
 //          if(1){
             if (!interface_cell (i,j,k, vof_arr, fvol)) {
@@ -2022,7 +2022,7 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
        m_total_flux[lev].setVal(0.0);
        vof_total_flux[lev].setVal(0.0);
        MultiFab const * U_MF = dir < 1? u_mac[lev]:
-                           dir < 2? v_mac[lev]:w_mac[lev];
+                               dir < 2? v_mac[lev]:w_mac[lev];
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -2177,11 +2177,81 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
   start = (start + 1) % AMREX_SPACEDIM;
 
 }
-////////////////////////////////////////////////////////////////////
+
+
+void
+VolumeOfFluid:: velocity_face_source (int lev, AMREX_D_DECL(MultiFab& u_mac, MultiFab& v_mac,
+                                                            MultiFab& w_mac))
+{
+   auto& ld = *v_incflo->m_leveldata[lev];
+   Geometry const& geom = v_incflo->Geom(lev);
+   auto const& dx = geom.CellSizeArray();
+   Real sigma = v_incflo->m_sigma[0];
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+   for (MFIter mfi(kappa[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+   {
+       Box const& bx = mfi.tilebox();
+       Box const& xbx = mfi.nodaltilebox(0);
+       Box const& ybx = mfi.nodaltilebox(1);
+       Box const& zbx = mfi.nodaltilebox(2);
+       Array4<Real const> const& rho   = ld.density.const_array(mfi);
+       Array4<Real const> const& tra   = ld.tracer.const_array(mfi);
+       Array4<Real const> const& kap   = kappa[lev].const_array(mfi);
+       Array4<Real > const& umac = u_mac.array(mfi);
+       Array4<Real > const& vmac = v_mac.array(mfi);
+       Array4<Real > const& wmac = w_mac.array(mfi);
+
+       ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+       {
+         Real kaf;
+         if(kap(i,j,k,0)!=VOF_NODATA && kap(i-1,j,k,0)!=VOF_NODATA)
+            kaf=Real(0.5)*(kap(i,j,k,0)+kap(i-1,j,k,0));
+         else if (kap(i,j,k,0)!=VOF_NODATA)
+            kaf=kap(i,j,k);
+         else if (kap(i-1,j,k,0)!=VOF_NODATA)
+            kaf=kap(i-1,j,k);
+         else
+            kaf=0.;
+          umac(i,j,k) += Real(2.)*kaf/(rho(i,j,k)+rho(i-1,j,k))*(tra(i,j,k,0)-tra(i-1,j,k,0))/dx[0];
+       });
+
+       ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+       {
+         Real kaf;
+         if(kap(i,j,k,0)!=VOF_NODATA && kap(i,j-1,k,0)!=VOF_NODATA)
+            kaf=Real(0.5)*(kap(i,j,k,0)+kap(i,j-1,k,0));
+         else if (kap(i,j,k,0)!=VOF_NODATA)
+            kaf=kap(i,j,k);
+         else if (kap(i,j-1,k,0)!=VOF_NODATA)
+            kaf=kap(i,j-1,k);
+         else
+            kaf=0.;
+          vmac(i,j,k) += Real(2.)*kaf/(rho(i,j,k)+rho(i,j-1,k))*(tra(i,j,k,0)-tra(i,j-1,k,0))/dx[1];
+       });
+
+       ParallelFor(zbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+       {
+         Real kaf;
+         if(kap(i,j,k,0)!=VOF_NODATA && kap(i,j,k-1,0)!=VOF_NODATA)
+            kaf=Real(0.5)*(kap(i,j,k,0)+kap(i,j,k-1,0));
+         else if (kap(i,j,k,0)!=VOF_NODATA)
+            kaf=kap(i,j,k);
+         else if (kap(i,j,k-1,0)!=VOF_NODATA)
+            kaf=kap(i,j,k-1);
+         else
+            kaf=0.;
+          wmac(i,j,k) += Real(2.)*kaf/(rho(i,j,k)+rho(i,j,k-1))*(tra(i,j,k,0)-tra(i,j,k-1,0))/dx[2];
+       });
+    }
+
+}
+//////////////////////////////////////////////////////////////////////////////////
 ///////
 ///////  Initialize the VOF value using the EB implicit surface function
 ///////
-/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////
 void
 VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
 {
@@ -2232,12 +2302,12 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
     Array<Real,AMREX_SPACEDIM> high{AMREX_D_DECL((probhi[0]-11.2*dx[0]),
                                                  (probhi[1]-11.2*dx[1]),
                                                  (probhi[2]-11.2*dx[2]))};    */
-   Array<Real,AMREX_SPACEDIM> low{AMREX_D_DECL( (problo[0]+0.5/16.),
-                                                (problo[1]+0.5/16.),
-                                                (problo[2]+0.5/16.))};
-    Array<Real,AMREX_SPACEDIM> high{AMREX_D_DECL((problo[0]+5.5/16.),
-                                                 (problo[1]+5.5/16.),
-                                                 (problo[2]+5.5/16.))};
+   Array<Real,AMREX_SPACEDIM> low{AMREX_D_DECL( (0.5*(problo[0]+probhi[0])-.2),
+                                                (0.5*(problo[1]+probhi[1])-.2),
+                                                (0.5*(problo[2]+probhi[2])-.2))};
+    Array<Real,AMREX_SPACEDIM> high{AMREX_D_DECL((0.5*(problo[0]+probhi[0])+.2),
+                                                 (0.5*(problo[1]+probhi[1])+.2),
+                                                 (0.5*(problo[2]+probhi[2])+.2))};
     auto my_box= EB2::BoxIF( low,  high, fluid_is_inside);
     //auto my_box=  EB2::rotate(EB2::BoxIF( low,  high, fluid_is_inside), .3, 1);
     auto my_box1=  EB2::rotate(my_box, .3, 0);
@@ -2261,7 +2331,8 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
         if (lev == v_incflo->finestLevel()) {
             EB2::IndexSpace::pop();
         }
-    } else
+    }
+    else
 #endif
     {
 
@@ -2497,11 +2568,11 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
         //spatial coordinates
         TecplotFile << (AMREX_SPACEDIM== 2 ? "VARIABLES = \"X\", \"Y\"":"VARIABLES = \"X\", \"Y\", \"Z\"");
         //output variables
-        TecplotFile <<", \"F\""<<", \"v_x\""<<", \"v_y\""<<", \"v_z\""<<
+        TecplotFile <<", \"P\""<<", \"F\""<<", \"v_x\""<<", \"v_y\""<<", \"v_z\""<<
                       ", \"m_x\""<<", \"m_y\""<<", \"m_z\""<<", \"alpha\""<<", \"tag\""<<
                       ", \"hb_x\""<<", \"hb_y\""<<", \"hb_z\""<<
                       ", \"ht_x\""<<", \"ht_y\""<<", \"ht_z\""<<
-                      ", \"kappa\""<<"\n";
+                      ", \"kappa\""<<", \"rho\""<<"\n";
 
         for (int lev = 0; lev <= finest_level; ++lev) {
             auto& ld = *v_incflo->m_leveldata[lev];
@@ -2536,10 +2607,11 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                 TecplotFile <<(std::string("ZONE T=")+zonetitle);
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim)
                     TecplotFile <<", "<<(IJK[dim]+std::string("="))<<(ijk_max[dim]-ijk_min[dim]+2);
-                TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(AMREX_SPACEDIM+1)<<"-"<<19<<"]=CELLCENTERED)"
+                TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(AMREX_SPACEDIM+2)<<"-"<<21<<"]=CELLCENTERED)"
                             <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
 
 //      AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
+                Array4<Real const> const& pa = ld.p_nd.const_array(mfi);
                 Array4<Real const> const& tracer = ld.tracer.const_array(mfi);
                 Array4<Real const> const& vel = ld.velocity.const_array(mfi);
                 Array4<Real const> const& mv = normal[lev].const_array(mfi);
@@ -2548,23 +2620,37 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                 Array4<Real const> const& hb_arr = height[lev][0].const_array(mfi);
                 Array4<Real const> const& ht_arr = height[lev][1].const_array(mfi);
                 Array4<Real const> const& kappa_arr = kappa[lev].const_array(mfi);
+                Array4<Real const> const& density_arr = ld.density.const_array(mfi);
                 int nn=0;
                 //write coordinate variables
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
-                    for (int k = lo.z; k <= hi.z +1; ++k) {
-                    for (int j = lo.y; j <= hi.y +1; ++j) {
-                    for (int i = lo.x; i <= hi.x +1; ++i) {
-                        TecplotFile << (problo[dim]+dx[dim]*(dim<1?i:dim<2?j:k))<<" ";
-                        ++nn;
-                        if (nn > 100) {
-                            TecplotFile <<"\n";
-                            nn=0;
-                        }
-                    }
-                    }
-                    }
+                  for (int k = lo.z; k <= hi.z +1; ++k) {
+                  for (int j = lo.y; j <= hi.y +1; ++j) {
+                  for (int i = lo.x; i <= hi.x +1; ++i) {
+                      TecplotFile << (problo[dim]+dx[dim]*(dim<1?i:dim<2?j:k))<<" ";
+                      ++nn;
+                      if (nn > 100) {
+                          TecplotFile <<"\n";
+                          nn=0;
+                      }
+                  }
+                  }
+                  }
                 }//
-
+                //write presure
+                for (int k = lo.z; k <= hi.z+1; ++k) {
+                for (int j = lo.y; j <= hi.y+1; ++j) {
+                for (int i = lo.x; i <= hi.x+1; ++i) {
+                    TecplotFile << pa(i,j,k)<<" ";
+                    ++nn;
+                    if (nn > 100) {
+                        TecplotFile <<"\n";
+                        nn=0;
+                    }
+                }
+                }
+                }
+                //write VOF
                 for (int k = lo.z; k <= hi.z; ++k) {
                 for (int j = lo.y; j <= hi.y; ++j) {
                 for (int i = lo.x; i <= hi.x; ++i) {
@@ -2611,32 +2697,32 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
 
                 //write alpha of the interface
 
-                    for (int k = lo.z; k <= hi.z; ++k) {
-                    for (int j = lo.y; j <= hi.y; ++j) {
-                    for (int i = lo.x; i <= hi.x; ++i) {
-                        TecplotFile << al(i,j,k)<<" ";
-                        ++nn;
-                        if (nn > 100) {
-                            TecplotFile <<"\n";
-                            nn=0;
-                        }
+                for (int k = lo.z; k <= hi.z; ++k) {
+                for (int j = lo.y; j <= hi.y; ++j) {
+                for (int i = lo.x; i <= hi.x; ++i) {
+                    TecplotFile << al(i,j,k)<<" ";
+                    ++nn;
+                    if (nn > 100) {
+                        TecplotFile <<"\n";
+                        nn=0;
                     }
-                    }
-                    }
+                }
+                }
+                }
 
                 //write id of the droplets or bubbles
-                    for (int k = lo.z; k <= hi.z; ++k) {
-                    for (int j = lo.y; j <= hi.y; ++j) {
-                    for (int i = lo.x; i <= hi.x; ++i) {
-                        TecplotFile << tag_arr(i,j,k)<<" ";
-                        ++nn;
-                        if (nn > 100) {
-                            TecplotFile <<"\n";
-                            nn=0;
-                        }
+                for (int k = lo.z; k <= hi.z; ++k) {
+                for (int j = lo.y; j <= hi.y; ++j) {
+                for (int i = lo.x; i <= hi.x; ++i) {
+                    TecplotFile << tag_arr(i,j,k)<<" ";
+                    ++nn;
+                    if (nn > 100) {
+                        TecplotFile <<"\n";
+                        nn=0;
                     }
-                    }
-                    }
+                }
+                }
+                }
                 //write height function values
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
                     for (int k = lo.z; k <= hi.z; ++k) {
@@ -2680,7 +2766,19 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                 }
                 }
                 }
-
+                //write density
+                for (int k = lo.z; k <= hi.z; ++k) {
+                for (int j = lo.y; j <= hi.y; ++j) {
+                for (int i = lo.x; i <= hi.x; ++i) {
+                    TecplotFile << density_arr(i,j,k)<<" ";
+                    ++nn;
+                    if (nn > 100) {
+                        TecplotFile <<"\n";
+                        nn=0;
+                    }
+                }
+                }
+                }
                 TecplotFile <<"\n";
             } // end MFIter
 
@@ -3273,7 +3371,7 @@ if (0){
 // If the file was just created, write the header
      if (outputFile.tellp() == 0) {
        outputFile << "The file contains the data of drops \n"
-                 <<"Time, Num of Drops, Volume, Speed, Centroid, Range, Surface area, Curvature range (mean, min,max,stddev)\n";
+                 <<"Time, Num of Drops, Volume, Speed, Centroid, Range, Surface area, Curvature range (mean,min,max,stddev)\n";
      }
 
 // Write data to file
@@ -3282,13 +3380,11 @@ if (0){
      for (int n = 0; n < n_tag && n < 7; n++){
        outputFile <<" #"<<n+1<<"  "<<vols[n]<<"  "<<vels[n]<<"  "<<"L  "
                   <<mcent[0][n]<<"  "<<mcent[1][n]<<"  "<<mcent[2][n]<<"  "<<"R ";
-       for(int d = 0; d < AMREX_SPACEDIM; d++)
+      /* for(int d = 0; d < AMREX_SPACEDIM; d++)
          outputFile <<range[d][0][n]<<"  "<<range[d][1][n]<<"  ";
        outputFile <<"s  "<<surfA[n]<<"  "
                   <<"k: "<<kappa_range[n].mean<<" "<<kappa_range[n].min<<" "<<kappa_range[n].max
-                  <<" "<<kappa_range[n].stddev<<"\n";
-
-
+                  <<" "<<kappa_range[n].stddev;    */
      }
      outputFile <<"\n";
      outputFile.close();

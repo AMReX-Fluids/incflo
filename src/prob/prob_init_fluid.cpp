@@ -202,6 +202,7 @@ void incflo::prob_init_fluid (int lev)
 
     if (1109 == m_probtype) {
         get_volume_of_fluid ()->tracer_vof_init_fraction(lev, ld.tracer);
+        MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, 1, ld.tracer.nGrow());
     }
 }
 

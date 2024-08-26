@@ -154,6 +154,16 @@ void incflo::ReadParameters ()
         for (int i = 0; i < m_ntrac; i++) {
             amrex::Print() << "Tracer diffusion coeff: " << i << ":" << m_mu_s[i] << std::endl;
         }
+        //vof parameters
+        pp.query("vof_advect_tracer", m_vof_advect_tracer);
+        if (m_vof_advect_tracer){
+           //the default of the density of VOF phase is same as the background fluid
+           m_ro_s.resize(m_ntrac, m_ro_0);
+           pp.queryarr("ro_s", m_ro_s, 0, m_ntrac );
+           // the default of the surface tension is zero
+           m_sigma.resize(m_ntrac, 0.);
+           pp.queryarr("sigma", m_sigma, 0, m_ntrac );
+        }
     } // end prefix incflo
 
     ReadIOParameters();
