@@ -37,6 +37,25 @@ struct IncfloVelFill
         for (int nc = 0; nc < num_comp; ++nc)
         {
             const amrex::BCRec& bc = bcr[bcomp+nc];
+
+            if (1101 == probtype && i < domain_box.smallEnd(0))
+            {
+                int direction = 1;
+                int half_num_cells = domain_box.length(direction) / 2;
+                if (j > half_num_cells) {
+                    // Here is the dirichlet portion
+                    vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
+                }
+            }
+            else if (1101 == probtype && i > domain_box.bigEnd(0))
+            {
+                int direction = 1;
+                int half_num_cells = domain_box.length(direction) / 2;
+                if (j <= half_num_cells) {
+                    // Here we take minus the inflow BC
+                    vel(i,j,k,dcomp+nc) = -bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
+                }
+            }
 #if (AMREX_SPACEDIM == 3)
             else if (1102 == probtype && j > domain_box.bigEnd(1))
             {
@@ -73,12 +92,16 @@ struct IncfloVelFill
                             amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
                             vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * y * (amrex::Real(1.0)-y);
                         }
-#if (AMREX_SPACEDIM == 2)
                         else if (42 == probtype)
                         {
                             vel(i,j,k,dcomp+nc) = time;
                         }
-#elif (AMREX_SPACEDIM == 3)
+                        else if (43 == probtype)
+                        {
+                            amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
+                            vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * y * (amrex::Real(1.0)-y) - 1.0;
+                        }
+#if (AMREX_SPACEDIM == 3)
                         else if (311 == probtype)
                         {
                             amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
@@ -88,10 +111,6 @@ struct IncfloVelFill
                         {
                             amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
                             vel(i,j,k,dcomp+nc) =  amrex::Real(0.5) * z;
-                        }
-                        else if (42 == probtype)
-                        {
-                            vel(i,j,k,dcomp+nc) = time;
                         }
 #endif
                     }
@@ -122,6 +141,15 @@ struct IncfloVelFill
                         // Here we take minus the inflow BC
                         vel(i,j,k,dcomp+nc) = -bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
                     }
+                }
+                else if (42 == probtype)
+                {
+                    vel(i,j,k,dcomp+nc) = time;
+                }
+                else if (43 == probtype)
+                {
+                    amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
+                    vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * y * (amrex::Real(1.0)-y) - 1.0;
                 }
                 else if ( ( (bc.hi(0) == amrex::BCType::ext_dir) ||
                             (bc.hi(0) == amrex::BCType::direction_dependent &&
