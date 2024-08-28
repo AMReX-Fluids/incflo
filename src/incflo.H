@@ -637,7 +637,7 @@ private:
 
     enum struct BC {
         pressure_inflow, pressure_outflow, mass_inflow, no_slip_wall, slip_wall,
-        periodic, mixed, undefined
+        periodic, mixed, direction_dependent, undefined
     };
 
     bool m_has_mixedBC = false;
@@ -870,6 +870,7 @@ private:
     ///////////////////////////////////////////////////////////////////////////
 
     void init_bcs ();
+    bool has_inout_bndry;
 
     ///////////////////////////////////////////////////////////////////////////
     //

@@ -20,6 +20,7 @@ incflo::get_nodal_projection_bc (Orientation::Side side) const noexcept
                 break;
             }
             case BC::mass_inflow:
+            case BC::direction_dependent:
             case BC::mixed:
             {
                 r[dir] = LinOpBCType::inflow;
@@ -57,6 +58,7 @@ incflo::get_mac_projection_bc (Orientation::Side side) const noexcept
                 break;
             }
             case BC::mass_inflow:
+            case BC::direction_dependent:
             case BC::slip_wall:
             case BC::no_slip_wall:
             {

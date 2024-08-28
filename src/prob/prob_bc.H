@@ -8,13 +8,12 @@
 struct IncfloVelFill
 {
     int probtype;
-    amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>, AMREX_SPACEDIM*2> bcv;
+    amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>, AMREX_SPACEDIM*2> bcv_vel;
 
     AMREX_GPU_HOST
     constexpr IncfloVelFill (int a_probtype,
-                             amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>,
-                             AMREX_SPACEDIM*2> const& a_bcv)
-        : probtype(a_probtype), bcv(a_bcv) {}
+                             amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>,AMREX_SPACEDIM*2> const& a_bcv)
+        : probtype(a_probtype), bcv_vel(a_bcv) {}
 
     AMREX_GPU_DEVICE
     void operator() (const amrex::IntVect& iv, amrex::Array4<amrex::Real> const& vel,
@@ -38,25 +37,6 @@ struct IncfloVelFill
         for (int nc = 0; nc < num_comp; ++nc)
         {
             const amrex::BCRec& bc = bcr[bcomp+nc];
-
-            if (1101 == probtype && i < domain_box.smallEnd(0))
-            {
-                int direction = 1;
-                int half_num_cells = domain_box.length(direction) / 2;
-                if (j > half_num_cells) {
-                    // Here is the dirichlet portion
-                    vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
-                }
-            }
-            else if (1101 == probtype && i > domain_box.bigEnd(0))
-            {
-                int direction = 1;
-                int half_num_cells = domain_box.length(direction) / 2;
-                if (j <= half_num_cells) {
-                    // Here we take minus the inflow BC
-                    vel(i,j,k,dcomp+nc) = -bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
-                }
-            }
 #if (AMREX_SPACEDIM == 3)
             else if (1102 == probtype && j > domain_box.bigEnd(1))
             {
@@ -64,119 +44,243 @@ struct IncfloVelFill
                 int half_num_cells = domain_box.length(direction) / 2;
                 if (k <= half_num_cells) {
                     // Here we take minus the inflow BC specified in inputs file
-                    vel(i,j,k,dcomp+nc) = -bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
+                    vel(i,j,k,dcomp+nc) = -bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
                 }
             }
 #endif
-            else if (bc.lo(0) == amrex::BCType::ext_dir && i < domain_box.smallEnd(0))
+            // **********************************************************************************************
+            // LOW I
+            // **********************************************************************************************
+            if (i < domain_box.smallEnd(0))
             {
-                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
-
-                if (orig_comp+nc == 0) // x velocity
+                if (1101 == probtype)
                 {
-                    if (31 == probtype)
-                    {
-                        amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
-                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * y * (amrex::Real(1.0)-y);
+                    int direction = 1;
+                    int half_num_cells = domain_box.length(direction) / 2;
+                    if (j > half_num_cells) {
+                        // Here is the dirichlet portion
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
                     }
+                }
+                else if ( bc.lo(0) == amrex::BCType::ext_dir )
+                {
+                    vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
+
+                    if (orig_comp+nc == 0) // x velocity
+                    {
+                        if (31 == probtype)
+                        {
+                            amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
+                            vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * y * (amrex::Real(1.0)-y);
+                        }
 #if (AMREX_SPACEDIM == 2)
-                    else if (42 == probtype)
-                    {
-                        vel(i,j,k,dcomp+nc) = time;
-                    }
+                        else if (42 == probtype)
+                        {
+                            vel(i,j,k,dcomp+nc) = time;
+                        }
 #elif (AMREX_SPACEDIM == 3)
-                    else if (311 == probtype)
-                    {
-                        amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
-                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * z * (amrex::Real(1.0)-z);
-                    }
-                    else if (41 == probtype)
-                    {
-                        amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
-                        vel(i,j,k,dcomp+nc) =  amrex::Real(0.5) * z;
-                    }
-                    else if (42 == probtype)
-                    {
-                        vel(i,j,k,dcomp+nc) = time;
-                    }
+                        else if (311 == probtype)
+                        {
+                            amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
+                            vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * z * (amrex::Real(1.0)-z);
+                        }
+                        else if (41 == probtype)
+                        {
+                            amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
+                            vel(i,j,k,dcomp+nc) =  amrex::Real(0.5) * z;
+                        }
+                        else if (42 == probtype)
+                        {
+                            vel(i,j,k,dcomp+nc) = time;
+                        }
 #endif
+                    }
                 }
-            }
-            else if (bc.hi(0) == amrex::BCType::ext_dir && i > domain_box.bigEnd(0))
-            {
-                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
-            }
-
-            if (bc.lo(1) == amrex::BCType::ext_dir && j < domain_box.smallEnd(1))
-            {
-                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][orig_comp+nc];
-
-                if (orig_comp+nc == 1) // y velocity
+                else if ( bc.lo(0) == amrex::BCType::direction_dependent)
                 {
+                    if (bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][0] >= 0.)
+                    {
+                        // do ext_dir if inflowing
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
+                    } else {
+                        // do extrap if outflowing
+                        vel(i,j,k,dcomp+nc) = vel(i+1,j,k,dcomp+nc);
+                    }
+                }
+            } // low i
+
+            // **********************************************************************************************
+            // HIGH I
+            // **********************************************************************************************
+            if (i > domain_box.bigEnd(0))
+            {
+                if (1101 == probtype)
+                {
+                    int direction = 1;
+                    int half_num_cells = domain_box.length(direction) / 2;
+                    if (j <= half_num_cells) {
+                        // Here we take minus the inflow BC
+                        vel(i,j,k,dcomp+nc) = -bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
+                    }
+                }
+                else if ( ( (bc.hi(0) == amrex::BCType::ext_dir) ||
+                            (bc.hi(0) == amrex::BCType::direction_dependent &&
+                             bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][0] <= 0.) ) )
+                {
+                    // do ext_dir if inflowing
+                    vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
+                }
+
+                else if ( (bc.hi(0) == amrex::BCType::direction_dependent) &&
+                          (bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][0] > 0.) )
+                {
+                    // do extrap if outflowing
+                    vel(i,j,k,dcomp+nc) = vel(i-1,j,k,dcomp+nc);
+                }
+            } // high i
+
+            // **********************************************************************************************
+            // LOW J
+            // **********************************************************************************************
+            if ( j < domain_box.smallEnd(1) )
+            {
+                if ( bc.lo(1) == amrex::BCType::ext_dir )
+                {
+                    vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][orig_comp+nc];
+
+                    if (orig_comp+nc == 1) // y velocity
+                    {
 #if (AMREX_SPACEDIM == 3)
-                    if (32 == probtype)
-                    {
-                        amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
-                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * z * (amrex::Real(1.0)-z);
-                    }
-                    else
+                        if (32 == probtype)
+                        {
+                            amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
+                            vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * z * (amrex::Real(1.0)-z);
+                        }
+                        else
 #endif
-                    if (322 == probtype)
-                    {
-                        amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
-                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * x * (amrex::Real(1.0)-x);
+                        if (322 == probtype)
+                        {
+                            amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
+                            vel(i,j,k,dcomp+nc) *= amrex::Real(6.) * x * (amrex::Real(1.0)-x);
+                        }
                     }
                 }
-            }
-            else if (bc.hi(1) == amrex::BCType::ext_dir && j > domain_box.bigEnd(1))
-            {
-                if (16 == probtype)
+                else if ( bc.lo(1) == amrex::BCType::direction_dependent )
                 {
-                    if (orig_comp+nc == 0) { // x velocity
-                        amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
-                        vel(i,j,k,dcomp+nc) = 16.0 * (x*x*x*x - 2.0 * x*x*x + x*x);
+                    if (bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][0] >= 0.)
+                    {
+                        // do ext_dir if inflowing
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][orig_comp+nc];
+                    } else {
+                        // do extrap if outflowing
+                        vel(i,j,k,dcomp+nc) = vel(i,j+1,k,dcomp+nc);
                     }
-                } else {
-                   vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
                 }
-            }
+            } // low j
+
+            // **********************************************************************************************
+            // HIGH J
+            // **********************************************************************************************
+            if ( j > domain_box.bigEnd(1) )
+            {
+                if ( bc.hi(1) == amrex::BCType::ext_dir )
+                {
+                    if (16 == probtype)
+                    {
+                        if (orig_comp+nc == 0) { // x velocity
+                            amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
+                            vel(i,j,k,dcomp+nc) = 16.0 * (x*x*x*x - 2.0 * x*x*x + x*x);
+                        }
+                    } else {
+                       vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
+                    }
+                }
+                else if ( bc.hi(1) == amrex::BCType::direction_dependent )
+                {
+                    if (bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][0] <= 0.)
+                    {
+                        // do ext_dir if inflowing
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
+                    } else {
+                        // do extrap if outflowing
+                        vel(i,j,k,dcomp+nc) = vel(i,j-1,k,dcomp+nc);
+                    }
+                }
+            } // high j
 
 #if (AMREX_SPACEDIM == 3)
-            if (bc.lo(2) == amrex::BCType::ext_dir && k < domain_box.smallEnd(2))
+            // **********************************************************************************************
+            // LOW K
+            // **********************************************************************************************
+            if ( k < domain_box.smallEnd(2) )
             {
-                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+nc];
-
-                if (orig_comp+nc == 2) // z velocity
+                if ( bc.lo(2) == amrex::BCType::ext_dir )
                 {
-                    if (33 == probtype)
+                    vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+nc];
+
+                    if (orig_comp+nc == 2) // z velocity
                     {
-                        amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
-                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.0) * x * (amrex::Real(1.0)-x);
-                    }
-                    if (333 == probtype)
-                    {
-                        amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
-                        vel(i,j,k,dcomp+nc) *= amrex::Real(6.0) * y * (amrex::Real(1.0)-y);
+                        if (33 == probtype)
+                        {
+                            amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
+                            vel(i,j,k,dcomp+nc) *= amrex::Real(6.0) * x * (amrex::Real(1.0)-x);
+                        }
+                        if (333 == probtype)
+                        {
+                            amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
+                            vel(i,j,k,dcomp+nc) *= amrex::Real(6.0) * y * (amrex::Real(1.0)-y);
+                        }
                     }
                 }
-            }
-            else if (bc.hi(2) == amrex::BCType::ext_dir && k > domain_box.bigEnd(2))
+                else if ( bc.lo(2) == amrex::BCType::direction_dependent )
+                {
+                    if (bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][0] >= 0.)
+                    {
+                        // do ext_dir if inflowing
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+nc];
+                    } else {
+                        // do extrap if outflowing
+                        vel(i,j,k,dcomp+nc) = vel(i,j,k+1,dcomp+nc);
+                    }
+                }
+            } // low k
+
+            // **********************************************************************************************
+            // HIGH K
+            // **********************************************************************************************
+            if ( k > domain_box.bigEnd(2) )
             {
-                vel(i,j,k,dcomp+nc) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][orig_comp+nc];
-            }
+                if ( bc.hi(2) == amrex::BCType::direction_dependent )
+                {
+                    if (bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][0] <= 0.)
+                    {
+                        // do ext_dir if inflowing
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][orig_comp+nc];
+                    } else {
+                        // do extrap if outflowing
+                        vel(i,j,k,dcomp+nc) = vel(i,j,k-1,dcomp+nc);
+                    }
+                }
+                else if ( bc.hi(2) == amrex::BCType::ext_dir )
+                {
+                    vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][orig_comp+nc];
+                }
+            } // high k
 #endif
-        }
+        } // nc
     }
 };
 
 struct IncfloDenFill
 {
     int probtype;
-    amrex::GpuArray<amrex::Real,AMREX_SPACEDIM*2> bcv;
+    amrex::GpuArray<amrex::Real,AMREX_SPACEDIM*2> bcv_den;
+    amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>, AMREX_SPACEDIM*2> bcv_vel;
 
     AMREX_GPU_HOST
-    constexpr IncfloDenFill (int a_probtype, amrex::GpuArray<amrex::Real, AMREX_SPACEDIM*2> const& a_bcv)
-        : probtype(a_probtype), bcv(a_bcv) {}
+    constexpr IncfloDenFill (int a_probtype, amrex::GpuArray<amrex::Real, AMREX_SPACEDIM*2> const& a_bcv_den,
+                             amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>,AMREX_SPACEDIM*2> const& a_bcv_vel)
+        : probtype(a_probtype), bcv_den(a_bcv_den), bcv_vel(a_bcv_vel) {}
 
     AMREX_GPU_DEVICE
     void operator() (const amrex::IntVect& iv, amrex::Array4<amrex::Real> const& rho,
@@ -206,7 +310,7 @@ struct IncfloDenFill
             int half_num_cells = domain_box.length(direction) / 2;
             if (j > half_num_cells) {
                 // Here is the dirichlet portion; we take the inflow BC specified in inputs file
-                rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)];
+                rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)];
             }
         }
         else if (1101 == probtype && i > domain_box.bigEnd(0))
@@ -214,7 +318,7 @@ struct IncfloDenFill
             int direction = 1;
             int half_num_cells = domain_box.length(direction) / 2;
             if (j <= half_num_cells) {
-                rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)];
+                rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)];
             }
         }
 #if (AMREX_SPACEDIM == 3)
@@ -223,35 +327,53 @@ struct IncfloDenFill
             int direction = 2;
             int half_num_cells = domain_box.length(direction) / 2;
             if (k <= half_num_cells) {
-                rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
+                rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
             }
         }
 #endif
-        else if (bc.lo(0) == amrex::BCType::ext_dir && i < domain_box.smallEnd(0))
+        else if ( (i < domain_box.smallEnd(0)) &&
+                  ( (bc.lo(0) == amrex::BCType::ext_dir) ||
+                    (bc.lo(0) == amrex::BCType::direction_dependent &&
+                     bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][0] >= 0.) ) )
         {
-            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)];
+            rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)];
         }
-        else if (bc.hi(0) == amrex::BCType::ext_dir && i > domain_box.bigEnd(0))
+        else if ( (i > domain_box.bigEnd(0)) &&
+                  ( (bc.hi(0) == amrex::BCType::ext_dir) ||
+                    (bc.hi(0) == amrex::BCType::direction_dependent &&
+                     bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][0] <= 0.) ) )
         {
-            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)];
+            rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)];
         }
 
-        if (bc.lo(1) == amrex::BCType::ext_dir && j < domain_box.smallEnd(1))
+        if ( (j < domain_box.smallEnd(1)) &&
+              ( (bc.lo(1) == amrex::BCType::ext_dir) ||
+                (bc.lo(1) == amrex::BCType::direction_dependent &&
+                 bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][1] >= 0.) ) )
         {
-            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)];
+            rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)];
         }
-        else if (bc.hi(1) == amrex::BCType::ext_dir && j > domain_box.bigEnd(1))
+        else if ( (j > domain_box.bigEnd(1)) &&
+                  ( (bc.hi(1) == amrex::BCType::ext_dir) ||
+                    (bc.hi(1) == amrex::BCType::direction_dependent &&
+                     bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][1] <= 0.) ) )
         {
-            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
+            rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
         }
 #if (AMREX_SPACEDIM == 3)
-        if (bc.lo(2) == amrex::BCType::ext_dir && k < domain_box.smallEnd(2))
+         if ( (k < domain_box.smallEnd(2)) &&
+              ( (bc.lo(2) == amrex::BCType::ext_dir) ||
+                (bc.lo(2) == amrex::BCType::direction_dependent &&
+                 bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][2] >= 0.) ) )
         {
-            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)];
+            rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)];
         }
-        else if (bc.hi(2) == amrex::BCType::ext_dir && k > domain_box.bigEnd(2))
+        else if ( (k > domain_box.bigEnd(2)) &&
+                  ( (bc.hi(2) == amrex::BCType::ext_dir) ||
+                    (bc.hi(2) == amrex::BCType::direction_dependent &&
+                     bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][2] <= 0.) ) )
         {
-            rho(i,j,k) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)];
+            rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)];
         }
 #endif
     }
@@ -260,12 +382,14 @@ struct IncfloDenFill
 struct IncfloTracFill
 {
     int probtype, ntrac;
-    amrex::GpuArray<amrex::Real const*, AMREX_SPACEDIM*2> bcv;
+    amrex::GpuArray<amrex::Real const*, AMREX_SPACEDIM*2> bcv_tra;
+    amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>, AMREX_SPACEDIM*2> bcv_vel;
 
     AMREX_GPU_HOST
     constexpr IncfloTracFill (int a_probtype, int a_ntrac,
-                              amrex::GpuArray<amrex::Real const*, AMREX_SPACEDIM*2> const& a_bcv)
-        : probtype(a_probtype), ntrac(a_ntrac), bcv(a_bcv) {}
+                              amrex::GpuArray<amrex::Real const*, AMREX_SPACEDIM*2> const& a_bcv_tra,
+                              amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>,AMREX_SPACEDIM*2> const& a_bcv_vel)
+        : probtype(a_probtype), ntrac(a_ntrac), bcv_tra(a_bcv_tra), bcv_vel(a_bcv_vel) {}
 
     AMREX_GPU_DEVICE
     void operator() (const amrex::IntVect& iv, amrex::Array4<amrex::Real> const& tracer,
@@ -297,7 +421,7 @@ struct IncfloTracFill
                 int half_num_cells = domain_box.length(direction) / 2;
                 if (j > half_num_cells) {
                     // Here we take the inflow BC specified in inputs file
-                    tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][n];
+                    tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][n];
                 }
             }
             else if (1101 == probtype && i > domain_box.bigEnd(0))
@@ -305,7 +429,7 @@ struct IncfloTracFill
                 int direction = 1;
                 int half_num_cells = domain_box.length(direction) / 2;
                 if (j <= half_num_cells) {
-                    tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][n];
+                    tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][n];
                 }
             }
 #if (AMREX_SPACEDIM == 3)
@@ -314,35 +438,53 @@ struct IncfloTracFill
                 int direction = 2;
                 int half_num_cells = domain_box.length(direction) / 2;
                 if (k <= half_num_cells) {
-                    tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][n];
+                    tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][n];
                 }
             }
 #endif
-            else if (bc.lo(0) == amrex::BCType::ext_dir && i < domain_box.smallEnd(0))
+            else if ( (i < domain_box.smallEnd(0)) &&
+                      ( (bc.lo(0) == amrex::BCType::ext_dir) ||
+                        (bc.lo(0) == amrex::BCType::direction_dependent &&
+                         bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][0] >= 0.) ) )
             {
-                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][n];
+                tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][n];
             }
-            else if (bc.hi(0) == amrex::BCType::ext_dir && i > domain_box.bigEnd(0))
+            else if ( (i > domain_box.bigEnd(0)) &&
+                      ( (bc.hi(0) == amrex::BCType::ext_dir) ||
+                        (bc.hi(0) == amrex::BCType::direction_dependent &&
+                         bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][0] <= 0.) ) )
             {
-                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][n];
+                tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][n];
             }
 
-            if (bc.lo(1) == amrex::BCType::ext_dir && j < domain_box.smallEnd(1))
+            if ( (j < domain_box.smallEnd(1)) &&
+                  ( (bc.lo(1) == amrex::BCType::ext_dir) ||
+                    (bc.lo(1) == amrex::BCType::direction_dependent &&
+                     bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][1] >= 0.) ) )
             {
-                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][n];
+                tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][n];
             }
-            else if (bc.hi(1) == amrex::BCType::ext_dir && j > domain_box.bigEnd(1))
+            else if ( (j > domain_box.bigEnd(1)) &&
+                      ( (bc.hi(1) == amrex::BCType::ext_dir) ||
+                        (bc.hi(1) == amrex::BCType::direction_dependent &&
+                         bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][1] <= 0.) ) )
             {
-                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][n];
+                tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][n];
             }
 #if (AMREX_SPACEDIM == 3)
-            if (bc.lo(2) == amrex::BCType::ext_dir && k < domain_box.smallEnd(2))
+            if ( (k < domain_box.smallEnd(2)) &&
+                 ( (bc.lo(2) == amrex::BCType::ext_dir) ||
+                   (bc.lo(2) == amrex::BCType::direction_dependent &&
+                    bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][2] >= 0.) ) )
             {
-                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][n];
+                tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][n];
             }
-            else if (bc.hi(2) == amrex::BCType::ext_dir && k > domain_box.bigEnd(2))
+            else if ( (k > domain_box.bigEnd(2)) &&
+                      ( (bc.hi(2) == amrex::BCType::ext_dir) ||
+                        (bc.hi(2) == amrex::BCType::direction_dependent &&
+                         bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][2] <= 0.) ) )
             {
-                tracer(i,j,k,n) = bcv[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][n];
+                tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][n];
             }
 #endif
         }

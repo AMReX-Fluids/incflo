@@ -47,7 +47,7 @@ void incflo::fillpatch_density (int lev, Real time, MultiFab& density, int ng)
 {
     if (lev == 0) {
         PhysBCFunct<GpuBndryFuncFab<IncfloDenFill> > physbc(geom[lev], get_density_bcrec(),
-                                                            IncfloDenFill{m_probtype, m_bc_density});
+                                                            IncfloDenFill{m_probtype, m_bc_density, m_bc_velocity});
         FillPatchSingleLevel(density, IntVect(ng), time,
                              {&(m_leveldata[lev]->density_o),
                               &(m_leveldata[lev]->density)},
@@ -56,9 +56,9 @@ void incflo::fillpatch_density (int lev, Real time, MultiFab& density, int ng)
     } else {
         const auto& bcrec = get_density_bcrec();
         PhysBCFunct<GpuBndryFuncFab<IncfloDenFill> > cphysbc
-            (geom[lev-1], bcrec, IncfloDenFill{m_probtype, m_bc_density});
+            (geom[lev-1], bcrec, IncfloDenFill{m_probtype, m_bc_density, m_bc_velocity});
         PhysBCFunct<GpuBndryFuncFab<IncfloDenFill> > fphysbc
-            (geom[lev], bcrec, IncfloDenFill{m_probtype, m_bc_density});
+            (geom[lev], bcrec, IncfloDenFill{m_probtype, m_bc_density, m_bc_velocity});
 #ifdef AMREX_USE_EB
         Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
             (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
@@ -83,7 +83,7 @@ void incflo::fillpatch_tracer (int lev, Real time, MultiFab& tracer, int ng)
     if (m_ntrac <= 0) return;
     if (lev == 0) {
         PhysBCFunct<GpuBndryFuncFab<IncfloTracFill> > physbc
-            (geom[lev], get_tracer_bcrec(), IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d});
+            (geom[lev], get_tracer_bcrec(), IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d, m_bc_velocity});
         FillPatchSingleLevel(tracer, IntVect(ng), time,
                              {&(m_leveldata[lev]->tracer_o),
                               &(m_leveldata[lev]->tracer)},
@@ -92,9 +92,9 @@ void incflo::fillpatch_tracer (int lev, Real time, MultiFab& tracer, int ng)
     } else {
         const auto& bcrec = get_tracer_bcrec();
         PhysBCFunct<GpuBndryFuncFab<IncfloTracFill> > cphysbc
-            (geom[lev-1], bcrec, IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d});
+            (geom[lev-1], bcrec, IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d, m_bc_velocity});
         PhysBCFunct<GpuBndryFuncFab<IncfloTracFill> > fphysbc
-            (geom[lev], bcrec, IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d});
+            (geom[lev], bcrec, IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d, m_bc_velocity});
 #ifdef AMREX_USE_EB
         Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
             (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
@@ -196,9 +196,9 @@ void incflo::fillcoarsepatch_density (int lev, Real time, MultiFab& density, int
 {
     const auto& bcrec = get_density_bcrec();
     PhysBCFunct<GpuBndryFuncFab<IncfloDenFill> > cphysbc
-        (geom[lev-1], bcrec, IncfloDenFill{m_probtype, m_bc_density});
+        (geom[lev-1], bcrec, IncfloDenFill{m_probtype, m_bc_density, m_bc_velocity});
     PhysBCFunct<GpuBndryFuncFab<IncfloDenFill> > fphysbc
-        (geom[lev], bcrec, IncfloDenFill{m_probtype, m_bc_density});
+        (geom[lev], bcrec, IncfloDenFill{m_probtype, m_bc_density, m_bc_velocity});
 #ifdef AMREX_USE_EB
     Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
         (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
@@ -218,9 +218,9 @@ void incflo::fillcoarsepatch_tracer (int lev, Real time, MultiFab& tracer, int n
 
     const auto& bcrec = get_tracer_bcrec();
     PhysBCFunct<GpuBndryFuncFab<IncfloTracFill> > cphysbc
-        (geom[lev-1], bcrec, IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d});
+        (geom[lev-1], bcrec, IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d, m_bc_velocity});
     PhysBCFunct<GpuBndryFuncFab<IncfloTracFill> > fphysbc
-        (geom[lev], bcrec, IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d});
+        (geom[lev], bcrec, IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d, m_bc_velocity});
 #ifdef AMREX_USE_EB
     Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
         (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);

@@ -1,5 +1,6 @@
 #include <AMReX_BC_TYPES.H>
 #include <AMReX_PhysBCFunct.H>
+#include <hydro_utils.H>
 #include <incflo.H>
 #include <prob_bc.H>
 #include <memory>
@@ -149,12 +150,28 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
 
             PhysBCFunct<GpuBndryFuncFab<IncfloVelFill> > physbc
                 (geom[lev], inflow_bcr, IncfloVelFill{m_probtype, m_bc_velocity});
+
             physbc(*vel[lev], 0, AMREX_SPACEDIM, nghost, time, 0);
 
             // We make sure to only fill "nghost" ghost cells so we don't accidentally
             // over-write good ghost cell values with unfilled ghost cell values
             vel[lev]->EnforcePeriodicity(0, AMREX_SPACEDIM, nghost, geom[lev].periodicity());
         }
+    }
+
+    // Enforce solvability by matching outflow to inflow.
+    if (has_inout_bndry && set_inflow_bc)
+    {
+        Vector<Array<MultiFab*, AMREX_SPACEDIM>> vel_vec(finest_level+1);
+
+        for (int lev = 0; lev <= finest_level; lev++) {
+            auto& ld = *m_leveldata[lev];
+            vel_vec[lev][0] = new MultiFab(ld.velocity, amrex::make_alias, 0, 1);
+            vel_vec[lev][1] = new MultiFab(ld.velocity, amrex::make_alias, 1, 1);
+            vel_vec[lev][2] = new MultiFab(ld.velocity, amrex::make_alias, 2, 1);
+        }
+
+        HydroUtils::enforceInOutSolvability(vel_vec, get_velocity_bcrec().data(), geom, true);
     }
 
     LPInfo info;
