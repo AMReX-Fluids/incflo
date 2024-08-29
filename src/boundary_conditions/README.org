@@ -1,32 +1,32 @@
 * fillpatch
 
-|        | pi       | po       | mi       | nsw         | sw                                    |
-|--------+----------+----------+----------+-------------+---------------------------------------|
-| v_n    | foextrap | foextrap | ext_dir  | ext_dir (0) | ext_dir (0)                           |
-| v_t    | foextrap | foextrap | ext_dir  | ext_dir (0) | hoextrap                              |
-| rho    | foextrap | foextrap | ext_dir  | foextrap    | if (advection_type == "BDS") foextrap |
-|        |          |          |          |             | else hoextrap                         |
-| scalar | foextrap | foextrap | ext_dir  | foextrap    | if (advection_type == "BDS") foextrap |
-|        |          |          |          |             | else hoextrap                         |
-| force  | foextrap | foextrap | foextrap | foextrap    | foextrap                              |
+|        | pi       | po       | mi       | nsw         | sw                                    | dir_dep              |
+|--------+----------+----------+----------+-------------+---------------------------------------|-----------------------
+| v_n    | foextrap | foextrap | ext_dir  | ext_dir (0) | ext_dir (0)                           | ext_dir if inflowing |
+| v_t    | foextrap | foextrap | ext_dir  | ext_dir (0) | hoextrap                              | ext_dir if inflowing |
+| rho    | foextrap | foextrap | ext_dir  | foextrap    | if (advection_type == "BDS") foextrap | ext_dir if inflowing |
+|        |          |          |          |             | else hoextrap                         | ext_dir if inflowing |
+| scalar | foextrap | foextrap | ext_dir  | foextrap    | if (advection_type == "BDS") foextrap | ext_dir if inflowing |
+|        |          |          |          |             | else hoextrap                         | ext_dir if inflowing |
+| force  | foextrap | foextrap | foextrap | foextrap    | foextrap                              | foextrap             |
 
 * projection
 
-| pi        | po        | mi      | nsw     | sw      |
-|-----------+-----------+---------+---------+---------|
-| Dirichlet | Dirichlet | Neumann | Neumann | Neumann |
+| pi        | po        | mi      | nsw     | sw      | dir_dep |
+|-----------+-----------+---------+---------+---------|----------
+| Dirichlet | Dirichlet | Neumann | Neumann | Neumann | Neumann |
 
 * tensor solve
 
-|        | pi      | po      | mi        | nsw           | sw            |
-|--------+---------+---------+-----------+---------------+---------------|
-| normal | Neumann | Neumann | Dirichlet | Dirichlet (0) | Dirichlet (0) |
-| tang   | Neumann | Neumann | Dirichlet | Dirichlet (0) | Neumann (0)   |
+|        | pi      | po      | mi        | nsw           | sw            | dir_dep   |
+|--------+---------+---------+-----------+---------------+---------------|------------
+| normal | Neumann | Neumann | Dirichlet | Dirichlet (0) | Dirichlet (0) | Dirichlet |
+| tang   | Neumann | Neumann | Dirichlet | Dirichlet (0) | Neumann (0)   | Dirichlet |
 
 * scalar diffusion
 
-| pi      | po      | mi        | nsw     | sw      |
-|---------+---------+-----------+---------+---------|
-| Neumann | Neumann | Dirichlet | Neumann | Neumann |
-| Neumann | Neumann | Dirichlet | Neumann | Neumann |
+| pi      | po      | mi        | nsw     | sw      | dir_dep   |
+|---------+---------+-----------+---------+---------|------------
+| Neumann | Neumann | Dirichlet | Neumann | Neumann | Dirichlet |
+| Neumann | Neumann | Dirichlet | Neumann | Neumann | Dirichlet |
 
