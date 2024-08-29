@@ -373,7 +373,8 @@ struct IncfloDenFill
         {
             rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)];
         }
-        else if ( (k > domain_box.bigEnd(2)) &&
+
+        if ( (k > domain_box.bigEnd(2)) &&
                   ( (bc.hi(2) == amrex::BCType::ext_dir) ||
                     (bc.hi(2) == amrex::BCType::direction_dependent &&
                      bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][2] <= 0.) ) )
