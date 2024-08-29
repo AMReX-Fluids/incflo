@@ -161,7 +161,6 @@ struct IncfloVelFill
                     amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
                     norm_vel *= amrex::Real(6.) * z * (amrex::Real(1.0)-z);
                 }
-                else
 #endif
                 if (322 == probtype)
                 {
