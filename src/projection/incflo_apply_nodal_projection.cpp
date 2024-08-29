@@ -145,6 +145,10 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
                     AMREX_D_TERM(inflow_bcr[0].set(oit(), BCType::ext_dir);,
                                  inflow_bcr[1].set(oit(), BCType::ext_dir);,
                                  inflow_bcr[2].set(oit(), BCType::ext_dir));
+                } else if (m_bc_type[oit()] == BC::direction_dependent) {
+                    AMREX_D_TERM(inflow_bcr[0].set(oit(), BCType::direction_dependent);,
+                                 inflow_bcr[1].set(oit(), BCType::direction_dependent);,
+                                 inflow_bcr[2].set(oit(), BCType::direction_dependent));
                 }
             }
 
@@ -166,9 +170,9 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
 
         for (int lev = 0; lev <= finest_level; lev++) {
             auto& ld = *m_leveldata[lev];
-            vel_vec[lev][0] = new MultiFab(ld.velocity, amrex::make_alias, 0, 1);
-            vel_vec[lev][1] = new MultiFab(ld.velocity, amrex::make_alias, 1, 1);
-            vel_vec[lev][2] = new MultiFab(ld.velocity, amrex::make_alias, 2, 1);
+            AMREX_D_TERM(vel_vec[lev][0] = new MultiFab(ld.velocity, amrex::make_alias, 0, 1);,
+                         vel_vec[lev][1] = new MultiFab(ld.velocity, amrex::make_alias, 1, 1);,
+                         vel_vec[lev][2] = new MultiFab(ld.velocity, amrex::make_alias, 2, 1););
         }
 
         HydroUtils::enforceInOutSolvability(vel_vec, get_velocity_bcrec().data(), geom, true);

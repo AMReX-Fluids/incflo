@@ -55,7 +55,7 @@ void incflo::init_bcs ()
             pp.query("density", m_bc_density[ori]);
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
         }
-        else if (bc_type == "direction_dependent")
+        else if (bc_type == "direction_dependent" || bc_type == "dd" )
         {
             amrex::Print() << bcid << " set to direction-dependent.\n";
 
