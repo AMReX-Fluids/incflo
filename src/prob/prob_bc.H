@@ -37,6 +37,7 @@ struct IncfloVelFill
         for (int nc = 0; nc < num_comp; ++nc)
         {
             const amrex::BCRec& bc = bcr[bcomp+nc];
+
             // **********************************************************************************************
             // LOW I
             // **********************************************************************************************
@@ -54,18 +55,7 @@ struct IncfloVelFill
 #endif
 
                 // This may modify the normal velocity for specific problems
-                if (1101 == probtype)
-                {
-                    int direction = 1;
-                    int half_num_cells = domain_box.length(direction) / 2;
-                    if (j > half_num_cells) {
-                        // Here is the Dirichlet portion
-                        norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][dir];
-                    } else {
-                        norm_vel = 0.0;
-                    }
-                }
-                else if (42 == probtype)
+                if (42 == probtype)
                 {
                     norm_vel = time;
                 }
@@ -91,8 +81,17 @@ struct IncfloVelFill
                     norm_vel = amrex::Real(0.5) * z;
                 }
 #endif
-                if ( (bc.lo(dir) == amrex::BCType::ext_dir) ||
-                     (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel >= 0.) )
+
+                // This is a special case -- all the logic is contained here
+                if (1101 == probtype)
+                {
+                    int half_num_cells = domain_box.length(1) / 2;
+                    if (j > half_num_cells) {
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
+                    }
+                }
+                else if ( (bc.lo(dir) == amrex::BCType::ext_dir) ||
+                          (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel >= 0.) )
                 {
                     if (nc == dir) {
                         vel(i,j,k,dcomp+nc) = norm_vel;
@@ -127,16 +126,7 @@ struct IncfloVelFill
 #endif
 
                 // This may modify the normal velocity for specific problems
-                if (1101 == probtype)
-                {
-                    int direction = 1;
-                    int half_num_cells = domain_box.length(direction) / 2;
-                    if (j <= half_num_cells) {
-                        // Here we take minus the inflow BC
-                        norm_vel = -bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
-                    }
-                }
-                else if (42 == probtype)
+                if (42 == probtype)
                 {
                     norm_vel = time;
                 }
@@ -146,8 +136,16 @@ struct IncfloVelFill
                     norm_vel = amrex::Real(6.) * y * (amrex::Real(1.0)-y) - 1.0;
                 }
 
-                if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
-                     (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
+                // This is a special case -- all the logic is contained here
+                if (1101 == probtype)
+                {
+                    int half_num_cells = domain_box.length(1) / 2;
+                    if (j <= half_num_cells) {
+                        vel(i,j,k,dcomp+nc) = -bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
+                    }
+                }
+                else if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
+                          (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
                 {
                     if (nc == dir) {
                         vel(i,j,k,dcomp+nc) = norm_vel;
@@ -165,6 +163,9 @@ struct IncfloVelFill
                 }
 
             } // high i
+
+            {
+            }
 
             // **********************************************************************************************
             // LOW J
@@ -332,11 +333,10 @@ struct IncfloVelFill
                     vel(i,j,k,dcomp+nc) = vel(i,j,k-1,dcomp+nc);
                 }
             } // high k
-#endif
+#endif // 3d
         } // nc
-    }
-
-};
+    } // operator
+}; // IncfloVelFill
 
 struct IncfloDenFill
 {
