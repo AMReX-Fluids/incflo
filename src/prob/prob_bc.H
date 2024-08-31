@@ -239,8 +239,17 @@ struct IncfloVelFill
                     norm_vel = 16.0 * (x*x*x*x - 2.0 * x*x*x + x*x);
                 }
 
-                if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
-                     (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
+#if (AMREX_SPACEDIM == 3)
+                if (1102 == probtype && j > domain_box.bigEnd(1))
+                {
+                    int half_num_cells = domain_box.length(2) / 2;
+                    if (k <= half_num_cells) {
+                        vel(i,j,k,dcomp+nc) = -bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
+                    }
+                }
+#endif
+                else if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
+                          (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
                 {
                     if (nc == dir) {
                         vel(i,j,k,dcomp+nc) = norm_vel;
