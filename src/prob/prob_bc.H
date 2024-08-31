@@ -239,23 +239,35 @@ struct IncfloVelFill
                     norm_vel = 16.0 * (x*x*x*x - 2.0 * x*x*x + x*x);
                 }
 
-                if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
-                     (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
-                {
-                    if (nc == dir) {
-                        vel(i,j,k,dcomp+nc) = norm_vel;
-                    } else if (nc == td1) {
-                        vel(i,j,k,dcomp+nc) = tang_vel1;
 #if (AMREX_SPACEDIM == 3)
-                    } else if (nc == td2) {
-                        vel(i,j,k,dcomp+nc) = tang_vel2;
-#endif
+                if (1102 == probtype)
+                {
+                    int half_num_cells = domain_box.length(2) / 2;
+                    if (k <= half_num_cells) {
+                        vel(i,j,k,dcomp+nc) = -bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
                     }
                 }
-                else if (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
+#endif
+                if (1102 != probtype)
                 {
-                    vel(i,j,k,dcomp+nc) = vel(i,j-1,k,dcomp+nc);
-                }
+                    if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
+                         (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
+                    {
+                        if (nc == dir) {
+                            vel(i,j,k,dcomp+nc) = norm_vel;
+                        } else if (nc == td1) {
+                            vel(i,j,k,dcomp+nc) = tang_vel1;
+#if (AMREX_SPACEDIM == 3)
+                        } else if (nc == td2) {
+                            vel(i,j,k,dcomp+nc) = tang_vel2;
+#endif
+                        }
+                    }
+                    else if (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
+                    {
+                        vel(i,j,k,dcomp+nc) = vel(i,j-1,k,dcomp+nc);
+                    }
+                } // not 1102
             } // high j
 
 #if (AMREX_SPACEDIM == 3)
