@@ -21,7 +21,7 @@ public:
     void WriteTecPlotFile     (amrex::Real time, int nstep);
     void output_droplet (amrex::Real time, int nstep);
     void apply_velocity_field(amrex::Real time, int nstep);
-    void velocity_face_source(int lev,AMREX_D_DECL(amrex::MultiFab& u_mac, amrex::MultiFab& v_mac,
+    void velocity_face_source(int lev,amrex::Real dt, AMREX_D_DECL(amrex::MultiFab& u_mac, amrex::MultiFab& v_mac,
                                                    amrex::MultiFab& w_mac));
 
 // normal vector of interface
@@ -41,6 +41,8 @@ public:
    amrex::Vector<amrex::MultiFab> kappa;
 // the tag for droplets
    amrex::Vector<amrex::MultiFab> tag;
+
+   amrex::Vector<amrex::MultiFab> force;
 private:
 incflo* v_incflo; //incflo object
 int finest_level;

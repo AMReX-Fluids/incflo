@@ -30,7 +30,11 @@ incflo::update_vof_density (Vector<MultiFab*> const& density,Vector<MultiFab*> c
            density_arr(i,j,k) = m_ro_0*(1.-tracer_arr(i,j,k,0))+m_ro_s[0]*tracer_arr(i,j,k,0);
          });
      }
+     //fixme: BCs
+    density[lev]->FillBoundary(geom[lev].periodicity()); 
   }    
+  
+   
 }
 
 

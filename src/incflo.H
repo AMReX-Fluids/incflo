@@ -21,7 +21,7 @@
 #include <DiffusionTensorOp.H>
 #include <DiffusionScalarOp.H>
 #include <VolumeOfFluid.H>
-
+#define VOF_NODATA std::numeric_limits<Real>::max()
 enum struct StepType {
     Predictor, Corrector
 };

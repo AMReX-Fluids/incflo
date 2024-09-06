@@ -126,6 +126,9 @@ VolumeOfFluid::VolumeOfFluid (incflo* a_incflo) : v_incflo(a_incflo)
         };
         height.emplace_back(std::move(new_height));
         kappa.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], 1, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev));
+        force.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], AMREX_SPACEDIM, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev));
+        //fixme
+        force[lev].setVal(0,0,AMREX_SPACEDIM,v_incflo->nghost_state());
     }
 
 }
@@ -1449,8 +1452,8 @@ VolumeOfFluid::tracer_vof_update (int lev, MultiFab & vof_mf, Array<MultiFab,2> 
 ///////////////////////////////////////////////////
   for (int dim = 0; dim < AMREX_SPACEDIM; dim++){
 
-    height[0].setVal(VOF_NODATA,dim,1);
-    height[1].setVal(VOF_NODATA,dim,1);
+    height[0].setVal(VOF_NODATA,dim,1,v_incflo->nghost_state());
+    height[1].setVal(VOF_NODATA,dim,1,v_incflo->nghost_state());
     //fix me: have not thought of a way to deal with the MFIter with tiling
     //an option is to use similar way as MPI's implementation.
     for (MFIter mfi(vof_mf); mfi.isValid(); ++mfi) {
@@ -1643,8 +1646,8 @@ VolumeOfFluid::curvature_calculation (int lev, MultiFab & vof_mf, Array<MultiFab
   auto const& probhi = geom.ProbHiArray();
   MultiFab n_max(v_incflo->grids[lev], v_incflo->dmap[lev], 1, v_incflo->nghost_state(),
                  MFInfo(), v_incflo->Factory(lev));
-
-  kappa.setVal(VOF_NODATA);
+  //fixme: need to change for BCs
+  kappa.setVal(VOF_NODATA,0,1,v_incflo->nghost_state());
   n_max.setVal(-1.0);
 // use height function method to calculate curvature
   for (int dim = 0; dim < AMREX_SPACEDIM; dim++){
@@ -1723,22 +1726,26 @@ VolumeOfFluid::curvature_calculation (int lev, MultiFab & vof_mf, Array<MultiFab
       }
     }); //  ParallelFor
   }//end MFIter
-  //!!!!!!!!fix me: a temporary solution for the curvature!!!!!!!!!!!
+  //!!!!!!!!fixme: a temporary solution for the curvature!!!!!!!!!!!
   // fill value of ghost cells (BCs, MPI info.)
     kappa.FillBoundary(geom.periodicity());
+
 // diffuse curvatures
-  int iter = 1;
-  MultiFab temp_K(kappa.boxArray(), kappa.DistributionMap(),1,kappa.nGrow());
-  while (iter--){
-   for (MFIter mfi(vof_mf,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-    Box const& bx = mfi.tilebox();
-    Array4<Real > const& temp_arr = temp_K.array(mfi);
-    Array4<Real > const& kappa_arr = kappa.array(mfi);
-    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-     if (kappa_arr(i,j,k,0)!=VOF_NODATA)
-        temp_arr(i,j,k,0)=kappa_arr(i,j,k,0);
-     else{
+  int iter = 0;
+  if (iter >0){
+    MultiFab temp_K(kappa.boxArray(), kappa.DistributionMap(),1,kappa.nGrow());
+    //fixme: need to change for BCs
+    temp_K.setVal(VOF_NODATA,0,1,kappa.nGrow());
+    while (iter--){
+     for (MFIter mfi(vof_mf,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+       Box const& bx = mfi.tilebox();
+       Array4<Real > const& temp_arr = temp_K.array(mfi);
+       Array4<Real > const& kappa_arr = kappa.array(mfi);
+       ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+       {
+        if (kappa_arr(i,j,k,0)!=VOF_NODATA)
+         temp_arr(i,j,k,0)=kappa_arr(i,j,k,0);
+        else{
         Real sa=0., s=0.;
 /*#if AMREX_SPACEDIM==3
       for (int dk = -1; dk <= 1; dk++)
@@ -1752,27 +1759,27 @@ VolumeOfFluid::curvature_calculation (int lev, MultiFab & vof_mf, Array<MultiFab
            sa += 1.;
          }
        }*/
-      Array<int,3>nei;
-      for (int c = 0; c < AMREX_SPACEDIM; c++){
-       nei[0]=i,nei[1]=j,nei[2]=k;
-       for (int di = -1; di <= 1; di+=2){
-         nei[c]=(c==0?i:c==1?j:k)+di;
-         if (kappa_arr(nei[0],nei[1],nei[2],0)!=VOF_NODATA){
-           s += kappa_arr(nei[0],nei[1],nei[2],0);
-           sa += 1.;
+        Array<int,3>nei;
+        for (int c = 0; c < AMREX_SPACEDIM; c++){
+         nei[0]=i,nei[1]=j,nei[2]=k;
+         for (int di = -1; di <= 1; di+=2){
+           nei[c]=(c==0?i:c==1?j:k)+di;
+           if (kappa_arr(nei[0],nei[1],nei[2],0)!=VOF_NODATA){
+             s += kappa_arr(nei[0],nei[1],nei[2],0);
+             sa += 1.;
+           }
          }
-       }
-      }
-      if (sa > 0.)
-        temp_arr(i,j,k,0)=s/sa;
-      else
-        temp_arr(i,j,k,0)=VOF_NODATA;
-      }
-    }); //  ParallelFor
-   }//end MFIter
+        }
+        if (sa > 0.)
+          temp_arr(i,j,k,0)=s/sa;
+        else
+          temp_arr(i,j,k,0)=VOF_NODATA;
+        }
+       }); //  ParallelFor
+     }//end MFIter
+    }
+    MultiFab::Copy(kappa, temp_K, 0, 0, 1, kappa.nGrow());
   }
-   MultiFab::Copy(kappa, temp_K, 0, 0, 1, kappa.nGrow());
-
 //fit_curvatures using paraboloid fitting of the centroids of the
 //reconstructed interface segments
   for (MFIter mfi(vof_mf,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
@@ -1785,9 +1792,9 @@ VolumeOfFluid::curvature_calculation (int lev, MultiFab & vof_mf, Array<MultiFab
     Array4<Real > const& kappa_arr = kappa.array(mfi);
     ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-  /* if (i==4&&j==0&&k==4){
+   /*if (i==0&&j==0&&k==0){
        int dddd;
-       Print()<<"------------"<<"\n";
+       Print()<<"------------"<<kappa_arr(-1,0,0,0)<<"\n";
    }*/
       auto fvol = vof_arr(i,j,k,0);
       if (!CELL_IS_FULL(fvol)){
@@ -2177,10 +2184,15 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
   start = (start + 1) % AMREX_SPACEDIM;
 
 }
-
-
+// add surface tension force (F) to the MAC velocity at the center of cell faces at the middle
+// of time step (n+1/2).
+// F^n+1/2 = (1/2*dt)*sigma*kappa*grad(VOF)/rho
+//   kappa and rho need to be estimated at the cell face center. The simple average of the cell-centered
+//      values of two neighboring cells dilimited by the face is used to calculate the face-centered value.
+//   grad(VOF) is also estimated at the face center using the center-difference method for two cells
+//   i.e., in x-dir, grad(VOF)= (VOFcell[1]-VOFcell[0])/dx[0]
 void
-VolumeOfFluid:: velocity_face_source (int lev, AMREX_D_DECL(MultiFab& u_mac, MultiFab& v_mac,
+VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u_mac, MultiFab& v_mac,
                                                             MultiFab& w_mac))
 {
    auto& ld = *v_incflo->m_leveldata[lev];
@@ -2214,7 +2226,8 @@ VolumeOfFluid:: velocity_face_source (int lev, AMREX_D_DECL(MultiFab& u_mac, Mul
             kaf=kap(i-1,j,k);
          else
             kaf=0.;
-          umac(i,j,k) += Real(2.)*kaf/(rho(i,j,k)+rho(i-1,j,k))*(tra(i,j,k,0)-tra(i-1,j,k,0))/dx[0];
+        // density estimated at the face center, time increment is half of the timestep, i.e., dt/2
+          umac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i-1,j,k))*(tra(i,j,k,0)-tra(i-1,j,k,0))/dx[0];
        });
 
        ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -2228,7 +2241,7 @@ VolumeOfFluid:: velocity_face_source (int lev, AMREX_D_DECL(MultiFab& u_mac, Mul
             kaf=kap(i,j-1,k);
          else
             kaf=0.;
-          vmac(i,j,k) += Real(2.)*kaf/(rho(i,j,k)+rho(i,j-1,k))*(tra(i,j,k,0)-tra(i,j-1,k,0))/dx[1];
+          vmac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i,j-1,k))*(tra(i,j,k,0)-tra(i,j-1,k,0))/dx[1];
        });
 
        ParallelFor(zbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -2242,7 +2255,7 @@ VolumeOfFluid:: velocity_face_source (int lev, AMREX_D_DECL(MultiFab& u_mac, Mul
             kaf=kap(i,j,k-1);
          else
             kaf=0.;
-          wmac(i,j,k) += Real(2.)*kaf/(rho(i,j,k)+rho(i,j,k-1))*(tra(i,j,k,0)-tra(i,j,k-1,0))/dx[2];
+          wmac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i,j,k-1))*(tra(i,j,k,0)-tra(i,j,k-1,0))/dx[2];
        });
     }
 
@@ -2317,7 +2330,7 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
 
     // Generate GeometryShop
     //auto gshop = EB2::makeShop(two);
-   auto gshop = EB2::makeShop(my_sphere);
+   auto gshop = EB2::makeShop(my_box);
    //auto gshop = EB2::makeShop(my_cyl);
             int max_level = v_incflo->maxLevel();
             EB2::Build(gshop, v_incflo->Geom(max_level), max_level, max_level);
@@ -2388,9 +2401,10 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
             auto const& tracer = a_tracer.array(mfi);
 
             for(int n=0;n<vout.size();++n)
-             if(vout[n].i>=vbx.smallEnd()[0]&&vout[n].i<=vbx.bigEnd()[0]&&
+            /* if(vout[n].i>=vbx.smallEnd()[0]&&vout[n].i<=vbx.bigEnd()[0]&&
                 vout[n].j>=vbx.smallEnd()[1]&&vout[n].j<=vbx.bigEnd()[1]&&
-                vout[n].k>=vbx.smallEnd()[2]&&vout[n].k<=vbx.bigEnd()[2]){
+                vout[n].k>=vbx.smallEnd()[2]&&vout[n].k<=vbx.bigEnd()[2]){*/
+             if(vbx.contains(vout[n].i,vout[n].j,vout[n].k)){
                 tracer(vout[n].i,vout[n].j,vout[n].k,0)=vout[n].vof;
              }
 
@@ -2572,7 +2586,8 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                       ", \"m_x\""<<", \"m_y\""<<", \"m_z\""<<", \"alpha\""<<", \"tag\""<<
                       ", \"hb_x\""<<", \"hb_y\""<<", \"hb_z\""<<
                       ", \"ht_x\""<<", \"ht_y\""<<", \"ht_z\""<<
-                      ", \"kappa\""<<", \"rho\""<<"\n";
+                      ", \"kappa\""<<", \"rho\""<<
+                      ", \"f_x\""<<", \"f_y\""<<", \"f_z\""<<"\n";
 
         for (int lev = 0; lev <= finest_level; ++lev) {
             auto& ld = *v_incflo->m_leveldata[lev];
@@ -2607,7 +2622,7 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                 TecplotFile <<(std::string("ZONE T=")+zonetitle);
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim)
                     TecplotFile <<", "<<(IJK[dim]+std::string("="))<<(ijk_max[dim]-ijk_min[dim]+2);
-                TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(AMREX_SPACEDIM+2)<<"-"<<21<<"]=CELLCENTERED)"
+                TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(AMREX_SPACEDIM+2)<<"-"<<24<<"]=CELLCENTERED)"
                             <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
 
 //      AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
@@ -2621,6 +2636,7 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                 Array4<Real const> const& ht_arr = height[lev][1].const_array(mfi);
                 Array4<Real const> const& kappa_arr = kappa[lev].const_array(mfi);
                 Array4<Real const> const& density_arr = ld.density.const_array(mfi);
+                Array4<Real const> const& force_arr = force[lev].const_array(mfi);
                 int nn=0;
                 //write coordinate variables
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
@@ -2779,6 +2795,23 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                 }
                 }
                 }
+
+                //write force vector
+                for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
+                    for (int k = lo.z; k <= hi.z; ++k) {
+                    for (int j = lo.y; j <= hi.y; ++j) {
+                    for (int i = lo.x; i <= hi.x; ++i) {
+                        TecplotFile << force_arr(i,j,k,dim)<<" ";
+                        ++nn;
+                        if (nn > 100) {
+                            TecplotFile <<"\n";
+                            nn=0;
+                        }
+                    }
+                    }
+                    }
+                }//
+
                 TecplotFile <<"\n";
             } // end MFIter
 
