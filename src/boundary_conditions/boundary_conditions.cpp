@@ -8,6 +8,8 @@ using namespace amrex;
 
 void incflo::init_bcs ()
 {
+    has_inout_bndry = false;
+
     auto f = [this] (std::string const& bcid, Orientation ori)
     {
         m_bc_density[ori] = 1.0;
@@ -42,6 +44,24 @@ void incflo::init_bcs ()
             amrex::Print() << bcid << " set to mass inflow.\n";
 
             m_bc_type[ori] = BC::mass_inflow;
+
+            std::vector<Real> v;
+            if (pp.queryarr("velocity", v, 0, AMREX_SPACEDIM)) {
+               for (int i=0; i<AMREX_SPACEDIM; i++){
+                   m_bc_velocity[ori][i] = v[i];
+               }
+            }
+
+            pp.query("density", m_bc_density[ori]);
+            pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
+        }
+        else if (bc_type == "direction_dependent" || bc_type == "dd" )
+        {
+            amrex::Print() << bcid << " set to direction-dependent.\n";
+
+            has_inout_bndry = true;
+
+            m_bc_type[ori] = BC::direction_dependent;
 
             std::vector<Real> v;
             if (pp.queryarr("velocity", v, 0, AMREX_SPACEDIM)) {
@@ -205,6 +225,18 @@ void incflo::init_bcs ()
                                  m_bcrec_velocity[2].setHi(dir, BCType::ext_dir););
                 }
             }
+            else if (bct == BC::direction_dependent)
+            {
+                if (side == Orientation::low) {
+                    AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::direction_dependent);,
+                                 m_bcrec_velocity[1].setLo(dir, BCType::direction_dependent);,
+                                 m_bcrec_velocity[2].setLo(dir, BCType::direction_dependent););
+                } else {
+                    AMREX_D_TERM(m_bcrec_velocity[0].setHi(dir, BCType::direction_dependent);,
+                                 m_bcrec_velocity[1].setHi(dir, BCType::direction_dependent);,
+                                 m_bcrec_velocity[2].setHi(dir, BCType::direction_dependent););
+                }
+            }
             else if (bct == BC::slip_wall)
             {
                 if (side == Orientation::low) {
@@ -290,6 +322,14 @@ void incflo::init_bcs ()
                     m_bcrec_density[0].setHi(dir, BCType::ext_dir);
                 }
             }
+            else if (bct == BC::direction_dependent)
+            {
+                if (side == Orientation::low) {
+                    m_bcrec_density[0].setLo(dir, BCType::direction_dependent);
+                } else {
+                    m_bcrec_density[0].setHi(dir, BCType::direction_dependent);
+                }
+            }
             else if (bct == BC::periodic)
             {
                 if (side == Orientation::low) {
@@ -364,6 +404,14 @@ void incflo::init_bcs ()
                     for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::ext_dir);
                 } else {
                     for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::ext_dir);
+                }
+            }
+            else if (bct == BC::direction_dependent)
+            {
+                if (side == Orientation::low) {
+                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::direction_dependent);
+                } else {
+                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::direction_dependent);
                 }
             }
             else if (bct == BC::periodic)

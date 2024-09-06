@@ -125,6 +125,7 @@ incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
                 break;
             }
             case BC::mass_inflow:
+            case BC::direction_dependent:
             case BC::no_slip_wall:
             {
                 // All three components are Dirichlet
@@ -174,6 +175,7 @@ incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcep
                 break;
             }
             case BC::mass_inflow:
+            case BC::direction_dependent:
             case BC::no_slip_wall:
             {
                 // All three components are Dirichlet
@@ -239,6 +241,7 @@ incflo::get_diffuse_scalar_bc (Orientation::Side side) const noexcept
                 break;
             }
             case BC::mass_inflow:
+            case BC::direction_dependent:
             {
                 r[dir] = LinOpBCType::Dirichlet;
                 break;
