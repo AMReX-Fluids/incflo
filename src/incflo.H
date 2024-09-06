@@ -829,7 +829,7 @@ private:
     get_diffuse_tensor_bc (amrex::Orientation::Side side) const noexcept;
 
     [[nodiscard]] amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
-    get_diffuse_scalar_bc (amrex::Orientation::Side side) const noexcept;
+    get_diffuse_scalar_bc (amrex::Orientation::Side side, const int* bcr) const noexcept;
 
     void fillpatch_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int ng);
     void fillpatch_density (int lev, amrex::Real time, amrex::MultiFab& density, int ng);

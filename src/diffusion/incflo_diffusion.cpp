@@ -210,7 +210,7 @@ incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcep
 }
 
 Array<LinOpBCType,AMREX_SPACEDIM>
-incflo::get_diffuse_scalar_bc (Orientation::Side side) const noexcept
+incflo::get_diffuse_scalar_bc (Orientation::Side side, const int* bcr) const noexcept
 {
     Array<LinOpBCType,AMREX_SPACEDIM> r;
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
@@ -231,13 +231,12 @@ incflo::get_diffuse_scalar_bc (Orientation::Side side) const noexcept
                 break;
             }
             case BC::slip_wall:
-            {
-                r[dir] = LinOpBCType::Neumann;
-                break;
-            }
             case BC::no_slip_wall:
             {
                 r[dir] = LinOpBCType::Neumann;
+                if ( bcr[dir] == BCType::ext_dir ) {
+                    r[dir] = LinOpBCType::Dirichlet;
+                }
                 break;
             }
             case BC::mass_inflow:
