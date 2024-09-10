@@ -10,6 +10,10 @@ void incflo::init_bcs ()
 {
     has_inout_bndry = false;
 
+    m_bcrec_velocity.resize(AMREX_SPACEDIM);
+    m_bcrec_density.resize(1);
+    if (m_ntrac > 0) { m_bcrec_tracer.resize(m_ntrac); }
+
     auto f = [this] (std::string const& bcid, Orientation ori)
     {
         m_bc_density[ori] = 1.0;
@@ -30,6 +34,13 @@ void incflo::init_bcs ()
             m_bc_type[ori] = BC::pressure_inflow;
 
             pp.get("pressure", m_bc_pressure[ori]);
+
+            // Set mathematical BCs here also
+            AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::foextrap);,
+                         m_bcrec_velocity[1].set(ori, BCType::foextrap);,
+                         m_bcrec_velocity[2].set(ori, BCType::foextrap););
+            m_bcrec_density[0].set(ori, BCType::foextrap);
+            for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
         }
         else if (bc_type == "pressure_outflow" || bc_type == "po")
         {
@@ -38,6 +49,13 @@ void incflo::init_bcs ()
             m_bc_type[ori] = BC::pressure_outflow;
 
             pp.get("pressure", m_bc_pressure[ori]);
+
+            // Set mathematical BCs here also
+            AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::foextrap);,
+                         m_bcrec_velocity[1].set(ori, BCType::foextrap);,
+                         m_bcrec_velocity[2].set(ori, BCType::foextrap););
+            m_bcrec_density[0].set(ori, BCType::foextrap);
+            for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
         }
         else if (bc_type == "mass_inflow" || bc_type == "mi")
         {
@@ -54,6 +72,13 @@ void incflo::init_bcs ()
 
             pp.query("density", m_bc_density[ori]);
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
+
+            // Set mathematical BCs
+            AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::ext_dir);,
+                         m_bcrec_velocity[1].set(ori, BCType::ext_dir);,
+                         m_bcrec_velocity[2].set(ori, BCType::ext_dir););
+            m_bcrec_density[0].set(ori, BCType::ext_dir);
+            for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::ext_dir); }
         }
         else if (bc_type == "direction_dependent" || bc_type == "dd" )
         {
@@ -72,6 +97,12 @@ void incflo::init_bcs ()
 
             pp.query("density", m_bc_density[ori]);
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
+
+            AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::direction_dependent);,
+                         m_bcrec_velocity[1].set(ori, BCType::direction_dependent);,
+                         m_bcrec_velocity[2].set(ori, BCType::direction_dependent););
+            m_bcrec_density[0].set(ori, BCType::direction_dependent);
+            for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::direction_dependent); }
         }
         else if (bc_type == "no_slip_wall" || bc_type == "nsw")
         {
@@ -95,6 +126,17 @@ void incflo::init_bcs ()
             // We potentially read in values at no-slip walls in the event that the
             // tracer has Dirichlet bcs
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
+
+            // Set mathematical BCs
+            AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::ext_dir);,
+                         m_bcrec_velocity[1].set(ori, BCType::ext_dir);,
+                         m_bcrec_velocity[2].set(ori, BCType::ext_dir););
+            m_bcrec_density[0].set(ori, BCType::foextrap);
+            if ( pp.contains("tracer") ) {
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::ext_dir); }
+            } else {
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
+            }
         }
         else if (bc_type == "slip_wall" || bc_type == "sw")
         {
@@ -103,13 +145,36 @@ void incflo::init_bcs ()
             m_bc_type[ori] = BC::slip_wall;
 
             // These values are set by default above -
-            //      note that we only actually use the zero value for the normal direction;
-            //      the tangential components are set to be first order extrap
+            //      note that we only actually use the zero value for the normal direction.
             // m_bc_velocity[ori] = {0.0, 0.0, 0.0};
 
             // We potentially read in values at slip walls in the event that the
             // tracer has Dirichlet bcs
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
+
+            // Tangential directions have hoextrap
+            AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::hoextrap);,
+                         m_bcrec_velocity[1].set(ori, BCType::hoextrap);,
+                         m_bcrec_velocity[2].set(ori, BCType::hoextrap););
+            // Only normal oriection has ext_dir
+            m_bcrec_velocity[ori.coordDir()].set(ori, BCType::ext_dir);
+            if (m_advection_type == "BDS") {
+                // BDS requires foextrap to avoid introduction of local max/min
+                m_bcrec_density[0].set(ori, BCType::foextrap);
+            } else{
+                m_bcrec_density[0].set(ori, BCType::hoextrap);
+            }
+            if ( pp.contains("tracer") ) {
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::ext_dir); }
+            } else {
+                for (auto& b : m_bcrec_tracer) {
+                    if (m_advection_type == "BDS") {
+                        b.set(ori, BCType::foextrap);
+                    } else {
+                        b.set(ori, BCType::hoextrap);
+                    }
+                }
+            }
         }
         else if (bc_type == "mixed" )
         {
@@ -143,6 +208,13 @@ void incflo::init_bcs ()
 
             pp.query("density", m_bc_density[ori]);
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
+
+            // Set mathematical BCs. BC_mask will handle Dirichlet part.
+            AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::foextrap);,
+                         m_bcrec_velocity[1].set(ori, BCType::foextrap);,
+                         m_bcrec_velocity[2].set(ori, BCType::foextrap););
+            m_bcrec_density[0].set(ori, BCType::foextrap);
+            for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::foextrap); }
         }
         else
         {
@@ -152,6 +224,13 @@ void incflo::init_bcs ()
         if (geom[0].isPeriodic(ori.coordDir())) {
             if (m_bc_type[ori] == BC::undefined) {
                 m_bc_type[ori] = BC::periodic;
+
+                // Set mathematical BCs
+                AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::int_dir);,
+                             m_bcrec_velocity[1].set(ori, BCType::int_dir);,
+                             m_bcrec_velocity[2].set(ori, BCType::int_dir););
+                m_bcrec_density[0].set(ori, BCType::int_dir);
+                for (auto& b : m_bcrec_tracer) { b.set(ori, BCType::int_dir); }
             } else {
                 amrex::Abort("Wrong BC type for periodic boundary");
             }
@@ -191,238 +270,25 @@ void incflo::init_bcs ()
         }
     }
 
-    {
-        m_bcrec_velocity.resize(AMREX_SPACEDIM);
-        for (OrientationIter oit; oit; ++oit) {
-            Orientation ori = oit();
-            int dir = ori.coordDir();
-            Orientation::Side side = ori.faceDir();
-            auto const bct = m_bc_type[ori];
-            if (bct == BC::pressure_inflow ||
-                bct == BC::pressure_outflow ||
-                bct == BC::mixed ) // BC_mask will handle Dirichlet part.
-
-            {
-                if (side == Orientation::low) {
-                    AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::foextrap);,
-                                 m_bcrec_velocity[1].setLo(dir, BCType::foextrap);,
-                                 m_bcrec_velocity[2].setLo(dir, BCType::foextrap););
-                } else {
-                    AMREX_D_TERM(m_bcrec_velocity[0].setHi(dir, BCType::foextrap);,
-                                 m_bcrec_velocity[1].setHi(dir, BCType::foextrap);,
-                                 m_bcrec_velocity[2].setHi(dir, BCType::foextrap););
-                }
-            }
-            else if (bct == BC::mass_inflow || bct == BC::no_slip_wall)
-            {
-                if (side == Orientation::low) {
-                    AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::ext_dir);,
-                                 m_bcrec_velocity[1].setLo(dir, BCType::ext_dir);,
-                                 m_bcrec_velocity[2].setLo(dir, BCType::ext_dir););
-                } else {
-                    AMREX_D_TERM(m_bcrec_velocity[0].setHi(dir, BCType::ext_dir);,
-                                 m_bcrec_velocity[1].setHi(dir, BCType::ext_dir);,
-                                 m_bcrec_velocity[2].setHi(dir, BCType::ext_dir););
-                }
-            }
-            else if (bct == BC::direction_dependent)
-            {
-                if (side == Orientation::low) {
-                    AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::direction_dependent);,
-                                 m_bcrec_velocity[1].setLo(dir, BCType::direction_dependent);,
-                                 m_bcrec_velocity[2].setLo(dir, BCType::direction_dependent););
-                } else {
-                    AMREX_D_TERM(m_bcrec_velocity[0].setHi(dir, BCType::direction_dependent);,
-                                 m_bcrec_velocity[1].setHi(dir, BCType::direction_dependent);,
-                                 m_bcrec_velocity[2].setHi(dir, BCType::direction_dependent););
-                }
-            }
-            else if (bct == BC::slip_wall)
-            {
-                if (side == Orientation::low) {
-                    // Tangential directions have hoextrap
-                    AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::hoextrap);,
-                                 m_bcrec_velocity[1].setLo(dir, BCType::hoextrap);,
-                                 m_bcrec_velocity[2].setLo(dir, BCType::hoextrap););
-                    // Only normal direction has ext_dir
-                    m_bcrec_velocity[dir].setLo(dir, BCType::ext_dir);
-
-                } else {
-                    // Tangential directions have hoextrap
-                    AMREX_D_TERM(m_bcrec_velocity[0].setHi(dir, BCType::hoextrap);,
-                                 m_bcrec_velocity[1].setHi(dir, BCType::hoextrap);,
-                                 m_bcrec_velocity[2].setHi(dir, BCType::hoextrap););
-                    // Only normal direction has ext_dir
-                    m_bcrec_velocity[dir].setHi(dir, BCType::ext_dir);
-                }
-            }
-            else if (bct == BC::periodic)
-            {
-                if (side == Orientation::low) {
-                    AMREX_D_TERM(m_bcrec_velocity[0].setLo(dir, BCType::int_dir);,
-                                 m_bcrec_velocity[1].setLo(dir, BCType::int_dir);,
-                                 m_bcrec_velocity[2].setLo(dir, BCType::int_dir););
-                } else {
-                    AMREX_D_TERM(m_bcrec_velocity[0].setHi(dir, BCType::int_dir);,
-                                 m_bcrec_velocity[1].setHi(dir, BCType::int_dir);,
-                                 m_bcrec_velocity[2].setHi(dir, BCType::int_dir););
-                }
-            }
-        }
-        m_bcrec_velocity_d.resize(AMREX_SPACEDIM);
+    // Copy BCRecs to device container
+    m_bcrec_velocity_d.resize(AMREX_SPACEDIM);
 #ifdef AMREX_USE_GPU
-        Gpu::htod_memcpy
+    Gpu::htod_memcpy
 #else
-        std::memcpy
+    std::memcpy
 #endif
-            (m_bcrec_velocity_d.data(), m_bcrec_velocity.data(), sizeof(BCRec)*AMREX_SPACEDIM);
-    }
+        (m_bcrec_velocity_d.data(), m_bcrec_velocity.data(), sizeof(BCRec)*AMREX_SPACEDIM);
 
-    {
-        m_bcrec_density.resize(1);
-        for (OrientationIter oit; oit; ++oit) {
-            Orientation ori = oit();
-            int dir = ori.coordDir();
-            Orientation::Side side = ori.faceDir();
-            auto const bct = m_bc_type[ori];
-            if (bct == BC::pressure_inflow  ||
-                bct == BC::pressure_outflow ||
-                bct == BC::no_slip_wall ||
-                bct == BC::mixed)
-            {
-                if (side == Orientation::low) {
-                    m_bcrec_density[0].setLo(dir, BCType::foextrap);
-                } else {
-                    m_bcrec_density[0].setHi(dir, BCType::foextrap);
-                }
-            }
-            else if (bct == BC::slip_wall)
-            {
-                if (side == Orientation::low) {
-                    // BDS requires foextrap to avoid introduction of local max/min
-                    if (m_advection_type == "BDS") {
-                        m_bcrec_density[0].setLo(dir, BCType::foextrap);
-                    } else{
-                        m_bcrec_density[0].setLo(dir, BCType::hoextrap);
-                    }
-                } else {
-                    // BDS requires foextrap to avoid introduction of local max/min
-                    if (m_advection_type == "BDS") {
-                        m_bcrec_density[0].setHi(dir, BCType::foextrap);
-                    } else {
-                        m_bcrec_density[0].setHi(dir, BCType::hoextrap);
-                    }
-                }
-            }
-            else if (bct == BC::mass_inflow)
-            {
-                if (side == Orientation::low) {
-                    m_bcrec_density[0].setLo(dir, BCType::ext_dir);
-                } else {
-                    m_bcrec_density[0].setHi(dir, BCType::ext_dir);
-                }
-            }
-            else if (bct == BC::direction_dependent)
-            {
-                if (side == Orientation::low) {
-                    m_bcrec_density[0].setLo(dir, BCType::direction_dependent);
-                } else {
-                    m_bcrec_density[0].setHi(dir, BCType::direction_dependent);
-                }
-            }
-            else if (bct == BC::periodic)
-            {
-                if (side == Orientation::low) {
-                    m_bcrec_density[0].setLo(dir, BCType::int_dir);
-                } else {
-                    m_bcrec_density[0].setHi(dir, BCType::int_dir);
-                }
-            }
-        }
-        m_bcrec_density_d.resize(1);
+    m_bcrec_density_d.resize(1);
 #ifdef AMREX_USE_GPU
-        Gpu::htod_memcpy
+    Gpu::htod_memcpy
 #else
-        std::memcpy
+    std::memcpy
 #endif
-            (m_bcrec_density_d.data(), m_bcrec_density.data(), sizeof(BCRec));
-    }
+        (m_bcrec_density_d.data(), m_bcrec_density.data(), sizeof(BCRec));
 
     if (m_ntrac > 0)
     {
-        m_bcrec_tracer.resize(m_ntrac);
-        for (OrientationIter oit; oit; ++oit) {
-            Orientation ori = oit();
-            int dir = ori.coordDir();
-            Orientation::Side side = ori.faceDir();
-            auto const bct = m_bc_type[ori];
-            if (bct == BC::pressure_inflow  ||
-                bct == BC::pressure_outflow ||
-                bct == BC::mixed)
-            {
-                if (side == Orientation::low) {
-                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::foextrap);
-                } else {
-                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::foextrap);
-                }
-            }
-            else if (bct == BC::no_slip_wall)
-            {
-                if (side == Orientation::low) {
-                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::foextrap);
-                } else {
-                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::foextrap);
-                }
-            }
-            else if (bct == BC::slip_wall)
-            {
-                if (side == Orientation::low) {
-                    for (auto& b : m_bcrec_tracer) {
-                        // BDS requires foextrap to avoid introduction
-                        // of local max/min
-                        if (m_advection_type == "BDS") {
-                            b.setLo(dir, BCType::foextrap);
-                        } else {
-                            b.setLo(dir, BCType::hoextrap);
-                        }
-                    }
-                } else {
-                    for (auto& b : m_bcrec_tracer) {
-                        // BDS requires foextrap to avoid introduction
-                        // of local max/min
-                        if (m_advection_type == "BDS") {
-                            b.setHi(dir, BCType::foextrap);
-                        } else {
-                            b.setHi(dir, BCType::hoextrap);
-                        }
-                    }
-                }
-            }
-            else if (bct == BC::mass_inflow)
-            {
-                if (side == Orientation::low) {
-                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::ext_dir);
-                } else {
-                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::ext_dir);
-                }
-            }
-            else if (bct == BC::direction_dependent)
-            {
-                if (side == Orientation::low) {
-                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::direction_dependent);
-                } else {
-                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::direction_dependent);
-                }
-            }
-            else if (bct == BC::periodic)
-            {
-                if (side == Orientation::low) {
-                    for (auto& b : m_bcrec_tracer) b.setLo(dir, BCType::int_dir);
-                } else {
-                    for (auto& b : m_bcrec_tracer) b.setHi(dir, BCType::int_dir);
-                }
-            }
-        }
         m_bcrec_tracer_d.resize(m_ntrac);
 #ifdef AMREX_USE_GPU
         Gpu::htod_memcpy
