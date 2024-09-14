@@ -178,8 +178,8 @@ incflo::compute_MAC_projected_velocities (
                                       allow_inflow_on_outflow, BC_MF.get());
 
         //add surface tension
-        if(m_vof_advect_tracer)
-          get_volume_of_fluid ()->velocity_face_source(lev,l_dt, AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]));
+        //if(m_vof_advect_tracer)
+        //  get_volume_of_fluid ()->velocity_face_source(lev,l_dt, AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]));
 
     }
 
