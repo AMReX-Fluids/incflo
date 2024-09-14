@@ -322,18 +322,3 @@ jobs:
         export OMP_NUM_THREADS=2
         cd ${{ github.workspace }}/incflo
         build/incflo.ex test_no_eb_2d/benchmark.bouss_bubble_god max_step=10 incflo.verbose=1 mac_proj.verbose=1 nodal_proj.verbose=1
-
-  save_pr_number:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Save PR number
-        env:
-          PR_NUMBER: ${{ github.event.number }}
-        run: |
-          echo $PR_NUMBER > pr_number.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: pr_number
-          path: pr_number.txt
-          retention-days: 1

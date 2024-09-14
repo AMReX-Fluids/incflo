@@ -345,13 +345,16 @@ private:
     // Be verbose?
     int m_verbose = 0;
 
+    // number of tracers
+    int m_ntrac = 1;
+
     // Member variables for initial conditions
     int m_probtype = 0;
     amrex::Real m_ic_u = amrex::Real(0.0);
     amrex::Real m_ic_v = amrex::Real(0.0);
     amrex::Real m_ic_w = amrex::Real(0.0);
     amrex::Real m_ic_p = amrex::Real(0.0);
-    amrex::Real m_ic_t = amrex::Real(0.0);
+    amrex::Vector<amrex::Real> m_ic_t = amrex::Vector<amrex::Real> (m_ntrac, amrex::Real(0.0));
 
     amrex::Vector<amrex::Real> m_t_old;
     amrex::Vector<amrex::Real> m_t_new;
@@ -695,8 +698,6 @@ private:
     amrex::Vector<int> m_iconserv_tracer;
     amrex::Gpu::DeviceVector<int> m_iconserv_tracer_d;
 
-    int m_ntrac = 1;
-
     std::unique_ptr<DiffusionTensorOp> m_diffusion_tensor_op;
     std::unique_ptr<DiffusionScalarOp> m_diffusion_scalar_op;
 
@@ -858,7 +859,7 @@ private:
     get_diffuse_tensor_bc (amrex::Orientation::Side side) const noexcept;
 
     [[nodiscard]] amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
-    get_diffuse_scalar_bc (amrex::Orientation::Side side) const noexcept;
+    get_diffuse_scalar_bc (amrex::Orientation::Side side, const int* bcr) const noexcept;
 
     void fillpatch_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int ng);
     void fillpatch_density (int lev, amrex::Real time, amrex::MultiFab& density, int ng);
