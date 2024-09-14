@@ -32,8 +32,11 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                  m_incflo->DistributionMap(0,finest_level),
                                                  info_solve, ebfact);
         m_eb_scal_solve_op->setMaxOrder(m_mg_maxorder);
-        m_eb_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low ),
-                                        m_incflo->get_diffuse_scalar_bc(Orientation::high));
+        // For now, code requires (in more than 1 place) that m_ntrac>=1 and all the tracers have the same BCs
+        m_eb_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
+                                                                        m_incflo->m_bcrec_tracer[0].lo()),
+                                        m_incflo->get_diffuse_scalar_bc(Orientation::high,
+                                                                        m_incflo->m_bcrec_tracer[0].hi()));
 
         if (!m_incflo->useTensorSolve())
         {
@@ -54,8 +57,10 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                      info_apply, ebfact);
             m_eb_scal_apply_op->setMaxOrder(m_mg_maxorder);
 
-            m_eb_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
-                                            m_incflo->get_diffuse_scalar_bc(Orientation::high));
+            m_eb_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
+                                                                            m_incflo->m_bcrec_tracer[0].lo()),
+                                            m_incflo->get_diffuse_scalar_bc(Orientation::high,
+                                                                            m_incflo->m_bcrec_tracer[0].hi()));
         }
 
         if ( (m_incflo->need_divtau() && !m_incflo->useTensorSolve()) ||
@@ -78,8 +83,10 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                       m_incflo->DistributionMap(0,m_incflo->finestLevel()),
                                                       info_solve);
         m_reg_scal_solve_op->setMaxOrder(m_mg_maxorder);
-        m_reg_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
-                                         m_incflo->get_diffuse_scalar_bc(Orientation::high));
+        m_reg_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
+                                                                         m_incflo->m_bcrec_tracer[0].lo()),
+                                         m_incflo->get_diffuse_scalar_bc(Orientation::high,
+                                                                         m_incflo->m_bcrec_tracer[0].hi()));
 
         if (!m_incflo->useTensorSolve())
         {
@@ -97,8 +104,10 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                           m_incflo->DistributionMap(0,m_incflo->finestLevel()),
                                                           info_apply);
             m_reg_scal_apply_op->setMaxOrder(m_mg_maxorder);
-            m_reg_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low),
-                                             m_incflo->get_diffuse_scalar_bc(Orientation::high));
+            m_reg_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
+                                                                             m_incflo->m_bcrec_tracer[0].lo()),
+                                             m_incflo->get_diffuse_scalar_bc(Orientation::high,
+                                                                             m_incflo->m_bcrec_tracer[0].hi()));
         }
 
         if ( (m_incflo->need_divtau() && !m_incflo->useTensorSolve()) ||

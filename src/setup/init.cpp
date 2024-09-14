@@ -123,21 +123,6 @@ void incflo::ReadParameters ()
             amrex::Abort("We currently require cfl <= 1.0 when using this advection scheme");
         }
 
-        // Initial conditions
-        pp.query("probtype", m_probtype);
-        pp.query("ic_u", m_ic_u);
-        pp.query("ic_v", m_ic_v);
-        pp.query("ic_w", m_ic_w);
-        pp.query("ic_p", m_ic_p);
-        pp.query("ic_t", m_ic_t);
-
-        // Viscosity (if constant)
-        pp.query("mu", m_mu);
-
-        // Density (if constant)
-        pp.query("ro_0", m_ro_0);
-        AMREX_ALWAYS_ASSERT(m_ro_0 >= 0.0);
-
         pp.query("ntrac", m_ntrac);
 
         if (m_ntrac <= 0) m_advect_tracer = false;
@@ -145,6 +130,23 @@ void incflo::ReadParameters ()
         if (m_ntrac < 1) {
             amrex::Abort("We currently require at least one tracer");
         }
+
+        // Initial conditions
+        pp.query("probtype", m_probtype);
+        pp.query("ic_u", m_ic_u);
+        pp.query("ic_v", m_ic_v);
+        pp.query("ic_w", m_ic_w);
+        pp.query("ic_p", m_ic_p);
+        if ( !pp.queryarr("ic_t", m_ic_t, 0, m_ntrac) ) {
+            m_ic_t.resize(m_ntrac, 0.);
+        }
+
+        // Viscosity (if constant)
+        pp.query("mu", m_mu);
+
+        // Density (if constant)
+        pp.query("ro_0", m_ro_0);
+        AMREX_ALWAYS_ASSERT(m_ro_0 >= 0.0);
 
         // Scalar diffusion coefficients
         m_mu_s.resize(m_ntrac, 0.0);

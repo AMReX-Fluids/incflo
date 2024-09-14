@@ -1,14 +1,17 @@
 * fillpatch
 
-|        | pi       | po       | mi       | nsw         | sw                                    | dir_dep              |
-|--------+----------+----------+----------+-------------+---------------------------------------|-----------------------
-| v_n    | foextrap | foextrap | ext_dir  | ext_dir (0) | ext_dir (0)                           | ext_dir if inflowing |
-| v_t    | foextrap | foextrap | ext_dir  | ext_dir (0) | hoextrap                              | ext_dir if inflowing |
-| rho    | foextrap | foextrap | ext_dir  | foextrap    | if (advection_type == "BDS") foextrap | ext_dir if inflowing |
-|        |          |          |          |             | else hoextrap                         | ext_dir if inflowing |
-| scalar | foextrap | foextrap | ext_dir  | foextrap    | if (advection_type == "BDS") foextrap | ext_dir if inflowing |
-|        |          |          |          |             | else hoextrap                         | ext_dir if inflowing |
-| force  | foextrap | foextrap | foextrap | foextrap    | foextrap                              | foextrap             |
+|        | pi       | po       | mi       | nsw                  | sw                                    | dir_dep              |
+|--------+----------+----------+----------+----------------------+---------------------------------------|-----------------------
+| v_n    | foextrap | foextrap | ext_dir  | ext_dir (0)          | ext_dir (0)                           | ext_dir if inflowing |
+|        |          |          |          |                      |                                       | foextrap otherwise   |
+| v_t    | foextrap | foextrap | ext_dir  | ext_dir (0)          | hoextrap                              | ext_dir if inflowing |
+|        |          |          |          |                      |                                       | foextrap otherwise   |
+| rho    | foextrap | foextrap | ext_dir  | foextrap             | if (advection_type == "BDS") foextrap | ext_dir if inflowing |
+|        |          |          |          |                      | else hoextrap                         | foextrap otherwise   |
+| tracer | foextrap | foextrap | ext_dir  | ext_dir if specified | ext_dir if specified, otherwise       | ext_dir if inflowing |
+|        |          |          |          | foextrap otherwise   | if (advection_type == "BDS") foextrap | foextrap otherwise   |
+|        |          |          |          |                      | else hoextrap                         |                      |
+| force  | foextrap | foextrap | foextrap | foextrap             | foextrap                              | foextrap             |
 
 * projection
 
@@ -25,8 +28,9 @@
 
 * scalar diffusion
 
-| pi      | po      | mi        | nsw     | sw      | dir_dep   |
-|---------+---------+-----------+---------+---------|------------
-| Neumann | Neumann | Dirichlet | Neumann | Neumann | Dirichlet |
-| Neumann | Neumann | Dirichlet | Neumann | Neumann | Dirichlet |
-
+|         | pi      | po      | mi        | nsw                    | sw                     | dir_dep   |
+|---------+---------+---------+-----------+------------------------+------------------------|------------
+| v_n     | Neumann | Neumann | Dirichlet | Dirichlet              | Dirichlet              | Dirichlet |
+| v_t     | Neumann | Neumann | Dirichlet | Dirichlet              | Neumann                | Dirichlet |
+| tracer  | Neumann | Neumann | Dirichlet | Dirchelet if specified | Dirichlet if specified | Dirichlet |
+|         |         |         |           | Neumann otherwise      | Neumann otherwise      |           |
