@@ -195,6 +195,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
+        Real time_nph = m_cur_time + 0.5*m_dt;
         if (nghost_mac() > 0)
         {
             // FillPatch umac.
@@ -227,12 +228,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 // Godunov handles physical boundaries internally, but needs periodic ghosts filled.
                 // MOL doesn't need any umac ghost cells, so it doesn't get here.
                 //
-                Real fake_time = 0.;
-
                 for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
                 {
-                    amrex::FillPatchSingleLevel(*u_fine[idim], IntVect(nghost_mac()), fake_time,
-                                                {u_fine[idim]}, {fake_time},
+                    amrex::FillPatchSingleLevel(*u_fine[idim], IntVect(nghost_mac()), time_nph,
+                                                {u_fine[idim]}, {time_nph},
                                                 0, 0, 1, geom[lev],
                                                 fbndyFuncArr[idim], idim);
                 }
@@ -260,12 +259,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 Array<PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>,AMREX_SPACEDIM>
                     cbndyFuncArr = {AMREX_D_DECL(crse_bndry_func,crse_bndry_func,crse_bndry_func)};
 
-                // Use piecewise constant interpolation in time, so create dummy variable for time
-                Real fake_time = 0.;
+                // Use piecewise constant interpolation in time
                 Array<int, AMREX_SPACEDIM> idx = {AMREX_D_DECL(0,1,2)};
-                FillPatchTwoLevels(u_fine, IntVect(nghost_mac()), fake_time,
-                                   {u_crse}, {fake_time},
-                                   {u_fine}, {fake_time},
+                FillPatchTwoLevels(u_fine, IntVect(nghost_mac()), time_nph,
+                                   {u_crse}, {time_nph},
+                                   {u_fine}, {time_nph},
                                    0, 0, 1,
                                    geom[lev-1], geom[lev],
                                    cbndyFuncArr, idx, fbndyFuncArr, idx,
@@ -307,13 +305,13 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         if (m_advection_type != "MOL") {
             vel_nph.setVal(0.);
-            fillphysbc_velocity(lev, m_cur_time+0.5*m_dt, vel_nph, 1);
+            fillphysbc_velocity(lev, time_nph, vel_nph, 1);
 
             if ( !m_constant_density || m_advect_momentum ||
                 (m_advect_tracer && m_ntrac > 0) )
             {
                 rho_nph.setVal(0.);
-                fillphysbc_density(lev, m_cur_time+0.5*m_dt, rho_nph, 1);
+                fillphysbc_density(lev, time_nph, rho_nph, 1);
             }
 
             if ( m_advect_momentum ) {
@@ -324,7 +322,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
             if (m_advect_tracer && (m_ntrac>0)) {
                 trac_nph.setVal(0.);
-                fillphysbc_tracer(lev, m_cur_time+0.5*m_dt, trac_nph, 1);
+                fillphysbc_tracer(lev, time_nph, trac_nph, 1);
                 auto const& iconserv = get_tracer_iconserv();
                 for (int n = 0; n < m_ntrac; n++) {
                     if ( iconserv[n] ){
