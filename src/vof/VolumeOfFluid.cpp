@@ -15,7 +15,11 @@ using namespace amrex;
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define CLAMP(x,a,b) ((x) < (a) ? (a) : (x) > (b) ? (b) : (x))
 #define VOF_NODATA std::numeric_limits<Real>::max()
-#define CELL_IS_BOUNDARY(c,min,max) (c[0]< min[0]||c[1]< min[1]||c[2]< min[2]||c[0]>max[0]||c[1]> max[1]||c[2]> max[2])
+#if AMREX_SPACEDIM==2
+#define CELL_IS_BOUNDARY(c,min,max) (c[0]< min[0]||c[1]< min[1]||c[0]>max[0]||c[1]> max[1])
+#else
+#define CELL_IS_BOUNDARY(c,min,max) (c[0]< min[0]||c[1]< min[1]||c[0]>max[0]||c[1]> max[1]||c[2]< min[2]||c[2]> max[2])
+#endif
 // Define VofVector as an array of 3 doubles
 using VofVector = Array<Real, 3>;
 static_assert(sizeof(XDim3)==3*sizeof(Real));
@@ -54,7 +58,7 @@ void range_add_value (VofRange & r, Real val)
 /**
  * range_update:
  * @r: a #VofRange.
- * 
+ *
  * Updates the fields of @r.
  */
 void range_update (VofRange & r)
@@ -62,12 +66,12 @@ void range_update (VofRange & r)
   if (r.n > 0) {
     if (r.sum2 - r.sum*r.sum/(Real) r.n >= 0.)
       r.stddev = sqrt ((r.sum2 - r.sum*r.sum/(Real) r.n)
-			/(Real) r.n);
+            /(Real) r.n);
     else
       r.stddev = 0.;
     r.mean = r.sum/(Real) r.n;
   }
-  else 
+  else
     r.min = r.max = r.mean = r.stddev = 0.;
 }
 
@@ -89,7 +93,7 @@ static void domain_range_reduce ( VofRange & s)
 {
 
   double in[5];
-  double out[5] = { std::numeric_limits<Real>::max(), 
+  double out[5] = { std::numeric_limits<Real>::max(),
                     std::numeric_limits<Real>::lowest(), 0., 0., 0. };
   MPI_Op op;
 
@@ -119,17 +123,17 @@ VolumeOfFluid::VolumeOfFluid (incflo* a_incflo) : v_incflo(a_incflo)
     for (int lev = 0; lev <= finest_level; ++lev){
         normal.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], AMREX_SPACEDIM, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev));
          alpha.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], 1, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev));
-           tag.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], 1, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev));		
-		Array<MultiFab, 2> new_height={
+           tag.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], 1, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev));
+        Array<MultiFab, 2> new_height={
          MultiFab(v_incflo->grids[lev], v_incflo->dmap[lev], AMREX_SPACEDIM, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev)),
          MultiFab(v_incflo->grids[lev], v_incflo->dmap[lev], AMREX_SPACEDIM, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev))
         };
-	    height.emplace_back(std::move(new_height));
-		kappa.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], 1, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev));
-		force.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], AMREX_SPACEDIM, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev));
+        height.emplace_back(std::move(new_height));
+        kappa.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], 1, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev));
+        force.emplace_back(v_incflo->grids[lev], v_incflo->dmap[lev], AMREX_SPACEDIM, v_incflo->nghost_state(), MFInfo(), v_incflo->Factory(lev));
         //fixme
-		force[lev].setVal(0,0,AMREX_SPACEDIM,v_incflo->nghost_state());
-	}
+        force[lev].setVal(0,0,AMREX_SPACEDIM,v_incflo->nghost_state());
+    }
 
 }
 static XDim3 edge[12][2] = {
@@ -275,10 +279,10 @@ static int cut_cube_vertices (XDim3 center, GpuArray <Real,AMREX_SPACEDIM> dx,
 
 
 struct Segment{
-  int nnodes;               /* number of nodes (2, 3 or 4) */
-#if AMREX_SPACEDIM==2
+  int nnodes;             /* number of nodes (2, 3 or 4) */
+#if AMREX_SPACEDIM==2     /* 2D */
   XDim3 node[2];          /* node coordinates */
-#else
+#else                     /* 3D */
   XDim3 node[4];
 #endif
   XDim3 mv;
@@ -286,7 +290,13 @@ struct Segment{
   //vof, tag
   Array<Real,3> vars;
  // Constructor to initialize the Segment
-  Segment(int n, Array<XDim3, 12> const& nodes, XDim3 m, Real a, Array<Real,3> v, int ns=0)
+  Segment(int n,
+#if AMREX_SPACEDIM==2  /* 2D */
+  Array<XDim3, 4> const& nodes,
+#else                  /* 3D */
+  Array<XDim3, 12> const& nodes,
+#endif
+  XDim3 m, Real a, Array<Real,3> v, int ns=0)
    : nnodes(n), mv (m), alpha(a), vars(v) {
    for (int i = 0; i < n; ++i)
       node[i]= nodes[ns==0?i:(i + 3)%(n + 2)];
@@ -301,6 +311,69 @@ static void add_segment (XDim3 const & center, GpuArray <Real,AMREX_SPACEDIM> co
    /*Print() <<" add_segment "<< *o<<"  "<<" vector "<<*m
                      <<"vof"<<"  "<<vof<<"  "<<"alpha " <<alpha<<"\n";  */
 
+#if AMREX_SPACEDIM==2 /* 2D*/
+  /* array of node coordinates for a cut face */
+  Array<XDim3, 4>  nodecutface;
+  Real x, y, h=dx[0];
+  int n=0, nnodecutface;
+  if (fabs (m.y) > EPS) {
+    y = (alpha - m.x)/m.y;
+    if (y >= 0. && y <= 1.) {
+      nodecutface[n].x = center.x + h/2.; nodecutface[n].y = center.y + h*(y - 0.5); nodecutface[n++].z = 0.;
+    }
+  }
+  if (fabs (m.x) > EPS) {
+    x = (alpha - m.y)/m.x;
+    if (x >= 0. && x <= 1.) {
+      nodecutface[n].x = center.x + h*(x - 0.5); nodecutface[n].y = center.y + h/2.; nodecutface[n++].z = 0.;
+    }
+  }
+  if (fabs (m.y) > EPS) {
+    y = alpha/m.y;
+    if (y >= 0. && y <= 1.) {
+      nodecutface[n].x = center.x - h/2.; nodecutface[n].y = center.y + h*(y - 0.5); nodecutface[n++].z = 0.;
+    }
+  }
+  if (fabs (m.x) > EPS) {
+    x = alpha/m.x;
+    if (x >= 0. && x <= 1.) {
+      nodecutface[n].x = center.x + h*(x - 0.5); nodecutface[n].y = center.y - h/2.; nodecutface[n++].z = 0.;
+    }
+  }
+  nnodecutface = n;
+  if (n > 2) {
+  /*check if there are duplicated points*/
+   int i,j;
+   bool ok[n];
+   for (i=0; i<n; i++)
+    ok[i]=true;
+   XDim3 diff;
+   for (i=0; i<n-1; i++)
+    if (ok[i]){
+     for (j=i+1; j<n; j++){
+       diff.x = nodecutface[i].x - nodecutface[j].x;
+       diff.y = nodecutface[i].y - nodecutface[j].y;
+       if (diff.x*diff.x+diff.y*diff.y<1e-10)
+         ok[j]=false;
+     }
+    }
+   for (i=1; i<n; i++)
+    if (!ok[i]){
+     if (i!=n-1)
+      for (j=i+1; j<n; j++){
+          nodecutface[j-1].x = nodecutface[j].x;
+          nodecutface[j-1].y = nodecutface[j].y;
+      }
+     nnodecutface--;
+    }
+  }
+  AMREX_ASSERT (nnodecutface <= 2);
+  /* assign data to nodeinfo array, increment number of wall faces and number of nodes */
+  if (nnodecutface == 2) {
+    nt += nnodecutface;
+    segments.emplace_back(nnodecutface, nodecutface, m, alpha, vars);
+  }
+#else     /* 3D */
   int d[12];
   /* array of node coordinates for a cut face */
   Array<XDim3, 12>  nodecutface;
@@ -389,6 +462,162 @@ static void add_segment (XDim3 const & center, GpuArray <Real,AMREX_SPACEDIM> co
    segments.emplace_back(nnodecutface, nodecutface, m, alpha, vars, 3);
  } /* cut face must be divided into 2 quadrilateral/triangular faces */
 
+#endif
+
+}
+/**
+ * line_area:
+ * @m: normal to the line.
+ * @alpha: line constant.
+ *
+ * Returns: the area of the fraction of a cell lying under the line
+ * (@m,@alpha).
+ */
+Real line_area (Array <Real, AMREX_SPACEDIM> &m, Real alpha)
+{
+  XDim3 n;
+  Real alpha1, a, v, area;
+
+  n.x = m[0], n.y = m[1];
+  alpha1 = alpha;
+  if (n.x < 0.) {
+    alpha1 -= n.x;
+    n.x = - n.x;
+  }
+  if (n.y < 0.) {
+    alpha1 -= n.y;
+    n.y = - n.y;
+  }
+
+  if (alpha1 <= 0.)
+    return 0.;
+
+  if (alpha1 >= n.x + n.y)
+    return 1.;
+
+  if (n.x == 0.)
+    area = alpha1/n.y;
+  else if (n.y == 0.)
+    area = alpha1/n.x;
+  else {
+    v = alpha1*alpha1;
+
+    a = alpha1 - n.x;
+    if (a > 0.)
+      v -= a*a;
+
+    a = alpha1 - n.y;
+    if (a > 0.)
+      v -= a*a;
+
+    area = v/(2.*n.x*n.y);
+  }
+
+  return CLAMP (area, 0., 1.);
+}
+
+/**
+ * line_alpha:
+ * @m: a #FttVector.
+ * @c: a volume fraction.
+ *
+ * Returns: the value @alpha such that the area of a square cell
+ * lying under the line defined by @m.@x = @alpha is equal to @c.
+ */
+Real line_alpha (XDim3 & m, Real c)
+{
+  Real alpha, m1, m2, v1;
+
+  m1 = fabs (m.x); m2 = fabs (m.y);
+  if (m1 > m2) {
+    v1 = m1; m1 = m2; m2 = v1;
+  }
+
+  v1 = m1/2.;
+  if (c <= v1/m2)
+    alpha = sqrt (2.*c*m1*m2);
+  else if (c <= 1. - v1/m2)
+    alpha = c*m2 + v1;
+  else
+    alpha = m1 + m2 - sqrt (2.*m1*m2*(1. - c));
+
+  if (m.x < 0.)
+    alpha += m.x;
+  if (m.y < 0.)
+    alpha += m.y;
+
+  return alpha;
+}
+
+/**
+ * line_center:
+ * @m: normal to the line.
+ * @alpha: line constant.
+ * @a: area of cell fraction.
+ * @p: a #coordinates.
+ *
+ * Fills @p with the position of the center of mass of the fraction of
+ * a square cell lying under the line (@m,@alpha).
+ */
+void line_center (XDim3 const & m, Real alpha, Real a, XDim3 & p)
+{
+  XDim3 n;
+  Real b;
+  n = m;
+  if (n.x < 0.) {
+    alpha -= n.x;
+    n.x = - n.x;
+  }
+  if (n.y < 0.) {
+    alpha -= n.y;
+    n.y = - n.y;
+  }
+
+  p.z = 0.;
+  if (alpha <= 0.) {
+    p.x = p.y = 0.;
+    return;
+  }
+
+  if (alpha >= n.x + n.y) {
+    p.x = p.y = 0.5;
+    return;
+  }
+
+
+  if (n.x < EPS) {
+    p.x = 0.5;
+    p.y = m.y < 0. ? 1. - a/2. : a/2.;
+    return;
+  }
+
+  if (n.y < EPS) {
+    p.y = 0.5;
+    p.x = m.x < 0. ? 1. - a/2. : a/2.;
+    return;
+  }
+
+  p.x = p.y = alpha*alpha*alpha;
+
+  b = alpha - n.x;
+  if (b > 0.) {
+    p.x -= b*b*(alpha + 2.*n.x);
+    p.y -= b*b*b;
+  }
+
+  b = alpha - n.y;
+  if (b > 0.) {
+    p.y -= b*b*(alpha + 2.*n.y);
+    p.x -= b*b*b;
+  }
+
+  p.x /= 6.*n.x*n.x*n.y*a;
+  p.y /= 6.*n.x*n.y*n.y*a;
+
+  if (m.x < 0.)
+    p.x = 1. - p.x;
+  if (m.y < 0.)
+    p.y = 1. - p.y;
 }
 
 /**
@@ -472,6 +701,12 @@ Real line_area_center (XDim3 const & m, Real alpha, XDim3 & p)
 
 }
 
+#if AMREX_SPACEDIM == 2 /* 3D */
+#  define plane_volume         line_area
+#  define plane_alpha          line_alpha
+#  define plane_center         line_center
+#  define plane_area_center    line_area_center
+#else /* 3D */
 
 /**
  * plane_area_center:
@@ -740,8 +975,10 @@ Real plane_alpha (XDim3 & m, Real c)
   return alpha;
 }
 
+#endif
+
 #if AMREX_SPACEDIM == 2
-#include "myc2D.h"
+#include "myc2d.h"
 #else
 #include "myc.h"
 #endif
@@ -823,7 +1060,7 @@ bool interface_cell (int const i, int const j, int const k,
 
 
 static int half_height (Array <int, 3> cell, Array4<Real const> const & fv, int d,
-			            Real & H, int & n, Array<int,2> range)
+                        Real & H, int & n, Array<int,2> range)
 {
   int s = 0, dim=d/2;
   n = 0;
@@ -831,12 +1068,12 @@ static int half_height (Array <int, 3> cell, Array4<Real const> const & fv, int 
   while (n < HMAX && !s) {
     Real f = fv (cell[0],cell[1],cell[2],0);
     if (!CELL_IS_FULL(f)) { /* interfacial cell */
-  //  if (f > EPS && f < 1. - EPS) { /* interfacial cell */  
+  //  if (f > EPS && f < 1. - EPS) { /* interfacial cell */
      //hit the boundary
-	 if (cell[dim]<range[0]||cell[dim]>range[1]) 
-	   return 2;
-	 H += f;
-	 n++;
+     if (cell[dim]<range[0]||cell[dim]>range[1])
+       return 2;
+     H += f;
+     n++;
     }
     else /* full or empty cell */
       s = (f - 0.5)>0.? 1.: -1;
@@ -849,36 +1086,36 @@ static int half_height (Array <int, 3> cell, Array4<Real const> const & fv, int 
 
 static void height_propagation (Array <int, 3> cell, int dim, Array4<Real const> const & fv,
                                 Array4<Real > const & hght, Array<int,2> range, Real orientation)
-{ 
+{
   for (int d = 1; d >= -1; d-=2, orientation = - orientation) {
-	Array <int, 3> neighbor=cell;   
+    Array <int, 3> neighbor=cell;
     Real H = hght(cell[0],cell[1],cell[2],dim);
-    neighbor[dim]+=d; 		
+    neighbor[dim]+=d;
     bool interface = !CELL_IS_FULL(fv(neighbor[0],neighbor[1],neighbor[2],0));//false;
-    while (fabs (H) < DMAX - 1.&& !interface && 
-	       neighbor[dim]>=range[0]&& neighbor[dim]<=range[1]) {
+    while (fabs (H) < DMAX - 1.&& !interface &&
+           neighbor[dim]>=range[0]&& neighbor[dim]<=range[1]) {
       H -= orientation;
       hght(neighbor[0],neighbor[1],neighbor[2],dim) = H;
-	  auto fvol = fv(neighbor[0],neighbor[1],neighbor[2],0);
+      auto fvol = fv(neighbor[0],neighbor[1],neighbor[2],0);
       interface = !CELL_IS_FULL(fvol);
       neighbor[dim]+=d;
     }
   }
 }
 
-void calculate_height(int i, int j, int k, int dim, Array4<Real const> const & vof, 
+void calculate_height(int i, int j, int k, int dim, Array4<Real const> const & vof,
                       Array4<Real > const & hb, Array4<Real > const & ht, Array<int,2> range)
 {
     Real H = vof(i,j,k,0);
-	Array <int, 3> cell={i,j,k};	
-	// top part of the column 
+    Array <int, 3> cell={i,j,k};
+    // top part of the column
     int nt, st = half_height (cell, vof, 2*dim, H, nt, range);
     if (!st) /* still an interfacial cell */
-      return;			
-    // bottom part of the column 
+      return;
+    // bottom part of the column
     int nb, sb = half_height (cell, vof, 2*dim + 1, H, nb, range);
     if (!sb) /* still an interfacial cell */
-      return;			  
+      return;
     if (sb != 2 && st != 2) {
       if (st*sb > 0) /* the column does not cross the interface */
         return;
@@ -900,7 +1137,7 @@ void calculate_height(int i, int j, int k, int dim, Array4<Real const> const & v
     }
 }
 
-static Array4<Real > const * boundary_hit (int i,int j,int k, int d, Array4<Real > const & hb, 
+static Array4<Real > const * boundary_hit (int i,int j,int k, int d, Array4<Real > const & hb,
                                            Array4<Real > const & ht)
 {
   if (hb(i,j,k,d)!= VOF_NODATA && hb(i,j,k,d)> BOUNDARY_HIT/2.)
@@ -919,32 +1156,32 @@ static void height_propagation_from_boundary (Array <int, 3> cell, int dim, int 
   cell[dim]+=(d % 2 ? 1 : -1);
   Real H0=hght(cell[0],cell[1],cell[2],dim);
   while ( H0!=VOF_NODATA && H0 > BOUNDARY_HIT/2. &&
-	      cell[dim]>=range[0]&&cell[dim]<=range[1]) {
+          cell[dim]>=range[0]&&cell[dim]<=range[1]) {
     H += orientation;
     hght(cell[0],cell[1],cell[2],dim) = H;
     cell[dim]+=(d % 2 ? 1 : -1);
-	H0=hght(cell[0],cell[1],cell[2],dim);
+    H0=hght(cell[0],cell[1],cell[2],dim);
   }
   /* propagate to non-interfacial cells up to DMAX */
-  auto fvol = fv(cell[0],cell[1],cell[2],0);  
+  auto fvol = fv(cell[0],cell[1],cell[2],0);
   bool interface = !CELL_IS_FULL(fvol);
-  while (fabs (H) < DMAX - 1. && !interface && 
-	     cell[dim]>=range[0]&&cell[dim]<=range[1]) {
+  while (fabs (H) < DMAX - 1. && !interface &&
+         cell[dim]>=range[0]&&cell[dim]<=range[1]) {
     H += orientation;
     hght(cell[0],cell[1],cell[2],dim) = H;
     cell[dim]+=(d % 2 ? 1 : -1);
   }
 }
 
-Array4<Real const> const * closest_height (int i,int j,int k, int d, Array4<Real const> const & hb, 
+Array4<Real const> const * closest_height (int i,int j,int k, int d, Array4<Real const> const & hb,
                            Array4<Real const> const & ht, Real * orientation)
 {
   Array4<Real const> const * hv = nullptr;
   Real o = 0.;
   if (hb(i,j,k,d)!=VOF_NODATA) {
     hv = &hb; o = 1.;
-    if (ht(i,j,k,d)!=VOF_NODATA && 
-	    fabs (ht(i,j,k,d)) < fabs (hb(i,j,k,d))) {
+    if (ht(i,j,k,d)!=VOF_NODATA &&
+        fabs (ht(i,j,k,d)) < fabs (hb(i,j,k,d))) {
       hv = & ht; o = -1.;
     }
   }
@@ -957,8 +1194,8 @@ Array4<Real const> const * closest_height (int i,int j,int k, int d, Array4<Real
 /* Returns: the height @h of the neighboring column in direction @c or
    VOF_NODATA if it is undefined. Also fills @x with the coordinates
    of the cell  */
-static Real neighboring_column (int i,int j,int k, int c, 
-				      Array4<Real const> const * h , int d, Real * x)
+static Real neighboring_column (int i,int j,int k, int c,
+                      Array4<Real const> const * h , int d, Real * x)
 {
   Array<int,3> neighbor={i,j,k};
   neighbor[d/2]+=d%2?-1:1;
@@ -969,14 +1206,14 @@ static Real neighboring_column (int i,int j,int k, int c,
     }
   return VOF_NODATA;
 }
-/* 
+/*
  The function is similar to neighboring_column().
  The difference is that neighboring_column_corner() returns height @h of the neighboring column in
  direction @(d[0], d[1]). kind of corner neighbors
  */
 
-static Real neighboring_column_corner (int i,int j,int k, int c, 
-				                          Array4<Real const> const * h, int * d, Real (*x)[2])
+static Real neighboring_column_corner (int i,int j,int k, int c,
+                                          Array4<Real const> const * h, int * d, Real (*x)[2])
 {
   Array<int,3> neighbor={i,j,k};
   neighbor[d[0]/2]+=d[0]%2?-1:1;
@@ -984,23 +1221,23 @@ static Real neighboring_column_corner (int i,int j,int k, int c,
   Real height=(*h)(neighbor[0],neighbor[1],neighbor[2],c);
   if (height!=VOF_NODATA) {
       (*x)[0] = d[0] % 2 ? -1. : 1.;
-      (*x)[1] = d[1] % 2 ? -1. : 1.; 
-     return height;     
+      (*x)[1] = d[1] % 2 ? -1. : 1.;
+     return height;
   }
-  else 
+  else
    return VOF_NODATA;
 
 }
 
-static bool height_normal (int i,int j,int k, Array4<Real const> const & hb, 
+static bool height_normal (int i,int j,int k, Array4<Real const> const & hb,
                            Array4<Real const> const & ht, XDim3 & m )
 {
   Real slope = VOF_NODATA;
   static int oc[3][2] = { { 1, 2 }, { 0, 2 }, { 0, 1 } };
-  for (int d = 0; d < AMREX_SPACEDIM; d++){ 
+  for (int d = 0; d < AMREX_SPACEDIM; d++){
     Real orientation;
-	Array4<Real const> const * hv = closest_height (i,j,k,d,hb,ht,&orientation);
-	if (hv != nullptr && fabs ((*hv)(i,j,k,d) <= 1.)) {
+    Array4<Real const> const * hv = closest_height (i,j,k,d,hb,ht,&orientation);
+    if (hv != nullptr && fabs ((*hv)(i,j,k,d) <= 1.)) {
       Real H = (*hv)(i,j,k,d);
       Real x[2], h[2][2], hd[2];
       for (int nd = 0; nd < 2; nd++) {
@@ -1013,7 +1250,7 @@ static bool height_normal (int i,int j,int k, Array4<Real const> const & hb,
         x[1] = - x[1];
         Real det = x[0]*x[1]*(x[0] - x[1]), a = x[1]*(h[nd][0] - H), b = x[0]*(h[nd][1] - H);
         hd[nd] = (x[0]*b - x[1]*a)/det;
-      }		
+      }
       if (h[0][0] == VOF_NODATA || h[0][1] == VOF_NODATA ||
           h[1][0] == VOF_NODATA || h[1][1] == VOF_NODATA)
           continue;
@@ -1022,26 +1259,33 @@ static bool height_normal (int i,int j,int k, Array4<Real const> const & hb,
           (&m.x)[d] = orientation;
           (&m.x)[oc[d][0]] = - hd[0];
           (&m.x)[oc[d][1]] = - hd[1];
-      }		
-		
-	}
+      }
+
+    }
   }
   //Print()<<"-------slope---"<<slope<<"  "<<(slope < VOF_NODATA)<<"\n";
   return slope < VOF_NODATA;
-						   
+
 }
 
 static Real curvature_from_h (Real *x, Real *h, int c)
 {
-   Real det, a, b, hxx,hx,hyy,hy,hxy;
+   Real det, a, b, hxx,hx,hyy,hy,hxy, kappa;
+#if AMREX_SPACEDIM == 2
+  det = x[0]*x[1]*(x[0] - x[1]), a = x[1]*(h[0] - h[2]), b = x[0]*(h[1] - h[2]);
+  hxx = 2.*(a - b)/det;
+  hx = (x[0]*b - x[1]*a)/det;
+  Real dnm = 1. + hx*hx;
+  kappa = hxx/sqrt(dnm*dnm*dnm);
+#else /* 3D*/
    /*det = x[0]*x[1]*(x[0] - x[1]); a = x[1]*(h[0] - h[8]); b = x[0]*(h[1] - h[8]);
    Real hxx = 2.*(a - b)/det;
    Real hx = (x[0]*b - x[1]*a)/det;
-    
+
    det = x[2]*x[3]*(x[2] - x[3]); a = x[3]*(h[2] - h[8]); b = x[2]*(h[3] - h[8]);
    Real hyy = 2.*(a - b)/det;
    Real hy = (x[2]*b - x[3]*a)/det;
-    
+
    det = x[4]*x[5]*(x[4] - x[5]); a = x[5]*(h[4] - h[2]); b = x[4]*(h[5] - h[2]);
    Real hx0 = (x[4]*b - x[5]*a)/det;
    det = x[6]*x[7]*(x[6] - x[7]); a = x[7]*(h[6] - h[3]); b = x[6]*(h[7] - h[3]);
@@ -1053,16 +1297,17 @@ static Real curvature_from_h (Real *x, Real *h, int c)
    hyy = h[2] - 2.*h[8] + h[3];
    hx = (h[0] - h[1])/2.;
    hy = (h[2] - h[3])/2.;
-   hxy = (h[4] + h[7] - h[5] - h[6])/4.;  
+   hxy = (h[4] + h[7] - h[5] - h[6])/4.;
 
    /*hxx = (h[4] - 2.*h[8] + h[7])/2.;
    hyy = (h[5] - 2.*h[8] + h[6])/2.;
     hx = (h[4] - h[7])/2./sqrt(2.);
-	hy = (h[5] - h[6])/2./sqrt(2.);
-	hxy = (h[2] + h[3] - h[1] - h[0])/2.;*/
-   
+    hy = (h[5] - h[6])/2./sqrt(2.);
+    hxy = (h[2] + h[3] - h[1] - h[0])/2.;*/
+
    Real dnm = 1. + hx*hx + hy*hy;
-   Real kappa = (hxx + hyy + hxx*hy*hy + hyy*hx*hx - 2.*hxy*hx*hy)/sqrt (dnm*dnm*dnm);
+   kappa = (hxx + hyy + hxx*hy*hy + hyy*hx*hx - 2.*hxy*hx*hy)/sqrt (dnm*dnm*dnm);
+#endif
    return kappa;
 }
 
@@ -1080,37 +1325,36 @@ static Real curvature_from_h (Real *x, Real *h, int c)
  * otherwise.
  */
 
-bool curvature_along_direction (int i,int j,int k, int d, GpuArray<Real, AMREX_SPACEDIM> dx, 
-                                Array4<Real const> const & hb, 
-                                Array4<Real const> const & ht, 
-								Real & kappa)
+bool curvature_along_direction (int i,int j,int k, int d, GpuArray<Real, AMREX_SPACEDIM> dx,
+                                Array4<Real const> const & hb,
+                                Array4<Real const> const & ht,
+                                Real & kappa)
 {
-  Real x[9], h[9];
-  Real orientation;  
+  Real x[AMREX_SPACEDIM==3?9:3], h[AMREX_SPACEDIM==3?9:3];
+  Real orientation;
   static int oc[3][2] = { { 1, 2 }, { 0, 2 }, { 0, 1 } };
   Array4<Real const> const * hv = closest_height (i,j,k,d,hb,ht,&orientation);
 
-
   if (!hv) {
-	bool loop=true;
+    bool loop=true;
      /* no data for either directions, look four neighbors to collect potential interface positions */
-	for (int nd = 0; nd < 2 && loop; nd++) 
-	 for (int ndd = 0; ndd < 2; ndd++) {
+    for (int nd = 0; nd < (AMREX_SPACEDIM==3?2:1) && loop; nd++)
+     for (int ndd = 0; ndd < 2; ndd++) {
        Array<int,3> neighbor={i,j,k};
-       neighbor[oc[d][nd]]+=ndd%2?-1:1;	   
+       neighbor[oc[d][nd]]+=ndd%2?-1:1;
        hv = closest_height (neighbor[0],neighbor[1],neighbor[2],d,hb,ht,&orientation);
-	   if (hv){
-		 loop = false;
-		 break;
-	   }
-	}
-	if (!hv) /* give up */
+       if (hv){
+         loop = false;
+         break;
+       }
+    }
+    if (!hv) /* give up */
       return false;
   }
   else if (fabs((*hv)(i,j,k,d))>1.)
-	 return false;
+     return false;
   int n=0;
-  for (int nd = 0; nd < 2; nd++) {
+  for (int nd = 0; nd < (AMREX_SPACEDIM==3?2:1); nd++) {
     h[n] = neighboring_column (i, j, k, d, hv, 2*oc[d][nd], &x[n]);
     if (h[n] == VOF_NODATA )
       break;
@@ -1121,6 +1365,15 @@ bool curvature_along_direction (int i,int j,int k, int d, GpuArray<Real, AMREX_S
     x[n] = - x[n];
     n++;
   }
+#if AMREX_SPACEDIM==2 /* 2D */
+  if (n == 2) {
+    h[n] = (*hv)(i,j,k,d); x[n] = 0.;
+    if(h[n] != VOF_NODATA) {
+      kappa = curvature_from_h (x, h, d)/dx[0];
+      return true;
+    }
+  }
+#else   /* 3D */
   if (n == 4) {
    int od[2];
    Real xd[2];
@@ -1149,7 +1402,7 @@ bool curvature_along_direction (int i,int j,int k, int d, GpuArray<Real, AMREX_S
     }
     else {
       h[4] = (*hv)(i,j,k,d); x[4] = 1.;
-	  int ni;
+      int ni;
       for (ni = 0; ni < 5; ni++)
         if (h[ni] == VOF_NODATA || fabs(x[ni])<1e-20)
            break;
@@ -1159,52 +1412,71 @@ bool curvature_along_direction (int i,int j,int k, int d, GpuArray<Real, AMREX_S
           s[nk] = (h[nk]-h[4])/x[nk];
           s[nk] = s[nk] /sqrt(1 + s[nk]*s[nk]);
         }
-        kappa = (s[0] - s[1] + s[2] - s[3]) /dx[0];  
+        kappa = (s[0] - s[1] + s[2] - s[3]) /dx[0];
         return true;
-      }  
-	}		     
-  }	     
-  return false;	
+      }
+    }
+  }
+#endif
+  return false;
 }
 
 
-bool curvature_along_direction_new (int i,int j,int k, int d, GpuArray<Real, AMREX_SPACEDIM> dx, 
-                                Array4<Real const> const & hb, 
-                                Array4<Real const> const & ht, 
-								Real & kappa, Vector<VofVector> &interface)
+bool curvature_along_direction_new (int i,int j,int k, int d, GpuArray<Real, AMREX_SPACEDIM> dx,
+                                Array4<Real const> const & hb,
+                                Array4<Real const> const & ht,
+                                Real & kappa, Vector<VofVector> &interface)
 {
-  Real x[9], h[9];
-  Real orientation;  
+  Real x[AMREX_SPACEDIM==3?9:3], h[AMREX_SPACEDIM==3?9:3];
+  Real orientation;
   static int oc[3][2] = { { 1, 2 }, { 0, 2 }, { 0, 1 } };
   Array4<Real const> const * hv = closest_height (i,j,k,d,hb,ht,&orientation);
 
-
   if (!hv) {
-	bool loop=true;
+    bool loop=true;
     /* no data for either directions, look four neighbors to collect potential interface positions */
-	for (int nd = 0; nd < 2 && loop; nd++) 
-	  for (int ndd = 0; ndd < 2; ndd++) {
+    for (int nd = 0; nd < (AMREX_SPACEDIM==3?2:1) && loop; nd++)
+      for (int ndd = 0; ndd < 2; ndd++) {
         Array<int,3> neighbor={i,j,k};
-        neighbor[oc[d][nd]]+=ndd%2?-1:1;	   
+        neighbor[oc[d][nd]]+=ndd%2?-1:1;
         hv = closest_height (neighbor[0],neighbor[1],neighbor[2],d,hb,ht,&orientation);
-	    if (hv){
-		 loop = false;
-		 break;
-	    }
-	}
-	if (!hv) /* give up */
+        if (hv){
+         loop = false;
+         break;
+        }
+    }
+    if (!hv) /* give up */
       return false;
   }
   else if (fabs((*hv)(i,j,k,d))>1.)
-	 return false;
+     return false;
   int n=0;
-  for (int nd = 0; nd < 2; nd++) {
+  for (int nd = 0; nd < (AMREX_SPACEDIM==3?2:1); nd++) {
     h[n] = neighboring_column (i, j, k, d, hv, 2*oc[d][nd], &x[n]);
     n++;
     h[n] = neighboring_column (i, j, k, d, hv, 2*oc[d][nd]+1, &x[n]);
     x[n] = - x[n];
     n++;
   }
+
+#if AMREX_SPACEDIM==2 /* 2D */
+  h[n] = (*hv)(i,j,k,d); x[n] = 0.;
+  if (h[2] != VOF_NODATA && h[0] != VOF_NODATA && h[1] != VOF_NODATA) {
+    kappa = curvature_from_h (x, h, d)/dx[0];
+    return true;
+  }
+  else { /* h[2] == VOF_NODATA || h[0] == VOF_NODATA || h[1] == VOF_NODATA */
+    /* collect interface positions (based on height function) */
+    VofVector pos;
+    for (n = 0; n < 3; n++)
+     if (h[n] != VOF_NODATA) {
+       pos[oc[d][0]] = x[n];
+       pos[d] = orientation*h[n];
+       interface.emplace_back(std::move(pos));
+     }
+    return false;
+  }
+#else   /* 3D */
   int od[2],m=0;
   Real xd[4][2];
   for (int nd = 0; nd < 2 ; nd++)
@@ -1223,15 +1495,15 @@ bool curvature_along_direction_new (int i,int j,int k, int d, GpuArray<Real, AMR
     /* all nine height functions are found */
     kappa = curvature_from_h (x, h, d)/dx[0];
     return true;
-  }  
+  }
   else {
       /* collect interface positions (based on height function) */
-	VofVector pos;
+    VofVector pos;
     for (n = 0; n < 9; n++)
      if (h[n] != VOF_NODATA) {
       if (n < 2) {
          pos[oc[d][0]] = x[n];
-         pos[oc[d][1]] = 0.; 
+         pos[oc[d][1]] = 0.;
        }
        else if (n < 4) {
          pos[oc[d][1]] = x[n];
@@ -1239,19 +1511,19 @@ bool curvature_along_direction_new (int i,int j,int k, int d, GpuArray<Real, AMR
        }
        else if (n == 8) {
          pos[oc[d][0]] = 0.;
-         pos[oc[d][1]] = 0.; 
-       }		
+         pos[oc[d][1]] = 0.;
+       }
        else {
          pos[oc[d][0]] = xd[n-4][0];
          pos[oc[d][1]] = xd[n-4][1];
        }
-       pos[d] = orientation*h[n];	
-       interface.emplace_back(std::move(pos));		               
+       pos[d] = orientation*h[n];
+       interface.emplace_back(std::move(pos));
      }
     return false;
-  }	     
-	     
-  return false;	
+  }
+#endif   /* 3D */
+  return false;
 }
 
 static void orientation (VofVector m, Array<int,3> &c)
@@ -1262,9 +1534,9 @@ static void orientation (VofVector m, Array<int,3> &c)
   for (i = 0; i < AMREX_SPACEDIM - 1; i++)
    for (j = 0; j < AMREX_SPACEDIM - 1 - i; j++)
     if (fabs (m[c[j + 1]]) > fabs (m[c[j]])) {
-	  int tmp = c[j];
-	  c[j] = c[j + 1];
-	  c[j + 1] = tmp;
+      int tmp = c[j];
+      c[j] = c[j + 1];
+      c[j + 1] = tmp;
     }
 }
 
@@ -1280,7 +1552,7 @@ static int independent_positions (Vector<VofVector> &interface)
     for (i = 0; i < j && !depends; i++) {
       Real d2 = 0.;
       for (int c = 0; c < AMREX_SPACEDIM; c++)
-	   d2 += (interface[i][c] - interface[j][c])*(interface[i][c] - interface[j][c]);
+       d2 += (interface[i][c] - interface[j][c])*(interface[i][c] - interface[j][c]);
       depends = d2 < 0.5*0.5;
     }
     ni += !depends;
@@ -1309,43 +1581,43 @@ static int independent_positions (Vector<VofVector> &interface)
  * contained in @(i,j,k), or %VOF_NODATA if the HF method could not
  * compute a consistent curvature.
  */
-Real height_curvature_combined (int i,int j,int k, GpuArray<Real, AMREX_SPACEDIM> dx, 
-                                Array4<Real const> const & hb, 
+Real height_curvature_combined (int i,int j,int k, GpuArray<Real, AMREX_SPACEDIM> dx,
+                                Array4<Real const> const & hb,
                                 Array4<Real const> const & ht,
-								Array4<Real const> const & mv,
-								Array4<Real const> const & alpha)
+                                Array4<Real const> const & mv,
+                                Array4<Real const> const & alpha)
 {
-   VofVector m; 
+   VofVector m;
    Array<int, 3> try_dir;
    for (int d = 0; d < AMREX_SPACEDIM; d++)
      m[d] = mv(i,j,k,d);
 
-   orientation (m, try_dir); /* sort directions according to normal */		   
+   orientation (m, try_dir); /* sort directions according to normal */
 
    Real kappa = 0.;
    Vector<VofVector> interface;
    for (int d = 0; d < AMREX_SPACEDIM; d++) /* try each direction */
      if (curvature_along_direction_new (i, j, k, try_dir[d], dx, hb, ht, kappa, interface))
-	  return kappa;
+      return kappa;
   /* Could not compute curvature from the simple algorithm along any direction:
    * Try parabola fitting of the collected interface positions */
 
    if (independent_positions (interface) < 3*(AMREX_SPACEDIM - 1))
-    return VOF_NODATA;		
+    return VOF_NODATA;
 
    ParabolaFit fit;
    XDim3 mx={AMREX_D_DECL(m[0],m[1],m[2])},p;
-   
+
    Real area=plane_area_center (mx, alpha(i,j,k,0),p);
-   //shift the coordinates of the center of the interfacial segment 
-   //by using the center of the cube. plane_area_center() gives the 
+   //shift the coordinates of the center of the interfacial segment
+   //by using the center of the cube. plane_area_center() gives the
    //coordinates of area center with the coordinate origin as (0.,0.,0.)
-   //After shifting, the origin becomes cell center.   
+   //After shifting, the origin becomes cell center.
    for (int c = 0; c < AMREX_SPACEDIM; c++)
     (&p.x)[c] -= 0.5;
    // initialize the parameters for parabola fit
    parabola_fit_init (fit, p, mx);
-        
+
 ////#if AMREX_SPACEDIM==2
 ////  parabola_fit_add (&fit, &fc.x, PARABOLA_FIT_CENTER_WEIGHT);
 ////#elif !PARABOLA_SIMPLER
@@ -1355,16 +1627,16 @@ Real height_curvature_combined (int i,int j,int k, GpuArray<Real, AMREX_SPACEDIM
      parabola_fit_add (fit, interface[c], 1.);
    parabola_fit_solve (fit);
    kappa = parabola_fit_curvature (fit, 2.)/dx[0];
-# if PARABOLA_SIMPLER
+# if PARABOLA_SIMPLER || AMREX_SPACEDIM==2
   int nn=3;
 # else
   int nn=6;
 # endif
-   for (int c = 0; c < nn; c++) 
+   for (int c = 0; c < nn; c++)
         delete[] fit.M[c]; // Delete each row
    delete[] fit.M; // Delete the array of pointers
-  return kappa; 
-}					  
+  return kappa;
+}
 
 /**
  * curvature_fit:
@@ -1381,29 +1653,29 @@ Real height_curvature_combined (int i,int j,int k, GpuArray<Real, AMREX_SPACEDIM
  *
  * Returns: (double in 3D) the mean curvature of the interface contained in @cell.
  */
-Real curvature_fit (int i,int j,int k, GpuArray<Real, AMREX_SPACEDIM> dx, 
+Real curvature_fit (int i,int j,int k, GpuArray<Real, AMREX_SPACEDIM> dx,
                     Array4<Real const> const & vof,
-					Array4<Real const> const & mv,
-					Array4<Real const> const & alpha)
+                    Array4<Real const> const & mv,
+                    Array4<Real const> const & alpha)
 {
-   VofVector m; 
+   VofVector m;
 
    for (int d = 0; d < AMREX_SPACEDIM; d++)
-     m[d] = mv(i,j,k,d);	
+     m[d] = mv(i,j,k,d);
 
    ParabolaFit fit;
    XDim3 mx={AMREX_D_DECL(m[0],m[1],m[2])},p;
-      
+
    Real area=plane_area_center (mx, alpha(i,j,k,0),p);
-   //shift the coordinates of the center of the interfacial segment 
-   //by using the center of the cube. plane_area_center() gives the 
+   //shift the coordinates of the center of the interfacial segment
+   //by using the center of the cube. plane_area_center() gives the
    //coordinates of area center with the coordinate origin as (0.,0.,0.)
-   //After shifting, the origin becomes cell center.   
+   //After shifting, the origin becomes cell center.
    for (int c = 0; c < AMREX_SPACEDIM; c++)
     (&p.x)[c] -=  0.5;
    // initialize the parameters for parabola fit
    parabola_fit_init (fit, p, mx);
-   // add the center of the segment with the area of the segment as weight     
+   // add the center of the segment with the area of the segment as weight
    parabola_fit_add (fit, {AMREX_D_DECL(p.x,p.y,p.z)}, area);
    int di=0,dj=0,dk=0;
 #if AMREX_SPACEDIM==3
@@ -1411,29 +1683,29 @@ Real curvature_fit (int i,int j,int k, GpuArray<Real, AMREX_SPACEDIM> dx,
 #endif
     for (dj = -2; dj <= 2; dj++)
      for (di = -2; di <= 2; di++)
-	   if (di != 0|| dj != 0|| dk != 0) {
-         int ni=i+di,nj=j+dj,nk=k+dk;		 
+       if (di != 0|| dj != 0|| dk != 0) {
+         int ni=i+di,nj=j+dj,nk=k+dk;
          Real fvol=vof(ni,nj,nk,0);
-		 if (!CELL_IS_FULL(fvol)){
-			mx={AMREX_D_DECL(mv(ni,nj,nk,0),mv(ni,nj,nk,1),mv(ni,nj,nk,2))}; 
-			area=plane_area_center (mx, alpha(ni,nj,nk,0),p);
-			for (int c = 0; c < AMREX_SPACEDIM; c++)
-              (&p.x)[c] += c==0?di:c==1?dj:dk - 0.5;		  
-		    parabola_fit_add (fit, {p.x,p.y,p.z}, area);
-		 }
-	   }
+         if (!CELL_IS_FULL(fvol)){
+            mx={AMREX_D_DECL(mv(ni,nj,nk,0),mv(ni,nj,nk,1),mv(ni,nj,nk,2))};
+            area=plane_area_center (mx, alpha(ni,nj,nk,0),p);
+            for (int c = 0; c < AMREX_SPACEDIM; c++)
+              (&p.x)[c] += c==0?di:c==1?dj:dk - 0.5;
+            parabola_fit_add (fit, {p.x,p.y,p.z}, area);
+         }
+       }
    parabola_fit_solve (fit);
    Real kappa = parabola_fit_curvature (fit, 2.)/dx[0];
-# if PARABOLA_SIMPLER
+# if PARABOLA_SIMPLER  || AMREX_SPACEDIM==2
   int nn=3;
 # else
   int nn=6;
 # endif
-   for (int c = 0; c < nn; c++) 
+   for (int c = 0; c < nn; c++)
         delete[] fit.M[c]; // Delete each row
    delete[] fit.M; // Delete the array of pointers
-  return kappa; 
-}	
+  return kappa;
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////
 ///////
 ///////   Update VOF properties including height values and normal direction
@@ -1447,146 +1719,146 @@ VolumeOfFluid::tracer_vof_update (int lev, MultiFab & vof_mf, Array<MultiFab,2> 
   auto const& dx = geom.CellSizeArray();
   auto const& problo = geom.ProbLoArray();
   auto const& probhi = geom.ProbHiArray();
-///////////////////////////////////////////////////    
-//          update height using vof field 
+///////////////////////////////////////////////////
+//          update height using vof field
 ///////////////////////////////////////////////////
   for (int dim = 0; dim < AMREX_SPACEDIM; dim++){
-  
+
     height[0].setVal(VOF_NODATA,dim,1,v_incflo->nghost_state());
-	height[1].setVal(VOF_NODATA,dim,1,v_incflo->nghost_state());
-	//fix me: have not thought of a way to deal with the MFIter with tiling
-	//an option is to use similar way as MPI's implementation.
-	for (MFIter mfi(vof_mf); mfi.isValid(); ++mfi) {
+    height[1].setVal(VOF_NODATA,dim,1,v_incflo->nghost_state());
+    //fix me: have not thought of a way to deal with the MFIter with tiling
+    //an option is to use similar way as MPI's implementation.
+    for (MFIter mfi(vof_mf); mfi.isValid(); ++mfi) {
        Box const& bx = mfi.validbox();
-       Array<int,2> range ={bx.smallEnd()[dim], bx.bigEnd()[dim]};		
+       Array<int,2> range ={bx.smallEnd()[dim], bx.bigEnd()[dim]};
        Array4<Real const> const& vof_arr = vof_mf.const_array(mfi);
        Array4<Real > const& hb_arr = height[0].array(mfi);
        Array4<Real > const& ht_arr = height[1].array(mfi);
        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-       {  		 
-		 auto fvol = vof_arr(i,j,k,0);		
-	     if (!CELL_IS_FULL(fvol)){			
- 	       calculate_height(i, j, k, dim, vof_arr, hb_arr, ht_arr, range);				
-         }// end if 	  
+       {
+         auto fvol = vof_arr(i,j,k,0);
+         if (!CELL_IS_FULL(fvol)){
+            calculate_height(i, j, k, dim, vof_arr, hb_arr, ht_arr, range);
+         }// end if
        }); //end ParallelFor
 
     } //end MFIter
-	//fix me: temporary solution for MPI boundaries
-	height[0].FillBoundary(geom.periodicity());
-	height[1].FillBoundary(geom.periodicity());
-	
+    //fix me: temporary solution for MPI boundaries
+    height[0].FillBoundary(geom.periodicity());
+    height[1].FillBoundary(geom.periodicity());
+
 //deal with the situation where interface goes across the MPI or periodic boundaries.
 if(1){
-	for (MFIter mfi(vof_mf); mfi.isValid(); ++mfi) { /*fix me: no titling*/
+    for (MFIter mfi(vof_mf); mfi.isValid(); ++mfi) { /*fix me: no titling*/
        Box const& bx = mfi.validbox();
-	   Array<IntVect, 2> face_min_max;
+       Array<IntVect, 2> face_min_max;
        Array4<Real > const& hb_arr = height[0].array(mfi);
-       Array4<Real > const& ht_arr = height[1].array(mfi);		
-       Array4<Real const> const& vof_arr = vof_mf.const_array(mfi);		   
+       Array4<Real > const& ht_arr = height[1].array(mfi);
+       Array4<Real const> const& vof_arr = vof_mf.const_array(mfi);
        //search the cells on each boundary of the validbox
-	   //we do it by creating a new indexing space (i.e., bbx) with a constant
-	   //value for one coordinate direction. i.e., for +X face of the box, we can
-	   // set i=imax and just vary j and k index.
-         Array<int,2> range = {bx.smallEnd()[dim],bx.bigEnd()[dim]};	
+       //we do it by creating a new indexing space (i.e., bbx) with a constant
+       //value for one coordinate direction. i.e., for +X face of the box, we can
+       // set i=imax and just vary j and k index.
+         Array<int,2> range = {bx.smallEnd()[dim],bx.bigEnd()[dim]};
          auto ijk_min= bx.smallEnd();
          auto ijk_max= bx.bigEnd();
 //only loop through cells on two faces in the axis (defined by 'dim')
-	     for (int nn = 0; nn < 2; nn++){	
+         for (int nn = 0; nn < 2; nn++){
 //Note: we use the notation of Gerris for the direction of the Box (i.e.,FttDirection)
-// FACE direction = 0,1,2,3,4,5 in 3D	
+// FACE direction = 0,1,2,3,4,5 in 3D
 // X+ (Right):0, X- (Left):1, Y+ (Top): 2, Y- (Bottom): 3, Z+ (Front): 4, Z- (Back):5
 // direction%2=0 means the positive direction of a given axis direction (i.e.,int direction/2)
-// direction%2=1 means the negative direction of a given axis direction	(i.e.,int direction/2)
+// direction%2=1 means the negative direction of a given axis direction    (i.e.,int direction/2)
 // Axis direction = 0 (X-axis), 1(Y-axis), 2(Z-axis)
 // therefore, 'nn=0' here means the positive direction.
-		   ijk_min[dim]= range[nn?0:1];
-		   ijk_max[dim]= range[nn?0:1];		   
+           ijk_min[dim]= range[nn?0:1];
+           ijk_max[dim]= range[nn?0:1];
            Box bbx(ijk_min, ijk_max);
-// loop through the cells on the face of the box ('bbx')		   
-           ParallelFor(bbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept 
-		   {			 		 			 
-			 Array<int, 3> cell={i,j,k}, ghost=cell;
-			 ghost[dim]+=nn%2?-1:1;
-			 Array4<Real > const * h=boundary_hit (i,j,k, dim, hb_arr,ht_arr);
-	/*if (i==7 && j==0 && k==5){
-		AllPrint()<<"test_height_function   "<<"hb  "<<hb_arr(i,j,k,1)<<" ht " <<ht_arr(i,j,k,1)<<"\n";	
-        AllPrint()<<"----------"<<"\n";		
-	}*/	
-			 // column hit boundary 
-			 if(h){
-			   // column hit boundary 	 
-			   Array4<Real > const *hn=boundary_hit (ghost[0],ghost[1],ghost[2], dim, hb_arr,ht_arr); 
-			   if(h==hn){
-		        // the column crosses the interface 
-                // propagate column height correction from one side (or PE) to the other 			 
-			  	Real orientation = (nn%2 ? -1:1)*(h == &hb_arr ? 1 : -1);
-				Real h_ghost=(*h)(ghost[0],ghost[1],ghost[2],dim);
+// loop through the cells on the face of the box ('bbx')
+           ParallelFor(bbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+           {
+             Array<int, 3> cell={i,j,k}, ghost=cell;
+             ghost[dim]+=nn%2?-1:1;
+             Array4<Real > const * h=boundary_hit (i,j,k, dim, hb_arr,ht_arr);
+    /*if (i==7 && j==0 && k==5){
+        AllPrint()<<"test_height_function   "<<"hb  "<<hb_arr(i,j,k,1)<<" ht " <<ht_arr(i,j,k,1)<<"\n";
+        AllPrint()<<"----------"<<"\n";
+    }*/
+             // column hit boundary
+             if(h){
+               // column hit boundary
+               Array4<Real > const *hn=boundary_hit (ghost[0],ghost[1],ghost[2], dim, hb_arr,ht_arr);
+               if(h==hn){
+                // the column crosses the interface
+                // propagate column height correction from one side (or PE) to the other
+                  Real orientation = (nn%2 ? -1:1)*(h == &hb_arr ? 1 : -1);
+                Real h_ghost=(*h)(ghost[0],ghost[1],ghost[2],dim);
                 Real Hn = h_ghost + 0.5 + (orientation - 1.)/2. - 2.*BOUNDARY_HIT;
                 (*h)(i,j,k,dim) += Hn;
-                height_propagation_from_boundary (cell, dim, 2*dim+nn, vof_arr, *h, range, h == &hb_arr ? 1 : -1);					   
-			   }
-			   else{ 
-                // the column does not cross the interface                 
-                Real hgh=(*h)(cell[0],cell[1],cell[2],dim);				
-                while (!CELL_IS_BOUNDARY(cell,bx.smallEnd(),bx.bigEnd()) && 
-			            hgh!= VOF_NODATA && hgh> BOUNDARY_HIT/2.) {
-				  (*h)(cell[0],cell[1],cell[2],dim) = VOF_NODATA;	
-  				  cell[dim]+=nn%2?1:-1;
-				}				   
-			   }
-			 }			 			 			 
-			 else{
+                height_propagation_from_boundary (cell, dim, 2*dim+nn, vof_arr, *h, range, h == &hb_arr ? 1 : -1);
+               }
+               else{
+                // the column does not cross the interface
+                Real hgh=(*h)(cell[0],cell[1],cell[2],dim);
+                while (!CELL_IS_BOUNDARY(cell,bx.smallEnd(),bx.bigEnd()) &&
+                        hgh!= VOF_NODATA && hgh> BOUNDARY_HIT/2.) {
+                  (*h)(cell[0],cell[1],cell[2],dim) = VOF_NODATA;
+                    cell[dim]+=nn%2?1:-1;
+                }
+               }
+             }
+             else{
               // column did not hit a boundary, propagate height across PE boundary */
               if (hb_arr(ghost[0],ghost[1],ghost[2],dim)!= VOF_NODATA)
-			     height_propagation (ghost, dim, vof_arr, hb_arr, range, 1.);
+                 height_propagation (ghost, dim, vof_arr, hb_arr, range, 1.);
               if (ht_arr(ghost[0],ghost[1],ghost[2],dim)!= VOF_NODATA)
-                 height_propagation (ghost, dim, vof_arr, ht_arr, range, -1.);				 
-			 }
-			//Print()<<"face_loop   "<<"i  "<<i<<" j " <<j<<" k "<<k<<"\n";
+                 height_propagation (ghost, dim, vof_arr, ht_arr, range, -1.);
+             }
+            //Print()<<"face_loop   "<<"i  "<<i<<" j " <<j<<" k "<<k<<"\n";
            });//end ParallelFor
-		   
-	     }// end loop of 6 faces of the valid box
-	}// end MFIter
+
+         }// end loop of 6 faces of the valid box
+    }// end MFIter
 }
     for (MFIter mfi(vof_mf,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
         Box const& bx = mfi.tilebox();
         Array4<Real > const& hb_arr = height[0].array(mfi);
-        Array4<Real > const& ht_arr = height[1].array(mfi);				
+        Array4<Real > const& ht_arr = height[1].array(mfi);
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-		   if (hb_arr(i,j,k,dim)!= VOF_NODATA && hb_arr(i,j,k,dim)> BOUNDARY_HIT/2)
-		     hb_arr(i,j,k,dim)= VOF_NODATA;
-		   if (ht_arr(i,j,k,dim)!= VOF_NODATA && ht_arr(i,j,k,dim)> BOUNDARY_HIT/2)
-		     ht_arr(i,j,k,dim)= VOF_NODATA;
-		});	
-    } // end MFIter	
-	//fix me: temporary solution for MPI boundaries
-	height[0].FillBoundary(geom.periodicity());
-	height[1].FillBoundary(geom.periodicity());	
+           if (hb_arr(i,j,k,dim)!= VOF_NODATA && hb_arr(i,j,k,dim)> BOUNDARY_HIT/2)
+             hb_arr(i,j,k,dim)= VOF_NODATA;
+           if (ht_arr(i,j,k,dim)!= VOF_NODATA && ht_arr(i,j,k,dim)> BOUNDARY_HIT/2)
+             ht_arr(i,j,k,dim)= VOF_NODATA;
+        });
+    } // end MFIter
+    //fix me: temporary solution for MPI boundaries
+    height[0].FillBoundary(geom.periodicity());
+    height[1].FillBoundary(geom.periodicity());
   }//end for dim
 
 
-/////////////////////////////////////////////////////////////////////////////////////////    
+/////////////////////////////////////////////////////////////////////////////////////////
 //update the normal and alpha
-/////////////////////////////////////////////////////////////////////////////////////////     
+/////////////////////////////////////////////////////////////////////////////////////////
     for (MFIter mfi(vof_mf,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
         Box const& bx = mfi.tilebox();
         Array4<Real const> const& vof_arr = vof_mf.const_array(mfi);
         Array4<Real> const& mv = normal[lev].array(mfi);
         Array4<Real> const& al = alpha[lev].array(mfi);
         Array4<Real const > const& hb_arr = height[0].const_array(mfi);
-        Array4<Real const > const& ht_arr = height[1].const_array(mfi);			
+        Array4<Real const > const& ht_arr = height[1].const_array(mfi);
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
           XDim3 m={0.,0.,0.};
-		  auto fvol = vof_arr(i,j,k,0);
+          auto fvol = vof_arr(i,j,k,0);
           THRESHOLD(fvol);
    /*if (i==5&&j==6&&k==8){
-	   int dddd;
-	   Print()<<"------------"<<"\n";
-   }*/		  
-		  if (!height_normal (i,j,k, hb_arr, ht_arr, m)){
-//		  if(1){  
+       int dddd;
+       Print()<<"------------"<<"\n";
+   }*/
+          if (!height_normal (i,j,k, hb_arr, ht_arr, m)){
+//          if(1){
             if (!interface_cell (i,j,k, vof_arr, fvol)) {
                 AMREX_D_TERM(mv(i,j,k,0) = Real(0.);,
                              mv(i,j,k,1) = Real(0.);,
@@ -1597,11 +1869,11 @@ if(1){
                AMREX_D_PICK( ,Real f[3][3];, Real f[3][3][3];)
                stencil (i,j,k, vof_arr, f);
                mycs (f, &m.x);
-		    }
-		  }			
+            }
+          }
           Real n = 0.;
           for (int d = 0; d < AMREX_SPACEDIM; d++)
-               n += fabs ((&m.x)[d]);	   
+               n += fabs ((&m.x)[d]);
           if (n > 0.)
              for (int d = 0; d < AMREX_SPACEDIM; d++)
                 mv(i,j,k,d)= (&m.x)[d]/n;
@@ -1638,19 +1910,19 @@ if(1){
 ///////////////////////////////////////////////////////////////////////////////////////////////
 void
 VolumeOfFluid::curvature_calculation (int lev, MultiFab & vof_mf, Array<MultiFab,2> & height, MultiFab & kappa)
-{	
+{
 
   Geometry const& geom =v_incflo->geom[lev];
   auto const& dx = geom.CellSizeArray();
   auto const& problo = geom.ProbLoArray();
-  auto const& probhi = geom.ProbHiArray();  	
+  auto const& probhi = geom.ProbHiArray();
   MultiFab n_max(v_incflo->grids[lev], v_incflo->dmap[lev], 1, v_incflo->nghost_state(),
-                 MFInfo(), v_incflo->Factory(lev));  
-  //fixme: need to change for BCs  
+                 MFInfo(), v_incflo->Factory(lev));
+  //fixme: need to change for BCs
   kappa.setVal(VOF_NODATA,0,1,v_incflo->nghost_state());
-  n_max.setVal(-1.0); 
-// use height function method to calculate curvature  
-  for (int dim = 0; dim < AMREX_SPACEDIM; dim++){   
+  n_max.setVal(-1.0);
+// use height function method to calculate curvature
+  for (int dim = 0; dim < AMREX_SPACEDIM; dim++){
     for (MFIter mfi(vof_mf,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
        Box const& bx = mfi.tilebox();
        Array4<Real const> const& vof_arr = vof_mf.const_array(mfi);
@@ -1658,42 +1930,42 @@ VolumeOfFluid::curvature_calculation (int lev, MultiFab & vof_mf, Array<MultiFab
        Array4<Real const> const& hb_arr = height[0].const_array(mfi);
        Array4<Real const> const& ht_arr = height[1].const_array(mfi);
        Array4<Real > const& kappa_arr = kappa.array(mfi);
-	   Array4<Real > const& nmax_arr = n_max.array(mfi);
+       Array4<Real > const& nmax_arr = n_max.array(mfi);
        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-       {	   
-		 auto fvol = vof_arr(i,j,k,0);
-         Real kappa0;		 
-	     if (!CELL_IS_FULL(fvol)){	
+       {
+         auto fvol = vof_arr(i,j,k,0);
+         Real kappa0;
+         if (!CELL_IS_FULL(fvol)){
   /* if (i==44&&j==35&&k==31){
-	   int dddd;
-	   Print()<<"------------"<<"\n";
-   }*/			 
+       int dddd;
+       Print()<<"------------"<<"\n";
+   }*/
           if (curvature_along_direction(i, j, k, dim, dx, hb_arr, ht_arr, kappa0)) {
            if (fabs (mv(i,j,k,dim)) > nmax_arr(i,j,k,0)) {
              kappa_arr(i,j,k,0) = kappa0;
              nmax_arr(i,j,k,0) = fabs (mv(i,j,k,dim));
            }
-		   //propagate the curvature
+           //propagate the curvature
            Real orientation;
-		   Array4<Real const> const * hv = closest_height (i,j,k,dim,hb_arr,ht_arr,&orientation);
+           Array4<Real const> const * hv = closest_height (i,j,k,dim,hb_arr,ht_arr,&orientation);
            for (int d = 0; d <= 1; d++) {
-			 Array<int,3> neighbor={i,j,k};
+             Array<int,3> neighbor={i,j,k};
              neighbor[dim]+=d?-1:1;
-			 int *np=&neighbor[0];			 
-             while (!CELL_IS_BOUNDARY(neighbor,bx.smallEnd(),bx.bigEnd()) && 
-			        !CELL_IS_FULL(vof_arr(*np,*(np+1),*(np+2),0)) &&
-	                closest_height (*np,*(np+1),*(np+2),dim,hb_arr,ht_arr,&orientation) == hv) {               
-			   if (fabs (mv(*np,*(np+1),*(np+2),dim)) > nmax_arr(*np,*(np+1),*(np+2),0)) {
+             int *np=&neighbor[0];
+             while (!CELL_IS_BOUNDARY(neighbor,bx.smallEnd(),bx.bigEnd()) &&
+                    !CELL_IS_FULL(vof_arr(*np,*(np+1),*(np+2),0)) &&
+                    closest_height (*np,*(np+1),*(np+2),dim,hb_arr,ht_arr,&orientation) == hv) {
+               if (fabs (mv(*np,*(np+1),*(np+2),dim)) > nmax_arr(*np,*(np+1),*(np+2),0)) {
                  kappa_arr(*np,*(np+1),*(np+2),0) = kappa0;
                  nmax_arr(*np,*(np+1),*(np+2),0) = fabs (mv(*np,*(np+1),*(np+2),dim));
                }
                neighbor[dim]+=d?-1:1;
              }
            }
-          }		  
-		 }			 		 
-       }); //  ParallelFor		
-	}//end MFIter		
+          }
+         }
+       }); //  ParallelFor
+    }//end MFIter
   }
 
 //remaining_curvatures
@@ -1701,84 +1973,84 @@ VolumeOfFluid::curvature_calculation (int lev, MultiFab & vof_mf, Array<MultiFab
     Box const& bx = mfi.tilebox();
     Array4<Real const> const& vof_arr = vof_mf.const_array(mfi);
     Array4<Real const> const& mv = normal[lev].const_array(mfi);
-	Array4<Real const> const& alpha_arr = alpha[lev].const_array(mfi);
+    Array4<Real const> const& alpha_arr = alpha[lev].const_array(mfi);
     Array4<Real const> const& hb_arr = height[0].const_array(mfi);
     Array4<Real const> const& ht_arr = height[1].const_array(mfi);
     Array4<Real > const& kappa_arr = kappa.array(mfi);
     ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {     		  	  
-	  auto fvol = vof_arr(i,j,k,0);		 
+    {
+      auto fvol = vof_arr(i,j,k,0);
 
    /*if ((i==10&&j==7&&k==6)||(i==8&&j==5&&k==6)){
-	   int dddd;
-	   Print()<<"------------"<<"\n";
-   }*/	
-	  if (!CELL_IS_FULL(fvol)){
-	    if (kappa_arr(i,j,k,0)==VOF_NODATA){
-          // try height function and paraboloid fitting			
+       int dddd;
+       Print()<<"------------"<<"\n";
+   }*/
+      if (!CELL_IS_FULL(fvol)){
+        if (kappa_arr(i,j,k,0)==VOF_NODATA){
+          // try height function and paraboloid fitting
           Real kappa0= height_curvature_combined (i,j,k, dx,hb_arr,ht_arr,mv,alpha_arr);
-	      if (kappa0!=VOF_NODATA)
-		    kappa_arr(i,j,k,0)=kappa0;
-		  //else
-			// try particle method (defined in partstr.H)
-			//kappa_arr(i,j,k,0)= partstr_curvature (i,j,k,dx,problo,vof_arr,mv,alpha_arr);            			
-		}       	  
-	  }									
-	}); //  ParallelFor		
-  }//end MFIter	
+          if (kappa0!=VOF_NODATA)
+            kappa_arr(i,j,k,0)=kappa0;
+          //else
+            // try particle method (defined in partstr.H)
+            //kappa_arr(i,j,k,0)= partstr_curvature (i,j,k,dx,problo,vof_arr,mv,alpha_arr);
+        }
+      }
+    }); //  ParallelFor
+  }//end MFIter
   //!!!!!!!!fixme: a temporary solution for the curvature!!!!!!!!!!!
   // fill value of ghost cells (BCs, MPI info.)
-    kappa.FillBoundary(geom.periodicity());  
-	
+    kappa.FillBoundary(geom.periodicity());
+
 // diffuse curvatures
   int iter = 0;
   if (iter >0){
     MultiFab temp_K(kappa.boxArray(), kappa.DistributionMap(),1,kappa.nGrow());
-    //fixme: need to change for BCs  
-    temp_K.setVal(VOF_NODATA,0,1,kappa.nGrow());  
+    //fixme: need to change for BCs
+    temp_K.setVal(VOF_NODATA,0,1,kappa.nGrow());
     while (iter--){
      for (MFIter mfi(vof_mf,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
        Box const& bx = mfi.tilebox();
        Array4<Real > const& temp_arr = temp_K.array(mfi);
        Array4<Real > const& kappa_arr = kappa.array(mfi);
        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-       {     		  	  	 
-	    if (kappa_arr(i,j,k,0)!=VOF_NODATA)
-		 temp_arr(i,j,k,0)=kappa_arr(i,j,k,0);          			
-	    else{
-		Real sa=0., s=0.;
+       {
+        if (kappa_arr(i,j,k,0)!=VOF_NODATA)
+         temp_arr(i,j,k,0)=kappa_arr(i,j,k,0);
+        else{
+        Real sa=0., s=0.;
 /*#if AMREX_SPACEDIM==3
       for (int dk = -1; dk <= 1; dk++)
 #endif
       for (int dj = -1; dj <= 1; dj++)
       for (int di = -1; di <= 1; di++)
-	   if (di != 0|| dj != 0|| dk != 0) {
-         int ni=i+di,nj=j+dj,nk=k+dk;		 
-		 if (kappa_arr(ni,nj,nk,0)!=VOF_NODATA){
-	       s += kappa_arr(ni,nj,nk,0);
-	       sa += 1.;	  
-		 }
-	   }*/				 
+       if (di != 0|| dj != 0|| dk != 0) {
+         int ni=i+di,nj=j+dj,nk=k+dk;
+         if (kappa_arr(ni,nj,nk,0)!=VOF_NODATA){
+           s += kappa_arr(ni,nj,nk,0);
+           sa += 1.;
+         }
+       }*/
         Array<int,3>nei;
-	    for (int c = 0; c < AMREX_SPACEDIM; c++){
-	     nei[0]=i,nei[1]=j,nei[2]=k;
-         for (int di = -1; di <= 1; di+=2){	  
-	       nei[c]=(c==0?i:c==1?j:k)+di;
-		   if (kappa_arr(nei[0],nei[1],nei[2],0)!=VOF_NODATA){
-	         s += kappa_arr(nei[0],nei[1],nei[2],0);
-	         sa += 1.;	  
-		   }		  
-	     }
-	    }
-	    if (sa > 0.)
+        for (int c = 0; c < AMREX_SPACEDIM; c++){
+         nei[0]=i,nei[1]=j,nei[2]=k;
+         for (int di = -1; di <= 1; di+=2){
+           nei[c]=(c==0?i:c==1?j:k)+di;
+           if (kappa_arr(nei[0],nei[1],nei[2],0)!=VOF_NODATA){
+             s += kappa_arr(nei[0],nei[1],nei[2],0);
+             sa += 1.;
+           }
+         }
+        }
+        if (sa > 0.)
           temp_arr(i,j,k,0)=s/sa;
-        else	
-	      temp_arr(i,j,k,0)=VOF_NODATA;		  	  	  
-	    }	
-	   }); //  ParallelFor		
-     }//end MFIter  
+        else
+          temp_arr(i,j,k,0)=VOF_NODATA;
+        }
+       }); //  ParallelFor
+     }//end MFIter
     }
-    MultiFab::Copy(kappa, temp_K, 0, 0, 1, kappa.nGrow());  
+    MultiFab::Copy(kappa, temp_K, 0, 0, 1, kappa.nGrow());
   }
 //fit_curvatures using paraboloid fitting of the centroids of the
 //reconstructed interface segments
@@ -1786,47 +2058,47 @@ VolumeOfFluid::curvature_calculation (int lev, MultiFab & vof_mf, Array<MultiFab
     Box const& bx = mfi.tilebox();
     Array4<Real const> const& vof_arr = vof_mf.const_array(mfi);
     Array4<Real const> const& mv = normal[lev].const_array(mfi);
-	Array4<Real const> const& alpha_arr = alpha[lev].const_array(mfi);
+    Array4<Real const> const& alpha_arr = alpha[lev].const_array(mfi);
     Array4<Real const> const& hb_arr = height[0].const_array(mfi);
     Array4<Real const> const& ht_arr = height[1].const_array(mfi);
     Array4<Real > const& kappa_arr = kappa.array(mfi);
     ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {     		  	  
+    {
    /*if (i==0&&j==0&&k==0){
-	   int dddd;
-	   Print()<<"------------"<<kappa_arr(-1,0,0,0)<<"\n";
-   }*/	
-	  auto fvol = vof_arr(i,j,k,0);	 
-	  if (!CELL_IS_FULL(fvol)){
-	    if (kappa_arr(i,j,k,0)==VOF_NODATA){
-          // paraboloid fitting	of the centroids of the reconstructed interface segments		
+       int dddd;
+       Print()<<"------------"<<kappa_arr(-1,0,0,0)<<"\n";
+   }*/
+      auto fvol = vof_arr(i,j,k,0);
+      if (!CELL_IS_FULL(fvol)){
+        if (kappa_arr(i,j,k,0)==VOF_NODATA){
+          // paraboloid fitting    of the centroids of the reconstructed interface segments
          kappa_arr(i,j,k,0) = curvature_fit (i,j,k,dx,vof_arr,mv,alpha_arr);
-		}       	  
-	  }									
-	}); //  ParallelFor		
-  }//end MFIter	
+        }
+      }
+    }); //  ParallelFor
+  }//end MFIter
 
   //!!!!!!!!fix me: a temporary solution for the curvature!!!!!!!!!!!
   // fill value of ghost cells (BCs, MPI info.)
-    kappa.FillBoundary(geom.periodicity());  
-		
+    kappa.FillBoundary(geom.periodicity());
+
 /////////////////////////////////////////////////////////////////////////
 ///   The following is used to do statistics of calculated curvature
 ///   for numerical tests.
 /////////////////////////////////////////////////////////////////////////
-if (0){   
+if (0){
   VofRange kappa_range;
   range_init(kappa_range);
-  
+
   struct KappaPrint{
-    Real kappa, angle; 
+    Real kappa, angle;
     XDim3 center;
     int i,j,k;
     // Default constructor
     KappaPrint() : kappa(0), angle(0), center(), i(0), j(0), k(0) {}
     // Constructor to initialize the KappaPrint
     KappaPrint(Real ka, Real a, XDim3 o,int i, int j, int k): kappa(ka),angle(a),center(o),
-              i(i),j(j),k(k){} 
+              i(i),j(j),k(k){}
   // Copy assignment operator
     KappaPrint& operator=(const KappaPrint& other) {
         if (this != &other) { // self-assignment check
@@ -1835,18 +2107,18 @@ if (0){
          i = other.i;
          j = other.j;
          k = other.k;
-  	     for (int c = 0; c < AMREX_SPACEDIM; c++)
-  	      (&center.x)[c]=(&other.center.x)[c];
+           for (int c = 0; c < AMREX_SPACEDIM; c++)
+            (&center.x)[c]=(&other.center.x)[c];
          }
         return *this;
-    }			
-  }; 
-  Vector<KappaPrint> kout,removed_elements; 
+    }
+  };
+  Vector<KappaPrint> kout,removed_elements;
   Box const& domain  = geom.Domain();
-  IntVect half= (domain.smallEnd()+domain.bigEnd())/2; 
+  IntVect half= (domain.smallEnd()+domain.bigEnd())/2;
   Array<Real,AMREX_SPACEDIM> center{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
                                                  0.5*(problo[1]+probhi[1]),
-                                                 0.5*(problo[2]+probhi[2]))}; 
+                                                 0.5*(problo[2]+probhi[2]))};
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -1855,47 +2127,47 @@ if (0){
     Box const& bx = mfi.tilebox();
     const auto lo = lbound(bx);
     const auto hi = ubound(bx);
-	
+
     Array4<Real const> const& vof_arr = vof_mf.const_array(mfi);
-	Array4<Real const> const& mv = normal[lev].const_array(mfi);
-	Array4<Real const> const& alpha_arr = alpha[lev].const_array(mfi);	
+    Array4<Real const> const& mv = normal[lev].const_array(mfi);
+    Array4<Real const> const& alpha_arr = alpha[lev].const_array(mfi);
     Array4<Real const> const& kappa_arr = kappa.const_array(mfi);
     for (int k = lo.z; k <= hi.z; ++k) {
     for (int j = lo.y; j <= hi.y; ++j) {
     for (int i = lo.x; i <= hi.x; ++i) {
      /* if(i==6&&j==4&&k==7)
-		 Print() <<" ---- "<<"("<<i<<","<<j<<","<<k<<") "
-                 <<"Kappa "<<kappa_arr(i,j,k,0) <<"vof "<<vof_arr(i,j,k,0) <<"\n";	*/ 
-	  if (kappa_arr(i,j,k,0)!=VOF_NODATA){
-	   range_add_value(kappa_range,kappa_arr(i,j,k,0)); 
+         Print() <<" ---- "<<"("<<i<<","<<j<<","<<k<<") "
+                 <<"Kappa "<<kappa_arr(i,j,k,0) <<"vof "<<vof_arr(i,j,k,0) <<"\n";    */
+      if (kappa_arr(i,j,k,0)!=VOF_NODATA){
+       range_add_value(kappa_range,kappa_arr(i,j,k,0));
 
-	   //if(k==half[2]){
-		   
-	   if (i==j){   
+       //if(k==half[2]){
+
+       if (i==j){
          XDim3 m={AMREX_D_DECL(mv(i,j,k,0),mv(i,j,k,1),mv(i,j,k,2))},p;
          plane_area_center (m, alpha_arr(i,j,k,0),p);
-		 Real nn=0.;
-		 for (int c = 0; c < AMREX_SPACEDIM; c++){
+         Real nn=0.;
+         for (int c = 0; c < AMREX_SPACEDIM; c++){
            (&p.x)[c] = problo[c]+((c==0?i:c==1?j:k)+(&p.x)[c])*dx[c]-center[c];
-		   nn+=((&p.x)[c])*((&p.x)[c]);
-	     }
-		 nn=sqrt(nn);
-		 //Real angle =acos(p.x/nn)*180./PI+(p.y>0? 0.:180.);
-		 Real nnxy=(p.x>0.?1.:-1.)*sqrt(p.x*p.x+p.y*p.y);
-		 Real angle =acos(nnxy/nn)*180./PI+(p.z>0? 0.:180.);
-		/* Print() <<" ---- "<<"("<<i<<","<<j<<","<<k<<") "
+           nn+=((&p.x)[c])*((&p.x)[c]);
+         }
+         nn=sqrt(nn);
+         //Real angle =acos(p.x/nn)*180./PI+(p.y>0? 0.:180.);
+         Real nnxy=(p.x>0.?1.:-1.)*sqrt(p.x*p.x+p.y*p.y);
+         Real angle =acos(nnxy/nn)*180./PI+(p.z>0? 0.:180.);
+        /* Print() <<" ---- "<<"("<<i<<","<<j<<","<<k<<") "
                  <<"Kappa "<<kappa_arr(i,j,k,0) <<"  "<<p.x<<"  "<<p.y<<" "<<p.z<<"\n";*/
-         kout.emplace_back(kappa_arr(i,j,k,0),angle,p,i,j,k);		 	  
-	   }
-	  }
-		 
-	}
-	}
-	}
-	   
-	   
-	}
-	int nn=kout.size();
+         kout.emplace_back(kappa_arr(i,j,k,0),angle,p,i,j,k);
+       }
+      }
+
+    }
+    }
+    }
+
+
+    }
+    int nn=kout.size();
     int myproc = ParallelDescriptor::MyProc();
     int nprocs = ParallelDescriptor::NProcs();
     if (nprocs > 1){
@@ -1920,27 +2192,27 @@ if (0){
     // Create the MPI datatype
      MPI_Type_create_struct(6, lengths, disp, types, &mpi_kappa_type);
      MPI_Type_commit(&mpi_kappa_type);
-		
+
 // Gather data from all processes
      Vector<int> recvcounts(nprocs);
      Vector<int> displs(nprocs, 0);
      MPI_Gather(&nn, 1, MPI_INT, recvcounts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
-     for (int i = 1; i < nprocs; ++i) 
+     for (int i = 1; i < nprocs; ++i)
        displs[i] = displs[i-1] + recvcounts[i-1];
-	  
+
      Vector<KappaPrint> all_data(displs[nprocs-1] + recvcounts[nprocs-1]);
-	 int kk=sizeof(KappaPrint),tt=sizeof(XDim3), dd=sizeof(all_data);
-     MPI_Gatherv(kout.data(), kout.size(), mpi_kappa_type, all_data.data(), 
-	            recvcounts.data(), displs.data(), mpi_kappa_type, 0, MPI_COMM_WORLD);	
-	  kout=all_data;			
-	}
-	
-	if (myproc==0){
+     int kk=sizeof(KappaPrint),tt=sizeof(XDim3), dd=sizeof(all_data);
+     MPI_Gatherv(kout.data(), kout.size(), mpi_kappa_type, all_data.data(),
+                recvcounts.data(), displs.data(), mpi_kappa_type, 0, MPI_COMM_WORLD);
+      kout=all_data;
+    }
+
+    if (myproc==0){
 // Sort the vector by center.x from high to low
       std::sort(kout.begin(), kout.end(), [](const KappaPrint& a, const KappaPrint& b) {
         return a.center.x > b.center.x;
       });
-	
+
     // Use remove_if and copy elements that match center.y<0. to removed_elements
       auto it = std::remove_if(kout.begin(), kout.end(), [&](const KappaPrint& kp) {
         if (kp.center.z < 0.) {
@@ -1950,31 +2222,31 @@ if (0){
         return false;
       });
     // Erase the removed elements from the original vector
-      kout.erase(it, kout.end());	
+      kout.erase(it, kout.end());
    // Append the removed elements back to the original vector
       kout.insert(kout.end(), removed_elements.begin(), removed_elements.end());
-	
-	  
+
+
       Print()<<"# of interfacial cells"<<kout.size()<<"\n";
-	  FILE* o;
+      FILE* o;
       o = fopen("curvature.dat", "w");
       fprintf(o, " angle,k,x,y,z\n");
 
       for (int i = 0; i < kout.size(); ++i) {
-       fprintf(o, "%g,%g,%g,%g,%g,%d,%d,%d",kout[i].angle,fabs(kout[i].kappa),kout[i].center.x, 
-	         kout[i].center.y, kout[i].center.z, kout[i].i,kout[i].j,kout[i].k);
+       fprintf(o, "%g,%g,%g,%g,%g,%d,%d,%d",kout[i].angle,fabs(kout[i].kappa),kout[i].center.x,
+             kout[i].center.y, kout[i].center.z, kout[i].i,kout[i].j,kout[i].k);
        fprintf(o, "\n");
       }
-      fclose(o); 	 
-	} 	  
-  
+      fclose(o);
+    }
+
     domain_range_reduce(kappa_range);
     range_update (kappa_range);
     Print()<<"curvature min: "<<kappa_range.min<<"  max: "<<kappa_range.max<<"  mean: "<<kappa_range.mean
            <<"  stddev: "<<kappa_range.stddev<<"\n";
   }
 
-	
+
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -2029,7 +2301,10 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
        m_total_flux[lev].setVal(0.0);
        vof_total_flux[lev].setVal(0.0);
        MultiFab const * U_MF = dir < 1? u_mac[lev]:
-                               dir < 2? v_mac[lev]:w_mac[lev];
+#if AMREX_SPACEDIM == 3
+                               dir >= 2? w_mac[lev]:
+#endif
+                               v_mac[lev];
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -2184,20 +2459,20 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
   start = (start + 1) % AMREX_SPACEDIM;
 
 }
-// add surface tension force (F) to the MAC velocity at the center of cell faces at the middle 
+// add surface tension force (F) to the MAC velocity at the center of cell faces at the middle
 // of time step (n+1/2).
 // F^n+1/2 = (1/2*dt)*sigma*kappa*grad(VOF)/rho
-//   kappa and rho need to be estimated at the cell face center. The simple average of the cell-centered 
+//   kappa and rho need to be estimated at the cell face center. The simple average of the cell-centered
 //      values of two neighboring cells dilimited by the face is used to calculate the face-centered value.
-//   grad(VOF) is also estimated at the face center using the center-difference method for two cells 
+//   grad(VOF) is also estimated at the face center using the center-difference method for two cells
 //   i.e., in x-dir, grad(VOF)= (VOFcell[1]-VOFcell[0])/dx[0]
-void 
-VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u_mac, MultiFab& v_mac, 
-	                                                        MultiFab& w_mac))
+void
+VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u_mac, MultiFab& v_mac,
+                                                            MultiFab& w_mac))
 {
    auto& ld = *v_incflo->m_leveldata[lev];
    Geometry const& geom = v_incflo->Geom(lev);
-   auto const& dx = geom.CellSizeArray();   
+   auto const& dx = geom.CellSizeArray();
    Real sigma = v_incflo->m_sigma[0];
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -2207,58 +2482,58 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
        Box const& bx = mfi.tilebox();
        Box const& xbx = mfi.nodaltilebox(0);
        Box const& ybx = mfi.nodaltilebox(1);
-       Box const& zbx = mfi.nodaltilebox(2);	   
+       Box const& zbx = mfi.nodaltilebox(2);
        Array4<Real const> const& rho   = ld.density.const_array(mfi);
-	   Array4<Real const> const& tra   = ld.tracer.const_array(mfi);
+       Array4<Real const> const& tra   = ld.tracer.const_array(mfi);
        Array4<Real const> const& kap   = kappa[lev].const_array(mfi);
-	   Array4<Real > const& umac = u_mac.array(mfi);
-	   Array4<Real > const& vmac = v_mac.array(mfi);
-	   Array4<Real > const& wmac = w_mac.array(mfi);
-	   
+       AMREX_D_TERM(Array4<Real > const& umac = u_mac.array(mfi);,
+                    Array4<Real > const& vmac = v_mac.array(mfi);,
+                    Array4<Real > const& wmac = w_mac.array(mfi););
        ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
        {
          Real kaf;
-		 if(kap(i,j,k,0)!=VOF_NODATA && kap(i-1,j,k,0)!=VOF_NODATA)
-			kaf=Real(0.5)*(kap(i,j,k,0)+kap(i-1,j,k,0));
-		 else if (kap(i,j,k,0)!=VOF_NODATA)
-		    kaf=kap(i,j,k);
-		 else if (kap(i-1,j,k,0)!=VOF_NODATA)
+         if(kap(i,j,k,0)!=VOF_NODATA && kap(i-1,j,k,0)!=VOF_NODATA)
+            kaf=Real(0.5)*(kap(i,j,k,0)+kap(i-1,j,k,0));
+         else if (kap(i,j,k,0)!=VOF_NODATA)
+            kaf=kap(i,j,k);
+         else if (kap(i-1,j,k,0)!=VOF_NODATA)
             kaf=kap(i-1,j,k);
-		 else
+         else
             kaf=0.;
-		// density estimated at the face center, time increment is half of the timestep, i.e., dt/2
-		  umac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i-1,j,k))*(tra(i,j,k,0)-tra(i-1,j,k,0))/dx[0];				  		   			   
+        // density estimated at the face center, time increment is half of the timestep, i.e., dt/2
+          umac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i-1,j,k))*(tra(i,j,k,0)-tra(i-1,j,k,0))/dx[0];
        });
-       
-	   ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-       {
-         Real kaf;
-		 if(kap(i,j,k,0)!=VOF_NODATA && kap(i,j-1,k,0)!=VOF_NODATA)
-			kaf=Real(0.5)*(kap(i,j,k,0)+kap(i,j-1,k,0));
-		 else if (kap(i,j,k,0)!=VOF_NODATA)
-		    kaf=kap(i,j,k);
-		 else if (kap(i,j-1,k,0)!=VOF_NODATA)
-            kaf=kap(i,j-1,k);
-		 else
-            kaf=0.;
-		  vmac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i,j-1,k))*(tra(i,j,k,0)-tra(i,j-1,k,0))/dx[1];				  		   			   
-       });	
 
-	   ParallelFor(zbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+       ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
        {
          Real kaf;
-		 if(kap(i,j,k,0)!=VOF_NODATA && kap(i,j,k-1,0)!=VOF_NODATA)
-			kaf=Real(0.5)*(kap(i,j,k,0)+kap(i,j,k-1,0));
-		 else if (kap(i,j,k,0)!=VOF_NODATA)
-		    kaf=kap(i,j,k);
-		 else if (kap(i,j,k-1,0)!=VOF_NODATA)
-            kaf=kap(i,j,k-1);
-		 else
+         if(kap(i,j,k,0)!=VOF_NODATA && kap(i,j-1,k,0)!=VOF_NODATA)
+            kaf=Real(0.5)*(kap(i,j,k,0)+kap(i,j-1,k,0));
+         else if (kap(i,j,k,0)!=VOF_NODATA)
+            kaf=kap(i,j,k);
+         else if (kap(i,j-1,k,0)!=VOF_NODATA)
+            kaf=kap(i,j-1,k);
+         else
             kaf=0.;
-		  wmac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i,j,k-1))*(tra(i,j,k,0)-tra(i,j,k-1,0))/dx[2];				  		   			   
-       });	   
-	}		
-			
+          vmac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i,j-1,k))*(tra(i,j,k,0)-tra(i,j-1,k,0))/dx[1];
+       });
+#if AMREX_SPACEDIM==3 /* 3D */
+       ParallelFor(zbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+       {
+         Real kaf;
+         if(kap(i,j,k,0)!=VOF_NODATA && kap(i,j,k-1,0)!=VOF_NODATA)
+            kaf=Real(0.5)*(kap(i,j,k,0)+kap(i,j,k-1,0));
+         else if (kap(i,j,k,0)!=VOF_NODATA)
+            kaf=kap(i,j,k);
+         else if (kap(i,j,k-1,0)!=VOF_NODATA)
+            kaf=kap(i,j,k-1);
+         else
+            kaf=0.;
+          wmac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i,j,k-1))*(tra(i,j,k,0)-tra(i,j,k-1,0))/dx[2];
+       });
+#endif
+    }
+
 }
 //////////////////////////////////////////////////////////////////////////////////
 ///////
@@ -2283,17 +2558,17 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
            /* Array<Real,AMREX_SPACEDIM> center{AMREX_D_DECL((problo[0]+.45),
                                                            (problo[1]+.1),
                                                            (problo[2]+.45))};*/
-            Array<Real,AMREX_SPACEDIM> center1{AMREX_D_DECL((problo[0]+.45),
-                                                           (problo[1]+1.1),
-                                                           (problo[2]+.45))};														   
+            Array<Real,AMREX_SPACEDIM> center1{AMREX_D_DECL((problo[0]+.5),
+                                                           (problo[1]+.75),
+                                                           (problo[2]+.35))};
             Array<Real,AMREX_SPACEDIM> center{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
                                                            0.5*(problo[1]+probhi[1]),
-                                                           0.5*(problo[2]+probhi[2]))};														   
-            Real radius = .2; //5.0*dx[0];
+                                                           0.5*(problo[2]+probhi[2]))};
+            Real radius = .15; //5.0*dx[0];
             bool fluid_is_inside = true;
 
             EB2::SphereIF my_sphere(radius, center, fluid_is_inside);
-			EB2::SphereIF my_sphere1(radius, center1, fluid_is_inside);
+            EB2::SphereIF my_sphere1(radius, center1, fluid_is_inside);
 
     // Initialise cylinder parameters
     int direction = 2;
@@ -2330,7 +2605,7 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
 
     // Generate GeometryShop
     //auto gshop = EB2::makeShop(two);
-   auto gshop = EB2::makeShop(my_sphere);
+   auto gshop = EB2::makeShop(my_box);
    //auto gshop = EB2::makeShop(my_cyl);
             int max_level = v_incflo->maxLevel();
             EB2::Build(gshop, v_incflo->Geom(max_level), max_level, max_level);
@@ -2344,18 +2619,18 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
         if (lev == v_incflo->finestLevel()) {
             EB2::IndexSpace::pop();
         }
-    } 
-	else
+    }
+    else
 #endif
     {
 
    struct VOFPrint{
-  Real vof; 
+  Real vof;
   int i,j,k;
   // Default constructor
     VOFPrint() : vof(0), i(0), j(0), k(0) {}
   // Constructor to initialize the VOFPrint
-  VOFPrint(Real ka,int i, int j, int k): vof(ka),i(i),j(j),k(k){} 
+  VOFPrint(Real ka,int i, int j, int k): vof(ka),i(i),j(j),k(k){}
 // Copy assignment operator
   VOFPrint& operator=(const VOFPrint& other) {
         if (this != &other) { // self-assignment check
@@ -2365,18 +2640,18 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
             k = other.k;
         }
         return *this;
-    }			
-  }; 
-    Vector<VOFPrint> vout; 
+    }
+  };
+    Vector<VOFPrint> vout;
    // Define the file name
-    std::string filename = "vof_value-16.dat";   
+    std::string filename = "vof_value-16.dat";
     // Open the file
     std::ifstream infile(filename);
-   
+
     if (!infile) {
         std::cerr << "Unable to open file " << filename << std::endl;
-		exit;
-    }		
+        exit;
+    }
     // Read the file line by line
     std::string line;
     while (std::getline(infile, line)) {
@@ -2386,29 +2661,29 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
         if (!(iss >> i >> j >> k >> value)) {
             std::cerr << "Error reading line: " << line << std::endl;
             continue;
-        }      
+        }
        vout.emplace_back(value,i,j,k);
-        
-    }		
-	infile.close();	
+
+    }
+    infile.close();
 #ifdef AMRE_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
         for (MFIter mfi(a_tracer,TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             //Box const& vbx = mfi.validbox();
-			Box const& vbx = amrex::grow(mfi.tilebox(),a_tracer.nGrow());
+            Box const& vbx = amrex::grow(mfi.tilebox(),a_tracer.nGrow());
             auto const& tracer = a_tracer.array(mfi);
-			
-			for(int n=0;n<vout.size();++n)
-			/* if(vout[n].i>=vbx.smallEnd()[0]&&vout[n].i<=vbx.bigEnd()[0]&&
-		        vout[n].j>=vbx.smallEnd()[1]&&vout[n].j<=vbx.bigEnd()[1]&&
-			    vout[n].k>=vbx.smallEnd()[2]&&vout[n].k<=vbx.bigEnd()[2]){*/
-             if(vbx.contains(vout[n].i,vout[n].j,vout[n].k)){					
-				tracer(vout[n].i,vout[n].j,vout[n].k,0)=vout[n].vof;								
-			 }
-			
-			/*amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+
+            for(int n=0;n<vout.size();++n)
+            /* if(vout[n].i>=vbx.smallEnd()[0]&&vout[n].i<=vbx.bigEnd()[0]&&
+                vout[n].j>=vbx.smallEnd()[1]&&vout[n].j<=vbx.bigEnd()[1]&&
+                vout[n].k>=vbx.smallEnd()[2]&&vout[n].k<=vbx.bigEnd()[2]){*/
+             if(vbx.contains(vout[n].i,vout[n].j,vout[n].k)){
+                tracer(vout[n].i,vout[n].j,vout[n].k,0)=vout[n].vof;
+             }
+
+            /*amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 Real x = problo[0] + Real(i+0.5)*dx[0];
                 Real y = problo[1] + Real(j+0.5)*dx[1];
@@ -2434,14 +2709,14 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
                 else tracer(i,j,k) = 0.5-rs;
             });*/
         }
- 
+
     }
 
     // Once vof tracer is initialized, we calculate the normal direction and alpha of the plane segment
     // intersecting each interface cell.
     v_incflo->p_volume_of_fluid->tracer_vof_update(lev, a_tracer, height[lev]);
-	v_incflo->p_volume_of_fluid->curvature_calculation(lev, a_tracer, height[lev], kappa[lev]);
-	
+    v_incflo->p_volume_of_fluid->curvature_calculation(lev, a_tracer, height[lev], kappa[lev]);
+
 
 }
 
@@ -2489,10 +2764,12 @@ VolumeOfFluid::write_tecplot_surface(Real time, int nstep)
                 Array4<Real const> const& mv = normal[lev].const_array(mfi);
                 Array4<Real const> const& al =  alpha[lev].const_array(mfi);
                 Array4<Real const> const& tag_arr = tag[lev].const_array(mfi);
-				Array4<Real const> const& kappa_arr = kappa[lev].const_array(mfi);
+                Array4<Real const> const& kappa_arr = kappa[lev].const_array(mfi);
                 Vector<Segment> segments;
-                int totalnodes = 0;
-                for (int k = lo.z; k <= hi.z; ++k) {
+                int totalnodes = 0, k=0;
+#if AMREX_SPACEDIM==3
+                for (k = lo.z; k <= hi.z; ++k)
+#endif
                 for (int j = lo.y; j <= hi.y; ++j) {
                 for (int i = lo.x; i <= hi.x; ++i) {
                     auto fvol = vof(i,j,k,0);
@@ -2511,14 +2788,13 @@ VolumeOfFluid::write_tecplot_surface(Real time, int nstep)
                             (&p.x)[dim] = problo[dim] + dx[dim]*((dim<1?i:dim<2?j:k)+(&p.x)[dim]);
                             (&center.x)[dim] = problo[dim] + dx[dim]*((dim<1?i:dim<2?j:k)+Real(0.5));
                         }
-                        Array<Real, 3> vars={fvol,tag_arr(i,j,k),kappa_arr(i,j,k)}; 
+                        Array<Real, 3> vars={fvol,tag_arr(i,j,k),kappa_arr(i,j,k)};
                         /* Print() << " ijk index " <<"("<<i<<","<<j<<","<<k<<")"<<" vector "<<m<<" "
                           " center "<< p <<" alpha "<<alpha<<" "<<fvol<<"\n";  */
                         //Print() << " ijk index " <<"("<<i<<","<<j<<","<<k<<")"<<" "<<fvol<<"\n";
                       //if (i==16 &&j==28&&k==3)
                         add_segment (center, dx, alpha, p, m, segments, totalnodes, vars);
                     }
-                }
                 }
                 }
                 //           Print() << " Outside add_interface " << segments.size()<<" "<<totalnodes<<"\n";
@@ -2529,21 +2805,31 @@ VolumeOfFluid::write_tecplot_surface(Real time, int nstep)
                    //spatial coordinates
                    TecplotFile << (AMREX_SPACEDIM== 2 ? "VARIABLES = \"X\", \"Y\"":"VARIABLES = \"X\", \"Y\", \"Z\"");
                    //output variables
-                   TecplotFile <<", \"F\""<<", \"m_x\""<<", \"m_y\""<<", \"m_z\""<<", \"alpha\""
-				               <<", \"tag\""<<", \"kappa\""<<"\n";
+                   TecplotFile <<", \"F\""<<", \"m_x\""<<", \"m_y\""
+#if AMREX_SPACEDIM==3
+                               <<", \"m_z\""
+#endif
+                               <<", \"alpha\""<<", \"tag\""<<", \"kappa\""<<"\n";
                    std::string zonetitle=("Level_"+std::to_string(lev)+
                                           "_Box_" +std::to_string(mfi.index())+
                                           "_Proc_"+std::to_string(myproc)+"_step_"+std::to_string(nstep));
                    TecplotFile <<(std::string("ZONE T=")+zonetitle);
                    TecplotFile <<", DATAPACKING=POINT"<<", NODES="<<totalnodes<<", ELEMENTS="<<segments.size()
-                               <<", ZONETYPE=FEQUADRILATERAL" <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
+                               << (AMREX_SPACEDIM== 2 ? ", ZONETYPE=FELINESEG":", ZONETYPE=FEQUADRILATERAL")
+                               <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
 
 //      AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
                    int nn=0;
                    for (const auto& seg : segments) {
                        for (int in = 0; in < seg.nnodes; in++)
-                           TecplotFile <<seg.node[in].x<<" "<<seg.node[in].y<<" "<<seg.node[in].z<<" "
-                                       <<seg.vars[0]<<" "<<seg.mv.x<<"  "<<seg.mv.y<<"  "<<seg.mv.z<<"  "
+                           TecplotFile <<seg.node[in].x<<" "<<seg.node[in].y<<" "
+#if AMREX_SPACEDIM==3
+                                       <<seg.node[in].z<<" "
+#endif
+                                       <<seg.vars[0]<<" "<<seg.mv.x<<"  "<<seg.mv.y<<"  "
+#if AMREX_SPACEDIM==3
+                                       <<seg.mv.z<<"  "
+#endif
                                        <<seg.alpha<<"  "<<seg.vars[1]<<"  "<<seg.vars[2]<<"\n";
 
                    }
@@ -2582,12 +2868,27 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
         //spatial coordinates
         TecplotFile << (AMREX_SPACEDIM== 2 ? "VARIABLES = \"X\", \"Y\"":"VARIABLES = \"X\", \"Y\", \"Z\"");
         //output variables
-        TecplotFile <<", \"P\""<<", \"F\""<<", \"v_x\""<<", \"v_y\""<<", \"v_z\""<<
-                      ", \"m_x\""<<", \"m_y\""<<", \"m_z\""<<", \"alpha\""<<", \"tag\""<<
-				      ", \"hb_x\""<<", \"hb_y\""<<", \"hb_z\""<<
-				      ", \"ht_x\""<<", \"ht_y\""<<", \"ht_z\""<<
-					  ", \"kappa\""<<", \"rho\""<<
-					  ", \"f_x\""<<", \"f_y\""<<", \"f_z\""<<"\n";
+        TecplotFile <<", \"P\""<<", \"F\""<<", \"v_x\""<<", \"v_y\""<<
+#if AMREX_SPACEDIM==3
+                      ", \"v_z\""<<
+#endif
+                      ", \"m_x\""<<", \"m_y\""<<
+#if AMREX_SPACEDIM==3
+                      ", \"m_z\""<<
+#endif
+                      ", \"alpha\""<<", \"tag\""<<", \"hb_x\""<<", \"hb_y\""<<
+#if AMREX_SPACEDIM==3
+                      ", \"hb_z\""<<
+#endif
+                      ", \"ht_x\""<<", \"ht_y\""<<
+#if AMREX_SPACEDIM==3
+                      ", \"ht_z\""<<
+#endif
+                      ", \"kappa\""<<", \"rho\""<<", \"f_x\""<<", \"f_y\""<<
+#if AMREX_SPACEDIM==3
+                      ", \"f_z\""<<
+#endif
+                      "\n";
 
         for (int lev = 0; lev <= finest_level; ++lev) {
             auto& ld = *v_incflo->m_leveldata[lev];
@@ -2618,11 +2919,12 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                 auto const& ijk_min= bx.smallEnd();
                 auto const& ijk_max= bx.bigEnd();
                 std::string zonetitle=("Level_"+std::to_string(lev)+"_Box_"+std::to_string(mfi.index())
-				                        +"_Proc_"+std::to_string(myproc)+"_step_"+std::to_string(nstep));
+                                        +"_Proc_"+std::to_string(myproc)+"_step_"+std::to_string(nstep));
                 TecplotFile <<(std::string("ZONE T=")+zonetitle);
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim)
-                    TecplotFile <<", "<<(IJK[dim]+std::string("="))<<(ijk_max[dim]-ijk_min[dim]+2);
-                TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(AMREX_SPACEDIM+2)<<"-"<<24<<"]=CELLCENTERED)"
+                  TecplotFile <<", "<<(IJK[dim]+std::string("="))<<(ijk_max[dim]-ijk_min[dim]+2);
+                TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(AMREX_SPACEDIM+2)<<"-"
+                            <<(AMREX_SPACEDIM==3?24:19)<<"]=CELLCENTERED)"
                             <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
 
 //      AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
@@ -2632,15 +2934,17 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                 Array4<Real const> const& mv = normal[lev].const_array(mfi);
                 Array4<Real const> const& al = alpha[lev].const_array(mfi);
                 Array4<Real const> const& tag_arr = tag[lev].const_array(mfi);
-				Array4<Real const> const& hb_arr = height[lev][0].const_array(mfi);
-				Array4<Real const> const& ht_arr = height[lev][1].const_array(mfi);
-				Array4<Real const> const& kappa_arr = kappa[lev].const_array(mfi);
-				Array4<Real const> const& density_arr = ld.density.const_array(mfi);
-				Array4<Real const> const& force_arr = force[lev].const_array(mfi);
-                int nn=0;
+                Array4<Real const> const& hb_arr = height[lev][0].const_array(mfi);
+                Array4<Real const> const& ht_arr = height[lev][1].const_array(mfi);
+                Array4<Real const> const& kappa_arr = kappa[lev].const_array(mfi);
+                Array4<Real const> const& density_arr = ld.density.const_array(mfi);
+                Array4<Real const> const& force_arr = force[lev].const_array(mfi);
+                int nn=0, k=0;
                 //write coordinate variables
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
-                  for (int k = lo.z; k <= hi.z +1; ++k) {
+#if AMREX_SPACEDIM==3
+                  for (k = lo.z; k <= hi.z +1; ++k)
+#endif
                   for (int j = lo.y; j <= hi.y +1; ++j) {
                   for (int i = lo.x; i <= hi.x +1; ++i) {
                       TecplotFile << (problo[dim]+dx[dim]*(dim<1?i:dim<2?j:k))<<" ";
@@ -2651,10 +2955,12 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                       }
                   }
                   }
-                  }
+
                 }//
                 //write presure
-                for (int k = lo.z; k <= hi.z+1; ++k) {
+#if AMREX_SPACEDIM==3
+                for (k = lo.z; k <= hi.z+1; ++k)
+#endif
                 for (int j = lo.y; j <= hi.y+1; ++j) {
                 for (int i = lo.x; i <= hi.x+1; ++i) {
                     TecplotFile << pa(i,j,k)<<" ";
@@ -2665,9 +2971,11 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                     }
                 }
                 }
-                }
-				//write VOF
-                for (int k = lo.z; k <= hi.z; ++k) {
+
+                //write VOF
+#if AMREX_SPACEDIM==3
+                for (k = lo.z; k <= hi.z; ++k)
+#endif
                 for (int j = lo.y; j <= hi.y; ++j) {
                 for (int i = lo.x; i <= hi.x; ++i) {
                     TecplotFile << tracer(i,j,k,0)<<" ";
@@ -2678,10 +2986,12 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                     }
                 }
                 }
-                }
+
                 //write velocity
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
-                    for (int k = lo.z; k <= hi.z; ++k) {
+#if AMREX_SPACEDIM==3
+                    for (k = lo.z; k <= hi.z; ++k)
+#endif
                     for (int j = lo.y; j <= hi.y; ++j) {
                     for (int i = lo.x; i <= hi.x; ++i) {
                         TecplotFile << vel(i,j,k,dim)<<" ";
@@ -2692,12 +3002,14 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                         }
                     }
                     }
-                    }
+
                 }//
 
                 //write variables of the normal direction of the interface
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
-                    for (int k = lo.z; k <= hi.z; ++k) {
+#if AMREX_SPACEDIM==3
+                    for (k = lo.z; k <= hi.z; ++k)
+#endif
                     for (int j = lo.y; j <= hi.y; ++j) {
                     for (int i = lo.x; i <= hi.x; ++i) {
                         TecplotFile << mv(i,j,k,dim)<<" ";
@@ -2708,12 +3020,13 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                         }
                     }
                     }
-                    }
+
                 }//
 
                 //write alpha of the interface
-
-                for (int k = lo.z; k <= hi.z; ++k) {
+#if AMREX_SPACEDIM==3
+                for (k = lo.z; k <= hi.z; ++k)
+#endif
                 for (int j = lo.y; j <= hi.y; ++j) {
                 for (int i = lo.x; i <= hi.x; ++i) {
                     TecplotFile << al(i,j,k)<<" ";
@@ -2724,10 +3037,12 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                     }
                 }
                 }
-                }
+
 
                 //write id of the droplets or bubbles
-                for (int k = lo.z; k <= hi.z; ++k) {
+#if AMREX_SPACEDIM==3
+                for (k = lo.z; k <= hi.z; ++k)
+#endif
                 for (int j = lo.y; j <= hi.y; ++j) {
                 for (int i = lo.x; i <= hi.x; ++i) {
                     TecplotFile << tag_arr(i,j,k)<<" ";
@@ -2738,12 +3053,14 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                     }
                 }
                 }
-                }
+
                 //write height function values
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
-                    for (int k = lo.z; k <= hi.z; ++k) {
+#if AMREX_SPACEDIM==3
+                    for (k = lo.z; k <= hi.z; ++k)
+#endif
                     for (int j = lo.y; j <= hi.y; ++j) {
-                    for (int i = lo.x; i <= hi.x; ++i) {														
+                    for (int i = lo.x; i <= hi.x; ++i) {
                         TecplotFile << hb_arr(i,j,k,dim)<<" ";
                         ++nn;
                         if (nn > 100) {
@@ -2752,11 +3069,12 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                         }
                     }
                     }
-                    }
-                }//					
+                }//
 
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
-                    for (int k = lo.z; k <= hi.z; ++k) {
+#if AMREX_SPACEDIM==3
+                    for (k = lo.z; k <= hi.z; ++k)
+#endif
                     for (int j = lo.y; j <= hi.y; ++j) {
                     for (int i = lo.x; i <= hi.x; ++i) {
                         TecplotFile << ht_arr(i,j,k,dim)<<" ";
@@ -2767,10 +3085,11 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                         }
                     }
                     }
-                    }
-                }//	
+                }//
                 //write curvature
-                for (int k = lo.z; k <= hi.z; ++k) {
+#if AMREX_SPACEDIM==3
+                for (k = lo.z; k <= hi.z; ++k)
+#endif
                 for (int j = lo.y; j <= hi.y; ++j) {
                 for (int i = lo.x; i <= hi.x; ++i) {
                     TecplotFile << kappa_arr(i,j,k)<<" ";
@@ -2781,9 +3100,11 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                     }
                 }
                 }
-                }				
+
                 //write density
-                for (int k = lo.z; k <= hi.z; ++k) {
+#if AMREX_SPACEDIM==3
+                for (k = lo.z; k <= hi.z; ++k)
+#endif
                 for (int j = lo.y; j <= hi.y; ++j) {
                 for (int i = lo.x; i <= hi.x; ++i) {
                     TecplotFile << density_arr(i,j,k)<<" ";
@@ -2794,11 +3115,13 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                     }
                 }
                 }
-                }
+
 
                 //write force vector
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim) {
-                    for (int k = lo.z; k <= hi.z; ++k) {
+#if AMREX_SPACEDIM==3
+                    for (k = lo.z; k <= hi.z; ++k)
+#endif
                     for (int j = lo.y; j <= hi.y; ++j) {
                     for (int i = lo.x; i <= hi.x; ++i) {
                         TecplotFile << force_arr(i,j,k,dim)<<" ";
@@ -2809,9 +3132,9 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                         }
                     }
                     }
-                    }
+
                 }//
-				
+
                 TecplotFile <<"\n";
             } // end MFIter
 
@@ -2986,7 +3309,15 @@ int domain_tag_droplets (int finest_level, Vector<BoxArray > const &grids, Vecto
            ,ort2=ORTHOGONAL_COMPONENT(ort1);//2nd transverse direction
         for (int n=0;n<2;n++){
          int k0=dim_limit[n][d],gd=k0+(n==0?-1:1);
-         for(int i0=ijk_min[ort1];i0<=ijk_max[ort1];i0++)
+         for(int i0=ijk_min[ort1];i0<=ijk_max[ort1];i0++){
+#if AMREX_SPACEDIM==2 /*2D*/
+            Real tag_cell=(d==0?tag_arr(k0,i0,0):tag_arr(i0,k0,0));
+            if(tag_cell > 0){
+              Real tag_gcell=(d==0?tag_arr(gd,i0,0):tag_arr(i0,gd,0));
+              if(tag_gcell > 0)
+                touching_regions (tag_cell, tag_gcell, touch);
+            }
+#else /*3D */
           for(int j0=ijk_min[ort2];j0<=ijk_max[ort2];j0++){
             Real tag_cell=(d==0?tag_arr(k0,i0,j0):
                            d==1?tag_arr(j0,k0,i0):
@@ -2995,12 +3326,12 @@ int domain_tag_droplets (int finest_level, Vector<BoxArray > const &grids, Vecto
               Real tag_gcell=(d==0?tag_arr(gd,i0,j0):
                               d==1?tag_arr(j0,gd,i0):
                                    tag_arr(i0,j0,gd));
-              if(tag_gcell > 0){
+              if(tag_gcell > 0)
                 touching_regions (tag_cell, tag_gcell, touch);
-              }
             }
-
           }// end for-loop for searching cells in the boundaries.
+#endif
+         }
         }// end for-loop for low and high boundary
        }// end for-loop for AMREX_SPACEDIM
     }
@@ -3105,7 +3436,7 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
       Real vtop[n_tag], range[AMREX_SPACEDIM][2][n_tag];
       for (int n = 0; n < n_tag; n++){
        ncell[n]=0; vols[n] = 0.; vels[n] = 0.; surfA[n]=0.; vtop[n] = 0.;
-	   range_init (kappa_range[n]);
+       range_init (kappa_range[n]);
        for(int d = 0; d < AMREX_SPACEDIM; d++) {
          mcent[d][n]=0.;
          range_init (s[d][n]);
@@ -3126,7 +3457,7 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
        Array4<Real const> const& vel_arr = ld.velocity.const_array(mfi);
        Array4<Real const> const& mv = normal[lev].const_array(mfi);
        Array4<Real const> const& al =  alpha[lev].const_array(mfi);
-	   Array4<Real const> const& ka =  kappa[lev].const_array(mfi);
+       Array4<Real const> const& ka =  kappa[lev].const_array(mfi);
        //fix me: not compatible with GPUs
       // ParallelFor(bx, [&] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
      //  {
@@ -3166,15 +3497,15 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
               (&p.x)[d] = problo[d] + dx[d]*((d<1?i:d<2?j:k)+(&p.x)[d]);
            for(int d = 0; d < AMREX_SPACEDIM; d++)
               range_add_value (s[d][itag-1], (&p.x)[d]);
-		   // do statistics of the curvature data
-		   range_add_value (kappa_range[itag-1], ka(i,j,k,0));
+           // do statistics of the curvature data
+           range_add_value (kappa_range[itag-1], ka(i,j,k,0));
          }
         }
 //       });
        }}}    //end of the ijk-loop
 
     }//end MFIter
-	for (int n = 0; n < n_tag; n++)
+    for (int n = 0; n < n_tag; n++)
       range_update (kappa_range[n]);
  // the rest of the algorithm deals with  parallel BCs
     if (ParallelDescriptor::NProcs()> 1){
@@ -3195,11 +3526,11 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
        for (int n = 0; n < n_tag; n++)
          domain_range_reduce(s[d][n]);
       }
-	  // sum curvature info.
-	  for (int n = 0; n < n_tag; n++){
+      // sum curvature info.
+      for (int n = 0; n < n_tag; n++){
          domain_range_reduce(kappa_range[n]);
-	     range_update (kappa_range[n]);
-	  }
+         range_update (kappa_range[n]);
+      }
     }
 ////////////////////////////////////////////////////////////////////
 //////
@@ -3211,17 +3542,17 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
 Real error=0.;
 if (0){
      Real lencube=5./16., cube_vol=lencube*lencube*lencube;
-     Array<Real, AMREX_SPACEDIM> o0={0.1875,0.1875,0.1875},o,
+     Array<Real, AMREX_SPACEDIM> o0={0.1875},o,
                                  cube_min,cube_max;
      //theoretical centroid of regid body movement
      for (int d = 0; d < AMREX_SPACEDIM; d++){
-        o[d] = o0[d]+1.0*time;   
+        o[d] = o0[d]+1.0*time;
         cube_min[d]=o[d]-lencube*.5;
         cube_max[d]=o[d]+lencube*.5;
         int np=cube_min[d]/(probhi[d]-problo[d]);
         cube_min[d]-=np*(probhi[d]-problo[d]);
         np=cube_max[d]/(probhi[d]-problo[d]);
-        cube_max[d]-=np*(probhi[d]-problo[d]);                       
+        cube_max[d]-=np*(probhi[d]-problo[d]);
      }
      Print()<<"cube center"<<o<<"\n";
 
@@ -3284,7 +3615,7 @@ if (0){
     error /=cube_vol;
 
 }
-/////Deformation of a sphere in sinusoidal velocity field 
+/////Deformation of a sphere in sinusoidal velocity field
 if (0){
    if (first)
     MultiFab::Copy(ld.tracer, ld.tracer, 0, 1, 1, 1);
@@ -3308,7 +3639,7 @@ if (0){
        });
 
       }//end MFIter
-   ParallelDescriptor::ReduceRealSum (&error, 1);      
+   ParallelDescriptor::ReduceRealSum (&error, 1);
    error /=sphere_vol;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3416,8 +3747,8 @@ if (0){
       /* for(int d = 0; d < AMREX_SPACEDIM; d++)
          outputFile <<range[d][0][n]<<"  "<<range[d][1][n]<<"  ";
        outputFile <<"s  "<<surfA[n]<<"  "
-	              <<"k: "<<kappa_range[n].mean<<" "<<kappa_range[n].min<<" "<<kappa_range[n].max				 
-                  <<" "<<kappa_range[n].stddev;	*/   	   
+                  <<"k: "<<kappa_range[n].mean<<" "<<kappa_range[n].min<<" "<<kappa_range[n].max
+                  <<" "<<kappa_range[n].stddev;    */
      }
      outputFile <<"\n";
      outputFile.close();
@@ -3448,8 +3779,10 @@ void VolumeOfFluid::apply_velocity_field (Real time, int nstep)
           Real y = Real(j+0.5)*dx[1];
           Real z = Real(k+0.5)*dx[2];
           Real pi = 3.14159265357;
-          vel(i,j,k,0) = 2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*time/3.);
-          vel(i,j,k,1) = -sin(2.*pi*x)*sin(pi*y)*sin(pi*y)*sin(2*pi*z)*cos(pi*time/3.);
+//          vel(i,j,k,0) = 2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*time/3.);
+//          vel(i,j,k,1) = -sin(2.*pi*x)*sin(pi*y)*sin(pi*y)*sin(2*pi*z)*cos(pi*time/3.);
+          vel(i,j,k,0) = sin(pi*x)*sin(pi*x)*sin(2*pi*y)*cos(pi*time/8.);
+          vel(i,j,k,1) =-sin(pi*y)*sin(pi*y)*sin(2*pi*x)*cos(pi*time/8.);
 #if (AMREX_SPACEDIM == 3)
           vel(i,j,k,2) = -sin(2.*pi*x)*sin(pi*z)*sin(pi*z)*sin(2*pi*y)*cos(pi*time/3.);
 #endif

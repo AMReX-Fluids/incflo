@@ -419,7 +419,7 @@ static void SetZeroZ(XDim3 & p) {
   p.z = 0;
 #endif
 }
-
+#define EPS 1e-4 
 /**
  * vof_facet:
  * @dx: grid size in x-,y-, z-direction.
@@ -436,11 +436,36 @@ int vof_facet (GpuArray<Real, AMREX_SPACEDIM> dx,
                XDim3 q, XDim3 m, Real alpha, XDim3 * p)
          
 {
-
- int c;
+ int c,n =0;
  XDim3 o=q; 
 #if AMREX_SPACEDIM==2
   Real x, y;
+  
+  if (fabs (m.y) > EPS) {
+    y = (alpha - m.x)/m.y;
+    if (y >= 0. && y <= 1.) {
+      p[n].x = q.x + dx[0]/2.; p[n].y = q.y + dx[1]*(y - 0.5); p[n++].z = 0.;
+    }
+  }
+  if (fabs (m.x) > EPS) {
+    x = (alpha - m.y)/m.x;
+    if (x >= 0. && x <= 1.) {
+      p[n].x = q.x + dx[0]*(x - 0.5); p[n].y = q.y + dx[1]/2.; p[n++].z = 0.;
+    }
+  }
+  if (fabs (m.y) > EPS) {
+    y = alpha/m.y;
+    if (y >= 0. && y <= 1.) {
+      p[n].x = q.x - dx[0]/2.; p[n].y = q.y + dx[1]*(y - 0.5); p[n++].z = 0.;
+    }
+  }
+  if (fabs (m.x) > EPS) {
+    x = alpha/m.x;
+    if (x >= 0. && x <= 1.) {
+      p[n].x = q.x + dx[0]*(x - 0.5); p[n].y = q.y - dx[1]/2.; p[n++].z = 0.;
+    }
+  }
+  AMREX_ASSERT (n <= 2);  
 #else /* 3D */ 
   Real max = fabs (m.x);
   c = 0;
@@ -456,39 +481,39 @@ int vof_facet (GpuArray<Real, AMREX_SPACEDIM> dx,
   int d[12];
   /* array of node coordinates for a cut face */
   Array<XDim3, 12>  nodecutface;
-  int  n = cut_cube_vertices (o, dx, q, m, nodecutface, d);
+  n = cut_cube_vertices (o, dx, q, m, nodecutface, d);
   for (c=0; c<n; ++c)
     p[c]=nodecutface[c];      
     
   AMREX_ASSERT (n <= 6);
 #endif /* 3D */
-  return n;
-  
+  return n; 
 }
 
-
-// Cross-section of 3D interface from neighbor cells in plane coordinates.
+// Cross-section of interface from neighbor cells in plane coordinates.
 // point: center cell
-// vf: volume fraction
 // w: transformation
 // ll: buffer for at least kMaxSection more points
-// nl: current size of ll
+// *nl: current size of ll
 // Output:
 // ll: appended by local coordinates of endpoints,
 //     p = o + t*l.x  + t*l.y ,  [pa,pb] is one line segment
 // *nl: new size of ll
-static void Section3(Array<int,3> & cell, const Trans& w, XDim3* ll, int& nl,
-                     GpuArray<Real, AMREX_SPACEDIM> dx,
-                     GpuArray<Real, AMREX_SPACEDIM> problo,
-                     Array4<Real const> const & vof,
-                     Array4<Real const> const & mv,
-                     Array4<Real const> const & alpha) 
+static void Section(Array<int,3> & cell, const Trans & w, XDim3* ll, int& nl,
+                    GpuArray<Real, AMREX_SPACEDIM> dx,
+                    GpuArray<Real, AMREX_SPACEDIM> problo,                   
+                    Array4<Real const> const & vof,
+                    Array4<Real const> const & mv,
+                    Array4<Real const> const & alpha) 
 {
-
+#if AMREX_SPACEDIM==3 /* 3D */
  for (int dk = -2; dk <= 2; ++dk) {
+#else /* 2D */
+ int dk=0;    
+#endif     
  for (int dj = -2; dj <= 2; ++dj) {
  for (int di = -2; di <= 2; ++di) {
-   if (dk==0 &&dj==0&&di==0)
+   if (dk==0&&dj==0&&di==0)
        continue;
    Array<int,3> ncell={cell[0]+di,cell[1]+dj, cell[2]+dk}; 
    Real fvol = vof(ncell[0],ncell[1],ncell[2]);                          
@@ -497,8 +522,10 @@ static void Section3(Array<int,3> & cell, const Trans& w, XDim3* ll, int& nl,
       XDim3 rn;// neighbor cell center
       for (int c = 0; c < AMREX_SPACEDIM; c++)
         (&rn.x)[c] = problo[c] + dx[c]*(ncell[c] + .5); 
+#if AMREX_SPACEDIM==3    
       // if cell intersects plane
       if (fabs(Dot(w.u, Sub(w.o, rn))) <= dx[0] * Norm1(w.u) * 0.5) {
+#endif          
         // normal to facet
         XDim3 m={mv(ncell[0],ncell[1],ncell[2],0),
                  mv(ncell[0],ncell[1],ncell[2],1),
@@ -510,6 +537,24 @@ static void Section3(Array<int,3> & cell, const Trans& w, XDim3* ll, int& nl,
                                  << ncell[0]<<" "<<ncell[1]<<" "<<ncell[2]<<", "
                                  <<fvol<<"\n";
                                   exit(1);*/
+#if AMREX_SPACEDIM==2 /* 2D */
+        if (nf == 2) {
+          XDim3 l = GlbToLoc(pp[0], w);
+          XDim3 lb = GlbToLoc(pp[1], w);  
+          XDim3 dl = Sub(l, lb);
+          Real mt = Dot(w.t, m);
+          Real mn = Dot(w.n, m);
+          Real dt = dl.x;
+          Real dn = dl.y;
+          if (Cross3(Coord(mt, mn, 0), Coord(dt, dn, 0)) < 0) 
+            Swap(l, lb);
+          if (Sqnorm(dl) > 0) {
+            ll[nl] = l;
+            ll[nl + 1] = lb;
+            nl += 2;
+          }
+        }
+#else   /* 3D */             
         AMREX_ASSERT(nf <= kMaxFacet);
         // find two intersections with facet edge and plane
         for (int i = 0; i < nf && q < 2; ++i) {
@@ -536,35 +581,15 @@ static void Section3(Array<int,3> & cell, const Trans& w, XDim3* ll, int& nl,
                 nl += 2;
             }
           }
-        }
+        }    
       }
+#endif      
    }    
  }
  }
- } 
-}
-
-// Cross-section of interface from neighbor cells in plane coordinates.
-// point: center cell
-// w: transformation
-// ll: buffer for at least kMaxSection more points
-// *nl: current size of ll
-// Output:
-// ll: appended by local coordinates of endpoints,
-//     p = o + t*l.x  + t*l.y ,  [pa,pb] is one line segment
-// *nl: new size of ll
-static void Section(Array<int,3> & cell, const Trans & w, XDim3* ll, int& nl,
-                    GpuArray<Real, AMREX_SPACEDIM> dx,
-                    GpuArray<Real, AMREX_SPACEDIM> problo,                   
-                    Array4<Real const> const & vof,
-                    Array4<Real const> const & mv,
-                    Array4<Real const> const & alpha) 
-{
-#if AMREX_SPACEDIM==2
-  Section2(cell, w, ll, nl, dx, problo, vof, mv, alpha);
-#else
-  Section3(cell, w, ll, nl, dx, problo, vof, mv, alpha);
-#endif
+#if AMREX_SPACEDIM==3     
+ }
+#endif 
 }
 
 // Curvature of a set line segments.
@@ -832,23 +857,31 @@ Real matrix_inverse (Real ** m, int n, Real pivmin)
 
 
 typedef struct {
-  VofVector o;
+  VofVector o;  
   Real ** M;
+#if AMREX_SPACEDIM==2 /* y = a[0]*x^2 + a[0]*x + a[1] */
+  VofVector m, rhs, a;
+#else /* 3D */  
 # if PARABOLA_SIMPLER /* z = a[0]*x^2 + a[1]*y^2 + a[2]*x*y */ 
   VofVector rhs, a;
 # else /* z = a[0]*x^2 + a[1]*y^2 + a[2]*x*y + a[3]*x + a[4]*y + a[5] */
   Real rhs[6], a[6];
 # endif
   VofVector t[3];
+#endif  /* 3D */ 
 } ParabolaFit;
 
 static void parabola_fit_init (ParabolaFit & p, XDim3 & o, XDim3 & m)
 {
   p.o[0] = o.x; p.o[1] = o.y; p.o[2] = o.z;
+  int nn = 3;
+#if AMREX_SPACEDIM==2 /* 2D */ 
+  p.m[0] = m.x; p.m[1] = m.y; p.m[2] = 0.;
+  vector_normalize (p.m);
+#else /* 3D */   
   Real max;
   VofVector nx = {0., 0., 0.}, ny, nz;
   int d = 0;
-
   nz[0] = m.x; nz[1] = m.y; nz[2] = m.z;
   vector_normalize (nz);
   max = nz[0]*nz[0];
@@ -870,11 +903,10 @@ static void parabola_fit_init (ParabolaFit & p, XDim3 & o, XDim3 & m)
   p.t[1][0] = ny[0]; p.t[1][1] = ny[1]; p.t[1][2] = ny[2];
   p.t[2][0] = nz[0]; p.t[2][1] = nz[1]; p.t[2][2] = nz[2];
   
-# if PARABOLA_SIMPLER
-    int nn=3;
-# else
-    int nn=6;
+# if !PARABOLA_SIMPLER
+    nn=6;
 # endif
+#endif /* 3D */
   p.M = new Real*[nn];
   for (int i = 0; i < nn; ++i) {
    p.M[i] = new Real[nn]();

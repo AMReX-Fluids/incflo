@@ -30,48 +30,48 @@ incflo::update_vof_density (Vector<MultiFab*> const& density,Vector<MultiFab*> c
            density_arr(i,j,k) = m_ro_0*(1.-tracer_arr(i,j,k,0))+m_ro_s[0]*tracer_arr(i,j,k,0);
         });
      }
-	 //fixme: BCs
-	density[lev]->FillBoundary(geom[lev].periodicity()); 
-if(0){    	
+     //fixme: BCs
+    density[lev]->FillBoundary(geom[lev].periodicity()); 
+if(0){        
     const auto& ba = density[lev]->boxArray();
     const auto& dm = density[lev]->DistributionMap();
     const auto& fact = density[lev]->Factory();
     // store the nodal values (the last component stores the node-centered VOF)
     MultiFab node_val(amrex::convert(ba,IntVect::TheNodeVector()),dm, 1, 0 , MFInfo(), fact);
-    MultiFab center_val(ba,dm,1,0,MFInfo(), fact);	
+    MultiFab center_val(ba,dm,1,0,MFInfo(), fact);    
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {        
-	   Box const& nbx = surroundingNodes(mfi.tilebox());
-	   Array4<Real > const& nv = node_val.array(mfi);
-       Array4<Real const> const& rho   = density[lev]->const_array(mfi);	   
+       Box const& nbx = surroundingNodes(mfi.tilebox());
+       Array4<Real > const& nv = node_val.array(mfi);
+       Array4<Real const> const& rho   = density[lev]->const_array(mfi);       
        ParallelFor(nbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-       {	
-  		 
-		 // calculate the node-centered VOF 
-		 nv(i,j,k,0)=0.;
-		 int nrho=0;		 
-		 for (int detk = 0; detk > -2; --detk) 
+       {    
+           
+         // calculate the node-centered VOF 
+         nv(i,j,k,0)=0.;
+         int nrho=0;         
+         for (int detk = 0; detk > -2; --detk) 
            for (int detj = 0; detj > -2; --detj) 
              for (int deti = 0; deti > -2; --deti) {
-		       Array<int,3> in{i+deti,j+detj,k+detk};
-			   //averaging density to nodes
-		  	   nv(i,j,k,0)+= rho(in[0],in[1],in[2],0);
-		  	   nrho++; 
-		       //}			 
-		     }
-		 nv(i,j,k,0)/= Real(nrho);		 
-	   });
-     }	   	   
-	 average_node_to_cellcenter(center_val, 0, node_val, 0, 1);
+               Array<int,3> in{i+deti,j+detj,k+detk};
+               //averaging density to nodes
+                 nv(i,j,k,0)+= rho(in[0],in[1],in[2],0);
+                 nrho++; 
+               //}             
+             }
+         nv(i,j,k,0)/= Real(nrho);         
+       });
+     }              
+     average_node_to_cellcenter(center_val, 0, node_val, 0, 1);
      MultiFab::Copy(*density[lev], center_val , 0, 0, 1, 0); 
-	 //fixme: BCs
-	 density[lev]->FillBoundary(geom[lev].periodicity());
-   } 	 
+     //fixme: BCs
+     density[lev]->FillBoundary(geom[lev].periodicity());
+   }      
   }
-	   
+       
 }
 
 

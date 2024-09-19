@@ -415,7 +415,7 @@ if(0){
             kaf=0.;
           yfv(i,j,k) *= kaf*(tra(i,j,k,0)-tra(i,j-1,k,0))/dx[1];
        });
-
+#if AMREX_SPACEDIM == 3
        ParallelFor(zbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
        {
          Real kaf;
@@ -435,7 +435,7 @@ if(0){
 
          }    */
        });
-
+#endif
     }
 static int oct[3][2] = { { 1, 2 }, { 0, 2 }, { 0, 1 } };
 #ifdef _OPENMP
@@ -483,10 +483,12 @@ static int oct[3][2] = { { 1, 2 }, { 0, 2 }, { 0, 1 } };
                 nv(i,j,k,dim)+= yfv(in[0],in[1],in[2]);
                 nt++;
              }
+#if AMREX_SPACEDIM == 3
              else if (dim==2&& zvbx.contains(in[0],in[1],in[2])){
                 nv(i,j,k,dim)+= zfv(in[0],in[1],in[2]);
                 nt++;
              }
+#endif
            }
            nv(i,j,k,dim)/= nt;
 
