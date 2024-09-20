@@ -2,7 +2,7 @@
 #            SIMULATION STOP            #
 #.......................................#
 stop_time               =   8.1         # Max (simulated) time to evolve
-max_step                = 1          # Max number of time steps
+max_step                = 20          # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -14,7 +14,7 @@ incflo.cfl              =   0.1        # CFL factor
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =  40           # Steps between plot files
+amr.plot_int            =  2           # Steps between plot files
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
 
@@ -29,7 +29,7 @@ incflo.mu               =   1.e-3         # Dynamic viscosity coefficient
 incflo.vof_advect_tracer=   1
 incflo.mu_s             =   1.0 
 incflo.ro_s             =   1000.0
-incflo.sigma            =   10.
+incflo.sigma            =   0.
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
@@ -50,8 +50,8 @@ geometry.is_periodic    =   1   1       # Periodicity x y z (0/1)
 #           INITIAL CONDITIONS          #
 #.......................................#
 incflo.probtype         =   1109        #
-incflo.ic_u             =   1.
-incflo.ic_v             =   1.
+incflo.ic_u             =   0.
+incflo.ic_v             =   0.
 incflo.ic_w             =   0.
 # Boundary conditions
 #ylo.type                =   "po"
