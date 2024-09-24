@@ -263,7 +263,7 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ApplyProjection(amrex::Vector<amrex::MultiFab const*> density,
+    void ApplyProjection(             amrex::Vector<amrex::MultiFab const*> const& density,
                          AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
                                       amrex::Vector<amrex::MultiFab*> const& v_mac,
                                       amrex::Vector<amrex::MultiFab*> const& w_mac),

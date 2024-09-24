@@ -196,7 +196,7 @@ void incflo::Evolve()
 }
 
 void
-incflo::ApplyProjection (Vector<MultiFab const*> density,
+incflo::ApplyProjection (Vector<MultiFab const*> const& density,
                          AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
                                       Vector<MultiFab*> const& v_mac,
                                       Vector<MultiFab*> const& w_mac),
