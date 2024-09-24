@@ -2566,7 +2566,7 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
             Array<Real,AMREX_SPACEDIM> center{AMREX_D_DECL(0.5*(problo[0]+probhi[0]),
                                                            0.5*(problo[1]+probhi[1]),
                                                            0.5*(problo[2]+probhi[2]))};
-            Real radius = .3; //5.0*dx[0];
+            Real radius = .2; //5.0*dx[0];
             bool fluid_is_inside = true;
 
             EB2::SphereIF my_sphere(radius, center, fluid_is_inside);
@@ -2602,7 +2602,7 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
     //auto my_box=  EB2::rotate(EB2::BoxIF( low,  high, fluid_is_inside), .3, 1);
     auto my_box1=  EB2::rotate(my_box, .3, 0);
     auto my_box2=  EB2::rotate(my_box1, .2, 2);
-    auto two =EB2::makeIntersection(my_sphere, my_sphere1);
+    auto two =EB2::makeIntersection(my_sphere, my_box);
    //auto two = EB2::makeComplement(EB2::makeUnion(my_cyl_1, my_cyl));
 
     // Generate GeometryShop
@@ -2657,15 +2657,14 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
     // Read the file line by line
     std::string line;
     while (std::getline(infile, line)) {
-        std::istringstream iss(line);
-        int i, j, k;
-        Real value;
-        if (!(iss >> i >> j >> k >> value)) {
-            std::cerr << "Error reading line: " << line << std::endl;
-            continue;
-        }
+       std::istringstream iss(line);
+       int i, j, k;
+       Real value;
+       if (!(iss >> i >> j >> k >> value)) {
+          std::cerr << "Error reading line: " << line << std::endl;
+          continue;
+       }
        vout.emplace_back(value,i,j,k);
-
     }
     infile.close();
 #ifdef AMRE_USE_OMP
@@ -2678,12 +2677,21 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
             auto const& tracer = a_tracer.array(mfi);
 
             for(int n=0;n<vout.size();++n)
-            /* if(vout[n].i>=vbx.smallEnd()[0]&&vout[n].i<=vbx.bigEnd()[0]&&
-                vout[n].j>=vbx.smallEnd()[1]&&vout[n].j<=vbx.bigEnd()[1]&&
-                vout[n].k>=vbx.smallEnd()[2]&&vout[n].k<=vbx.bigEnd()[2]){*/
-             if(vbx.contains(vout[n].i,vout[n].j,vout[n].k)){
+              if(vout[n].i>=vbx.smallEnd()[0]&&vout[n].i<=vbx.bigEnd()[0]&&
+                 vout[n].j>=vbx.smallEnd()[1]&&vout[n].j<=vbx.bigEnd()[1]
+#if AMREX_SPACEDIM==2
+                 &&vout[n].k==7)
+#else
+                 &&vout[n].k>=vbx.smallEnd()[2]&&vout[n].k<=vbx.bigEnd()[2])
+#endif
+              {
+             //if(vbx.contains(vout[n].i,vout[n].j,vout[n].k)){
+#if AMREX_SPACEDIM==2
+                tracer(vout[n].i,vout[n].j,0,0)=vout[n].vof;
+#else
                 tracer(vout[n].i,vout[n].j,vout[n].k,0)=vout[n].vof;
-             }
+#endif
+              }
 
             /*amrex::ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
