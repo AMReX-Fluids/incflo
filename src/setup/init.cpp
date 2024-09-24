@@ -246,7 +246,7 @@ void incflo::ReadIOParameters()
         m_plt_gpz        = 1;
         m_plt_rho        = 1;
         m_plt_tracer     = 1;
-        m_plt_p_nd       = 0;
+        m_plt_p          = 0;
         m_plt_macphi     = 0;
         m_plt_eta        = 0;
         m_plt_vort       = 0;
@@ -271,7 +271,7 @@ void incflo::ReadIOParameters()
 
     pp.query("plt_rho",        m_plt_rho   );
     pp.query("plt_tracer",     m_plt_tracer);
-    pp.query("plt_p_nd",       m_plt_p_nd  );
+    pp.query("plt_p   ",       m_plt_p     );
     pp.query("plt_macphi",     m_plt_macphi);
     pp.query("plt_eta",        m_plt_eta   );
     pp.query("plt_magvel",     m_plt_magvel);
@@ -348,18 +348,43 @@ void incflo::InitialProjection()
 {
     BL_PROFILE("incflo::InitialProjection()");
 
+    // *************************************************************************************
+    // Allocate space for the temporary MAC velocities
+    // *************************************************************************************
+    Vector<MultiFab> u_mac_tmp(finest_level+1), v_mac_tmp(finest_level+1), w_mac_tmp(finest_level+1);
+    int ngmac = nghost_mac();
+
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        AMREX_D_TERM(u_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev));,
+                     v_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev));,
+                     w_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev)););
+        if (ngmac > 0) {
+            AMREX_D_TERM(u_mac_tmp[lev].setBndry(0.0);,
+                         v_mac_tmp[lev].setBndry(0.0);,
+                         w_mac_tmp[lev].setBndry(0.0););
+        }
+    }
+
     Real dummy_dt = 1.0;
-    bool incremental = false;
+    bool incremental_projection = false;
     for (int lev = 0; lev <= finest_level; lev++)
     {
         m_leveldata[lev]->density.FillBoundary(geom[lev].periodicity());
     }
-    ApplyProjection(get_density_new_const(),m_cur_time,dummy_dt,incremental);
+
+    ApplyProjection(get_density_new_const(),
+                    AMREX_D_DECL(GetVecOfPtrs(u_mac_tmp), GetVecOfPtrs(v_mac_tmp),
+                    GetVecOfPtrs(w_mac_tmp)),m_cur_time,dummy_dt,incremental_projection);
+
 
     // We set p and gp back to zero (p0 may still be still non-zero)
     for (int lev = 0; lev <= finest_level; lev++)
     {
         m_leveldata[lev]->p_nd.setVal(0.0);
+        m_leveldata[lev]->p_cc.setVal(0.0);
         m_leveldata[lev]->gp.setVal(0.0);
     }
 }
@@ -379,6 +404,26 @@ void incflo::InitialPressureProjection()
     for (int lev = 0; lev <= finest_level; lev++)
     {
         m_leveldata[lev]->density.FillBoundary(geom[lev].periodicity());
+    }
+
+    // *************************************************************************************
+    // Allocate space for the temporary MAC velocities
+    // *************************************************************************************
+    Vector<MultiFab> u_mac_tmp(finest_level+1), v_mac_tmp(finest_level+1), w_mac_tmp(finest_level+1);
+    int ngmac = nghost_mac();
+
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        AMREX_D_TERM(u_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(0)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev));,
+                     v_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(1)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev));,
+                     w_mac_tmp[lev].define(amrex::convert(grids[lev],IntVect::TheDimensionVector(2)), dmap[lev],
+                          1, ngmac, MFInfo(), Factory(lev)););
+        if (ngmac > 0) {
+            AMREX_D_TERM(u_mac_tmp[lev].setBndry(0.0);,
+                         v_mac_tmp[lev].setBndry(0.0);,
+                         w_mac_tmp[lev].setBndry(0.0););
+        }
     }
 
     // Set the velocity to the gravity field
@@ -416,9 +461,9 @@ void incflo::InitialPressureProjection()
     // Always zero this here
     Vector<MultiFab*> Source(finest_level+1, nullptr);
 
-    ApplyNodalProjection(get_density_new_const(), GetVecOfPtrs(vel), Source,
-                         m_cur_time, dummy_dt, false /*incremental*/,
-                         true /*set_inflow_bc*/);
+    ApplyProjection(get_density_new_const(),
+                    AMREX_D_DECL(GetVecOfPtrs(u_mac_tmp), GetVecOfPtrs(v_mac_tmp),
+                    GetVecOfPtrs(w_mac_tmp)),m_cur_time,dummy_dt,false);
 }
 
 #ifdef AMREX_USE_EB

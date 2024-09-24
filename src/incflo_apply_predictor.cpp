@@ -194,7 +194,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // **********************************************************************************************
     // Project velocity field, update pressure
     // **********************************************************************************************
-    ApplyProjection(get_density_nph_const(),new_time,m_dt,incremental_projection);
+    ApplyProjection(get_density_nph_const(),
+                    AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
+                    GetVecOfPtrs(w_mac)),new_time,m_dt,incremental_projection);
 
 #ifdef INCFLO_USE_PARTICLES
     // **************************************************************************************

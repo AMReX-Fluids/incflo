@@ -96,8 +96,13 @@ void incflo::WriteCheckPointFile() const
         VisMF::Write(m_leveldata[lev]->gp,
                      amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "gradp"));
 
-        VisMF::Write(m_leveldata[lev]->p_nd,
-                     amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_nd"));
+        if (m_use_cc_proj) {
+            VisMF::Write(m_leveldata[lev]->p_nd,
+                         amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_nd"));
+        } else {
+            VisMF::Write(m_leveldata[lev]->p_cc,
+                         amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_cc"));
+        }
     }
 
 #ifdef INCFLO_USE_PARTICLES
@@ -226,8 +231,13 @@ void incflo::ReadCheckpointFile()
         VisMF::Read(m_leveldata[lev]->gp,
                     amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "gradp"));
 
-        VisMF::Read(m_leveldata[lev]->p_nd,
-                    amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "p_nd"));
+        if (m_use_cc_proj) {
+            VisMF::Read(m_leveldata[lev]->p_nd,
+                        amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "p_nd"));
+        } else {
+            VisMF::Read(m_leveldata[lev]->p_cc,
+                        amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "p_cc"));
+        }
     }
 
 #ifdef INCFLO_USE_PARTICLES
@@ -368,7 +378,7 @@ void incflo::WritePlotFile()
     if (m_plt_tracer) ncomp += m_ntrac;
 
     // Pressure
-    if(m_plt_p_nd) ++ncomp;
+    if(m_plt_p) ++ncomp;
 
     // MAC phi
     if(m_plt_macphi) ncomp += 1;
@@ -488,16 +498,24 @@ void incflo::WritePlotFile()
         }
         icomp += m_ntrac;
     }
-    if (m_plt_p_nd) {
-        for (int lev = 0; lev <= finest_level; ++lev)
-            amrex::average_node_to_cellcenter(mf[lev], icomp, m_leveldata[lev]->p_nd, 0, 1);
-        pltscaVarsName.push_back("p_nd");
+    if (m_plt_p) {
+        if (m_use_cc_proj) {
+            for (int lev = 0; lev <= finest_level; ++lev) {
+                MultiFab::Copy(mf[lev], m_leveldata[lev]->p_cc, 0, icomp, 1, 0);
+            }
+        } else {
+            for (int lev = 0; lev <= finest_level; ++lev) {
+                amrex::average_node_to_cellcenter(mf[lev], icomp, m_leveldata[lev]->p_nd, 0, 1);
+            }
+        }
+        pltscaVarsName.push_back("p");
         ++icomp;
     }
 
     if (m_plt_macphi) {
-        for (int lev = 0; lev <= finest_level; ++lev)
+        for (int lev = 0; lev <= finest_level; ++lev) {
             MultiFab::Copy(mf[lev], m_leveldata[lev]->mac_phi, 0, icomp, 1, 0);
+        }
         pltscaVarsName.push_back("mac_phi");
         ++icomp;
     }
