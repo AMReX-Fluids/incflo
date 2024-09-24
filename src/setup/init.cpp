@@ -208,6 +208,10 @@ void incflo::ReadParameters ()
 #ifdef INCFLO_USE_PARTICLES
     readTracerParticlesParams();
 #endif
+
+    if (m_use_cc_proj && max_level > 0) {
+        amrex::Abort("Can't yet do multilevel with cell-centered projection");
+    }
 }
 
 void incflo::ReadIOParameters()
