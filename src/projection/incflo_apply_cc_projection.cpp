@@ -67,6 +67,7 @@ average_ccvel_to_mac (const Array<MultiFab*,AMREX_SPACEDIM>& fc, const MultiFab&
                              Array4<Real> const& fzarr = fc[2]->array(mfi););
                 Array4<Real const> const& ccarr = cc.const_array(mfi);
 
+#if (AMREX_SPACEDIM == 2)
                 AMREX_HOST_DEVICE_PARALLEL_FOR_4D(index_bounds, ncomp, i, j, k, n,
                 {
                    if (xbx.contains(i,j,k) and n == 0) {
@@ -75,12 +76,21 @@ average_ccvel_to_mac (const Array<MultiFab*,AMREX_SPACEDIM>& fc, const MultiFab&
                    if (ybx.contains(i,j,k) and n == 1) {
                        fyarr(i,j,k) = Real(0.5)*(ccarr(i,j-1,k,n) + ccarr(i,j,k,n));
                    }
-#if (AMREX_SPACEDIM == 3)
+                });
+#else
+                AMREX_HOST_DEVICE_PARALLEL_FOR_4D(index_bounds, ncomp, i, j, k, n,
+                {
+                   if (xbx.contains(i,j,k) and n == 0) {
+                       fxarr(i,j,k) = Real(0.5)*(ccarr(i-1,j,k,n) + ccarr(i,j,k,n));
+                   }
+                   if (ybx.contains(i,j,k) and n == 1) {
+                       fyarr(i,j,k) = Real(0.5)*(ccarr(i,j-1,k,n) + ccarr(i,j,k,n));
+                   }
                    if (zbx.contains(i,j,k) and n == 2) {
                        fzarr(i,j,k) = Real(0.5)*(ccarr(i,j,k-1,n) + ccarr(i,j,k,n));
                    }
-#endif
                 });
+#endif
             }
         }
 }
@@ -142,19 +152,27 @@ average_mac_to_ccvel (const Array<MultiFab*,AMREX_SPACEDIM>& fc, MultiFab& cc)
                              Array4<Real> const& fzarr = fc[2]->array(mfi););
                 Array4<Real> const& ccarr = cc.array(mfi);
 
+#if (AMREX_SPACEDIM == 2)
                 AMREX_HOST_DEVICE_PARALLEL_FOR_4D(bx, ncomp, i, j, k, n,
                 {
-                   if (n == 0)
+                   if (n == 0) {
                        ccarr(i,j,k,0) = Real(0.5) * (fxarr(i,j,k) + fxarr(i+1,j,k));
-
-                   if (n == 1)
+                   } else if (n == 1) {
                        ccarr(i,j,k,1) = Real(0.5) * (fyarr(i,j,k) + fyarr(i,j+1,k));
-
-#if (AMREX_SPACEDIM == 3)
-                   if (n == 2)
-                       ccarr(i,j,k,2) = Real(0.5) * (fzarr(i,j,k) + fzarr(i,j,k+1));
-#endif
+                   }
                 });
+#else
+                AMREX_HOST_DEVICE_PARALLEL_FOR_4D(bx, ncomp, i, j, k, n,
+                {
+                   if (n == 0) {
+                       ccarr(i,j,k,0) = Real(0.5) * (fxarr(i,j,k) + fxarr(i+1,j,k));
+                   } else if (n == 1) {
+                       ccarr(i,j,k,1) = Real(0.5) * (fyarr(i,j,k) + fyarr(i,j+1,k));
+                   } else if (n == 2) {
+                       ccarr(i,j,k,2) = Real(0.5) * (fzarr(i,j,k) + fzarr(i,j,k+1));
+                   }
+                });
+#endif
             }
         }
 }
