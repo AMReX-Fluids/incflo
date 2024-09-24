@@ -45,6 +45,7 @@ void incflo::prob_set_BC_MF (Orientation const& ori, Box const& bx,
                             mask(i,j,k,n) = inflow_val;
                         }
                     }
+#if (AMREX_SPACEDIM == 3)
                     else if (direction == 2) {
                         if (k <= half_num_cells) {
                             mask(i,j,k,n) = outflow_val;
@@ -52,6 +53,7 @@ void incflo::prob_set_BC_MF (Orientation const& ori, Box const& bx,
                             mask(i,j,k,n) = inflow_val;
                         }
                     }
+#endif
                 }
             });
         } else {
@@ -72,6 +74,7 @@ void incflo::prob_set_BC_MF (Orientation const& ori, Box const& bx,
                             mask(i,j,k,n) = inflow_val;
                         }
                     }
+#if (AMREX_SPACEDIM == 3)
                     else if (direction == 2) {
                         if (k > half_num_cells) {
                             mask(i,j,k,n) = outflow_val;
@@ -79,6 +82,7 @@ void incflo::prob_set_BC_MF (Orientation const& ori, Box const& bx,
                             mask(i,j,k,n) = inflow_val;
                         }
                     }
+#endif
                 }
             });
         }
@@ -136,6 +140,7 @@ void incflo::prob_set_MAC_robinBCs (Orientation const& ori, Box const& bx,
                         robin_b(i,j,k) = 1.;
                     }
                 }
+#if (AMREX_SPACEDIM == 3)
                 else if (direction == 2) {
                     if (k <= half_num_cells) {
                         robin_a(i,j,k) = 1.;
@@ -145,6 +150,7 @@ void incflo::prob_set_MAC_robinBCs (Orientation const& ori, Box const& bx,
                         robin_b(i,j,k) = 1.;
                     }
                 }
+#endif
             });
         } else {
             ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -169,6 +175,7 @@ void incflo::prob_set_MAC_robinBCs (Orientation const& ori, Box const& bx,
                         robin_b(i,j,k) = 1.;
                     }
                 }
+#if (AMREX_SPACEDIM == 3)
                 else if (direction == 2) {
                     if (k > half_num_cells) {
                         robin_a(i,j,k) = 1.;
@@ -178,6 +185,7 @@ void incflo::prob_set_MAC_robinBCs (Orientation const& ori, Box const& bx,
                         robin_b(i,j,k) = 1.;
                     }
                 }
+#endif
             });
         }
     }
@@ -237,6 +245,7 @@ void incflo::prob_set_diffusion_robinBCs (Orientation const& ori, Box const& bx,
                         robin_f(i,j,k,0) = bcval(i,j,k,0);
                     }
                 }
+#if (AMREX_SPACEDIM == 3)
                 else if (direction == 2) {
                     if (k <= half_num_cells) {
                         robin_a(i,j,k,0) = 0.;
@@ -248,6 +257,7 @@ void incflo::prob_set_diffusion_robinBCs (Orientation const& ori, Box const& bx,
                         robin_f(i,j,k,0) = bcval(i,j,k,0);
                     }
                 }
+#endif
             });
         } else {
             ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -276,6 +286,7 @@ void incflo::prob_set_diffusion_robinBCs (Orientation const& ori, Box const& bx,
                         robin_f(i,j,k,0) = bcval(i,j,k,0);
                     }
                 }
+#if (AMREX_SPACEDIM == 3)
                 else if (direction == 2) {
                     if (k > half_num_cells) {
                         robin_a(i,j,k,0) = 0.;
@@ -287,6 +298,7 @@ void incflo::prob_set_diffusion_robinBCs (Orientation const& ori, Box const& bx,
                         robin_f(i,j,k,0) = bcval(i,j,k,0);
                     }
                 }
+#endif
             });
         }
     }
@@ -323,6 +335,7 @@ void incflo::prob_set_inflow_velocity (int /*grid_id*/, Orientation ori, Box con
             vel(i,j,k,0) = 6. * u * y * (1.-y);
         });
     }
+#if (AMREX_SPACEDIM == 3)
     else if (311 == m_probtype)
     {
         Real dzinv = 1.0 / Geom(lev).Domain().length(2);
@@ -352,6 +365,7 @@ void incflo::prob_set_inflow_velocity (int /*grid_id*/, Orientation ori, Box con
             vel(i,j,k,1) = 6. * v * z * (1.-z);
         });
     }
+#endif
     else if (322 == m_probtype)
     {
         Real dxinv = 1.0 / Geom(lev).Domain().length(0);
