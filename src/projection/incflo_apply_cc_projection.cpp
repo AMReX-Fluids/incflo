@@ -111,7 +111,7 @@ average_mac_to_ccvel (const Array<MultiFab*,AMREX_SPACEDIM>& fc, MultiFab& cc)
 
 #ifdef AMREX_USE_GPU
         if (Gpu::inLaunchRegion() && cc.isFusingCandidate()) {
-            auto const& ccma = cc.const_arrays();
+            auto& ccma = cc.arrays();
             AMREX_D_TERM(auto const& fxma = fc[0]->arrays();,
                          auto const& fyma = fc[1]->arrays();,
                          auto const& fzma = fc[2]->arrays(););
@@ -414,6 +414,8 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
             Array4<Real> const& u = ld.velocity.array(mfi);
             Array4<Real const> const& rho = density[lev]->const_array(mfi);
 
+            Real r0 = m_ro_0;
+
             amrex::ParallelFor(tbx, [u,gphi,p_cc,phi,incremental] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 AMREX_D_TERM(u(i,j,k,0) += gphi(i,j,k,0);,
@@ -428,9 +430,9 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
             if (incremental && m_constant_density) {
                 amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    AMREX_D_TERM(gp_cc(i,j,k,0) -= gphi(i,j,k,0) * m_ro_0 / scaling_factor;,
-                                 gp_cc(i,j,k,1) -= gphi(i,j,k,1) * m_ro_0 / scaling_factor;,
-                                 gp_cc(i,j,k,2) -= gphi(i,j,k,2) * m_ro_0 / scaling_factor;);
+                    AMREX_D_TERM(gp_cc(i,j,k,0) -= gphi(i,j,k,0) * r0 / scaling_factor;,
+                                 gp_cc(i,j,k,1) -= gphi(i,j,k,1) * r0 / scaling_factor;,
+                                 gp_cc(i,j,k,2) -= gphi(i,j,k,2) * r0 / scaling_factor;);
 
                 });
             } else if (incremental && !m_constant_density) {
@@ -443,9 +445,9 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
             } else if (!incremental && m_constant_density) {
                 amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    AMREX_D_TERM(gp_cc(i,j,k,0) = -gphi(i,j,k,0) * m_ro_0 / scaling_factor;,
-                                 gp_cc(i,j,k,1) = -gphi(i,j,k,1) * m_ro_0 / scaling_factor;,
-                                 gp_cc(i,j,k,2) = -gphi(i,j,k,2) * m_ro_0 / scaling_factor;);
+                    AMREX_D_TERM(gp_cc(i,j,k,0) = -gphi(i,j,k,0) * r0 / scaling_factor;,
+                                 gp_cc(i,j,k,1) = -gphi(i,j,k,1) * r0 / scaling_factor;,
+                                 gp_cc(i,j,k,2) = -gphi(i,j,k,2) * r0 / scaling_factor;);
                 });
             } else if (!incremental && !m_constant_density) {
                 amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
