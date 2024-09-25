@@ -196,11 +196,20 @@ void incflo::Evolve()
 }
 
 void
-incflo::ApplyProjection (Vector<MultiFab const*> density,
+incflo::ApplyProjection (Vector<MultiFab const*> const& density,
+                         AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
+                                      Vector<MultiFab*> const& v_mac,
+                                      Vector<MultiFab*> const& w_mac),
                          Real time, Real scaling_factor, bool incremental)
 {
     BL_PROFILE("incflo::ApplyProjection");
-    ApplyNodalProjection(std::move(density),time,scaling_factor,incremental);
+    if (m_use_cc_proj)
+    {
+        ApplyCCProjection(density,AMREX_D_DECL(u_mac,v_mac,w_mac),
+                          time,scaling_factor,incremental);
+    }
+    else
+        ApplyNodalProjection(density,time,scaling_factor,incremental);
 }
 
 // Make a new level from scratch using provided BoxArray and DistributionMapping.
