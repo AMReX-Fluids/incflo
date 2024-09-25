@@ -3,7 +3,7 @@
 using namespace amrex;
 
 Array<LinOpBCType,AMREX_SPACEDIM>
-incflo::get_nodal_projection_bc (Orientation::Side side) const noexcept
+incflo::get_projection_bc (Orientation::Side side) const noexcept
 {
     amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM> r;
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
@@ -33,7 +33,7 @@ incflo::get_nodal_projection_bc (Orientation::Side side) const noexcept
                 break;
             }
             default:
-                amrex::Abort("get_nodal_projection_bc: undefined BC type");
+                amrex::Abort("get_projection_bc: undefined BC type");
             };
         }
     }
