@@ -111,7 +111,7 @@ average_mac_to_ccvel (const Array<MultiFab*,AMREX_SPACEDIM>& fc, MultiFab& cc)
 
 #ifdef AMREX_USE_GPU
         if (Gpu::inLaunchRegion() && cc.isFusingCandidate()) {
-            auto& ccma = cc.arrays();
+            auto const& ccma = cc.arrays();
             AMREX_D_TERM(auto const& fxma = fc[0]->arrays();,
                          auto const& fyma = fc[1]->arrays();,
                          auto const& fzma = fc[2]->arrays(););
