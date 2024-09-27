@@ -466,9 +466,10 @@ void incflo::InitialPressureProjection()
     // Always zero this here
     Vector<MultiFab*> Source(finest_level+1, nullptr);
 
-    ApplyProjection(get_density_new_const(),
-                    AMREX_D_DECL(GetVecOfPtrs(u_mac_tmp), GetVecOfPtrs(v_mac_tmp),
-                    GetVecOfPtrs(w_mac_tmp)),m_cur_time,dummy_dt,false);
+    // FIXME FIXME FIXME - THIS ONLY WORKS RIGHT FOR NODAL PROJ
+    ApplyProjection(get_density_new_const(), GetVecOfPtrs(vel), Source,
+                    m_cur_time, dummy_dt, false /*incremental*/,
+                    true /*set_inflow_bc*/);
 }
 
 #ifdef AMREX_USE_EB

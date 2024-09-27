@@ -263,23 +263,31 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ApplyProjection(             amrex::Vector<amrex::MultiFab const*> const& density,
-                         AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
-                                      amrex::Vector<amrex::MultiFab*> const& v_mac,
-                                      amrex::Vector<amrex::MultiFab*> const& w_mac),
-                         amrex::Real time, amrex::Real scaling_factor, bool incremental);
-    void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> density,
-                              amrex::Real time, amrex::Real scaling_factor, bool incremental);
-    void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> const& density,
-                              amrex::Vector<amrex::MultiFab      *>        vel,
-                              amrex::Vector<amrex::MultiFab      *> const& divu_Source,
-                              amrex::Real time, amrex::Real scaling_factor, bool incremental,
-                              bool set_inflow_bc);
-    void ApplyCCProjection(amrex::Vector<amrex::MultiFab const*> density,
-                           AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
-                                        amrex::Vector<amrex::MultiFab*> const& v_mac,
-                                        amrex::Vector<amrex::MultiFab*> const& w_mac),
-                           amrex::Real time, amrex::Real scaling_factor, bool incremental);
+    void ApplyProjection (             amrex::Vector<amrex::MultiFab const*> const& density,
+                          AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
+                                       amrex::Vector<amrex::MultiFab*> const& v_mac,
+                                       amrex::Vector<amrex::MultiFab*> const& w_mac),
+                          amrex::Real time, amrex::Real scaling_factor, bool incremental);
+
+    void ApplyProjection (amrex::Vector<amrex::MultiFab const*> const& density,
+                          amrex::Vector<amrex::MultiFab      *> const& vel,
+                          amrex::Vector<amrex::MultiFab      *> const& divu_Source,
+                          amrex::Real time, amrex::Real scaling_factor, bool incremental,
+                          bool set_inflow_bc);
+
+    void ApplyNodalProjection (amrex::Vector<amrex::MultiFab const*> density,
+                               amrex::Real time, amrex::Real scaling_factor, bool incremental);
+    void ApplyNodalProjection (amrex::Vector<amrex::MultiFab const*> const& density,
+                               amrex::Vector<amrex::MultiFab      *>        vel,
+                               amrex::Vector<amrex::MultiFab      *> const& divu_Source,
+                               amrex::Real time, amrex::Real scaling_factor, bool incremental,
+                               bool set_inflow_bc);
+
+    void ApplyCCProjection (amrex::Vector<amrex::MultiFab const*> density,
+                            AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
+                                         amrex::Vector<amrex::MultiFab*> const& v_mac,
+                                         amrex::Vector<amrex::MultiFab*> const& w_mac),
+                            amrex::Real time, amrex::Real scaling_factor, bool incremental);
 
     ///////////////////////////////////////////////////////////////////////////
     //
