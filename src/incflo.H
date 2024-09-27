@@ -270,7 +270,7 @@ public:
                           amrex::Real time, amrex::Real scaling_factor, bool incremental);
 
     void ApplyProjection (amrex::Vector<amrex::MultiFab const*> const& density,
-                          amrex::Vector<amrex::MultiFab      *>        vel,
+                          amrex::Vector<amrex::MultiFab      *> const& vel,
                           amrex::Vector<amrex::MultiFab      *> const& divu_Source,
                           amrex::Real time, amrex::Real scaling_factor, bool incremental,
                           bool set_inflow_bc);

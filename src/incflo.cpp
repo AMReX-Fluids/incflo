@@ -216,7 +216,7 @@ incflo::ApplyProjection (Vector<MultiFab const*> const& density,
 
 void
 incflo::ApplyProjection (Vector<MultiFab const*> const& density,
-                         Vector<MultiFab      *>        vel,
+                         Vector<MultiFab      *> const& vel,
                          Vector<MultiFab      *> const& divu_Source,
                          Real time, Real scaling_factor, bool incremental,
                          bool set_inflow_bc)
