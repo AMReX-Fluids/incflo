@@ -20,9 +20,12 @@ public:
     void write_tecplot_surface(amrex::Real time, int nstep);
     void WriteTecPlotFile     (amrex::Real time, int nstep);
     void output_droplet (amrex::Real time, int nstep);
+     int domain_tag_droplets (int finest_level, amrex::Vector<amrex::BoxArray > const &grids, amrex::Vector<amrex::Geometry > const& geom,
+                              amrex::Vector<amrex::MultiFab*> const& vof,amrex::Vector<amrex::MultiFab*> const& tag);
     void apply_velocity_field(amrex::Real time, int nstep);
     void velocity_face_source(int lev,amrex::Real dt, AMREX_D_DECL(amrex::MultiFab& u_mac, amrex::MultiFab& v_mac,
-                                                   amrex::MultiFab& w_mac));
+                                                                   amrex::MultiFab& w_mac),
+                              AMREX_D_DECL(amrex::MultiFab* sfu_mac, amrex::MultiFab* sfv_mac, amrex::MultiFab* sfw_mac));
 
 // normal vector of interface
    amrex::Vector<amrex::MultiFab> normal;

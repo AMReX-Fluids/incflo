@@ -14,9 +14,9 @@ incflo::tracer_vof_advection (Vector<MultiFab*> const& tracer,
 }
 
 void
-incflo::update_vof_density (Vector<MultiFab*> const& density,Vector<MultiFab*> const& tracer)
+incflo::update_vof_density (int lev, Vector<MultiFab*> const& density,Vector<MultiFab*> const& tracer)
 {
-  for (int lev = 0; lev <= finest_level; ++lev) {
+//  for (int lev = 0; lev <= finest_level; ++lev) {
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -27,7 +27,9 @@ incflo::update_vof_density (Vector<MultiFab*> const& density,Vector<MultiFab*> c
         Array4<Real const> const& tracer_arr = tracer[lev]->const_array(mfi);
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {  //fixme: we use the property of the tracer 0.
-           density_arr(i,j,k) = m_ro_0*(1.-tracer_arr(i,j,k,0))+m_ro_s[0]*tracer_arr(i,j,k,0);
+           // Print()<<i<<" "<<j<<" "<<k<<"\n";
+           //Print()<<density_arr(i,j,k)<<" "<<m_ro_0<<" "<<m_ro_s[0]<<" "<<tracer_arr(i,j,k)<<"\n";
+           density_arr(i,j,k) = m_ro_0*(1.-tracer_arr(i,j,k,0))+m_ro_s[0]*tracer_arr(i,j,k,0);           
         });
      }
      //fixme: BCs
@@ -70,7 +72,7 @@ if(0){
      //fixme: BCs
      density[lev]->FillBoundary(geom[lev].periodicity());
    }      
-  }
+//  }
        
 }
 

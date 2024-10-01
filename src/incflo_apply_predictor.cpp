@@ -128,7 +128,8 @@ void incflo::ApplyPredictor (bool incremental_projection)
     //when VOF method is used to advect the tracer, density and viscosity of each cell will
     // depend the VOF field value of the cell.
     if (m_vof_advect_tracer)
-        update_vof_density (get_density_old(),get_tracer_old());
+      for (int lev = 0; lev <= finest_level; ++lev)
+        update_vof_density (lev, get_density_old(),get_tracer_old());
 
     // *************************************************************************************
     // Compute explicit viscous term

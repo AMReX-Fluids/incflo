@@ -297,7 +297,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
         LPInfo lp_info;
         lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
 #ifndef AMREX_USE_EB
-        if (m_constant_density) {
+        if (m_constant_density&&!m_vof_advect_tracer) {
             Vector<BoxArray> ba;
             Vector<DistributionMapping> dm;
             for (auto const& ir : inv_rho) {
@@ -340,13 +340,14 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
                      mac_vec[lev][2] = w_mac[lev];);
     }
 
+    Vector<MultiFab> sfu_mac(finest_level+1), sfv_mac(finest_level+1), sfw_mac(finest_level+1);
     // Compute velocity on faces
     for (int lev = 0; lev <= finest_level; ++lev)
     {
         // Predict normal velocity to faces -- note that the {u_mac, v_mac, w_mac}
         //    returned from this call are on face CENTROIDS
         vel[lev]->FillBoundary(geom[lev].periodicity());
-#if 1
+#if 0
         MOL::ExtrapVelToFaces(*vel[lev],
                               AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
                               geom[lev],
@@ -355,9 +356,26 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 #else
         average_ccvel_to_mac(             mac_vec[lev],      *vel[lev]);
 #endif
+
+
+       //add surface tension
+        AMREX_D_TERM(sfu_mac[lev].define(u_mac[lev]->boxArray(), dmap[lev], 1, u_mac[lev]->nGrow(), MFInfo(), Factory(lev));,
+                     sfv_mac[lev].define(v_mac[lev]->boxArray(), dmap[lev], 1, v_mac[lev]->nGrow(), MFInfo(), Factory(lev));,
+                     sfw_mac[lev].define(w_mac[lev]->boxArray(), dmap[lev], 1, w_mac[lev]->nGrow(), MFInfo(), Factory(lev)););
+
+        AMREX_D_TERM(sfu_mac[lev].setVal(0.0);,
+                     sfv_mac[lev].setVal(0.0);,
+                     sfw_mac[lev].setVal(0.0););
+
+
+       if(m_vof_advect_tracer)
+         get_volume_of_fluid ()->velocity_face_source(lev, scaling_factor, AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
+                                                      AMREX_D_DECL(&sfu_mac[lev], &sfv_mac[lev], &sfw_mac[lev]));
+
     }
 
     macproj->setUMAC(mac_vec);
+
 
     if (m_verbose > 2) amrex::Print() << "CC Projection:\n";
     //
@@ -391,12 +409,22 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 
     for (int lev=0; lev <= finest_level; ++lev)
     {
-#ifdef AMREX_USE_EB
-        amrex::Abort("Haven't written mac_to_ccvel for EB");
-#else
+//#ifdef AMREX_USE_EB
+//        amrex::Abort("Haven't written mac_to_ccvel for EB");
+//#else
         average_mac_to_ccvel(GetArrOfPtrs(m_fluxes[lev]),*cc_gphi[lev]);
-#endif
+//#endif
     }
+    // computer the cell-centered surface tension term (see note in VolumeOfFluid:: velocity_face_source)
+    VolumeOfFluid*  vof_p = get_volume_of_fluid ();
+    if(m_vof_advect_tracer)
+      for (int lev=0; lev <= finest_level; ++lev)
+      {
+        AMREX_D_TERM(Copy(m_fluxes[lev][0],sfu_mac[lev], 0, 0, 1, 0);,
+                     Copy(m_fluxes[lev][1],sfv_mac[lev], 0, 0, 1, 0);,
+                     Copy(m_fluxes[lev][2],sfw_mac[lev], 0, 0, 1, 0););
+        average_mac_to_ccvel(GetArrOfPtrs(m_fluxes[lev]),vof_p->force[lev]);
+      }
 
     for(int lev = 0; lev <= finest_level; lev++)
     {
@@ -413,21 +441,28 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 
             Array4<Real> const& u = ld.velocity.array(mfi);
             Array4<Real const> const& rho = density[lev]->const_array(mfi);
+            Array4<Real const> const& gsf = vof_p->force[lev].const_array(mfi);
 
             Real r0 = m_ro_0;
 
-            amrex::ParallelFor(tbx, [u,gphi,p_cc,phi,incremental] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
                 AMREX_D_TERM(u(i,j,k,0) += gphi(i,j,k,0);,
                              u(i,j,k,1) += gphi(i,j,k,1);,
                              u(i,j,k,2) += gphi(i,j,k,2););
+                //we need to add the surface-tension effect to the cell-centered velocity
+                if(m_vof_advect_tracer){
+                  AMREX_D_TERM(u(i,j,k,0) -= gsf(i,j,k,0)*scaling_factor;,
+                               u(i,j,k,1) -= gsf(i,j,k,1)*scaling_factor;,
+                               u(i,j,k,2) -= gsf(i,j,k,2)*scaling_factor;);
+                }
                 if (incremental)
                     p_cc (i,j,k) += phi(i,j,k);
                 else
                     p_cc (i,j,k)  = phi(i,j,k);
             });
 
-            if (incremental && m_constant_density) {
+            if (incremental && m_constant_density&&!m_vof_advect_tracer) {
                 amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     AMREX_D_TERM(gp_cc(i,j,k,0) -= gphi(i,j,k,0) * r0 / scaling_factor;,
@@ -435,32 +470,41 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
                                  gp_cc(i,j,k,2) -= gphi(i,j,k,2) * r0 / scaling_factor;);
 
                 });
-            } else if (incremental && !m_constant_density) {
+            } else if (incremental && (!m_constant_density||m_vof_advect_tracer)) {
                 amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     AMREX_D_TERM(gp_cc(i,j,k,0) -= gphi(i,j,k,0) * rho(i,j,k) / scaling_factor;,
                                  gp_cc(i,j,k,1) -= gphi(i,j,k,1) * rho(i,j,k) / scaling_factor;,
                                  gp_cc(i,j,k,2) -= gphi(i,j,k,2) * rho(i,j,k) / scaling_factor;);
                 });
-            } else if (!incremental && m_constant_density) {
+            } else if (!incremental && m_constant_density&&!m_vof_advect_tracer) {
                 amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     AMREX_D_TERM(gp_cc(i,j,k,0) = -gphi(i,j,k,0) * r0 / scaling_factor;,
                                  gp_cc(i,j,k,1) = -gphi(i,j,k,1) * r0 / scaling_factor;,
                                  gp_cc(i,j,k,2) = -gphi(i,j,k,2) * r0 / scaling_factor;);
                 });
-            } else if (!incremental && !m_constant_density) {
+            } else if (!incremental && (!m_constant_density||m_vof_advect_tracer)) {
                 amrex::ParallelFor(tbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
                     AMREX_D_TERM(gp_cc(i,j,k,0) = -gphi(i,j,k,0) * rho(i,j,k) / scaling_factor;,
                                  gp_cc(i,j,k,1) = -gphi(i,j,k,1) * rho(i,j,k) / scaling_factor;,
                                  gp_cc(i,j,k,2) = -gphi(i,j,k,2) * rho(i,j,k) / scaling_factor;);
+                    if(m_vof_advect_tracer){
+                      AMREX_D_TERM(gp_cc(i,j,k,0) += gsf(i,j,k,0) * rho(i,j,k);,
+                                   gp_cc(i,j,k,1) += gsf(i,j,k,1) * rho(i,j,k);,
+                                   gp_cc(i,j,k,2) += gsf(i,j,k,2) * rho(i,j,k););
+                    }
+
                 });
             }
         }
         ld.gp.FillBoundary(geom[lev].periodicity());
         ld.p_cc.FillBoundary(geom[lev].periodicity());
     }
+
+//get_volume_of_fluid()->WriteTecPlotFile (m_cur_time,m_nstep);
+//amrex::Abort("finish initial projection");
 
     // ***************************************************************************************
     // END OF MAC STUFF

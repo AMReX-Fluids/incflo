@@ -2,7 +2,7 @@
 #            SIMULATION STOP            #
 #.......................................#
 stop_time               =   6         # Max (simulated) time to evolve
-max_step                =  20000          # Max number of time steps
+max_step                =  10000          # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -14,7 +14,7 @@ incflo.cfl              =   0.2        # CFL factor
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =  30           # Steps between plot files
+amr.plot_int            =   20          # Steps between plot files
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
 
@@ -79,5 +79,12 @@ amrex.fpe_trap_invalid  =   1           # Trap NaNs
 #.......................................#
 incflo.verbose          =   2           # incflo_level
 incflo.vof_init_with_eb = 1
+incflo.use_cc_proj      =   1
+incflo.advect_momentum = 0
+incflo.godunov_include_diff_in_forcing = 1
+incflo.use_mac_phi_in_godunov = 0
+incflo.godunov_use_forces_in_trans = 0
+incflo.initial_iterations =0
+incflo.do_initial_proj = 0
 amrex.fpe_trap_overflow=1
 amrex.fpe_trap_zero=1

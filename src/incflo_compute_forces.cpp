@@ -40,11 +40,12 @@ void incflo::compute_vel_forces (Vector<MultiFab*> const& vel_forces,
                                  Vector<MultiFab const*> const& density,
                                  Vector<MultiFab const*> const& tracer_old,
                                  Vector<MultiFab const*> const& tracer_new,
-                                 bool include_pressure_gradient)
+                                 bool include_pressure_gradient,
+                                 bool include_SF)
 {
     for (int lev = 0; lev <= finest_level; ++lev)
        compute_vel_forces_on_level (lev, *vel_forces[lev], *velocity[lev], *density[lev],
-                                         *tracer_old[lev], *tracer_new[lev], include_pressure_gradient);
+                                         *tracer_old[lev], *tracer_new[lev], include_pressure_gradient, include_SF);
 }
 
 void incflo::compute_vel_forces_on_level (int lev,
@@ -53,7 +54,8 @@ void incflo::compute_vel_forces_on_level (int lev,
                                           const MultiFab& density,
                                           const MultiFab& tracer_old,
                                           const MultiFab& tracer_new,
-                                          bool include_pressure_gradient)
+                                          bool include_pressure_gradient,
+                                          bool include_SF)
 {
     GpuArray<Real,3> l_gravity{m_gravity[0],m_gravity[1],m_gravity[2]};
     GpuArray<Real,3> l_gp0{m_gp0[0], m_gp0[1], m_gp0[2]};
@@ -157,7 +159,7 @@ void incflo::compute_vel_forces_on_level (int lev,
     // rho:   density
 
     //fixme: we just consider the surface tension for first tracer
-    if (m_vof_advect_tracer && m_sigma[0]!=0.){
+    if (m_vof_advect_tracer && m_sigma[0]!=0.&&!m_use_cc_proj&&include_SF){
 
       VolumeOfFluid*  vof_p = get_volume_of_fluid ();
 
@@ -528,8 +530,8 @@ static int oct[3][2] = { { 1, 2 }, { 0, 2 }, { 0, 1 } };
 
     }
    }
-   else if(choice==4) {
-//cell-centered surface tension force
+      else if (choice ==4) {
+      //cell-centered surface tension force
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif

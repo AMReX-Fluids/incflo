@@ -103,14 +103,16 @@ public:
                              amrex::Vector<amrex::MultiFab const*> const& density,
                              amrex::Vector<amrex::MultiFab const*> const& tracer_old,
                              amrex::Vector<amrex::MultiFab const*> const& tracer_new,
-                             bool include_pressure_gradient = true);
+                             bool include_pressure_gradient = true,
+                             bool include_SF = false);
     void compute_vel_forces_on_level ( int lev,
                                        amrex::MultiFab& vel_forces,
                                        const amrex::MultiFab& velocity,
                                        const amrex::MultiFab& density,
                                        const amrex::MultiFab& tracer_old,
                                        const amrex::MultiFab& tracer_new,
-                                       bool include_pressure_gradient = true);
+                                       bool include_pressure_gradient = true,
+                                       bool include_SF = false);
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -225,8 +227,8 @@ public:
                            AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
                                         amrex::Vector<amrex::MultiFab const*> const& v_mac,
                                         amrex::Vector<amrex::MultiFab const*> const& w_mac));
-    void update_vof_density (amrex::Vector<amrex::MultiFab*> const& density,
-                             amrex::Vector<amrex::MultiFab*> const& tracer);
+    void update_vof_density (int lev, amrex::Vector<amrex::MultiFab*> const& density,
+                                      amrex::Vector<amrex::MultiFab*> const& tracer);
 
 
     [[nodiscard]] amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
@@ -662,6 +664,7 @@ private:
 
         // cell-centered pressure gradient
         amrex::MultiFab gp;
+        amrex::MultiFab gp_mac;
 
         amrex::MultiFab conv_velocity;
         amrex::MultiFab conv_velocity_o;

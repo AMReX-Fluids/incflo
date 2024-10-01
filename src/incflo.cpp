@@ -82,7 +82,8 @@ void incflo::InitData ()
         }
 
         InitialIterations();
-
+//get_volume_of_fluid()->WriteTecPlotFile (m_cur_time,m_nstep);
+//amrex::Abort("finish initial projection");
         // Set m_nstep to 0 before entering time loop
         m_nstep = 0;
 

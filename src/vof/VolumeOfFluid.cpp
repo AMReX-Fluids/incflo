@@ -2461,16 +2461,21 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
   start = (start + 1) % AMREX_SPACEDIM;
 
 }
-// add surface tension force (F) to the MAC velocity at the center of cell faces at the middle
-// of time step (n+1/2).
-// F^n+1/2 = (1/2*dt)*sigma*kappa*grad(VOF)/rho
+// add surface tension force (F) to the MAC velocity at the center of cell faces.
+// F = dt*sigma*kappa*grad(VOF)/rho
+// Umac <- Uma-F, note minus sign before F because of the way which curvature being calculated.
 //   kappa and rho need to be estimated at the cell face center. The simple average of the cell-centered
 //      values of two neighboring cells dilimited by the face is used to calculate the face-centered value.
 //   grad(VOF) is also estimated at the face center using the center-difference method for two cells
-//   i.e., in x-dir, grad(VOF)= (VOFcell[1]-VOFcell[0])/dx[0]
+//   i.e., in x-dir, grad(VOF)= (VOFcell[1]-VOFcell[0])/dx[0].
+// u_mac/v_mac/w_mac stores the face-centered velocity (MAC).
+//
+// gu_mac/gv_mac/gw_mac stores the face-centered value of F/dt (i.e., sigma*kappa*grad(VOF)/rho)
+// gu_mac/gv_mac/gw_mac will be averaged to the cell center when correcting the cell-centered velocity
+// after final cell-centered projection.
 void
-VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u_mac, MultiFab& v_mac,
-                                                            MultiFab& w_mac))
+VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u_mac, MultiFab& v_mac, MultiFab& w_mac),
+                                      AMREX_D_DECL(MultiFab* gu_mac, MultiFab* gv_mac, MultiFab* gw_mac))
 {
    auto& ld = *v_incflo->m_leveldata[lev];
    Geometry const& geom = v_incflo->Geom(lev);
@@ -2491,6 +2496,10 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
        AMREX_D_TERM(Array4<Real > const& umac = u_mac.array(mfi);,
                     Array4<Real > const& vmac = v_mac.array(mfi);,
                     Array4<Real > const& wmac = w_mac.array(mfi););
+       AMREX_D_TERM(Array4<Real > gumac;, Array4<Real > gvmac;,Array4<Real > gwmac;);
+       AMREX_D_TERM(if(gu_mac) gumac = gu_mac->array(mfi);,
+                    if(gv_mac) gvmac = gv_mac->array(mfi);,
+                    if(gw_mac) gwmac = gw_mac->array(mfi););
        ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
        {
          Real kaf;
@@ -2503,7 +2512,12 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
          else
             kaf=0.;
         // density estimated at the face center, time increment is half of the timestep, i.e., dt/2
-          umac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i-1,j,k))*(tra(i,j,k,0)-tra(i-1,j,k,0))/dx[0];
+          //Print()<<rho(i,j,k)<<"\n";
+          //Print()<<tra(i-1,j-1,k-1)<<"\n";
+          //Print()<<umac(i,j,k)<<"\n";
+          umac(i,j,k) -= dt*kaf*sigma*2./(rho(i,j,k)+rho(i-1,j,k))*(tra(i,j,k,0)-tra(i-1,j,k,0))/dx[0];
+          if (gu_mac)
+             gumac(i,j,k)=kaf*sigma*2./(rho(i,j,k)+rho(i-1,j,k))*(tra(i,j,k,0)-tra(i-1,j,k,0))/dx[0];
        });
 
        ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -2517,7 +2531,9 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
             kaf=kap(i,j-1,k);
          else
             kaf=0.;
-          vmac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i,j-1,k))*(tra(i,j,k,0)-tra(i,j-1,k,0))/dx[1];
+          vmac(i,j,k) -= dt*kaf*sigma*2./(rho(i,j,k)+rho(i,j-1,k))*(tra(i,j,k,0)-tra(i,j-1,k,0))/dx[1];
+          if(gv_mac)
+              gvmac(i,j,k) = kaf*sigma*2./(rho(i,j,k)+rho(i,j-1,k))*(tra(i,j,k,0)-tra(i,j-1,k,0))/dx[1];
        });
 #if AMREX_SPACEDIM==3 /* 3D */
        ParallelFor(zbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -2531,7 +2547,9 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
             kaf=kap(i,j,k-1);
          else
             kaf=0.;
-          wmac(i,j,k) += dt*kaf/(rho(i,j,k)+rho(i,j,k-1))*(tra(i,j,k,0)-tra(i,j,k-1,0))/dx[2];
+         wmac(i,j,k) -= dt*kaf*sigma*2./(rho(i,j,k)+rho(i,j,k-1))*(tra(i,j,k,0)-tra(i,j,k-1,0))/dx[2];
+         if(gw_mac)
+            gwmac(i,j,k) = kaf*sigma*2./(rho(i,j,k)+rho(i,j,k-1))*(tra(i,j,k,0)-tra(i,j,k-1,0))/dx[2];
        });
 #endif
     }
@@ -2545,6 +2563,7 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
 void
 VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
 {
+    a_tracer.setVal(0.0);
     int vof_init_with_eb = 1;
     ParmParse pp("incflo");
     pp.query("vof_init_with_eb", vof_init_with_eb);
@@ -2571,6 +2590,9 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
 
             EB2::SphereIF my_sphere(radius, center, fluid_is_inside);
             EB2::SphereIF my_sphere1(radius, center1, fluid_is_inside);
+
+            Array<Real,AMREX_SPACEDIM> radii{AMREX_D_DECL(.2, .3, .25)};
+            EB2::EllipsoidIF my_ellipsoid(radii, center, fluid_is_inside);
 
     // Initialise cylinder parameters
     int direction = 2;
@@ -2602,12 +2624,13 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
     //auto my_box=  EB2::rotate(EB2::BoxIF( low,  high, fluid_is_inside), .3, 1);
     auto my_box1=  EB2::rotate(my_box, .3, 0);
     auto my_box2=  EB2::rotate(my_box1, .2, 2);
-    auto two =EB2::makeIntersection(my_sphere, my_box);
+    auto two = EB2::makeIntersection(my_sphere, my_box);
    //auto two = EB2::makeComplement(EB2::makeUnion(my_cyl_1, my_cyl));
 
     // Generate GeometryShop
     //auto gshop = EB2::makeShop(two);
-   auto gshop = EB2::makeShop(my_box);
+    //auto gshop = EB2::makeShop(my_box);
+    auto gshop = EB2::makeShop(my_box);
    //auto gshop = EB2::makeShop(my_cyl);
             int max_level = v_incflo->maxLevel();
             EB2::Build(gshop, v_incflo->Geom(max_level), max_level, max_level);
@@ -2646,7 +2669,7 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
   };
     Vector<VOFPrint> vout;
    // Define the file name
-    std::string filename = "vof_value-16.dat";
+    std::string filename = "vof_value-32.dat";
     // Open the file
     std::ifstream infile(filename);
 
@@ -2724,9 +2747,10 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
 
     // Once vof tracer is initialized, we calculate the normal direction and alpha of the plane segment
     // intersecting each interface cell.
-    v_incflo->p_volume_of_fluid->tracer_vof_update(lev, a_tracer, height[lev]);
-    v_incflo->p_volume_of_fluid->curvature_calculation(lev, a_tracer, height[lev], kappa[lev]);
-
+    tracer_vof_update(lev, a_tracer, height[lev]);
+    curvature_calculation(lev, a_tracer, height[lev], kappa[lev]);
+    int n_tag=domain_tag_droplets (finest_level, v_incflo->grids,v_incflo->geom,
+                                  v_incflo->get_tracer_new (),GetVecOfPtrs(tag));
 
 }
 
@@ -2901,6 +2925,7 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                       "\n";
 
         for (int lev = 0; lev <= finest_level; ++lev) {
+            bool m_use_cc_proj=v_incflo->m_use_cc_proj;
             auto& ld = *v_incflo->m_leveldata[lev];
             Geometry const& geom = v_incflo->Geom(lev);
             Box const& domain  = geom.Domain();
@@ -2933,12 +2958,15 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                 TecplotFile <<(std::string("ZONE T=")+zonetitle);
                 for (int dim = 0; dim < AMREX_SPACEDIM; ++dim)
                   TecplotFile <<", "<<(IJK[dim]+std::string("="))<<(ijk_max[dim]-ijk_min[dim]+2);
-                TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(AMREX_SPACEDIM+2)<<"-"
+                TecplotFile <<", DATAPACKING=BLOCK"<<", VARLOCATION=(["<<(m_use_cc_proj?AMREX_SPACEDIM+1:AMREX_SPACEDIM+2)<<"-"
                             <<(AMREX_SPACEDIM==3?24:19)<<"]=CELLCENTERED)"
                             <<", SOLUTIONTIME="<<std::to_string(time)<<"\n";
 
 //      AllPrint() << " process#" << myproc<<"  " << lo << hi<<mfi.index()<<"\n";
-                Array4<Real const> const& pa = ld.p_nd.const_array(mfi);
+
+                Array4<Real const> const& pa_nd = ld.p_nd.const_array(mfi);
+                Array4<Real const> const& pa_cc = ld.p_cc.const_array(mfi);
+                Array4<Real const> const& pa_mac = ld.mac_phi.const_array(mfi);
                 Array4<Real const> const& tracer = ld.tracer.const_array(mfi);
                 Array4<Real const> const& vel = ld.velocity.const_array(mfi);
                 Array4<Real const> const& mv = normal[lev].const_array(mfi);
@@ -2968,12 +2996,13 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
 
                 }//
                 //write presure
+                int nt=m_use_cc_proj?0:1;
 #if AMREX_SPACEDIM==3
-                for (k = lo.z; k <= hi.z+1; ++k)
+                for (k = lo.z; k <= hi.z+nt; ++k)
 #endif
-                for (int j = lo.y; j <= hi.y+1; ++j) {
-                for (int i = lo.x; i <= hi.x+1; ++i) {
-                    TecplotFile << pa(i,j,k)<<" ";
+                for (int j = lo.y; j <= hi.y+nt; ++j) {
+                for (int i = lo.x; i <= hi.x+nt; ++i) {
+                    TecplotFile << (m_use_cc_proj?pa_cc(i,j,k):pa_nd(i,j,k))<<" ";
                     ++nn;
                     if (nn > 100) {
                         TecplotFile <<"\n";
@@ -3206,7 +3235,7 @@ static void reduce_touching_regions (void * in, void * inout, int * len, MPI_Dat
 // Returns: the number of droplets.
 ////////////////////////////////////////////////////////////////////////////////
 
-int domain_tag_droplets (int finest_level, Vector<BoxArray > const &grids, Vector<Geometry > const& geom,
+int VolumeOfFluid::domain_tag_droplets (int finest_level, Vector<BoxArray > const &grids, Vector<Geometry > const& geom,
                          Vector<MultiFab*> const& vof,Vector<MultiFab*> const& tag)
 {
 
