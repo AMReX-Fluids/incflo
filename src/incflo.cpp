@@ -217,7 +217,22 @@ incflo::ApplyProjection (Vector<MultiFab const*> const& density,
                           time,scaling_factor,incremental);
     }
     else
+    {
         ApplyNodalProjection(density,time,scaling_factor,incremental);
+    }
+}
+
+void
+incflo::ApplyProjection (Vector<MultiFab const*> const& density,
+                         Vector<MultiFab      *> const& vel,
+                         Vector<MultiFab      *> const& divu_Source,
+                         Real time, Real scaling_factor, bool incremental,
+                         bool set_inflow_bc)
+{
+    AMREX_ALWAYS_ASSERT("This is not yet coded for ccproj!");
+
+    ApplyNodalProjection(density, vel, divu_Source, time, scaling_factor,
+                         incremental, set_inflow_bc);
 }
 
 // Make a new level from scratch using provided BoxArray and DistributionMapping.
