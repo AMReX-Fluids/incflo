@@ -139,7 +139,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     //    and compute the tracer forcing terms for the first time
     if (m_advection_type != "MOL") {
 
-        compute_vel_forces(vel_forces, vel, density, tracer, tracer);
+        compute_vel_forces(vel_forces, vel, density, tracer, tracer, true, true);
 
         if (m_godunov_include_diff_in_forcing) {
 

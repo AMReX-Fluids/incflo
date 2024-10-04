@@ -67,6 +67,9 @@ void incflo::update_density (StepType step_type)
 
     } else {
         for (int lev = 0; lev <= finest_level; lev++) {
+			if (m_vof_advect_tracer){
+			  MultiFab::Copy(m_leveldata[lev]->density, m_leveldata[lev]->density_o, 0, 0, 1, m_leveldata[lev]->density_o.nGrow());
+			}
             MultiFab::Copy(m_leveldata[lev]->density_nph, m_leveldata[lev]->density_o, 0, 0, 1, ng);
         }
     }
