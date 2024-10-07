@@ -313,7 +313,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
         macproj->setDomainBC(bclo, bchi);
     } else {
 #ifndef AMREX_USE_EB
-        if (m_constant_density) {
+        if (m_constant_density&&!m_vof_advect_tracer) {
             macproj->updateBeta(scaling_factor/m_ro_0);  // unnecessary unless m_ro_0 changes.
         } else
 #endif
@@ -354,7 +354,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
                               get_velocity_bcrec(), get_velocity_bcrec_device_ptr());
 
 #else
-        average_ccvel_to_mac(             mac_vec[lev],      *vel[lev]);
+        average_ccvel_to_mac( mac_vec[lev],      *vel[lev]);
 #endif
 
 

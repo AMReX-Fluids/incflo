@@ -98,7 +98,7 @@ incflo::compute_MAC_projected_velocities (
         LPInfo lp_info;
         lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
 #ifndef AMREX_USE_EB
-        if (m_constant_density) {
+        if (m_constant_density&&!m_vof_advect_tracer) {
             Vector<BoxArray> ba;
             Vector<DistributionMapping> dm;
             for (auto const& ir : inv_rho) {

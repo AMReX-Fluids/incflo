@@ -567,6 +567,8 @@ private:
 
     // VOF advection parameters
     bool m_vof_advect_tracer = false;
+    //Use VOF to update the density
+    bool m_update_density_from_vof = false;
     // density of the phase represented by VOF=1
     amrex::Vector<amrex::Real> m_ro_s;
     // surface tension

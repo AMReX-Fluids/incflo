@@ -167,6 +167,11 @@ void incflo::ReadParameters ()
            m_sigma.resize(m_ntrac, 0.);
            pp.queryarr("sigma", m_sigma, 0, m_ntrac );
         }
+        if(m_vof_advect_tracer){
+            m_update_density_from_vof = true;
+            m_constant_density = false;
+        }
+
     } // end prefix incflo
 
     ReadIOParameters();
@@ -503,7 +508,7 @@ incflo::InitialRedistribution ()
         MultiFab::Copy(ld.velocity_o, ld.velocity, 0, 0, AMREX_SPACEDIM, ld.velocity.nGrow());
         fillpatch_velocity(lev, m_t_new[lev], ld.velocity_o, 3);
 
-        if (!m_constant_density)
+        if (!m_constant_density||m_vof_advect_tracer)
         {
             ld.density.FillBoundary(geom[lev].periodicity());
             MultiFab::Copy(ld.density_o, ld.density, 0, 0, 1, ld.density.nGrow());
