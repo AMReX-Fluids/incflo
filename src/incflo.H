@@ -20,7 +20,8 @@
 
 #include <DiffusionTensorOp.H>
 #include <DiffusionScalarOp.H>
-
+#include <VolumeOfFluid.H>
+#define VOF_NODATA std::numeric_limits<Real>::max()
 enum struct StepType {
     Predictor, Corrector
 };
@@ -31,6 +32,7 @@ public:
 
     friend DiffusionTensorOp;
     friend DiffusionScalarOp;
+    friend VolumeOfFluid;
 
     enum struct FluidModel {
         Newtonian, powerlaw, Bingham, HerschelBulkley, deSouzaMendesDutra
@@ -101,14 +103,16 @@ public:
                              amrex::Vector<amrex::MultiFab const*> const& density,
                              amrex::Vector<amrex::MultiFab const*> const& tracer_old,
                              amrex::Vector<amrex::MultiFab const*> const& tracer_new,
-                             bool include_pressure_gradient = true);
+                             bool include_pressure_gradient = true,
+                             bool include_SF = false);
     void compute_vel_forces_on_level ( int lev,
                                        amrex::MultiFab& vel_forces,
                                        const amrex::MultiFab& velocity,
                                        const amrex::MultiFab& density,
                                        const amrex::MultiFab& tracer_old,
                                        const amrex::MultiFab& tracer_new,
-                                       bool include_pressure_gradient = true);
+                                       bool include_pressure_gradient = true,
+                                       bool include_SF = false);
 
 
     ///////////////////////////////////////////////////////////////////////////
@@ -213,6 +217,20 @@ public:
                            amrex::Vector<amrex::MultiFab const*> const& eta,
                            amrex::Real dt_diff);
 
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    //  tracer advection by VOF method
+    //
+    ////////////////////////////////////////////////////////////////////////////
+
+    void tracer_vof_advection (amrex::Vector<amrex::MultiFab*> const& tracer,
+                           AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
+                                        amrex::Vector<amrex::MultiFab const*> const& v_mac,
+                                        amrex::Vector<amrex::MultiFab const*> const& w_mac));
+    void update_vof_density (int lev, amrex::Vector<amrex::MultiFab*> const& density,
+                                      amrex::Vector<amrex::MultiFab*> const& tracer);
+
+
     [[nodiscard]] amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
     average_scalar_eta_to_faces (int lev, int comp, amrex::MultiFab const& cc_eta) const;
 
@@ -298,11 +316,13 @@ public:
     void compute_viscosity (amrex::Vector<amrex::MultiFab*> const& eta,
                             amrex::Vector<amrex::MultiFab*> const& rho,
                             amrex::Vector<amrex::MultiFab*> const& vel,
+                            amrex::Vector<amrex::MultiFab*> const& tracer,
                             amrex::Real time, int nghost);
     void compute_viscosity_at_level (int lev,
                                      amrex::MultiFab* eta,
                                      amrex::MultiFab* rho,
                                      amrex::MultiFab* vel,
+                                     amrex::MultiFab* tracer,
                                      amrex::Geometry& lev_geom,
                                      amrex::Real time, int nghost);
     void compute_tracer_diff_coeff (amrex::Vector<amrex::MultiFab*> const& tra_eta, int nghost);
@@ -545,6 +565,15 @@ private:
     amrex::Real m_papa_reg = 0.0;
     amrex::Real m_eta_0 = 0.0;
 
+    // VOF advection parameters
+    bool m_vof_advect_tracer = false;
+    //Use VOF to update the density
+    bool m_update_density_from_vof = false;
+    // density of the phase represented by VOF=1
+    amrex::Vector<amrex::Real> m_ro_s;
+    // surface tension
+    amrex::Vector<amrex::Real> m_sigma;
+
     int m_plot_int = -1;
 
     // Dump plotfiles at as close as possible to the designated period *without* changing dt
@@ -645,6 +674,7 @@ private:
 
         // cell-centered pressure gradient
         amrex::MultiFab gp;
+        amrex::MultiFab gp_mac;
 
         amrex::MultiFab conv_velocity;
         amrex::MultiFab conv_velocity_o;
@@ -701,6 +731,8 @@ private:
     std::unique_ptr<DiffusionTensorOp> m_diffusion_tensor_op;
     std::unique_ptr<DiffusionScalarOp> m_diffusion_scalar_op;
 
+    //vof class pointer
+    std::unique_ptr<VolumeOfFluid> p_volume_of_fluid;
     //
     // end of member variables
     //
@@ -780,6 +812,8 @@ private:
 
     DiffusionTensorOp* get_diffusion_tensor_op ();
     DiffusionScalarOp* get_diffusion_scalar_op ();
+
+    VolumeOfFluid* get_volume_of_fluid ();
 
     amrex::Vector<amrex::MultiFab*> get_velocity_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_velocity_new () noexcept;

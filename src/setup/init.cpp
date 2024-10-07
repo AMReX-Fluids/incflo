@@ -157,6 +157,21 @@ void incflo::ReadParameters ()
         for (int i = 0; i < m_ntrac; i++) {
             amrex::Print() << "Tracer diffusion coeff: " << i << ":" << m_mu_s[i] << std::endl;
         }
+        //vof parameters
+        pp.query("vof_advect_tracer", m_vof_advect_tracer);
+        if (m_vof_advect_tracer){
+           //the default of the density of VOF phase is same as the background fluid
+           m_ro_s.resize(m_ntrac, m_ro_0);
+           pp.queryarr("ro_s", m_ro_s, 0, m_ntrac );
+           // the default of the surface tension is zero
+           m_sigma.resize(m_ntrac, 0.);
+           pp.queryarr("sigma", m_sigma, 0, m_ntrac );
+        }
+        if(m_vof_advect_tracer){
+            m_update_density_from_vof = true;
+            m_constant_density = false;
+        }
+
     } // end prefix incflo
 
     ReadIOParameters();
@@ -493,7 +508,7 @@ incflo::InitialRedistribution ()
         MultiFab::Copy(ld.velocity_o, ld.velocity, 0, 0, AMREX_SPACEDIM, ld.velocity.nGrow());
         fillpatch_velocity(lev, m_t_new[lev], ld.velocity_o, 3);
 
-        if (!m_constant_density)
+        if (!m_constant_density||m_vof_advect_tracer)
         {
             ld.density.FillBoundary(geom[lev].periodicity());
             MultiFab::Copy(ld.density_o, ld.density, 0, 0, 1, ld.density.nGrow());

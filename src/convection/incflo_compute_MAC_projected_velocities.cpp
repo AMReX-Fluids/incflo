@@ -98,7 +98,7 @@ incflo::compute_MAC_projected_velocities (
         LPInfo lp_info;
         lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
 #ifndef AMREX_USE_EB
-        if (m_constant_density) {
+        if (m_constant_density&&!m_vof_advect_tracer) {
             Vector<BoxArray> ba;
             Vector<DistributionMapping> dm;
             for (auto const& ir : inv_rho) {
@@ -123,7 +123,7 @@ incflo::compute_MAC_projected_velocities (
         }
     } else {
 #ifndef AMREX_USE_EB
-        if (m_constant_density) {
+        if (m_constant_density&&!m_vof_advect_tracer) {
             macproj->updateBeta(l_dt/m_ro_0);  // unnecessary unless m_ro_0 changes.
         } else
 #endif
@@ -176,6 +176,52 @@ incflo::compute_MAC_projected_velocities (
                                       m_godunov_ppm, m_godunov_use_forces_in_trans,
                                       l_advection_type, PPM::default_limiter,
                                       allow_inflow_on_outflow, BC_MF.get());
+
+        //add surface tension
+        if(m_vof_advect_tracer && m_use_cc_proj)
+          get_volume_of_fluid ()->velocity_face_source(lev,0.5*l_dt, AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
+                                                       AMREX_D_DECL(nullptr, nullptr, nullptr));
+
+
+if(0){
+//The following is only used for testing the pure advection of VOF algorithm
+//Average the cell-centered velocity to face center as MAC velocity
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+       for (MFIter mfi(*vel[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+       {
+         // Note nodaltilebox will not include the nodal index beyond boundaries between neighboring
+         // titles. Therefore,if we want to use face values (i.e., face_val) immediately below (commented
+         // out), we must create index space for the face-centered values of the tiled region
+         // (i.e., surroundingNodes()).
+         Box const& bx  = mfi.tilebox();
+         AMREX_D_TERM(Box const& xbx = mfi.nodaltilebox(0);,
+                      Box const& ybx = mfi.nodaltilebox(1);,
+                      Box const& zbx = mfi.nodaltilebox(2););
+         Array4<Real const> const& velocity   = vel[lev]->const_array(mfi);
+         AMREX_D_TERM(Array4<Real > const& xfv = u_mac[lev]->array(mfi);,
+                      Array4<Real > const& yfv = v_mac[lev]->array(mfi);,
+                      Array4<Real > const& zfv = w_mac[lev]->array(mfi););
+         AMREX_D_TERM(
+            ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+              xfv(i,j,k) = .5*(velocity(i,j,k,0)+velocity(i-1,j,k,0));
+            });,
+            ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+               yfv(i,j,k) = .5*(velocity(i,j,k,1)+velocity(i,j-1,k,1));
+            });,
+
+            ParallelFor(zbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+               zfv(i,j,k) = .5*(velocity(i,j,k,2)+velocity(i,j,k-1,2));
+            });
+          )    // end AMREX_D_TERM
+
+        }
+        return;
+}//test
     }
 
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);

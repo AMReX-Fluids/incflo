@@ -50,11 +50,12 @@ struct NonNewtonianViscosity
 void incflo::compute_viscosity (Vector<MultiFab*> const& vel_eta,
                                 Vector<MultiFab*> const& rho,
                                 Vector<MultiFab*> const& vel,
+                                Vector<MultiFab*> const& tracer,
                                 Real time, int nghost)
 {
     for (int lev = 0; lev <= finest_level; ++lev)
     {
-        compute_viscosity_at_level(lev, vel_eta[lev], rho[lev], vel[lev], geom[lev], time, nghost);
+        compute_viscosity_at_level(lev, vel_eta[lev], rho[lev], vel[lev], tracer[lev], geom[lev], time, nghost);
     }
 }
 
@@ -66,12 +67,30 @@ void incflo::compute_viscosity_at_level (int /*lev*/,
                                          MultiFab* vel_eta,
                                          MultiFab* /*rho*/,
                                          MultiFab* vel,
+                                         MultiFab* tracer,
                                          Geometry& lev_geom,
                                          Real /*time*/, int nghost)
 {
     if (m_fluid_model == FluidModel::Newtonian)
     {
+      if (!m_vof_advect_tracer)
         vel_eta->setVal(m_mu, 0, 1, nghost);
+      else{
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(*vel_eta,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+           Box const& bx = mfi.growntilebox(nghost);
+           Array4<Real> const& eta_arr = vel_eta->array(mfi);
+           Array4<Real const> const& tracer_arr = tracer->const_array(mfi);
+           ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+           {  //fixme: we use the property of the tracer 0.
+              eta_arr(i,j,k) = m_mu*(1.-tracer_arr(i,j,k,0))+m_mu_s[0]*tracer_arr(i,j,k,0);
+            });
+        }
+
+      }
     }
     else
     {

@@ -66,7 +66,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
     // Make one flux MF at each level to hold all the fluxes (velocity, density, tracers)
     int n_flux_comp = AMREX_SPACEDIM;
-    if (!m_constant_density) n_flux_comp += 1;
+    if (!m_constant_density&&!m_update_density_from_vof) n_flux_comp += 1;
     if ( m_advect_tracer)    n_flux_comp += m_ntrac;
 
     // This will hold state on faces
@@ -319,7 +319,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                     Multiply(vel_nph, rho_nph, 0, n, 1, 1);
                 }
             }
-
+            //vel_nph.setVal(0.);
             if (m_advect_tracer && (m_ntrac>0)) {
                 trac_nph.setVal(0.);
                 fillphysbc_tracer(lev, time_nph, trac_nph, 1);
@@ -446,7 +446,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             // ************************************************************************
             // Density
             // ************************************************************************
-            if (!m_constant_density)
+            if (!m_constant_density&&!m_update_density_from_vof)
             {
                 face_comp = AMREX_SPACEDIM;
                 ncomp = 1;
@@ -512,7 +512,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                     });
                 }
 
-                if (m_constant_density)
+                if (m_constant_density||m_update_density_from_vof)
                    face_comp = AMREX_SPACEDIM;
                 else
                    face_comp = AMREX_SPACEDIM+1;
@@ -663,7 +663,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         // Note: density is always updated conservatively -- we do not provide an option for
         //       updating density convectively
-        if (!m_constant_density)
+        if (!m_constant_density&&!m_update_density_from_vof)
         {
           int flux_comp = AMREX_SPACEDIM;
 //Was this OMP intentionally left off?
@@ -705,7 +705,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         if (m_advect_tracer && m_ntrac > 0)
         {
-          int flux_comp = (m_constant_density) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
+          int flux_comp = (m_constant_density||m_update_density_from_vof) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -783,7 +783,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                               bc_vel, lev);
 
             // density
-            if (!m_constant_density) {
+            if (!m_constant_density&&!m_update_density_from_vof) {
                 auto const& bc_den = get_density_bcrec_device_ptr();
                 redistribute_term(mfi, *conv_r[lev], drdt_tmp,
                                   *density[lev], bc_den, lev);

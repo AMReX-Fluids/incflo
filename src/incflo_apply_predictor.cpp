@@ -123,7 +123,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Compute viscosity / diffusive coefficients
     // *************************************************************************************
     compute_viscosity(GetVecOfPtrs(vel_eta),
-                      get_density_old(), get_velocity_old(),
+                      get_density_old(), get_velocity_old(),get_tracer_old(),
                       m_cur_time, 1);
 
     // *************************************************************************************
@@ -176,6 +176,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
                             GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
                             m_cur_time);
 
+// use vof to advect tracer
+    if (!incremental_projection && m_vof_advect_tracer)
+      tracer_vof_advection(get_tracer_new (), AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
+                           GetVecOfConstPtrs(w_mac)));
+
     // *************************************************************************************
     // Update density
     // *************************************************************************************
@@ -217,4 +222,9 @@ void incflo::ApplyPredictor (bool incremental_projection)
                                    AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
                                    GetVecOfConstPtrs(w_mac)));
 #endif
+
+// use vof to advect tracer
+//    if (!incremental_projection && m_vof_advect_tracer)
+//      tracer_vof_advection(get_tracer_new (), AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
+//                           GetVecOfConstPtrs(w_mac)));
 }

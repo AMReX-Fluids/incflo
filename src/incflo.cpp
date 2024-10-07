@@ -82,7 +82,8 @@ void incflo::InitData ()
         }
 
         InitialIterations();
-
+//get_volume_of_fluid()->WriteTecPlotFile (m_cur_time,m_nstep);
+//amrex::Abort("finish initial projection");
         // Set m_nstep to 0 before entering time loop
         m_nstep = 0;
 
@@ -155,7 +156,14 @@ void incflo::Evolve()
                 printGridSummary(amrex::OutStream(), 0, finest_level);
             }
         }
-
+        if(m_vof_advect_tracer){
+        get_volume_of_fluid()->output_droplet(m_cur_time,m_nstep);
+    //    get_volume_of_fluid()->apply_velocity_field(m_cur_time,m_nstep);
+        }
+        if (writeNow()&& m_vof_advect_tracer){
+            get_volume_of_fluid()->WriteTecPlotFile (m_cur_time,m_nstep);
+            get_volume_of_fluid()->write_tecplot_surface(m_cur_time,m_nstep);
+        }
         // Advance to time t + dt
         Advance();
         m_nstep++;
@@ -164,6 +172,8 @@ void incflo::Evolve()
         if (writeNow())
         {
             WritePlotFile();
+            //get_volume_of_fluid()->WriteTecPlotFile (m_cur_time,m_nstep);
+            //get_volume_of_fluid()->write_tecplot_surface(m_cur_time,m_nstep);
             m_last_plt = m_nstep;
         }
 

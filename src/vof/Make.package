@@ -1,0 +1,4 @@
+CEXE_sources += VolumeOfFluid.cpp
+CEXE_sources += incflo_vof.cpp
+CEXE_headers += VolumeOfFluid.H
+
