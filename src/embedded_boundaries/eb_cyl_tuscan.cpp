@@ -51,15 +51,21 @@ void incflo::make_eb_cyl_tuscan()
     amrex::Print() << " Direction:       " << direction1 << std::endl;
     amrex::Print() << " Height:    " << height1 << std::endl;
     amrex::Print() << " Radius:    " << radius1 << std::endl;
-    amrex::Print() << " Center:    "
-                   << center1[0] << ", " << center1[1] << ", " << center1[2] << std::endl;
+    amrex::Print() << " Center:    " << center1[0] << ", " << center1[1]
+#if (AMREX_SPACEDIM == 3)
+                   << ", " << center1[2]
+#endif
+                   << std::endl;
 
     amrex::Print() << " CYLINDER 2" << std::endl;
     amrex::Print() << " Direction:       " << direction2 << std::endl;
     amrex::Print() << " Height:    " << height2 << std::endl;
     amrex::Print() << " Radius:    " << radius2 << std::endl;
-    amrex::Print() << " Center:    "
-                   << center2[0] << ", " << center2[1] << ", " << center2[2] << std::endl;
+    amrex::Print() << " Center:    " << center2[0] << ", " << center2[1]
+#if (AMREX_SPACEDIM == 3)
+                   << ", " << center2[2]
+#endif
+                   << std::endl;
 
     // Build the implicit function as a union of two cylinders
     EB2::CylinderIF cyl1(radius1, height1, direction1, center1, true);
