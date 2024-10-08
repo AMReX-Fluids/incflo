@@ -31,7 +31,10 @@ void incflo::make_eb_sphere()
     amrex::Print() << " " << std::endl;
     amrex::Print() << " Internal Flow: " << inside << std::endl;
     amrex::Print() << " Radius:    " << radius << std::endl;
-    amrex::Print() << " Center:    " << center[0] << ", " << center[1] << ", " << center[2]
+    amrex::Print() << " Center:    " << center[0] << ", " << center[1]
+#if (AMREX_SPACEDIM == 3)
+                   << ", " << center[2]
+#endif
                    << std::endl;
 
     // Build the sphere implicit function
