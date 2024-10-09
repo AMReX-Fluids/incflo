@@ -569,33 +569,7 @@ private:
     amrex::Vector<amrex::Real> tag_region_lo;
     amrex::Vector<amrex::Real> tag_region_hi;
 
-    // FIXME -- depreciate?
-    // Flags for saving fluid data in plot files
-    int m_plt_velx        = 1;
-    int m_plt_vely        = 1;
-    int m_plt_velz        = 1;
-    int m_plt_gpx         = 1;
-    int m_plt_gpy         = 1;
-    int m_plt_gpz         = 1;
-    int m_plt_rho         = 1;
-    int m_plt_tracer      = 1;
-    int m_plt_p           = 0;
-    int m_plt_macphi      = 0;
-    int m_plt_eta         = 0;
-    int m_plt_magvel      = 1;
-    int m_plt_vort        = 1;
-    int m_plt_forcing     = 0;
-    int m_plt_strainrate  = 0;
-    int m_plt_divu        = 0;
-    int m_plt_vfrac       = 1;
-    int m_plt_error_u     = 0;
-    int m_plt_error_v     = 0;
-    int m_plt_error_w     = 0;
-    int m_plt_error_p     = 0;
-    int m_plt_error_mac_p = 0;
-    int m_plt_particle_count = 0;
-
-    // Set default that agrees with m_plt_* defaults above
+    // Specify fluid data in plot files
     amrex::Vector<std::string> m_plotVars =
 #if (AMREX_SPACEDIM == 3)
         {"velx","vely","velz","gpx","gpy","gpz","density","tracer","magvel","vort","vfrac"};

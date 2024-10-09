@@ -18,4 +18,4 @@ geometry.is_periodic    =   1   1   1   # Periodicity x y z (0/1)
 
 incflo.probtype         =   21
 
-amr.plt_ccse_regtest    =   1
+amr.plotVariables        = velx vely gpx gpy density tracer magvel vort vfrac

@@ -13,7 +13,6 @@ incflo.cfl = 0.45
 #            INPUT AND OUTPUT           #
 #.......................................#
 amr.plot_int            =   100         # Steps between plot files
-amr.plt_regtest         =   1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #

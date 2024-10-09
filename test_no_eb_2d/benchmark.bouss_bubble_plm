@@ -35,8 +35,7 @@ yhi.type                = "sw"
 
 incflo.gradrhoerr       = 0.1
 
-amr.plt_ccse_regtest    =  1
-amr.plt_vort            =  1
+amr.plotVariables = velx vely gpx gpy density tracer vort
 
 incflo.advect_tracer = true
 incflo.diffusion_type   = 2             # 0 = Explicit, 1 = Crank-Nicolson, 2 = Implicit

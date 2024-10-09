@@ -24,8 +24,7 @@ geometry.is_periodic    =   1   1   1   # Periodicity x y z (0/1)
 incflo.probtype         =  21
 incflo.constant_density = true
 
-amr.plt_ccse_regtest    =  1
-amr.plt_vort            =  1  
+amr.plotVariables = velx vely gpx gpy density tracer magvel vort
 
 incflo.advection_type   = "Godunov" 
 incflo.diffusion_type   = 1             # 0 = Explicit, 1 = Crank-Nicolson, 2 = Implicit

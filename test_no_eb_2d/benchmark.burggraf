@@ -71,6 +71,4 @@ incflo.verbose          =   1           # incflo_level
 mac_proj.verbose        =   0           # MAC Projector
 nodal_proj.verbose      =   0           # Nodal Projector
 
-amr.plt_ccse_regtest    =   1
-amr.plt_error_u         =   1
-amr.plt_error_v         =   1
+amr.plotVariables = velx vely gpx gpy density tracer error_u error_v

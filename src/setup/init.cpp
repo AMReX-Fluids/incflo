@@ -274,35 +274,105 @@ void incflo::ReadIOParameters()
     };
 
     // Check for flags to change inclusion of individual fields
-    if ( pp.query("plt_velx", m_plt_velx) ) { update_plotVars("velx", m_plt_velx); }
-    if ( pp.query("plt_vely", m_plt_vely) ) { update_plotVars("vely", m_plt_vely); }
-    if ( pp.query("plt_velz", m_plt_velz) ) { update_plotVars("velz", m_plt_velz); }
+    int plt_var;
+    if ( pp.query("plt_velx", plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("velx", plt_var);
+    }
+    if ( pp.query("plt_vely", plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("vely", plt_var);
+    }
+    if ( pp.query("plt_velz", plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("velz", plt_var);
+    }
 
-    if ( pp.query("plt_gpx",  m_plt_gpx) ) { update_plotVars("gpx", m_plt_gpx); }
-    if ( pp.query("plt_gpy",  m_plt_gpy) ) { update_plotVars("gpy", m_plt_gpy); }
-    if ( pp.query("plt_gpz",  m_plt_gpz) ) { update_plotVars("gpz", m_plt_gpz); }
+    if ( pp.query("plt_gpx",  plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("gpx", plt_var);
+    }
+    if ( pp.query("plt_gpy",  plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("gpy", plt_var);
+    }
+    if ( pp.query("plt_gpz",  plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("gpz", plt_var);
+    }
 
-    if ( pp.query("plt_rho",        m_plt_rho   ) ) { update_plotVars("density",m_plt_rho); }
-    if ( pp.query("plt_tracer",     m_plt_tracer) ) { update_plotVars("tracer",m_plt_tracer); }
-    if ( pp.query("plt_p   ",       m_plt_p     ) ) { update_plotVars("p",m_plt_p); }
-    if ( pp.query("plt_macphi",     m_plt_macphi) ) { update_plotVars("macphi",m_plt_macphi); }
-    if ( pp.query("plt_eta",        m_plt_eta   ) ) { update_plotVars("eta",m_plt_eta); }
-    if ( pp.query("plt_magvel",     m_plt_magvel) ) { update_plotVars("magvel",m_plt_magvel); }
-    if ( pp.query("plt_vort",       m_plt_vort  ) ) { update_plotVars("vort",m_plt_vort); }
-    if ( pp.query("plt_strainrate", m_plt_strainrate) ) { update_plotVars("strainrate",m_plt_strainrate); }
-    if ( pp.query("plt_divu",       m_plt_divu  ) ) { update_plotVars("divu",m_plt_divu); }
-    if ( pp.query("plt_vfrac",      m_plt_vfrac ) ) { update_plotVars("vfrac",m_plt_vfrac); }
+    if ( pp.query("plt_rho",        plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("density",plt_var);
+    }
+    if ( pp.query("plt_tracer",     plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("tracer",plt_var);
+    }
+    if ( pp.query("plt_p   ",       plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("p",plt_var);
+    }
+    if ( pp.query("plt_macphi",     plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("macphi",plt_var);
+    }
+    if ( pp.query("plt_eta",        plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("eta",plt_var);
+    }
+    if ( pp.query("plt_magvel",     plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("magvel",plt_var);
+    }
+    if ( pp.query("plt_vort",       plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("vort",plt_var);
+    }
+    if ( pp.query("plt_strainrate", plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("strainrate",plt_var);
+    }
+    if ( pp.query("plt_divu",       plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("divu",plt_var);
+    }
+    if ( pp.query("plt_vfrac",      plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("vfrac",plt_var);
+    }
 
-    if ( pp.query("plt_forcing",    m_plt_forcing ) ) { update_plotVars("forcing",m_plt_forcing); }
+    if ( pp.query("plt_forcing",    plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("forcing",plt_var);
+    }
 
-    if ( pp.query("plt_error_u",    m_plt_error_u ) ) { update_plotVars("error_u",m_plt_error_u); }
-    if ( pp.query("plt_error_v",    m_plt_error_v ) ) { update_plotVars("error_v",m_plt_error_v); }
-    if ( pp.query("plt_error_w",    m_plt_error_w ) ) { update_plotVars("error_w",m_plt_error_w); }
-    if ( pp.query("plt_error_p",    m_plt_error_p ) ) { update_plotVars("error_p",m_plt_error_p); }
-    if ( pp.query("plt_error_mac_p",m_plt_error_mac_p ) ) { update_plotVars("error_mac_p",m_plt_error_mac_p); }
+    if ( pp.query("plt_error_u",    plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("error_u",plt_var);
+    }
+    if ( pp.query("plt_error_v",    plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("error_v",plt_var);
+    }
+    if ( pp.query("plt_error_w",    plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("error_w",plt_var);
+    }
+    if ( pp.query("plt_error_p",    plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("error_p",plt_var);
+    }
+    if ( pp.query("plt_error_mac_p",plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("error_mac_p",plt_var);
+    }
 
 #ifdef INCFLO_USE_PARTICLES
-    if ( pp.query("plt_particle_count", m_plt_particle_count ) ) { update_plotVars("particle_count",m_plt_particle_count); }
+    if ( pp.query("plt_particle_count", plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("particle_count",plt_var);
+    }
 #endif
 
     // Set according to a variable list
