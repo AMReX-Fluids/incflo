@@ -569,33 +569,29 @@ private:
     amrex::Vector<amrex::Real> tag_region_lo;
     amrex::Vector<amrex::Real> tag_region_hi;
 
-    // Flags for saving fluid data in plot files
-    int m_plt_velx        = 1;
-    int m_plt_vely        = 1;
-    int m_plt_velz        = 1;
-    int m_plt_gpx         = 1;
-    int m_plt_gpy         = 1;
-    int m_plt_gpz         = 1;
-    int m_plt_rho         = 1;
-    int m_plt_tracer      = 1;
-    int m_plt_p           = 0;
-    int m_plt_macphi      = 0;
-    int m_plt_eta         = 0;
-    int m_plt_magvel      = 1;
-    int m_plt_vort        = 1;
-    int m_plt_forcing     = 0;
-    int m_plt_strainrate  = 0;
-    int m_plt_divu        = 0;
-    int m_plt_vfrac       = 1;
-    int m_plt_error_u     = 0;
-    int m_plt_error_v     = 0;
-    int m_plt_error_w     = 0;
-    int m_plt_error_p     = 0;
-    int m_plt_error_mac_p = 0;
+    // Specify fluid data in plot files
+    amrex::Vector<std::string> m_plotVars =
+#if (AMREX_SPACEDIM == 3)
+        {"velx","vely","velz","gpx","gpy","gpz","density","tracer","magvel","vort","vfrac"};
+#else
+        {"velx","vely","gpx","gpy","density","tracer","magvel","vort","vfrac"};
+#endif
+
+    // smallplotfile allows users to output certain variables at a different frequency.
+    // Off by default.
+    int m_smallplot_int = -1;
+    amrex::Real m_smallplot_per_approx = -1.0;
+    // No smallplot_per_exact because it requires changing the timestep
+    int m_last_smallplt = -1;
+    bool m_smallplotfile_on_restart = false;
+
+    std::string m_smallplot_file{"smallplt"};
+
+    // Require user to choose smallplotfile variables
+    amrex::Vector<std::string> m_smallplotVars;
+
 
 #ifdef INCFLO_USE_PARTICLES
-    int m_plt_particle_count = 0;
-
     // Particle container with all particle species
     ParticleData particleData;
 
@@ -887,7 +883,9 @@ private:
     void copy_from_old_to_new_tracer   (int lev, amrex::IntVect const& ng = amrex::IntVect{0});
 
     void Advance ();
-    bool writeNow ();
+    bool writeNow () { return writeNow(m_plot_int, m_plot_per_approx, m_plot_per_exact); }
+    bool writeNow (int a_plot_int, amrex::Real a_plot_per_approx,
+                   amrex::Real a_plot_per_exact);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -963,6 +961,8 @@ private:
     void WriteJobInfo (const std::string& path) const;
     void WriteCheckPointFile () const;
     void WritePlotFile ();
+    void WritePlotVariables (amrex::Vector<std::string> vars, const std::string& plotfilename);
+    virtual void WriteSmallPlotFile ();
     void ReadCheckpointFile ();
 };
 

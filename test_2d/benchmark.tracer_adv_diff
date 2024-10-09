@@ -85,5 +85,4 @@ nodal_proj.verbose       =  0           # Nodal Projector
 scalar_diffusion.verbose =  0           # Scalar Diffusion
 tensor_diffusion.verbose =  0           # Tensor Diffusion
 
-amr.plt_ccse_regtest    =  1
-amr.plt_vfrac           =  1
+amr.plotVariables = velx vely gpx gpy density tracer vfrac

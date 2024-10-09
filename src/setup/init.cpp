@@ -233,69 +233,167 @@ void incflo::ReadIOParameters()
 
     if ( (m_plot_int       > 0 && m_plot_per_exact  > 0) ||
          (m_plot_int       > 0 && m_plot_per_approx > 0) ||
-         (m_plot_per_exact > 0 && m_plot_per_approx > 0) )
-       amrex::Abort("Must choose only one of plot_int or plot_per_exact or plot_per_approx");
+         (m_plot_per_exact > 0 && m_plot_per_approx > 0) ) {
+        amrex::Abort("Must choose only one of plot_int or plot_per_exact or plot_per_approx"); }
 
-    // The plt_ccse_regtest resets the defaults,
-    //     but we can over-ride those below
+    //
+    // Choose which variables to write to plotfile
+    //
+    // The plt_ccse_regtest resets plotfile variables for the regression tests
     int plt_ccse_regtest = 0;
     pp.query("plt_ccse_regtest", plt_ccse_regtest);
 
     if (plt_ccse_regtest != 0)
     {
-        m_plt_velx       = 1;
-        m_plt_vely       = 1;
-        m_plt_velz       = 1;
-        m_plt_gpx        = 1;
-        m_plt_gpy        = 1;
-        m_plt_gpz        = 1;
-        m_plt_rho        = 1;
-        m_plt_tracer     = 1;
-        m_plt_p          = 0;
-        m_plt_macphi     = 0;
-        m_plt_eta        = 0;
-        m_plt_vort       = 0;
-        m_plt_magvel     = 0;
-        m_plt_strainrate = 0;
-        m_plt_divu       = 0;
-        m_plt_vfrac      = 0;
+#if (AMREX_SPACEDIM == 3)
+        m_plotVars = {"velx","vely","velz","gpx","gpy","gpz","density","tracer"};
+#else
+        m_plotVars = {"velx","vely","gpx","gpy","density","tracer"};
+#endif
+
 #ifdef INCFLO_USE_PARTICLES
-        m_plt_particle_count = 1;
+        m_plotVars.push_back("particle_count");
 #endif
     }
 
-    // Which variables to write to plotfile
+    // Helper function to update m_plotVars according to m_plt_* flags
+    auto update_plotVars = [this] (std::string const& a_name, bool plot_flag) {
+        for (int n = 0; n < m_plotVars.size(); n++) {
+            if ( m_plotVars[n] == a_name ) {
+                if ( plot_flag ) {
+                    return; /* already there */}
+                else {
+                    //std::erase(m_plotVars, a_name); // Requires c++20
+                    m_plotVars.erase(std::remove(m_plotVars.begin(), m_plotVars.end(), a_name),
+                                     m_plotVars.end());
+                    return;
+                }
+            }
+        }
+        if (plot_flag) { m_plotVars.push_back(a_name); }
+    };
 
-    pp.query("plt_velx",       m_plt_velx  );
-    pp.query("plt_vely",       m_plt_vely  );
-    pp.query("plt_velz",       m_plt_velz  );
+    // Check for flags to change inclusion of individual fields
+    int plt_var;
+    if ( pp.query("plt_velx", plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("velx", plt_var);
+    }
+    if ( pp.query("plt_vely", plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("vely", plt_var);
+    }
+    if ( pp.query("plt_velz", plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("velz", plt_var);
+    }
 
-    pp.query("plt_gpx",        m_plt_gpx );
-    pp.query("plt_gpy",        m_plt_gpy );
-    pp.query("plt_gpz",        m_plt_gpz );
+    if ( pp.query("plt_gpx",  plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("gpx", plt_var);
+    }
+    if ( pp.query("plt_gpy",  plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("gpy", plt_var);
+    }
+    if ( pp.query("plt_gpz",  plt_var) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("gpz", plt_var);
+    }
 
-    pp.query("plt_rho",        m_plt_rho   );
-    pp.query("plt_tracer",     m_plt_tracer);
-    pp.query("plt_p   ",       m_plt_p     );
-    pp.query("plt_macphi",     m_plt_macphi);
-    pp.query("plt_eta",        m_plt_eta   );
-    pp.query("plt_magvel",     m_plt_magvel);
-    pp.query("plt_vort",       m_plt_vort  );
-    pp.query("plt_strainrate", m_plt_strainrate);
-    pp.query("plt_divu",       m_plt_divu  );
-    pp.query("plt_vfrac",      m_plt_vfrac );
+    if ( pp.query("plt_rho",        plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("density",plt_var);
+    }
+    if ( pp.query("plt_tracer",     plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("tracer",plt_var);
+    }
+    if ( pp.query("plt_p   ",       plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("p",plt_var);
+    }
+    if ( pp.query("plt_macphi",     plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("macphi",plt_var);
+    }
+    if ( pp.query("plt_eta",        plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("eta",plt_var);
+    }
+    if ( pp.query("plt_magvel",     plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("magvel",plt_var);
+    }
+    if ( pp.query("plt_vort",       plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("vort",plt_var);
+    }
+    if ( pp.query("plt_strainrate", plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("strainrate",plt_var);
+    }
+    if ( pp.query("plt_divu",       plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("divu",plt_var);
+    }
+    if ( pp.query("plt_vfrac",      plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("vfrac",plt_var);
+    }
 
-    pp.query("plt_forcing",    m_plt_forcing );
+    if ( pp.query("plt_forcing",    plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("forcing",plt_var);
+    }
 
-    pp.query("plt_error_u",    m_plt_error_u );
-    pp.query("plt_error_v",    m_plt_error_v );
-    pp.query("plt_error_w",    m_plt_error_w );
-    pp.query("plt_error_p",    m_plt_error_p );
-    pp.query("plt_error_mac_p",m_plt_error_mac_p );
+    if ( pp.query("plt_error_u",    plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("error_u",plt_var);
+    }
+    if ( pp.query("plt_error_v",    plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("error_v",plt_var);
+    }
+    if ( pp.query("plt_error_w",    plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("error_w",plt_var);
+    }
+    if ( pp.query("plt_error_p",    plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("error_p",plt_var);
+    }
+    if ( pp.query("plt_error_mac_p",plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("error_mac_p",plt_var);
+    }
 
 #ifdef INCFLO_USE_PARTICLES
-    pp.query("plt_particle_count", m_plt_particle_count );
+    if ( pp.query("plt_particle_count", plt_var ) ) {
+        Warning("amr.plt_* is depreciated. Please use amr.plotVariables");
+        update_plotVars("particle_count",plt_var);
+    }
 #endif
+
+    // Set according to a variable list
+    if ( pp.contains("plotVariables") ) {
+        m_plotVars.clear();
+        pp.queryarr("plotVariables", m_plotVars);
+    }
+
+    // Small plot options
+    pp.query("smallplot_file"      , m_smallplot_file);
+    pp.query("smallplot_int"       , m_smallplot_int);
+    pp.query("smallplot_per_approx", m_smallplot_per_approx);
+    pp.query("smallplotfile_on_restart", m_smallplotfile_on_restart);
+
+    if ( m_smallplot_int > 0 && m_smallplot_per_approx > 0 ) {
+        amrex::Abort("Must choose only one of smallplot_int or smallplot_per_approx"); }
+
+    if ( pp.contains("smallplotVariables") ) {
+        m_smallplotVars.clear();
+        pp.queryarr("smallplotVariables", m_smallplotVars);
+    }
 }
 
 //

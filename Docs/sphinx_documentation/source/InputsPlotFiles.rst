@@ -26,11 +26,19 @@ as whether the EB geometry should be written out.
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 
 The following inputs must be preceded by "amr" and control what variables will be written in plotfiles.
+By default, incflo plotfiles contain the velocity, pressure gradient, density, tracer, velocity magnitude, vorticity,
+and if using EB, volume fraction.
 
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 |                     | Description                                                           |   Type      | Default   |
 +=====================+=======================================================================+=============+===========+
-| plt_ccse_regtest    | Save all variables to plot file (overrides all other IO flags)        |    Int      | 0         |
+| plotVariables       | Space separated list of variable names. **Takes precedent over all**  |  String     | see above |
+|                     | **other plotfile options**. Plotfile will contain only this list,     |             |           |
+|                     | e.g. "amr.plotVariables = velx density" will result in plotfiles      |             |           |
+|                     | containing only the x-component of the velocity and the density.      |             |           |
++---------------------+-----------------------------------------------------------------------+-------------+-----------+
+| plt_ccse_regtest    | Collection of variables for regression test plotfiles (will get       |    Int      | 0         |
+|                     | overwritten by plotVariables or plt_* flags)                          |             |           |
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 | plt_velx            | Save x-velocity to plot file                                          |    Int      | 1         |
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
@@ -62,3 +70,24 @@ The following inputs must be preceded by "amr" and control what variables will b
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 | plt_vfrac           | Save EB volume fraction to plot file                                  |    Int      | 1         |
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
+
+incflo provides the option to write a user defined selection of variables to a "smallplotfile" at an interval that is
+different than that of the full plotfile.
+The following inputs must be preceded by "amr" and control frequency and naming of smallplotfile generation.
+
++--------------------------+-----------------------------------------------------------------------+-------------+-----------+
+|                          | Description                                                           |   Type      | Default   |
++==========================+=======================================================================+=============+===========+
+| smallplot_int            | Frequency of smallplotfile output;                                    |    Int      | -1        |
+|                          | if -1 then no plotfiles will be written at this frequency             |             |           |
+| smallplot_per_approx     | Time period of smallplotfile output (approximate); does not modify dt |    Real     | -1        |
+|                          | if -1 then no smallplotfiles will be written at this frequency        |             |           |
++--------------------------+-----------------------------------------------------------------------+-------------+-----------+
++--------------------------+-----------------------------------------------------------------------+-------------+-----------+
+| smallplotfile_on_restart | Write smallplotfile when restarting (only used if smallplot_int>0)    |    Bool     | False     |
++--------------------------+-----------------------------------------------------------------------+-------------+-----------+
+| smallplot_file           | Prefix to use for smallplotfile output                                |  String     | smallplt  |
++--------------------------+-----------------------------------------------------------------------+-------------+-----------+
++--------------------------+-----------------------------------------------------------------------+-------------+-----------+
+| smallplotVariables       | Space separated list of variable names.                               |  String     | none      |
++--------------------------+-----------------------------------------------------------------------+-------------+-----------+
