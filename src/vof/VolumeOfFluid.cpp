@@ -135,6 +135,9 @@ VolumeOfFluid::VolumeOfFluid (incflo* a_incflo) : v_incflo(a_incflo)
         force[lev].setVal(0,0,AMREX_SPACEDIM,v_incflo->nghost_state());
     }
 
+    ParmParse pp("incflo");
+    pp.query("output_drop_frequence", output_drop_frequence);
+
 }
 static XDim3 edge[12][2] = {
   {{0.,0.,0.},{1.,0.,0.}},{{0.,0.,1.},{1.,0.,1.}},{{0.,1.,1.},{1.,1.,1.}},{{0.,1.,0.},{1.,1.,0.}},
@@ -1644,8 +1647,8 @@ Real height_curvature_combined (int i,int j,int k, GpuArray<Real, AMREX_SPACEDIM
  * curvature_fit:
  * @(i,j,k): current cell containing an interface.
  * @dx: the grid size of the box
- * @vof: sotres the volume fraction value of the cell.
- * @mv: sotres the normal direction of interface.
+ * @vof: stores the volume fraction value of the cell.
+ * @mv: stores the normal direction of interface.
  * @alpha: stores the plane constant of reconstructed segment.
  *
  * Computes an approximation of the curvature of the interface
@@ -2511,7 +2514,7 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
             kaf=kap(i-1,j,k);
          else
             kaf=0.;
-        // density estimated at the face center, time increment is half of the timestep, i.e., dt/2
+        // density estimated at the face center
           //Print()<<rho(i,j,k)<<"\n";
           //Print()<<tra(i-1,j-1,k-1)<<"\n";
           //Print()<<umac(i,j,k)<<"\n";
@@ -2555,11 +2558,56 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
     }
 
 }
+
+void VolumeOfFluid:: variable_filtered(MultiFab & variable)
+{
+    const auto& ba = variable.boxArray();
+    const auto& dm = variable.DistributionMap();
+    const auto& fact = variable.Factory();
+    MultiFab node_val(amrex::convert(ba,IntVect::TheNodeVector()),dm, 1, 0 , MFInfo(), fact);
+    MultiFab center_val(ba,dm,1,0,MFInfo(), fact);
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+       for (MFIter mfi(variable,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+       {
+         Box const& nbx = surroundingNodes(mfi.tilebox());
+         Array4<Real > const& nv = node_val.array(mfi);
+         Array4<Real const> const& var   = variable.const_array(mfi);
+         ParallelFor(nbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+         {
+           nv(i,j,k,0)=0.;
+           int nt=0, nrho=0, detk;
+#if AMREX_SPACEDIM==3
+           for (detk = 0; detk > -2; --detk)
+#endif
+            for (int detj = 0; detj > -2; --detj)
+             for (int deti = 0; deti > -2; --deti) {
+               Array<int,3> in{i+deti,j+detj,k+detk};
+               //averaging to nodes
+                 nv(i,j,k,0)+= var(in[0],in[1],in[2],0);
+                 nrho++;
+             }
+           nv(i,j,k,0)/= Real(nrho);
+      //    Print()<<i<<","<<j<<","<<k<<" "<<nv(i,j,k,0)<<"\n";
+         });
+       }
+       average_node_to_cellcenter(center_val, 0, node_val, 0, 1,0);
+       Copy(variable, center_val , 0, 0, 1, 0);
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////
 ///////
 ///////  Initialize the VOF value using the EB implicit surface function
 ///////
 /////////////////////////////////////////////////////////////////////////////////
+Real myFunction(AMREX_D_DECL(Real x, Real y, Real z))
+{
+    return y - 0.01*cos (2.*3.14159265357*x);
+}
+
 void
 VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
 {
@@ -2622,15 +2670,16 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
                                                  (0.5*(problo[2]+probhi[2])+.2))};
     auto my_box= EB2::BoxIF( low,  high, fluid_is_inside);
     //auto my_box=  EB2::rotate(EB2::BoxIF( low,  high, fluid_is_inside), .3, 1);
-    auto my_box1=  EB2::rotate(my_box, .3, 0);
-    auto my_box2=  EB2::rotate(my_box1, .2, 2);
-    auto two = EB2::makeIntersection(my_sphere, my_box);
+    //auto my_box1=  EB2::rotate(my_box, .3, 0);
+    //auto my_box2=  EB2::rotate(my_box1, .2, 2);
+    //auto two = EB2::makeIntersection(my_sphere, my_box);
    //auto two = EB2::makeComplement(EB2::makeUnion(my_cyl_1, my_cyl));
+   auto my_sin = EB2::DevicePtrIF(&myFunction);
 
     // Generate GeometryShop
     //auto gshop = EB2::makeShop(two);
     //auto gshop = EB2::makeShop(my_box);
-    auto gshop = EB2::makeShop(my_box);
+    auto gshop = EB2::makeShop(my_sin);
    //auto gshop = EB2::makeShop(my_cyl);
             int max_level = v_incflo->maxLevel();
             EB2::Build(gshop, v_incflo->Geom(max_level), max_level, max_level);
@@ -2995,7 +3044,7 @@ void VolumeOfFluid::WriteTecPlotFile(Real time, int nstep)
                   }
 
                 }//
-                //write presure
+                //write pressure
                 int nt=m_use_cc_proj?0:1;
 #if AMREX_SPACEDIM==3
                 for (k = lo.z; k <= hi.z+nt; ++k)
@@ -3451,7 +3500,8 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
     int myproc = ParallelDescriptor::MyProc();
     int nprocs = ParallelDescriptor::NProcs();
     const std::string& filename = "droplet_his.dat";
-
+    if(nstep%output_drop_frequence!=0)
+        return;
 
     for (int lev = 0; lev <= finest_level; ++lev) {
       auto& ld = *v_incflo->m_leveldata[lev];
@@ -3534,8 +3584,11 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
            /* convert the coord. of the center to the global sys*/
            for (int d = 0; d < AMREX_SPACEDIM; d++)
               (&p.x)[d] = problo[d] + dx[d]*((d<1?i:d<2?j:k)+(&p.x)[d]);
-           for(int d = 0; d < AMREX_SPACEDIM; d++)
+           for(int d = 0; d < AMREX_SPACEDIM; d++){
+               //fixme: just for testing
+               if (fabs(p.x)<dx[0])
               range_add_value (s[d][itag-1], (&p.x)[d]);
+           }
            // do statistics of the curvature data
            range_add_value (kappa_range[itag-1], ka(i,j,k,0));
          }
@@ -3782,10 +3835,11 @@ if (0){
                 <<std::setprecision(8) << sumtotal<<",  "<<error;
      for (int n = 0; n < n_tag && n < 7; n++){
        outputFile <<", #"<<n+1<<",  "<<vols[n]<<",  "<<vels[n]<<",  "<<"L,  "
-                  <<mcent[0][n]<<",  "<<mcent[1][n]<<",  "<<mcent[2][n]<<",  "<<"R ";
-      /* for(int d = 0; d < AMREX_SPACEDIM; d++)
-         outputFile <<range[d][0][n]<<"  "<<range[d][1][n]<<"  ";
-       outputFile <<"s  "<<surfA[n]<<"  "
+                  AMREX_D_TERM(<<mcent[0][n]<<",  ", <<mcent[1][n]<<",  ", <<mcent[2][n]<<",  ")
+                  <<"R ";
+       for(int d = 0; d < AMREX_SPACEDIM; d++)
+         outputFile <<",  "<<range[d][0][n]<<",  "<<range[d][1][n];
+       /*outputFile <<"s  "<<surfA[n]<<"  "
                   <<"k: "<<kappa_range[n].mean<<" "<<kappa_range[n].min<<" "<<kappa_range[n].max
                   <<" "<<kappa_range[n].stddev;    */
      }

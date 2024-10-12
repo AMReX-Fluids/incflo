@@ -171,6 +171,7 @@ void incflo::ReadParameters ()
             m_update_density_from_vof = true;
             m_constant_density = false;
         }
+        pp.query("number_of_averaging", m_number_of_averaging);
 
     } // end prefix incflo
 

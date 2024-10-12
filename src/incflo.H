@@ -227,8 +227,7 @@ public:
                            AMREX_D_DECL(amrex::Vector<amrex::MultiFab const*> const& u_mac,
                                         amrex::Vector<amrex::MultiFab const*> const& v_mac,
                                         amrex::Vector<amrex::MultiFab const*> const& w_mac));
-    void update_vof_density (int lev, amrex::Vector<amrex::MultiFab*> const& density,
-                                      amrex::Vector<amrex::MultiFab*> const& tracer);
+    void update_vof_density (int lev, amrex::MultiFab & density, amrex::MultiFab & tracer);
 
 
     [[nodiscard]] amrex::Array<amrex::MultiFab,AMREX_SPACEDIM>
@@ -564,6 +563,9 @@ private:
     amrex::Real m_tau_0 = 0.0;
     amrex::Real m_papa_reg = 0.0;
     amrex::Real m_eta_0 = 0.0;
+
+    //the number of averaging process for density
+    int m_number_of_averaging = 0;
 
     // VOF advection parameters
     bool m_vof_advect_tracer = false;

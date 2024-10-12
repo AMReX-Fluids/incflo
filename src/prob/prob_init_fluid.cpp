@@ -209,7 +209,7 @@ void incflo::prob_init_fluid (int lev)
         MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, 1, ld.tracer.nGrow());
         ld.tracer_o.FillBoundary(geom[lev].periodicity());
         if (m_vof_advect_tracer){
-          update_vof_density (lev, get_density_new(),get_tracer_new());
+          update_vof_density (lev, ld.density,ld.tracer);
           MultiFab::Copy(ld.density_o, ld.density, 0, 0, 1, ld.density.nGrow());
           fillpatch_density(lev, m_t_new[lev], ld.density_o, 3);
           MultiFab::Copy(ld.density_nph, ld.density, 0, 0, 1, ld.density.nGrow());
