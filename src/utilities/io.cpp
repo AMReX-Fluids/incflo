@@ -97,10 +97,10 @@ void incflo::WriteCheckPointFile() const
                      amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "gradp"));
 
         if (m_use_cc_proj) {
-            VisMF::Write(m_leveldata[lev]->p_nd,
+            VisMF::Write(m_leveldata[lev]->p_cc,
                          amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_nd"));
         } else {
-            VisMF::Write(m_leveldata[lev]->p_cc,
+            VisMF::Write(m_leveldata[lev]->p_nd,
                          amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_cc"));
         }
     }
