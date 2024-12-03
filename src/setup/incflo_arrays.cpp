@@ -20,15 +20,17 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
       tracer_o  (ba, dm, my_incflo->m_ntrac, my_incflo->nghost_state(), MFInfo(), fact),
 
       mac_phi   (ba, dm, 1             , 1       , MFInfo(), fact),
-      p_cc      (ba, dm, 1             , 1       , MFInfo(), fact),
-      p_nd      (amrex::convert(ba,IntVect::TheNodeVector()),
-                 dm, 1             , 0 , MFInfo(), fact),
       gp        (ba, dm, AMREX_SPACEDIM, 0 , MFInfo(), fact),
 
       conv_velocity_o (ba, dm, AMREX_SPACEDIM    , 0, MFInfo(), fact),
       conv_density_o  (ba, dm, 1                 , 0, MFInfo(), fact),
       conv_tracer_o   (ba, dm, my_incflo->m_ntrac, 0, MFInfo(), fact)
 {
+    if (my_incflo->m_use_cc_proj) {
+        p_cc.define(ba                                  , dm, 1, 1, MFInfo(), fact);
+    } else {
+        p_nd.define(convert(ba,IntVect::TheNodeVector()), dm, 1, 0, MFInfo(), fact);
+    }
     if (my_incflo->m_advection_type != "MOL") {
         divtau_o.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
         if (my_incflo->m_advect_tracer) {
