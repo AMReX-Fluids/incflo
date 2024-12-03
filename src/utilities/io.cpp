@@ -98,10 +98,10 @@ void incflo::WriteCheckPointFile() const
 
         if (m_use_cc_proj) {
             VisMF::Write(m_leveldata[lev]->p_cc,
-                         amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_nd"));
+                         amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_cc"));
         } else {
             VisMF::Write(m_leveldata[lev]->p_nd,
-                         amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_cc"));
+                         amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "p_nd"));
         }
     }
 
@@ -232,11 +232,11 @@ void incflo::ReadCheckpointFile()
                     amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "gradp"));
 
         if (m_use_cc_proj) {
-            VisMF::Read(m_leveldata[lev]->p_nd,
-                        amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "p_nd"));
-        } else {
             VisMF::Read(m_leveldata[lev]->p_cc,
                         amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "p_cc"));
+        } else {
+            VisMF::Read(m_leveldata[lev]->p_nd,
+                        amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "p_nd"));
         }
     }
 
