@@ -23,7 +23,11 @@ incflo::get_projection_bc (Orientation::Side side) const noexcept
             case BC::direction_dependent:
             case BC::mixed:
             {
-                r[dir] = LinOpBCType::inflow;
+                if ( m_use_cc_proj ) {
+                    r[dir] = LinOpBCType::Neumann;
+                } else {
+                    r[dir] = LinOpBCType::inflow;
+                }
                 break;
             }
             case BC::slip_wall:
