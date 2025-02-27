@@ -42,16 +42,16 @@ incflo.sigma            =   72.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =  8 16   # Grid cells at coarsest AMRlevel
-amr.max_level           =   3           # Max AMR level in hierarchy 
+amr.n_cell              =  4 8   # Grid cells at coarsest AMRlevel
+amr.max_level           =   4           # Max AMR level in hierarchy 
 #amr.regrid_int          =   1000
 amr.max_grid_size       =  32 64  
-amr.blocking_factor = 8
+amr.blocking_factor = 4
 amr.n_error_buf    = 1 
 amr.grid_eff =1.
 incflo.plot_leaf_cells = 0
-incflo.fillpatchnlevels = 1
-#incflo.vof_regrid_layers = 3
+incflo.fillpatch_method = 2
+#incflo.vof_regrid_layers = 4
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#

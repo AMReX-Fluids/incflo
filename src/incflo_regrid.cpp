@@ -96,6 +96,7 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 // ghost cell values to compute fluxes for cells adjacent to the boundary.
         fillpatch_tracer(lev, time, new_leveldata->tracer, 1);
     }
+
     fillpatch_gradp(lev, time, new_leveldata->gp, 0);
 
     if (m_use_cc_proj) {
@@ -106,6 +107,19 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 
     m_leveldata[lev] = std::move(new_leveldata);
     m_factory[lev] = std::move(new_fact);
+
+
+//    for (MFIter mfi(m_leveldata[lev]->tracer); mfi.isValid(); ++mfi) {
+//       Box const& bx = mfi./*growntilebox(1);*/validbox();
+//       Array4<Real const> const& vof_arr = m_leveldata[lev]->tracer.const_array(mfi);
+//       ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//       {
+//         auto fvol = vof_arr(i,j,k,0);
+//    Print()<<"regrid--lev= "<<lev<<"(i,j) "<<i<<","<<j<<bx;
+//    Print()<<" vof= "<<fvol<<" \n";
+//
+//       }); //end ParallelFor
+//    } //end MFIter
 
     //make_mixedBC_mask(lev, ba, dm);
 

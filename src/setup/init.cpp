@@ -170,7 +170,7 @@ void incflo::ReadParameters ()
            m_update_density_from_vof = true;
            m_constant_density = false;
         }
-        pp.query("fillpatchnlevels", m_fillpatchnlevels);
+        pp.query("fillpatch_method", m_fillpatch_method);
         pp.query("number_of_averaging", m_number_of_averaging);
         pp.query("vof_regrid_layers", m_vof_regrid_layers);
         pp.query("plot_leaf_cells", m_plot_leaf_cells);

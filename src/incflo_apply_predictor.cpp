@@ -194,7 +194,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // **********************************************************************************************
     // Update velocity
     // **********************************************************************************************
-    update_velocity(StepType::Predictor, vel_eta, vel_forces);
+   update_velocity(StepType::Predictor, vel_eta, vel_forces);
 
     // **********************************************************************************************
     // Project velocity field, update pressure
@@ -223,8 +223,4 @@ void incflo::ApplyPredictor (bool incremental_projection)
                                    GetVecOfConstPtrs(w_mac)));
 #endif
 
-// use vof to advect tracer
-//    if (!incremental_projection && m_vof_advect_tracer)
-//      tracer_vof_advection(get_tracer_new (), AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
-//                           GetVecOfConstPtrs(w_mac)));
 }

@@ -259,7 +259,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 Array<PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>,AMREX_SPACEDIM>
                     cbndyFuncArr = {AMREX_D_DECL(crse_bndry_func,crse_bndry_func,crse_bndry_func)};
 
-               if (/*1*/!m_fillpatchnlevels){
+               if (/*1*/m_fillpatch_method == 0){
                   // Use piecewise constant interpolation in time
                   Array<int, AMREX_SPACEDIM> idx = {AMREX_D_DECL(0,1,2)};
                   FillPatchTwoLevels(u_fine, IntVect(nghost_mac()), time_nph,
@@ -270,26 +270,43 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                      cbndyFuncArr, idx, fbndyFuncArr, idx,
                                      rr, mapper, bcrecArr, idx);
                }else{
-                  //for quad-/Oct-tree like grids, it is safter to use FillPatchNLevels
+                  mapper = &face_cons_linear_interp;
                   for (int dir=0;dir<AMREX_SPACEDIM;++dir){
-                    Vector<PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>> physbcs;
-                    for (int ilev = 0; ilev <= finest_level; ++ilev) {
-                       physbcs.emplace_back(geom[ilev],m_bcrec_velocity,IncfloVelFill{m_probtype, m_bc_velocity});
+                    if (m_fillpatch_method == 1){
+                      // This FillPatch operation interpolates using the ghost cells of the coarser level
+                      // via `PhysBCFunctUseCoarseGhost`, which is defined in `AMReX_PhysBCFunct.h`.
+                      // For implementation details, see `AMReX_FillPatchUtil_I.h`.
+                      //
+                      // When the `blocking_factor` is small (e.g., 1, 2, or 4), specifically used for generating
+                      // quad-/octree-like grids, this FillPatch method is necessary instead of the previous one.
+                      FillPatchTwoLevels (*u_fine[dir], IntVect(nghost_mac()), IntVect (0), time_nph,
+                                          {u_crse[dir]}, {time_nph}, {u_fine[dir]}, {time_nph},
+                                          0, 0, 1, geom[lev-1], geom[lev],
+                                          refRatio(lev-1), mapper, bcrecArr[dir], 0);
+                      //The physical boundary condition is not enforced in the above fillpatch, so we have to do it here.
+                      fbndyFuncArr[dir].FillBoundary(*u_fine[dir], 0, 1, IntVect(nghost_mac()), time_nph, 0);
                     }
-                    Vector<Vector<MultiFab*>> smf(finest_level+1);
-                    Vector<Vector<Real>> st(finest_level+1);
-                    for (int ilev = 0; ilev <= finest_level; ++ilev) {
-                      smf[ilev] = dir < 1 ? Vector<MultiFab*>{u_mac[ilev]} :
+                    else{
+                      //for quad-/Oct-tree like grids, it is safter to use FillPatchNLevels
+                      Vector<PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>> physbcs;
+                      for (int ilev = 0; ilev <= finest_level; ++ilev) {
+                       physbcs.emplace_back(geom[ilev],m_bcrec_velocity,IncfloVelFill{m_probtype, m_bc_velocity});
+                      }
+                      Vector<Vector<MultiFab*>> smf(finest_level+1);
+                      Vector<Vector<Real>> st(finest_level+1);
+                      for (int ilev = 0; ilev <= finest_level; ++ilev) {
+                        smf[ilev] = dir < 1 ? Vector<MultiFab*>{u_mac[ilev]} :
 #if (AMREX_SPACEDIM == 3)
-                                  dir > 1 ? Vector<MultiFab*>{w_mac[ilev]} :
+                                    dir > 1 ? Vector<MultiFab*>{w_mac[ilev]} :
 #endif
                                             Vector<MultiFab*>{v_mac[ilev]};
-                      st[ilev] = {time_nph};
+                        st[ilev] = {time_nph};
+                      }
+                      FillPatchNLevels(*u_fine[dir], lev, IntVect(nghost_mac()), time_nph,
+                                       smf, st, 0, 0, 1, geom,
+                                       physbcs, 0, ref_ratio, mapper, m_bcrec_velocity, 0);
+
                     }
-                    mapper = &face_cons_linear_interp;
-                    FillPatchNLevels(*u_fine[dir], lev, IntVect(nghost_mac()), time_nph,
-                                     smf, st, 0, 0, 1, geom,
-                                     physbcs, 0, ref_ratio, mapper, m_bcrec_velocity, 0);
                   }
                }
 

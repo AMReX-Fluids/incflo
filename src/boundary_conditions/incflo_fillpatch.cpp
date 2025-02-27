@@ -30,7 +30,9 @@ void incflo::fillpatch_velocity (int lev, Real time, MultiFab& vel, int ng)
 #else
         Interpolater* mapper = &cell_cons_interp;
 #endif
-        if (!m_fillpatchnlevels){
+        switch (m_fillpatch_method){
+          case 0:
+            // This FillPatch operation does not use the ghost cells of the coarser level
             FillPatchTwoLevels(vel, IntVect(ng), time,
                                {&(m_leveldata[lev-1]->velocity_o),
                                 &(m_leveldata[lev-1]->velocity)},
@@ -41,7 +43,27 @@ void incflo::fillpatch_velocity (int lev, Real time, MultiFab& vel, int ng)
                                0, 0, AMREX_SPACEDIM, geom[lev-1], geom[lev],
                                cphysbc, 0, fphysbc, 0,
                                refRatio(lev-1), mapper, bcrec, 0);
-        }else{
+            break;
+          case 1:
+            // This FillPatch operation interpolates using the ghost cells of the coarser level
+            // via `PhysBCFunctUseCoarseGhost`, which is defined in `AMReX_PhysBCFunct.h`.
+            // For implementation details, see `AMReX_FillPatchUtil_I.h`.
+            //
+            // When the `blocking_factor` is small (e.g., 1, 2, or 4), specifically used for generating
+            // quad-/octree-like grids, this FillPatch method is necessary instead of the previous one.
+            FillPatchTwoLevels (vel, IntVect(ng), IntVect (0), time,
+                                {&(m_leveldata[lev-1]->velocity_o),
+                                 &(m_leveldata[lev-1]->velocity)},
+                                {m_t_old[lev-1], m_t_new[lev-1]},
+                                {&(m_leveldata[lev]->velocity_o),
+                                 &(m_leveldata[lev]->velocity)},
+                                {m_t_old[lev], m_t_new[lev]},
+                                0, 0, AMREX_SPACEDIM, geom[lev-1], geom[lev],
+                                refRatio(lev-1), mapper, bcrec, 0);
+            //The physical boundary condition is not enforced in the above fillpatch, so we have to do it here.
+            fphysbc.FillBoundary(vel, 0, AMREX_SPACEDIM, IntVect(ng), time, 0);
+            break;
+          case 2:
             //for quad-/Oct-tree like grids, it is safter to use FillPatchNLevels
             Vector<PhysBCFunct<GpuBndryFuncFab<IncfloVelFill>>> physbcs;
             for (int ilev = 0; ilev <= finest_level; ++ilev) {
@@ -55,9 +77,8 @@ void incflo::fillpatch_velocity (int lev, Real time, MultiFab& vel, int ng)
             }
             FillPatchNLevels(vel, lev, IntVect(ng), time, smf, st, 0, 0, AMREX_SPACEDIM, geom,
                              physbcs, 0, ref_ratio, mapper, bcrec, 0);
+            break;
         }
-
-
     }
 }
 
@@ -84,18 +105,40 @@ void incflo::fillpatch_density (int lev, Real time, MultiFab& density, int ng)
         Interpolater* mapper = &cell_cons_interp;
 #endif
 
-        if (!m_fillpatchnlevels){
-          FillPatchTwoLevels(density, IntVect(ng), time,
-                             {&(m_leveldata[lev-1]->density_o),
-                              &(m_leveldata[lev-1]->density)},
-                             {m_t_old[lev-1], m_t_new[lev-1]},
-                             {&(m_leveldata[lev]->density_o),
-                              &(m_leveldata[lev]->density)},
-                             {m_t_old[lev], m_t_new[lev]},
-                             0, 0, 1, geom[lev-1], geom[lev],
-                             cphysbc, 0, fphysbc, 0,
-                             refRatio(lev-1), mapper, bcrec, 0);
-        }else{
+        switch (m_fillpatch_method){
+          case 0:
+            // This FillPatch operation does not use the ghost cells of the coarser level
+            FillPatchTwoLevels(density, IntVect(ng), time,
+                               {&(m_leveldata[lev-1]->density_o),
+                                &(m_leveldata[lev-1]->density)},
+                               {m_t_old[lev-1], m_t_new[lev-1]},
+                               {&(m_leveldata[lev]->density_o),
+                                &(m_leveldata[lev]->density)},
+                               {m_t_old[lev], m_t_new[lev]},
+                               0, 0, 1, geom[lev-1], geom[lev],
+                               cphysbc, 0, fphysbc, 0,
+                               refRatio(lev-1), mapper, bcrec, 0);
+            break;
+          case 1:
+            // This FillPatch operation interpolates using the ghost cells of the coarser level
+            // via `PhysBCFunctUseCoarseGhost`, which is defined in `AMReX_PhysBCFunct.h`.
+            // For implementation details, see `AMReX_FillPatchUtil_I.h`.
+            //
+            // When the `blocking_factor` is small (e.g., 1, 2, or 4), specifically used for generating
+            // quad-/octree-like grids, this FillPatch method is necessary instead of the previous one.
+            FillPatchTwoLevels (density, IntVect(ng), IntVect (0), time,
+                                {&(m_leveldata[lev-1]->density_o),
+                                 &(m_leveldata[lev-1]->density)},
+                                {m_t_old[lev-1], m_t_new[lev-1]},
+                                {&(m_leveldata[lev]->density_o),
+                                 &(m_leveldata[lev]->density)},
+                                {m_t_old[lev], m_t_new[lev]},
+                                0, 0, 1, geom[lev-1], geom[lev],
+                                refRatio(lev-1), mapper, bcrec, 0);
+            //The physical boundary condition is not enforced in the above fillpatch, so we have to do it here.
+            fphysbc.FillBoundary(density, 0, 1, IntVect(ng), time, 0);
+            break;
+          case 2:
             //for quad-/Oct-tree like grids, it is safter to use FillPatchNLevels
             Vector<PhysBCFunct<GpuBndryFuncFab<IncfloDenFill>>> physbcs;
             for (int ilev = 0; ilev <= finest_level; ++ilev) {
@@ -109,6 +152,7 @@ void incflo::fillpatch_density (int lev, Real time, MultiFab& density, int ng)
             }
             FillPatchNLevels(density, lev, IntVect(ng), time, smf, st, 0, 0, 1, geom,
                              physbcs, 0, ref_ratio, mapper, bcrec, 0);
+            break;
         }
     }
 }
@@ -136,8 +180,10 @@ void incflo::fillpatch_tracer (int lev, Real time, MultiFab& tracer, int ng)
 #else
         Interpolater* mapper = &cell_cons_interp;
 #endif
-        if (!m_fillpatchnlevels){
-          FillPatchTwoLevels(tracer, IntVect(ng), time,
+        switch (m_fillpatch_method){
+          case 0:
+            // This FillPatch operation does not use the ghost cells of the coarser level
+            FillPatchTwoLevels(tracer, IntVect(ng), time,
                              {&(m_leveldata[lev-1]->tracer_o),
                               &(m_leveldata[lev-1]->tracer)},
                              {m_t_old[lev-1], m_t_new[lev-1]},
@@ -147,22 +193,101 @@ void incflo::fillpatch_tracer (int lev, Real time, MultiFab& tracer, int ng)
                              0, 0, m_ntrac, geom[lev-1], geom[lev],
                              cphysbc, 0, fphysbc, 0,
                              refRatio(lev-1), mapper, bcrec, 0);
-        }else{
+            break;
+          case 1:
+            // This FillPatch operation interpolates using the ghost cells of the coarser level
+            // via `PhysBCFunctUseCoarseGhost`, which is defined in `AMReX_PhysBCFunct.h`.
+            // For implementation details, see `AMReX_FillPatchUtil_I.h`.
+            //
+            // When the `blocking_factor` is small (e.g., 1, 2, or 4), specifically used for generating
+            // quad-/octree-like grids, this FillPatch method is necessary instead of the previous one.
+            FillPatchTwoLevels (tracer, IntVect(ng), IntVect (0), time,
+                                {&(m_leveldata[lev-1]->tracer_o),
+                                 &(m_leveldata[lev-1]->tracer)},
+                                {m_t_old[lev-1], m_t_new[lev-1]},
+                                {&(m_leveldata[lev]->tracer_o),
+                                 &(m_leveldata[lev]->tracer)},
+                                {m_t_old[lev], m_t_new[lev]},
+                                0, 0, m_ntrac, geom[lev-1], geom[lev],
+                                refRatio(lev-1), mapper, bcrec, 0);
+            //The physical boundary condition is not enforced in the above fillpatch, so we have to do it here.
+            fphysbc.FillBoundary(tracer, 0, m_ntrac, IntVect(ng), time, 0);
+            break;
+          case 2:
             //for quad-/Oct-tree like grids, it is safter to use FillPatchNLevels
+            // FillPatchNLevels is not as fast as fillpatch operation in case 1
+            if (m_vof_advect_tracer){
+              mapper = &(get_volume_of_fluid()->vof_interp);
+              get_volume_of_fluid()->vof_interp.lev = lev;
+            }
+            Vector<BCRec> tmp_bcrec;
+            if (m_vof_advect_tracer){
+              tmp_bcrec.reserve(bcrec.size() + AMREX_SPACEDIM+1);
+              tmp_bcrec.insert(tmp_bcrec.end(), bcrec.begin(), bcrec.end());
+              const auto& bcrec_force = get_force_bcrec();
+              tmp_bcrec.insert(tmp_bcrec.end(), bcrec_force.begin(), bcrec_force.begin() + AMREX_SPACEDIM+1);
+            }
+            else{
+                tmp_bcrec=bcrec;
+            }
             Vector<PhysBCFunct<GpuBndryFuncFab<IncfloTracFill>>> physbcs;
             for (int ilev = 0; ilev <= finest_level; ++ilev) {
-                physbcs.emplace_back(geom[ilev],bcrec,IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d, m_bc_velocity});
+              physbcs.emplace_back(geom[ilev],tmp_bcrec,IncfloTracFill{m_probtype, m_ntrac, m_bc_tracer_d, m_bc_velocity});
             }
             Vector<Vector<MultiFab*>> smf(finest_level+1);
             Vector<Vector<Real>> st(finest_level+1);
-            for (int ilev = 0; ilev <= finest_level; ++ilev) {
-              smf[ilev] = {&(m_leveldata[ilev]->tracer_o), &(m_leveldata[ilev]->tracer)};
-              st[ilev] = {m_t_old[ilev], m_t_new[ilev]};
-              //smf[ilev].push_back(&(m_leveldata[ilev]->tracer_o));
-              //smf[ilev].push_back(&(m_leveldata[ilev]->tracer));
+            if (m_vof_advect_tracer){
+               Vector<MultiFab> vof_all(finest_level+1);
+
+               for (int ilev = 0; ilev <= finest_level; ++ilev) {
+                 vof_all[ilev].define(grids[ilev], dmap[ilev], 2+AMREX_SPACEDIM, nghost_state(), MFInfo());
+                 Copy(vof_all[ilev], m_leveldata[ilev]->tracer, 0, 0, 1, ng);
+                 Copy(vof_all[ilev], ptr_VOF->m_leveldata[ilev]->normal, 0, 1, AMREX_SPACEDIM, ng);
+                 Copy(vof_all[ilev], ptr_VOF->m_leveldata[ilev]->alpha, 0, AMREX_SPACEDIM+1, 1, ng);
+                 smf[ilev] = {&(vof_all[ilev])};
+                 st[ilev] = {time};
+               //smf[ilev] = {&(m_leveldata[ilev]->tracer_o), &(m_leveldata[ilev]->tracer)};
+              //st[ilev] = {m_t_old[ilev], m_t_new[ilev]};
+               }
+               //note  tracer_temp is a temporary multifab created using the 'tracer's BoxArray and DistributionMappings
+               //which may be different than 'm_leveldata[lev]->tracer'. For example, a new grid is generated in RemakeLevel()
+               //before  fillpatch() is called.
+               MultiFab tracer_tmp(tracer.boxArray(), tracer.DistributionMap(), 2+AMREX_SPACEDIM, tracer.nGrow(), MFInfo());
+               FillPatchNLevels(tracer_tmp, lev, IntVect(ng), time, smf, st, 0, 0, AMREX_SPACEDIM+2, geom,
+                                physbcs, 0, ref_ratio, mapper, tmp_bcrec, 0);
+               Copy(tracer, tracer_tmp, 0, 0, 1, ng);
+               //we only need to copy the data of current level lev.
+               // Note: The 'tracer' and 'vof_all[lev]' may be created using different BoxArrays and DistributionMappings.
+               // For example, when fillpatch_tracer() is called after a new grid is generated in RemakeLevel(),
+               // 'tracer' may have a different BoxArray than 'm_leveldata[lev]->tracer'.
+               // Therefore, ParallelCopy() is used here instead of Copy() to ensure proper data transfer.
+               //tracer.ParallelCopy(tracer_tmp, 0, 0, 1, nghost_state(), nghost_state(), geom[lev].periodicity());
+//    if (lev == 2 && m_nstep==31)
+//    for (MFIter mfi(tracer); mfi.isValid(); ++mfi) {
+//       Box const& bx = mfi./*growntilebox(ng);*/validbox();
+//       Array4<Real const> const& vof_arr = tracer.const_array(mfi);
+//       //Array4<Real const> const& vof_arr0 = tracer.const_array(mfi);
+//       ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//       {
+//         auto fvol = vof_arr(i,j,k,0);
+//    Print()<<"fp-lev= "<<lev<<"(i,j) "<<i<<","<<j<<bx;
+//    Print()<<" vof= "<<fvol/*<<"vof_copy= "<<vof_arr0(i,j,k,0)*/<<" \n";
+//
+//       }); //end ParallelFor
+//    } //end MFIter
+
+
+
+           }
+            else{
+              for (int ilev = 0; ilev <= finest_level; ++ilev) {
+                 smf[ilev] = {&(m_leveldata[ilev]->tracer)};
+                 st[ilev] = {time};
+              }
+              FillPatchNLevels(tracer, lev, IntVect(ng), time, smf, st, 0, 0, m_ntrac, geom,
+                               physbcs, 0, ref_ratio, mapper, bcrec, 0);
             }
-            FillPatchNLevels(tracer, lev, IntVect(ng), time, smf, st, 0, 0, m_ntrac, geom,
-                             physbcs, 0, ref_ratio, mapper, bcrec, 0);
+            break;
         }
     }
 }
@@ -188,14 +313,32 @@ void incflo::fillpatch_gradp (int lev, Real time, MultiFab& gp, int ng)
         Interpolater* mapper = &cell_cons_interp;
 #endif
 
-        if (!m_fillpatchnlevels){
-          FillPatchTwoLevels(gp, IntVect(ng), time,
-                             {&(m_leveldata[lev-1]->gp)}, {time},
-                             {&(m_leveldata[lev]->gp)}, {time},
-                             0, 0, AMREX_SPACEDIM, geom[lev-1], geom[lev],
-                             cphysbc, 0, fphysbc, 0,
-                             refRatio(lev-1), mapper, bcrec, 0);
-        }else{
+        switch (m_fillpatch_method){
+          case 0:
+            // This FillPatch operation does not use the ghost cells of the coarser level
+            FillPatchTwoLevels(gp, IntVect(ng), time,
+                               {&(m_leveldata[lev-1]->gp)}, {time},
+                               {&(m_leveldata[lev]->gp)}, {time},
+                               0, 0, AMREX_SPACEDIM, geom[lev-1], geom[lev],
+                               cphysbc, 0, fphysbc, 0,
+                               refRatio(lev-1), mapper, bcrec, 0);
+            break;
+          case 1:
+            // This FillPatch operation interpolates using the ghost cells of the coarser level
+            // via `PhysBCFunctUseCoarseGhost`, which is defined in `AMReX_PhysBCFunct.h`.
+            // For implementation details, see `AMReX_FillPatchUtil_I.h`.
+            //
+            // When the `blocking_factor` is small (e.g., 1, 2, or 4), specifically used for generating
+            // quad-/octree-like grids, this FillPatch method is necessary instead of the previous one.
+            FillPatchTwoLevels (gp, IntVect(ng), IntVect (0), time,
+                                {&(m_leveldata[lev-1]->gp)}, {time},
+                                {&(m_leveldata[lev]->gp)}, {time},
+                                0, 0, AMREX_SPACEDIM, geom[lev-1], geom[lev],
+                                refRatio(lev-1), mapper, bcrec, 0);
+            //The physical boundary condition is not enforced in the above fillpatch, so we have to do it here.
+            fphysbc.FillBoundary(gp, 0, AMREX_SPACEDIM, IntVect(ng), time, 0);
+            break;
+          case 2:
             //for quad-/Oct-tree like grids, it is safter to use FillPatchNLevels
             Vector<PhysBCFunct<GpuBndryFuncFab<IncfloForFill>>> physbcs;
             for (int ilev = 0; ilev <= finest_level; ++ilev) {
@@ -209,6 +352,7 @@ void incflo::fillpatch_gradp (int lev, Real time, MultiFab& gp, int ng)
             }
             FillPatchNLevels(gp, lev, IntVect(ng), time, smf, st, 0, 0, AMREX_SPACEDIM, geom,
                              physbcs, 0, ref_ratio, mapper, bcrec, 0);
+            break;
         }
 
     }
@@ -235,14 +379,32 @@ void incflo::fillpatch_force (Real time, Vector<MultiFab*> const& force, int ng)
             (geom[lev  ], bcrec, IncfloForFill{m_probtype});
         Interpolater* mapper = &pc_interp;
 
-        if (!m_fillpatchnlevels){
-          FillPatchTwoLevels(*force[lev], IntVect(ng), time,
-                             {force[lev-1]}, {time},
-                             {force[lev  ]}, {time},
-                             0, 0, ncomp, geom[lev-1], geom[lev],
-                             cphysbc, 0, fphysbc, 0,
-                             refRatio(lev-1), mapper, bcrec, 0);
-        }else{
+        switch (m_fillpatch_method){
+          case 0:
+            // This FillPatch operation does not use the ghost cells of the coarser level
+            FillPatchTwoLevels(*force[lev], IntVect(ng), time,
+                               {force[lev-1]}, {time},
+                               {force[lev  ]}, {time},
+                               0, 0, ncomp, geom[lev-1], geom[lev],
+                               cphysbc, 0, fphysbc, 0,
+                               refRatio(lev-1), mapper, bcrec, 0);
+            break;
+          case 1:
+            // This FillPatch operation interpolates using the ghost cells of the coarser level
+            // via `PhysBCFunctUseCoarseGhost`, which is defined in `AMReX_PhysBCFunct.h`.
+            // For implementation details, see `AMReX_FillPatchUtil_I.h`.
+            //
+            // When the `blocking_factor` is small (e.g., 1, 2, or 4), specifically used for generating
+            // quad-/octree-like grids, this FillPatch method is necessary instead of the previous one.
+            FillPatchTwoLevels(*force[lev], IntVect(ng), IntVect (0), time,
+                               {force[lev-1]}, {time},
+                               {force[lev  ]}, {time},
+                                0, 0, ncomp, geom[lev-1], geom[lev],
+                                refRatio(lev-1), mapper, bcrec, 0);
+            //The physical boundary condition is not enforced in the above fillpatch, so we have to do it here.
+            fphysbc.FillBoundary(*force[lev], 0, ncomp, IntVect(ng), time, 0);
+            break;
+          case 2:
             //for quad-/Oct-tree like grids, it is safter to use FillPatchNLevels
             Vector<PhysBCFunct<GpuBndryFuncFab<IncfloForFill>>> physbcs;
             for (int ilev = 0; ilev <= finest_level; ++ilev) {
@@ -256,6 +418,7 @@ void incflo::fillpatch_force (Real time, Vector<MultiFab*> const& force, int ng)
             }
             FillPatchNLevels(*force[lev], lev, IntVect(ng), time, smf, st, 0, 0, ncomp, geom,
                              physbcs, 0, ref_ratio, mapper, bcrec, 0);
+            break;
         }
     }
 }

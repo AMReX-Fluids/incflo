@@ -16,7 +16,8 @@ incflo.cfl              =   0.2        # CFL factor
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =  100     # Steps between plot files
+#amr.plot_int            =  1     # Steps between plot files
+amr.plot_per_approx      =.2
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
 amr.plt_p   = 1
@@ -41,10 +42,17 @@ incflo.sigma            =   0.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =  16 16   # Grid cells at coarsest AMRlevel
-amr.max_level           =   4           # Max AMR level in hierarchy 
+amr.n_cell              =  4 4   # Grid cells at coarsest AMRlevel
+amr.max_level           =   5           # Max AMR level in hierarchy 
 amr.regrid_int          =   4000
-amr.max_grid_size       =  128 128  
+amr.max_grid_size       =  128 128 
+amr.max_grid_size       =   64 
+amr.n_error_buf    = 1 
+amr.blocking_factor     =4
+amr.grid_eff = 1.
+incflo.plot_leaf_cells = 0 #only plot data on cells without underlying finer grid
+incflo.fillpatch_method = 2
+incflo.vof_regrid_layers = 1 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
@@ -69,17 +77,19 @@ incflo.vof_init          ="x*x+(y-.25)*(y-.25)-.15*.15"
 
 # Boundary conditions
 ylo.type                =   "sw"
-#ylo.tracer              = 0
+ylo.tracer              = 0
 #ylo.pressure            =   0
 #ylo.velocity           = 0. .1 0.  
 yhi.type                =   "sw"
 #yhi.velocity           =0. .1 0.
 #yhi.pressure            =   0.  
-#yhi.tracer              =  0.
+yhi.tracer              =  0.
 xlo.type                =   "nsw"
 xlo.pressure            =   0.
+xlo.tracer              =  0.
 xhi.type                =   "nsw"
 xhi.pressure            =   0.0
+xhi.tracer              =  0.
 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -97,8 +107,7 @@ incflo.use_cc_proj      =   0
 incflo.advect_momentum =  0
 incflo.number_of_averaging = 0
 incflo.diffusion_type = 2
-incflo.output_drop_frequence = 5
-incflo.plot_leaf_cells = 1 #only plot data on cells without underlying finer grid
+incflo.output_drop_frequence = 1
 incflo.godunov_include_diff_in_forcing = 1
 incflo.use_mac_phi_in_godunov = 0
 incflo.godunov_use_forces_in_trans = 0

@@ -94,7 +94,7 @@ void incflo::InitData ()
         // Plot initial distribution
         if (m_plot_int > 0 || m_plot_per_exact > 0 || m_plot_per_approx > 0)
         {
-            WritePlotFile();
+            //WritePlotFile();
             m_last_plt = 0;
         }
         if (m_smallplot_int > 0 || m_smallplot_per_approx > 0)
@@ -183,8 +183,6 @@ void incflo::Evolve()
         if (writeNow())
         {
             WritePlotFile();
-            //get_volume_of_fluid()->WriteTecPlotFile (m_cur_time,m_nstep);
-            //get_volume_of_fluid()->write_tecplot_surface(m_cur_time,m_nstep);
             m_last_plt = m_nstep;
         }
         if (writeNow(m_smallplot_int, m_smallplot_per_approx, -1.))

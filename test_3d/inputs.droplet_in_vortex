@@ -16,7 +16,8 @@ incflo.cfl              =   0.2        # CFL factor
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            INPUT AND OUTPUT           #
 #.......................................#
-amr.plot_int            =  100     # Steps between plot files
+#amr.plot_int            =  100     # Steps between plot files
+amr.plot_per_approx      =.05
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
 amr.plt_p   = 1
@@ -45,6 +46,13 @@ amr.n_cell              =  16 16 16   # Grid cells at coarsest AMRlevel
 amr.max_level           =   4           # Max AMR level in hierarchy 
 amr.regrid_int          =   4000
 amr.max_grid_size       =  128 128 128
+amr.n_error_buf    = 1
+amr.blocking_factor     = 8
+amr.grid_eff = 1
+amr.n_proper = 1
+incflo.plot_leaf_cells = 0 #only plot data on cells without underlying finer grid
+incflo.fillpatch_method = 2
+incflo.vof_regrid_layers = 1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
@@ -101,7 +109,7 @@ incflo.use_cc_proj      =   0
 incflo.advect_momentum =  0
 incflo.number_of_averaging = 0
 incflo.diffusion_type = 2
-incflo.output_drop_frequence = 10
+incflo.output_drop_frequence = 5
 incflo.plot_leaf_cells = 1 #only plot data on cells without underlying finer grid
 incflo.godunov_include_diff_in_forcing = 1
 incflo.use_mac_phi_in_godunov = 0

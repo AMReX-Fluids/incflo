@@ -574,9 +574,13 @@ private:
     // Use this flag to plot results on leaf cells only.
     // Leaf cells  have no finer sub-grid beneath them.
     bool m_plot_leaf_cells = true;
-    // when testing quad/oct-tree like grids, the ghost cells of coarse levels
-    // may also need to used. FillPatchNLevels needs to be used.
+    // when generating quad/oct-tree like grids, the ghost cells of coarse levels
+    // may also need to used. m_fillpatchmethod= 1 or 2 needs to be used.
+    // m_fillpatchmethod = 0, fillpatch interpolation between two levels does not involve ghost cells of the coarser level.
+    // m_fillpatchmethod = 1, fillpatch interpolation between two levels involves ghost cells of the coarser level.
+    // m_fillpatchmethod = 2, fillpathnlevel is used where ghost cells of the coarser level is used too.
     bool m_fillpatchnlevels = false;
+    int m_fillpatch_method = 0;
     // density of the phase represented by VOF=1
     amrex::Vector<amrex::Real> m_ro_s;
     // surface tension

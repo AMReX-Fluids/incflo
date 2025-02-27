@@ -1754,7 +1754,7 @@ Real curvature_fit (Box const & bx, int i,int j,int k, GpuArray<Real, AMREX_SPAC
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 void
-VolumeOfFluid::tracer_vof_update (int lev, MultiFab & vof_mf, Array<MultiFab,2> & height)
+VolumeOfFluid::tracer_vof_update (int lev, MultiFab const & vof_mf, Array<MultiFab,2> & height)
 {
   Geometry const& geom =v_incflo->geom[lev];
   auto const& dx = geom.CellSizeArray();
@@ -1777,9 +1777,7 @@ VolumeOfFluid::tracer_vof_update (int lev, MultiFab & vof_mf, Array<MultiFab,2> 
        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
        {
          auto fvol = vof_arr(i,j,k,0);
-    //if(lev ==1 && i==9 && j==14){
-    //Print()<<"test--------\n";
-    //}
+
          if (!CELL_IS_FULL(fvol)){
             calculate_height(i, j, k, dim, vof_arr, hb_arr, ht_arr, range);
          }// end if
@@ -1897,6 +1895,10 @@ if(1){
           XDim3 m={0.,0.,0.};
           auto fvol = vof_arr(i,j,k,0);
           THRESHOLD(fvol);
+/*    if(lev ==2 && i==7 && j==10){
+    Print()<<"lev= "<<lev<<"(i,j) "<<i<<","<<j<<bx;
+    Print()<<" vof= "<<fvol<<", "<<vof_arr(i+1,j,k,0)<<"\n";
+    }    */
           if (!height_normal (i,j,k, hb_arr, ht_arr, m)){
 //          if(1){
             if (!interface_cell (i,j,k, vof_arr, fvol)) {
@@ -1950,7 +1952,7 @@ if(1){
 /////
 ///////////////////////////////////////////////////////////////////////////////////////////////
 void
-VolumeOfFluid::curvature_calculation (int lev, MultiFab & vof_mf, Array<MultiFab,2> & height, MultiFab & kappa)
+VolumeOfFluid::curvature_calculation (int lev, MultiFab const & vof_mf, Array<MultiFab,2> & height, MultiFab & kappa)
 {
 
   Geometry const& geom =v_incflo->geom[lev];
@@ -2355,8 +2357,16 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
     // the starting direction of the sweep for i,j,k direction for vof advection is alternated
     // during the solution to minimize the errors associated with the sweep direction.
        int dir = (start+d)%AMREX_SPACEDIM;
-       //m_total_flux[lev].setVal(0.0);
-       //vof_total_flux[lev].setVal(0.0);
+        // Mask is used to identify cells uncovered by finer mesh
+       iMultiFab mask;
+       if (lev<v_incflo->finest_level){
+          mask=makeFineMask(*tracer[lev], *tracer[lev+1], IntVect(1),v_incflo->refRatio(lev),
+                            v_incflo->Geom(lev).periodicity(), 1, 0);
+       }
+       else{
+          mask.define(tracer[lev]->boxArray(), tracer[lev]->DistributionMap(), 1, 1);
+          mask.setVal(1);
+       }
        MultiFab const * U_MF = dir < 1? u_mac[lev]:
 #if AMREX_SPACEDIM == 3
                                dir >= 2? w_mac[lev]:
@@ -2385,8 +2395,6 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
 // in the computational domain. While this is unnecessary for flux calculations,
 // applying boundary conditions (BCs) to these ghost cells ensures it does not affect the results.
 
-
-// use for calculating cell-centered MultiFabs
            Box const& bx = mfi.tilebox();
            //auto const& ijk_min= bx.smallEnd();
            //auto const& ijk_max= bx.bigEnd();
@@ -2395,99 +2403,73 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
            Array4<Real> const& vof = tracer[lev]->array(mfi);
            Array4<Real const> const& mv = ldvof.normal.const_array(mfi);
            Array4<Real const> const& al = ldvof.alpha.const_array(mfi);
-           //Array4<Real> const& m_total_flux_arr =  m_total_flux[lev].array(mfi);
-           //Array4<Real> const& vof_total_flux_arr =  vof_total_flux[lev].array(mfi);
            Array4<Real> const& vof_eff_arr = vol_eff.array(mfi);
            Array4<Real const> const& vel_mac_arr =  U_MF->const_array(mfi);
            Array4<Real> m_flux_arr   = m_fluxes[lev][dir].array(mfi);
            Array4<Real> vof_flux_arr = vof_fluxes[lev][dir].array(mfi);
-
+           Array4<int const> const& mask_arr =  mask.const_array(mfi);
            // calculate the vof flux by doing the scanning of the cell faces
            // i.e., loop through the node-centered MultiFab.
            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
            {
-             Real un=vel_mac_arr(i,j,k)*dt/dx[dir], s = (un < 0) ? -1 : (un > 0);
-             /* if (fabs (un) > 0.51) {
+             Array <int, 3> index={i,j,k}, // store upwinding index
+                            index_d=index; // store downwinding index
+             index_d[dir]-=1;
+             if (mask_arr(index[0],index[1],index[2]) ||
+                 mask_arr(index_d[0],index_d[1],index_d[2])){
+               Real un=vel_mac_arr(i,j,k)*dt/dx[dir], s = (un < 0) ? -1 : (un > 0);
+               /* if (fabs (un) > 0.51) {
                 Real x = Real(i+0.5)*dx[0];
                 Real y = Real(j+0.5)*dx[1];
                 Real z = Real(k+0.5)*dx[2];
                 Print()<< "Warning: CFL "<<un<<" at ("<<x<<", "<<y<<", "<<z<<") is larger than 0.51!"<<"\n";
-              }*/
+                }*/
 
-             int det_u = -(s + 1.)/2., det_d=(s - 1.)/2.;
-             Array <int, 3> index={i,j,k}, // store upwinding index
-                          index_d={i,j,k}; // store downwinding index
-             // index for upwinding/downwinding cell
-             index[dir]+=det_u;index_d[dir]+=det_d;
-             Real fvol = vof(index[0],index[1],index[2]), cf;
-             if (fvol <= 0. || fvol >= 1.)
-                cf = fvol;
-             else{
+               int det_u = -(s + 1.)/2., det_d=(s - 1.)/2.;
+               index={i,j,k}, // store upwinding index
+               index_d=index; // store downwinding index
+               // index for upwinding/downwinding cell
+               index[dir]+=det_u;index_d[dir]+=det_d;
+               Real fvol = vof(index[0],index[1],index[2]), cf;
+               if (fvol <= 0. || fvol >= 1.){
+                  cf = fvol;
+               }
+               else{
              // the normal vector and alpha of the interface in upwinding cell
-               Array <Real, AMREX_SPACEDIM> m_v ={AMREX_D_DECL(
+                 Array <Real, AMREX_SPACEDIM> m_v ={AMREX_D_DECL(
                                                mv(index[0],index[1],index[2],0),
                                                mv(index[0],index[1],index[2],1),
                                                mv(index[0],index[1],index[2],2)
                                                )};
-               Real alpha_v = al(index[0],index[1],index[2]);
-             //if (i==47 &&j==0 &&k==0&& dir==1/*v_incflo->m_nstep==1975*/) {
-             // AllPrint() <<" vof_advection---dir "<<dir<<"  "<<m_total_flux_arr(i,j,k)<<"  "
-             //       <<"("<<i<<","<<j<<","<<k<<")"<<"vof"<<"  "<<vof(i,j,k)<<"  "
-             //       <<"vof_flux"<<"  "<<vof_total_flux_arr(i,j,k)<<" "<<vof(i,j-1,k)<<" "<<un<< "\n";
+                 Real alpha_v = al(index[0],index[1],index[2]);
+             //if (i==10 &&j==10 &&k==0&& /*dir==1*/v_incflo->m_nstep==12) {
+             // AllPrint() <<" vof_advection---dir "<<dir<<"  "
+             //       <<"("<<i<<","<<j<<","<<k<<")"<<"vof"<<"  "<<vof(i-1,j,k)<<"  "<<un<< "\n";
              //}
              //fixme: the ghost cells of the physical boundary have no valid normal vector data
-              if(m_v[0]!=VOF_NODATA){
-                if (un < 0.) {
-                   m_v[dir]=-m_v[dir];
-                   alpha_v+=m_v[dir];
+                if(m_v[0]!=VOF_NODATA){
+                  if (un < 0.) {
+                     m_v[dir]=-m_v[dir];
+                     alpha_v+=m_v[dir];
+                  }
+                  Array<Real, AMREX_SPACEDIM> q0={AMREX_D_DECL(0.,0.,0.)},q1={AMREX_D_DECL(1.,1.,1.)};
+                  q0[dir]=1.-fabs(un);
+                  for (int dd = 0; dd < AMREX_SPACEDIM; dd++) {
+                    alpha_v -= m_v[dd]*q0[dd];
+                    m_v[dd] *= q1[dd] - q0[dd];
+                  }
+                  cf = plane_volume (m_v, alpha_v);
                 }
-                Array<Real, AMREX_SPACEDIM> q0={AMREX_D_DECL(0.,0.,0.)},q1={AMREX_D_DECL(1.,1.,1.)};
-                q0[dir]=1.-fabs(un);
-                for (int dd = 0; dd < AMREX_SPACEDIM; dd++) {
-                  alpha_v -= m_v[dd]*q0[dd];
-                  m_v[dd] *= q1[dd] - q0[dd];
-                }
-                cf = plane_volume (m_v, alpha_v);
-              }
-              else
-                cf = fvol;
-             }
-             //Make sure we just update the cells in the valid box
-             //upwinding cells
-             //if (AMREX_D_TERM(index[0]>=ijk_min[0] && index[0]<=ijk_max[0],
-             //              && index[1]>=ijk_min[1] && index[1]<=ijk_max[1],
-             //              && index[2]>=ijk_min[2] && index[2]<=ijk_max[2])){
-             //   m_total_flux_arr(index[0],index[1],index[2]) -=fabs(un);
-             //   vof_total_flux_arr(index[0],index[1],index[2]) -=fabs(un)*cf;
-            // }
-             //downstream cells
-             //if (AMREX_D_TERM(index_d[0]>=ijk_min[0] && index_d[0]<=ijk_max[0],
-             //              && index_d[1]>=ijk_min[1] && index_d[1]<=ijk_max[1],
-             //              && index_d[2]>=ijk_min[2] && index_d[2]<=ijk_max[2])){
-             //  m_total_flux_arr(index_d[0],index_d[1],index_d[2]) +=fabs(un);
-             //  vof_total_flux_arr(index_d[0],index_d[1],index_d[2]) +=fabs(un)*cf;
-             //}
+                else
+                  cf = fvol;
+               }
                m_flux_arr(i,j,k) = un;
                vof_flux_arr(i,j,k) = un*cf;
-
+             }
             }); //  end ParallelFor
 
-            //loop through cell-centered MultiFab to update their value
-            //Box const& bxc = mfi.tilebox(IntVect::TheZeroVector());
-            //ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-           // {
-            //  vof(AMREX_D_DECL(i,j,k))*=vof_eff_arr(AMREX_D_DECL(i,j,k));
-            //  vof(AMREX_D_DECL(i,j,k))+=vof_total_flux_arr(AMREX_D_DECL(i,j,k));
-            //  vof_eff_arr(AMREX_D_DECL(i,j,k))+= m_total_flux_arr(AMREX_D_DECL(i,j,k));
-            //  Real f = vof(AMREX_D_DECL(i,j,k))/vof_eff_arr(AMREX_D_DECL(i,j,k));
-            //  vof(AMREX_D_DECL(i,j,k))= f< 1e-10? 0.:f>1.-1e-10? 1.:f;
-           //}); //  end ParallelFor
         }// end MFIter
-        //fixme: temporary solution for MPI boundary
-        //m_total_flux[lev].FillBoundary(geom.periodicity());
-        //vof_total_flux[lev].FillBoundary(geom.periodicity());
 
-        iMultiFab mask;
         if (lev<v_incflo->finest_level){
           IntVect rr  = v_incflo->geom[lev+1].Domain().size() / v_incflo->geom[lev].Domain().size();
 #ifdef AMREX_USE_EB
@@ -2497,13 +2479,6 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
           average_down_faces(GetArrOfConstPtrs(m_fluxes[lev+1]), GetArrOfPtrs(m_fluxes[lev]), rr, v_incflo->geom[lev]);
           average_down_faces(GetArrOfConstPtrs(vof_fluxes[lev+1]), GetArrOfPtrs(vof_fluxes[lev]), rr, v_incflo->geom[lev]);
 #endif
-         // Mask is used to identify cells uncovered by finer mesh
-         mask=makeFineMask(*tracer[lev],*tracer[lev+1], IntVect(0),v_incflo->refRatio(lev),
-                            v_incflo->Geom(lev).periodicity(), 1, 0);
-        }
-        else{
-          mask.define(tracer[lev]->boxArray(), tracer[lev]->DistributionMap(), 1, 0);
-          mask.setVal(1);
         }
 
 #ifdef _OPENMP
@@ -2515,8 +2490,6 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
             //Box const& bxc = mfi.tilebox(IntVect::TheZeroVector());
            Box const& bx = mfi.tilebox();
            Array4<Real> const& vof = tracer[lev]->array(mfi);
-           //Array4<Real> const& m_total_flux_arr =  m_total_flux[lev].array(mfi);
-           //Array4<Real> const& vof_total_flux_arr =  vof_total_flux[lev].array(mfi);
            Array4<int const> const& mask_arr =  mask.const_array(mfi);
            Array4<Real> const& vof_eff_arr = vol_eff.array(mfi);
            Array4<Real> m_flux_arr   = m_fluxes[lev][dir].array(mfi);
@@ -2525,18 +2498,17 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
            {
              if(mask_arr(i,j,k)){
                vof(i,j,k)*=vof_eff_arr(i,j,k);
-               //vof(i,j,k)+=vof_total_flux_arr(i,j,k);
-               //vof_eff_arr(i,j,k)+= m_total_flux_arr(i,j,k);
                Array <int, 3> nr={i,j,k};
                ++nr[dir];
                vof(i,j,k)+=vof_flux_arr(i,j,k)-vof_flux_arr(nr[0],nr[1],nr[2]);
                vof_eff_arr(i,j,k)+= m_flux_arr(i,j,k)-m_flux_arr(nr[0],nr[1],nr[2]);
                Real f = vof(i,j,k)/vof_eff_arr(i,j,k);
                vof(i,j,k)= f< 1e-10? 0.:f>1.-1e-10? 1.:f;
-               /*if (f > 0. && f < 1.)
+             /*  if (f > 0. && f < 1.)
                 Print() <<" vof_advection---dir "<<dir<<"  "<<vof_eff_arr(i,j,k)<<"  "
                       <<"("<<i<<","<<j<<","<<k<<")"<<"vof"<<"  "<<f<<"  "
-                      <<"vof_flux"<<"  "<<vof_total_flux_arr(i,j,k)<< "\n";*/
+                      <<"vof_flux"<<"  "<<vof_flux_arr(i,j,k)
+                      <<"  "<<vof_flux_arr(nr[0],nr[1],nr[2])<< "\n";*/
              }
            }); //  end ParallelFor
         }// end MFIter
@@ -2546,10 +2518,12 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
         // update the normal and alpha of the plane in each interface cell after each sweep
         tracer_vof_update (lev, *tracer[lev], ldvof.height);
       }// end i-,j-,k-sweep: calculation of vof advection
-      curvature_calculation (lev, *tracer[lev], ldvof.height, ldvof.kappa);
+
+      if (lev == v_incflo->finest_level)
+         curvature_calculation (lev, *tracer[lev], ldvof.height, ldvof.kappa);
     }// end lev
 
-    // Average down solution
+    // Average down tracer and curvature
     for (int lev = v_incflo->finest_level-1; lev >= 0; --lev) {
 #ifdef AMREX_USE_EB
       amrex::EB_average_down(*tracer[lev+1], *tracer[lev],0, 1, v_incflo->refRatio(lev));
@@ -2557,12 +2531,15 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
       amrex::average_down(*tracer[lev+1], *tracer[lev],0, 1, v_incflo->refRatio(lev));
 #endif
       //fixme: temporary solution for MPI boundary
-      tracer[lev]->FillBoundary(v_incflo->Geom(lev).periodicity());
-      v_incflo->fillphysbc_tracer(lev, 0., *tracer[lev], 1);
-      //v_incflo->fillpatch_tracer(lev, 0., *tracer[lev], v_incflo->nghost_state());
+      //tracer[lev]->FillBoundary(v_incflo->Geom(lev).periodicity());
+      //v_incflo->fillphysbc_tracer(lev, 0., *tracer[lev], 1);
       auto& ldvof=*m_leveldata[lev]; /*VOF data for level lev*/
       tracer_vof_update (lev, *tracer[lev], ldvof.height);
-      curvature_calculation (lev, *tracer[lev], ldvof.height, ldvof.kappa);
+      // the curvature of coarse cells is obtained by averaging the values of underlying finer cells
+      curvature_average_down(m_leveldata[lev+1]->kappa,m_leveldata[lev]->kappa,v_incflo->refRatio(lev));
+    }
+    for (int lev = 0; lev <= v_incflo->finest_level; ++lev) {
+      v_incflo->fillpatch_tracer(lev, 0., *tracer[lev], v_incflo->nghost_state());
     }
     start = (start + 1) % AMREX_SPACEDIM;
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -2621,6 +2598,63 @@ VolumeOfFluid::tracer_vof_advection(Vector<MultiFab*> const& tracer,
        ParallelDescriptor::ReduceBoolOr(v_incflo->vof_regrid);
      }
 
+}
+
+void
+VolumeOfFluid:: curvature_average_down (MultiFab const & kappa_fine, MultiFab & kappa_crse, const IntVect& ratio)
+{
+    BoxArray crse_MF_fine_BA = kappa_fine.boxArray();
+/*
+ * The following coarsens the BoxArray of the MultiFab at the finer level.
+ * NOTE: Each box in `crse_MF_fine_BA` retains its original size (i.e., the size of `m_ref->m_abox[index]` remains unchanged).
+ * However, `m_bat_type` is updated to `BATType::coarsenRatio`, meaning that when this BoxArray is referenced
+ * (e.g., `boxArray[i]` or when defining a MultiFab where `m_bat(m_ref->m_abox[index])` is involved),
+ * the returned BoxArray will be coarsened automatically.
+ *
+ * For further implications, refer to the AMReX documentation:
+ * https://amrex-codes.github.io/amrex/docs_html/Basics.html
+ */
+             crse_MF_fine_BA.coarsen(ratio);
+//    Print() << crse_MF_fine_BA << "\n";
+// Typically, the BoxArray and DistributionMapping of the finer level differ from those of the coarser level.
+// Therefore, creating a temporary MultiFab (crse_mf_fine) is unnecessary. But if it is same, there is a more efficient way
+// to do averaging, like amrex::average_down().
+    AMREX_ASSERT(!(crse_MF_fine_BA == kappa_crse.boxArray()&&
+                  kappa_fine.DistributionMap() == kappa_crse.DistributionMap()));
+    MultiFab crse_MF_fine(crse_MF_fine_BA, kappa_fine.DistributionMap(), 1, 0/*, MFInfo()*/);
+
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+     for (MFIter mfi(crse_MF_fine,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+     {
+           //  NOTE: The tilebox is defined at the coarse level.
+           const Box& bx = mfi.tilebox();
+           Array4<Real> const& crsearr = crse_MF_fine.array(mfi);
+           Array4<Real const> const& finearr = kappa_fine.const_array(mfi);
+           ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+           {
+             Array<int, 3> ijk={i*ratio[0],j*ratio[1],AMREX_SPACEDIM == 3?k*ratio[2]:0};
+             Real c = 0.,nc=0.;
+#if AMREX_SPACEDIM == 3
+             for (int dk = 0; dk < ratio[2]; ++dk)
+#else
+             int dk = 0;
+#endif
+             for (int dj = 0; dj < ratio[1]; ++dj)
+             for (int di = 0; di < ratio[0]; ++di) {
+                if (finearr(ijk[0]+di,ijk[1]+dj,ijk[2]+dk)!=VOF_NODATA){
+                  c += finearr(ijk[0]+di,ijk[1]+dj,ijk[2]+dk);
+                  nc++;
+                }
+             }
+             if (nc>0.)
+                 crsearr(i,j,k)=c/nc;
+             else
+                 crsearr(i,j,k)=VOF_NODATA;
+           });
+     }
+     kappa_crse.ParallelCopy(crse_MF_fine,0,0,1);
 }
 // add surface tension force (F) to the MAC velocity at the center of cell faces.
 // F = dt*sigma*kappa*grad(VOF)/rho
@@ -2842,9 +2876,9 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
        EB2::Build(gshop, v_incflo->Geom(max_level), max_level, max_level);
 
        auto fact = amrex::makeEBFabFactory(geom, a_tracer.boxArray(), a_tracer.DistributionMap(),
-                                            {1,1,0}, EBSupport::volume);
+       {v_incflo->nghost_state(),v_incflo->nghost_state(),v_incflo->nghost_state()}, EBSupport::volume);
        auto const& volfrac = fact->getVolFrac();
-       MultiFab::Copy(a_tracer, volfrac, 0, 0, 1, 0);
+       MultiFab::Copy(a_tracer, volfrac, 0, 0, 1, a_tracer.nGrow());
        // Remove the IndexSpace object since it is used only for initializing the VOF.
        // It does not represent a real embedded solid boundary.
         EB2::IndexSpace::pop();
@@ -2956,29 +2990,67 @@ VolumeOfFluid::tracer_vof_init_fraction (int lev, MultiFab& a_tracer)
 
     MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, 1, ld.tracer.nGrow());
     ld.tracer_o.FillBoundary(geom.periodicity());
-    v_incflo->fillpatch_tracer(lev, 0., a_tracer, v_incflo->nghost_state());
 
+
+   /* for (MFIter mfi(a_tracer, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+        const Box& bx = mfi.growntilebox(1);
+        const Box& bxv = mfi.tilebox();
+        const auto lo = amrex::lbound(bxv);
+        const auto hi = amrex::ubound(bxv);
+        const auto& arr = a_tracer[mfi].array();
+        if (lo.x==10 && lo.y==10)
+          ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+          Print() << "index (" << i << ", " << j << ", " << k
+                  << ") in vof " << arr(i,j,k) << "\n";
+        });
+
+    }    */
+
+    v_incflo->fillpatch_tracer(lev, 0., a_tracer, v_incflo->nghost_state());
     // Once vof tracer is initialized, we calculate the normal direction and alpha of the plane segment
     // as well as the interface curvature
     // intersecting each interface cell.
     tracer_vof_update(lev, a_tracer, ldvof.height);
-    curvature_calculation(lev, a_tracer, ldvof.height, ldvof.kappa);
+    //average_down from fine to coarse levels
+    if (lev == v_incflo->finest_level){
+      curvature_calculation(lev, a_tracer, ldvof.height, ldvof.kappa);
+      for (int ilev = lev-1; ilev >= 0; --ilev) {
+#ifdef AMREX_USE_EB
+        amrex::EB_average_down(v_incflo->m_leveldata[ilev+1]->tracer, v_incflo->m_leveldata[ilev]->tracer,
+                             0, 1, v_incflo->refRatio(ilev));
+#else
+        amrex::average_down(v_incflo->m_leveldata[ilev+1]->tracer, v_incflo->m_leveldata[ilev]->tracer,
+                             0, 1, v_incflo->refRatio(ilev));
+#endif
+        //fixme: temporary solution for MPI boundary
+        v_incflo->m_leveldata[ilev]->tracer.FillBoundary(v_incflo->Geom(lev).periodicity());
+        v_incflo->fillphysbc_tracer(ilev, 0., v_incflo->m_leveldata[ilev]->tracer, v_incflo->nghost_state());
+        //v_incflo->fillpatch_tracer(lev, 0., *tracer[lev], v_incflo->nghost_state());
+        auto& ldvof_1=*m_leveldata[ilev]; /*VOF data for level lev*/
+        tracer_vof_update (ilev, v_incflo->m_leveldata[ilev]->tracer, ldvof_1.height);
+        // curvature
+        curvature_average_down(m_leveldata[ilev+1]->kappa, ldvof_1.kappa,v_incflo->refRatio(ilev));
+      }
+    }
     auto tag_vector_ptrs = get_vector_ptr([](LevelData& ld) -> MultiFab& {return ld.tag;});
-    if (lev == v_incflo->maxLevel())
+    if (lev == v_incflo->maxLevel()){
      domain_tag_droplets (lev, v_incflo->grids,v_incflo->geom, v_incflo->get_tracer_new (),tag_vector_ptrs);
-        //for (MFIter mfi(a_tracer); mfi.isValid(); ++mfi)
-        //{
-        //   Box const& bx = mfi.validbox();
-        //   Box const& bxg = amrex::grow(bx,a_tracer.nGrow());
-        //   Array4<Real> const& vof = a_tracer.array(mfi);
-        //   ParallelFor(bxg, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        //   {
-        //      Real ff=vof(i,j,k);
-        //
-        //      if (i==6&&j==-1&&k==5)
-        //      Print() <<"("<<i<<","<<j<<","<<k<<")"<<"init_fraction"<<"  "<<ff<< "\n";
-        //   }); //  end ParallelFor
-        //}// end MFIter
+    }
+//        for (MFIter mfi(a_tracer); mfi.isValid(); ++mfi)
+//        {
+//           Box const& bx = mfi.validbox();
+//           Box const& bxg = amrex::grow(bx,a_tracer.nGrow());
+//           Array4<Real> const& vof = a_tracer.array(mfi);
+//           Array4<Real> const& alpha = m_leveldata[lev]->alpha.array(mfi);
+//           ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+//           {
+//              Real ff=vof(i,j,k);
+//
+//              //if (ff>0.)
+//              Print() <<"("<<i<<","<<j<<","<<k<<") "<<"init_vof"<<"  "<<ff
+//                      <<" alpha "<< alpha(i,j,k)<< "\n";
+//           }); //  end ParallelFor
+//        }// end MFIter
 }
 
 
@@ -3827,6 +3899,51 @@ int VolumeOfFluid::domain_tag_droplets (int finest_level, Vector<BoxArray > cons
     }
     // obtain the tag values from the finer mesh
     if(lev > 0){
+       auto const& ratio = v_incflo->refRatio(lev);
+       BoxArray crse_MF_fine_BA = tag[lev]->boxArray();
+                crse_MF_fine_BA.coarsen(ratio);
+
+       AMREX_ASSERT(!(crse_MF_fine_BA == tag[lev-1]->boxArray()&&
+                     tag[lev]->DistributionMap() == tag[lev-1]->DistributionMap()));
+       MultiFab crse_MF_fine(crse_MF_fine_BA, tag[lev]->DistributionMap(), 1, 0/*, MFInfo()*/);
+
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+       for (MFIter mfi(crse_MF_fine,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+       {
+           const Box& bx = mfi.tilebox();
+           Array4<Real> const& crsearr = crse_MF_fine.array(mfi);
+           Array4<Real const> const& finearr = tag[lev]->const_array(mfi);
+           ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+           {
+             Array<int, 3> ijk={i*ratio[0],j*ratio[1],AMREX_SPACEDIM == 3?k*ratio[2]:0};
+             Real c = 0.,nc=0.;
+             bool loop = true;
+#if AMREX_SPACEDIM == 3
+             for (int dk = 0; dk < ratio[2] && loop; ++dk)
+#else
+             int dk = 0;
+#endif
+             for (int dj = 0; dj < ratio[1] && loop; ++dj)
+             for (int di = 0; di < ratio[0] && loop; ++di) {
+               if (nc==0){
+                  c = finearr(ijk[0]+di,ijk[1]+dj,ijk[2]+dk);
+                  nc++;
+               }
+               else {
+                 if (finearr(ijk[0]+di,ijk[1]+dj,ijk[2]+dk) != c){
+                    c = 0.;
+                    loop = false;
+                 }
+               }
+             }
+             crsearr(i,j,k)=c;
+           });
+       }
+       tag[lev-1]->ParallelCopy(crse_MF_fine,0,0,1);
+
+/*
 #ifdef AMREX_USE_EB
       amrex::EB_average_down(*tag[lev],*tag[lev-1],0, 1, v_incflo->refRatio(lev));
 #else
@@ -3857,7 +3974,7 @@ int VolumeOfFluid::domain_tag_droplets (int finest_level, Vector<BoxArray > cons
              tag_arr(i,j,k) = 0.0;
            }
          });
-      }
+      }*/
 
     }
     if (lev==finest_level) ntag_finest_level=ntag;
@@ -4031,7 +4148,7 @@ void VolumeOfFluid::output_droplet (Real time, int nstep)
 //////
 ////////////////////////////////////////////////////////////////////
 Real error=0.;
-if (0 && time > v_incflo->m_stop_time-0.5){
+if (1 && time > v_incflo->m_stop_time-0.5){
 #if AMREX_SPACEDIM==2
     Real sphere_vol=3.14159265357*.15*.15;
 #else
@@ -4331,11 +4448,11 @@ void VolumeOfFluid::apply_velocity_field (Real time, int nstep)
 
 #if (AMREX_SPACEDIM == 2)
 // 2D disc in a rotational flow field
-          vel(i,j,k,0) = -2.*sin(pi*y)*cos(pi*y)*sin(pi*x)*sin(pi*x)*cos(pi*time/8.);
-          vel(i,j,k,1) =  2.*sin(pi*x)*cos(pi*x)*sin(pi*y)*sin(pi*y)*cos(pi*time/8.);
+//          vel(i,j,k,0) = -2.*sin(pi*y)*cos(pi*y)*sin(pi*x)*sin(pi*x)*cos(pi*time/8.);
+//          vel(i,j,k,1) =  2.*sin(pi*x)*cos(pi*x)*sin(pi*y)*sin(pi*y)*cos(pi*time/8.);
 //droplet flight test
-//          vel(i,j,k,0) = 0.;//sin(pi*x)*sin(pi*x)*sin(2*pi*y)*cos(pi*time/8.);
-//          vel(i,j,k,1) =100.; //-sin(pi*y)*sin(pi*y)*sin(2*pi*x)*cos(pi*time/8.);
+          vel(i,j,k,0) = 0.;//sin(pi*x)*sin(pi*x)*sin(2*pi*y)*cos(pi*time/8.);
+          vel(i,j,k,1) =100.; //-sin(pi*y)*sin(pi*y)*sin(2*pi*x)*cos(pi*time/8.);
 #else
 // 3D drop in rotational flow field
           vel(i,j,k,0) = 2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*time/3.);
@@ -4348,3 +4465,114 @@ void VolumeOfFluid::apply_velocity_field (Real time, int nstep)
     } //end lev
 }
 
+Box
+VolumeOfFluid::VOFCoarseToFine::CoarseBox (const Box& fine, int ratio)
+{
+    return CoarseBox(fine, IntVect(ratio));
+}
+
+Box
+VolumeOfFluid::VOFCoarseToFine::CoarseBox (const Box& fine, const IntVect& ratio)
+{
+    const int* lo = fine.loVect();
+    const int* hi = fine.hiVect();
+
+    Box crse(amrex::coarsen(fine,ratio));
+    const int* clo = crse.loVect();
+    const int* chi = crse.hiVect();
+
+    for (int i = 0; i < AMREX_SPACEDIM; i++) {
+       /* if ((lo[i]-clo[i]*ratio[i])*2 < ratio[i]) {
+            crse.growLo(i,1);
+        }
+        if ((hi[i]-chi[i]*ratio[i])*2 >= ratio[i]) {
+            crse.growHi(i,1);
+        }*/
+    }
+    return crse;
+}
+
+void
+VolumeOfFluid::VOFCoarseToFine::interp (const FArrayBox&  crsefab,int crse_comp,
+                      FArrayBox&        finefab,
+                      int               fine_comp,
+                      int               ncomp,
+                      const Box&        fine_region,
+                      const IntVect &   ratio,
+                      const Geometry& crse_geom,
+                      const Geometry& /*fine_geom*/,
+                      Vector<BCRec> const& /*bcr*/,
+                      int               /*actual_comp*/,
+                      int               /*actual_state*/,
+                      RunOn             runon)
+{
+    BL_PROFILE("VolumeOfFluid::VOFCoarseToFine::interp ()");
+
+    auto const& crse = crsefab.const_array();
+    auto const& fine = finefab.array();
+
+       //auto const& ijk_min= bx.smallEnd();
+       //auto const& ijk_max= bx.bigEnd();
+    //Print()<<"vof_interpolation "<<this->lev<<"\n";
+//    AMREX_HOST_DEVICE_PARALLEL_FOR_4D_FLAG(runon,fine_region,ncomp,i,j,k,n,
+//    {
+//       // mf_cell_bilin_interp(i,j,k,n, fine, fine_comp, crse, crse_comp, ratio);
+//      const int ic = amrex::coarsen(i, ratio[0]);
+//      const int jc = amrex::coarsen(j, ratio[1]);
+//      auto fvol = crse(ic,jc,0);
+//      //auto alpha = crse(ic,jc,0,AMREX_SPACEDIM+1);
+//      if (CELL_IS_FULL(fvol)){
+//          fine(i,j,k) = fvol;
+//      }
+//      else{
+//          fine(i,j,k) = 0.;
+//      }
+//
+//
+//      /*Print()<<"Lev: "<<this->lev<<" fine ( "<<i<<","<<j<<" ) "<<"F= "<< fine(i,j,k)
+//             <<"  coarse( "<<ic<<","<<jc<<" ) "<<"F= "<< crse(ic,jc,0)<<"\n";
+//      Print()<<" alpha= "<<alpha; */
+//
+//    });
+
+
+
+     ParallelFor(fine_region, [&] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+     {
+
+      Array <int, 3> index_c={amrex::coarsen(i, ratio[0]),
+                              amrex::coarsen(j, ratio[1]),
+                              AMREX_SPACEDIM==3?amrex::coarsen(k, ratio[2]):0};
+      auto fvol =  crse(index_c[0],index_c[1],index_c[2],0);
+      auto alpha = crse(index_c[0],index_c[1],index_c[2],AMREX_SPACEDIM+1);
+      // the normal vector and alpha of the interface in upwinding cell
+      Array <Real, AMREX_SPACEDIM> mv={AMREX_D_DECL(crse(index_c[0],index_c[1],index_c[2],1),
+                                                    crse(index_c[0],index_c[1],index_c[2],2),
+                                                    crse(index_c[0],index_c[1],index_c[2],3))}
+                                   ,pf;
+      if (CELL_IS_FULL(fvol)){
+          fine(i,j,k) = fvol;
+      }
+      else{
+  /*  if(lev ==2 && i==8 && j==10){
+      Print()<<"coarse-fine-lev= "<<"\n";
+    }*/
+
+ // Find the coordinates of the fine cell relative to the center of the coarse cell.
+        AMREX_D_TERM(pf[0]=i>index_c[0]*ratio[0]?.25:-0.25;,
+                     pf[1]=j>index_c[1]*ratio[1]?.25:-0.25;,
+                     pf[2]=k>index_c[2]*ratio[2]?.25:-0.25;);
+        for (int id=0;id<AMREX_SPACEDIM;++id){
+          alpha -= mv[id]*(0.25+pf[id]);
+        //  fine(i,j,k,id+1)=mv[id];
+        }
+        fine(i,j,k,0) = plane_volume(mv, Real(2.)*alpha);
+        //fine(i,j,k,ncomp-1) = Real(2.)*alpha;
+        /*Array<Real,2> res;
+        res[0]=fine(i,j,k,0);
+        res[1]=fine(i,j,k,ncomp-1);*/
+
+      }
+       });
+
+}
