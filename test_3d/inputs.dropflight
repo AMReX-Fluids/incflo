@@ -17,7 +17,7 @@ incflo.cfl              =   0.1        # CFL factor
 #            INPUT AND OUTPUT           #
 #.......................................#
 #amr.plot_int            =  400     # Steps between plot files
-amr.plot_per_approx      =1e-6
+amr.plot_per_exact      =1e-6
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
 amr.plt_p   = 1
@@ -45,13 +45,13 @@ incflo.sigma            =   72.
 #amr.n_cell              =  32 64 32  # Grid cells at coarsest AMRlevel
 #amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.n_cell              =  8 16 8
-amr.max_level           = 2
+amr.max_level           = 3
 amr.max_grid_size       =  32 64  32 
-amr.n_error_buf    = 2 
+amr.n_error_buf    = 1 
 amr.blocking_factor     = 8
 amr.grid_eff = 1.
 incflo.plot_leaf_cells = 1
-incflo.fillpatchnlevels = 0
+incflo.fillpatch_methd = 2
 incflo.vof_regrid_layers = 2
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -76,10 +76,10 @@ incflo.vof_init_with_eb = 1
 incflo.vof_init          ="x*x+(y-35.e-4)*(y-35.e-4)+z*z-20.e-4*20.e-4"
 
 # Boundary conditions
-ylo.type                =   "mi"
+ylo.type                =   "po"
 #ylo.tracer              = 0
-#ylo.pressure            =   0
-ylo.velocity           = 0. .1 0.  
+ylo.pressure            =   0
+#ylo.velocity           = 0. .1 0.  
 yhi.type                =   "po"
 #yhi.velocity           =0. .1 0.
 yhi.pressure            =   0.  

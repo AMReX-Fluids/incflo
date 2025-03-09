@@ -75,6 +75,8 @@ average_ccvel_to_mac (const Array<MultiFab*,AMREX_SPACEDIM>& fc, const MultiFab&
                    }
                    if (ybx.contains(i,j,k) and n == 1) {
                        fyarr(i,j,k) = Real(0.5)*(ccarr(i,j-1,k,n) + ccarr(i,j,k,n));
+                //       Print()<<fyarr(i,j,k)<<" ("<<i<<", "<<j<<") "
+                //   <<ccarr(i,j,k,1)<<", "<<ccarr(i,j-1,k,1)<<"\n";
                    }
                 });
 #else
@@ -251,10 +253,11 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
     Vector<MultiFab*> vel;
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel.push_back(&(m_leveldata[lev]->velocity));
-        vel[lev]->setBndry(0.0);
+        /*vel[lev]->setBndry(0.0);
         if (!proj_for_small_dt && !incremental) {
             set_inflow_velocity(lev, time, *vel[lev], 1);
-        }
+        }*/
+        fillpatch_velocity(lev, m_t_new[lev], *vel[lev], 1);
     }
 
     // ***************************************************************************************
@@ -523,9 +526,17 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 #ifdef AMREX_USE_EB
         amrex::EB_average_down(m_leveldata[lev+1]->gp, m_leveldata[lev]->gp,
                                0, AMREX_SPACEDIM, refRatio(lev));
+        amrex::EB_average_down(m_leveldata[lev+1]->velocity, m_leveldata[lev]->velocity,
+                               0, AMREX_SPACEDIM, refRatio(lev));
+        amrex::EB_average_down(m_leveldata[lev+1]->p_cc, m_leveldata[lev]->p_cc,
+                               0, 1, refRatio(lev));
 #else
         amrex::average_down(m_leveldata[lev+1]->gp, m_leveldata[lev]->gp,
                             0, AMREX_SPACEDIM, refRatio(lev));
+        amrex::average_down(m_leveldata[lev+1]->velocity, m_leveldata[lev]->velocity,
+                               0, AMREX_SPACEDIM, refRatio(lev));
+        amrex::average_down(m_leveldata[lev+1]->p_cc, m_leveldata[lev]->p_cc,
+                               0, 1, refRatio(lev));
 #endif
     }
 }

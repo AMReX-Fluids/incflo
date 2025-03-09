@@ -15,7 +15,8 @@ incflo.cfl              =   0.1        # CFL factor
 #            INPUT AND OUTPUT           #
 #.......................................#
 #amr.plot_int            =  60           # Steps between plot files
-amr.plot_per_exact      =.1
+#amr.plot_per_exact      =.1
+amr.plot_per_approx      =.1
 amr.check_int           =   1000        # Steps between checkpoint files
 amr.restart             =   ""          # Checkpoint to restart from 
 
@@ -35,22 +36,26 @@ incflo.sigma            =   10.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =   16 16 16     # Grid cells at coarsest AMRlevel
-amr.max_level           =   3           # Max AMR level in hierarchy
+amr.n_cell              =   32 32 32     # Grid cells at coarsest AMRlevel
+amr.max_level           =   2           # Max AMR level in hierarchy
 #amr.regrid_int          =   4000 
 amr.max_grid_size       =   64 
-amr.n_error_buf    = 2 
+amr.n_error_buf    = 1 
 amr.blocking_factor     = 4
 amr.grid_eff = 1.
 incflo.plot_leaf_cells = 1
-incflo.fillpatchnlevels = 1
-incflo.vof_regrid_layers = 2
+incflo.fillpatch_method = 2
+incflo.vof_regrid_layers = 1
+mac_proj.mg_rtol=1e-4
+mac_proj.mg_atol=1e-5
+mac_proj.maxiter =300
+mac_proj.verbose = 1
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
 geometry.prob_lo        =   0.  0. 0.    # Lo corner coordinates
 geometry.prob_hi        =   1.  1. 1.   # Hi corner coordinates
-geometry.is_periodic    =   1 1 1      # Periodicity x y z (0/1)
+geometry.is_periodic    =   0 0 0      # Periodicity x y z (0/1)
 geometry.coord_sys   =  0
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
@@ -66,18 +71,18 @@ incflo.vof_init_with_eb = 1
 #the interface is a cube
 incflo.vof_init    ="if (x>0.3 and x<0.7 and y>0.3 and y<0.7 and z>0.3 and z<0.7,-1.,1.)"
 # Boundary conditions
-#ylo.type                =   "po"
-#ylo.pressure            =   0.  
-#yhi.type                =   "po"
-#yhi.pressure            =   0.  
-#xlo.type                =   "po"
-#xlo.pressure            =   0.
-#xhi.type                =   "po"
-#xhi.pressure            =   0.0
-#zlo.type                =   "po"
-#zlo.pressure            =   0.
-#zhi.type                =   "po"
-#zhi.pressure            =   0.0
+ylo.type                =   "po"
+ylo.pressure            =   0.  
+yhi.type                =   "po"
+yhi.pressure            =   0.  
+xlo.type                =   "po"
+xlo.pressure            =   0.
+xhi.type                =   "po"
+xhi.pressure            =   0.0
+zlo.type                =   "po"
+zlo.pressure            =   0.
+zhi.type                =   "po"
+zhi.pressure            =   0.0
 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#

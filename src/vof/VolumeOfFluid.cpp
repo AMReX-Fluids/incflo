@@ -2691,6 +2691,7 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
        Array4<Real const> const& rho   = ld.density.const_array(mfi);
        Array4<Real const> const& tra   = ld.tracer.const_array(mfi);
        Array4<Real const> const& kap   = ldvof.kappa.const_array(mfi);
+       Array4<Real const> const& vel_c   = ld.velocity.const_array(mfi);
        AMREX_D_TERM(Array4<Real > const& umac = u_mac.array(mfi);,
                     Array4<Real > const& vmac = v_mac.array(mfi);,
                     Array4<Real > const& wmac = w_mac.array(mfi););
@@ -2720,6 +2721,12 @@ VolumeOfFluid:: velocity_face_source (int lev, Real dt, AMREX_D_DECL(MultiFab& u
 
        ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
        {
+      //   if(j==64){
+        //    Print()<<vmac(i,j,k)<<" ("<<i<<", "<<j<<") "
+        //           <<vel_c(i,j,k,1)<<", "<<vel_c(i,j-1,k,1)<<"\n";
+
+    //     }
+
          Real kaf;
          if(kap(i,j,k,0)!=VOF_NODATA && kap(i,j-1,k,0)!=VOF_NODATA)
             kaf=Real(0.5)*(kap(i,j,k,0)+kap(i,j-1,k,0));
@@ -4448,11 +4455,11 @@ void VolumeOfFluid::apply_velocity_field (Real time, int nstep)
 
 #if (AMREX_SPACEDIM == 2)
 // 2D disc in a rotational flow field
-//          vel(i,j,k,0) = -2.*sin(pi*y)*cos(pi*y)*sin(pi*x)*sin(pi*x)*cos(pi*time/8.);
-//          vel(i,j,k,1) =  2.*sin(pi*x)*cos(pi*x)*sin(pi*y)*sin(pi*y)*cos(pi*time/8.);
+          vel(i,j,k,0) = -2.*sin(pi*y)*cos(pi*y)*sin(pi*x)*sin(pi*x)*cos(pi*time/8.);
+          vel(i,j,k,1) =  2.*sin(pi*x)*cos(pi*x)*sin(pi*y)*sin(pi*y)*cos(pi*time/8.);
 //droplet flight test
-          vel(i,j,k,0) = 0.;//sin(pi*x)*sin(pi*x)*sin(2*pi*y)*cos(pi*time/8.);
-          vel(i,j,k,1) =100.; //-sin(pi*y)*sin(pi*y)*sin(2*pi*x)*cos(pi*time/8.);
+//          vel(i,j,k,0) = 0.;//sin(pi*x)*sin(pi*x)*sin(2*pi*y)*cos(pi*time/8.);
+//          vel(i,j,k,1) =100.; //-sin(pi*y)*sin(pi*y)*sin(2*pi*x)*cos(pi*time/8.);
 #else
 // 3D drop in rotational flow field
           vel(i,j,k,0) = 2*sin(2.*pi*y)*sin(pi*x)*sin(pi*x)*sin(2*pi*z)*cos(pi*time/3.);
