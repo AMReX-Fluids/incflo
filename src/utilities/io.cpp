@@ -193,21 +193,17 @@ void incflo::ReadCheckpointFile()
                                   Geom(lev).isPeriodic()));
     }
 
-    if ( m_regrid_on_restart ) {
-        MakeNewGrids(m_cur_time);
-    } else {
-        for(int lev = 0; lev <= finest_level; ++lev)
-        {
-            // read in level 'lev' BoxArray from Header
-            BoxArray ba;
-            ba.readFrom(is);
-            GotoNextLine(is);
+    for(int lev = 0; lev <= finest_level; ++lev)
+    {
+        // read in level 'lev' BoxArray from Header
+        BoxArray ba;
+        ba.readFrom(is);
+        GotoNextLine(is);
 
-            // Create distribution mapping
-            DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
+        // Create distribution mapping
+        DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
 
-            MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
-        }
+        MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
     }
 
     /***************************************************************************
@@ -243,6 +239,10 @@ void incflo::ReadCheckpointFile()
 #ifdef INCFLO_USE_PARTICLES
    particleData.Restart((ParGDBBase*)GetParGDB(),m_restart_file);
 #endif
+
+    if ( m_regrid_on_restart ) {
+        regrid(0, m_cur_time);
+    }
 
     amrex::Print() << "Restart complete" << std::endl;
 }
