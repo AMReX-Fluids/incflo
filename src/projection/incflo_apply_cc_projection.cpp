@@ -251,10 +251,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
     Vector<MultiFab*> vel;
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel.push_back(&(m_leveldata[lev]->velocity));
-        vel[lev]->setBndry(0.0);
-        if (!proj_for_small_dt && !incremental) {
-            set_inflow_velocity(lev, time, *vel[lev], 1);
-        }
+        fillpatch_velocity(lev, m_t_new[lev], *vel[lev], 1);
     }
 
     // ***************************************************************************************
