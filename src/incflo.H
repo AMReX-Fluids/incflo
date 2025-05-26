@@ -125,6 +125,8 @@ public:
     amrex::iMultiFab make_nodalBC_mask (int lev);
     amrex::Vector<amrex::MultiFab> make_robinBC_MFs(int lev, amrex::MultiFab* state = nullptr);
 
+    void set_inflow_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost);
+
 #ifdef AMREX_USE_EB
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
     void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
@@ -256,6 +258,9 @@ public:
                                       amrex::Array4<amrex::Real const> const& bcval,
                                       int lev);
 
+    void prob_set_inflow_velocity (int grid_id, amrex::Orientation ori, amrex::Box const& bx,
+                                   amrex::Array4<amrex::Real> const& v, int lev, amrex::Real time);
+
 #include "incflo_prob_I.H"
 #include "incflo_prob_usr_I.H"
 
@@ -265,15 +270,31 @@ public:
     //
     ///////////////////////////////////////////////////////////////////////////
 
-    void ApplyProjection(amrex::Vector<amrex::MultiFab const*> density,
-                         amrex::Real time, amrex::Real scaling_factor, bool incremental);
-    void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> density,
-                              amrex::Real time, amrex::Real scaling_factor, bool incremental);
-    void ApplyNodalProjection(amrex::Vector<amrex::MultiFab const*> const& density,
-                              amrex::Vector<amrex::MultiFab      *>        vel,
-                              amrex::Vector<amrex::MultiFab      *> const& divu_Source,
-                              amrex::Real time, amrex::Real scaling_factor, bool incremental,
-                              bool set_inflow_bc);
+    void ApplyProjection (             amrex::Vector<amrex::MultiFab const*> const& density,
+                          AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
+                                       amrex::Vector<amrex::MultiFab*> const& v_mac,
+                                       amrex::Vector<amrex::MultiFab*> const& w_mac),
+                          amrex::Real time, amrex::Real scaling_factor, bool incremental);
+
+    void ApplyProjection (amrex::Vector<amrex::MultiFab const*> const& density,
+                          amrex::Vector<amrex::MultiFab      *> const& vel,
+                          amrex::Vector<amrex::MultiFab      *> const& divu_Source,
+                          amrex::Real time, amrex::Real scaling_factor, bool incremental,
+                          bool set_inflow_bc);
+
+    void ApplyNodalProjection (amrex::Vector<amrex::MultiFab const*> density,
+                               amrex::Real time, amrex::Real scaling_factor, bool incremental);
+    void ApplyNodalProjection (amrex::Vector<amrex::MultiFab const*> const& density,
+                               amrex::Vector<amrex::MultiFab      *>        vel,
+                               amrex::Vector<amrex::MultiFab      *> const& divu_Source,
+                               amrex::Real time, amrex::Real scaling_factor, bool incremental,
+                               bool set_inflow_bc);
+
+    void ApplyCCProjection (amrex::Vector<amrex::MultiFab const*> density,
+                            AMREX_D_DECL(amrex::Vector<amrex::MultiFab*> const& u_mac,
+                                         amrex::Vector<amrex::MultiFab*> const& v_mac,
+                                         amrex::Vector<amrex::MultiFab*> const& w_mac),
+                            amrex::Real time, amrex::Real scaling_factor, bool incremental);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -516,6 +537,9 @@ private:
     //    use gradient of mac phi which contains the full pressure
     bool m_use_mac_phi_in_godunov = false;
 
+    // If true use CC projection; if false use nodal projection
+    bool m_use_cc_proj = false;
+
     enum struct DiffusionType {
         Invalid, Explicit, Crank_Nicolson, Implicit
     };
@@ -553,33 +577,29 @@ private:
     amrex::Vector<amrex::Real> tag_region_lo;
     amrex::Vector<amrex::Real> tag_region_hi;
 
-    // Flags for saving fluid data in plot files
-    int m_plt_velx        = 1;
-    int m_plt_vely        = 1;
-    int m_plt_velz        = 1;
-    int m_plt_gpx         = 1;
-    int m_plt_gpy         = 1;
-    int m_plt_gpz         = 1;
-    int m_plt_rho         = 1;
-    int m_plt_tracer      = 1;
-    int m_plt_p_nd        = 0;
-    int m_plt_macphi      = 0;
-    int m_plt_eta         = 0;
-    int m_plt_magvel      = 1;
-    int m_plt_vort        = 1;
-    int m_plt_forcing     = 0;
-    int m_plt_strainrate  = 0;
-    int m_plt_divu        = 0;
-    int m_plt_vfrac       = 1;
-    int m_plt_error_u     = 0;
-    int m_plt_error_v     = 0;
-    int m_plt_error_w     = 0;
-    int m_plt_error_p     = 0;
-    int m_plt_error_mac_p = 0;
+    // Specify fluid data in plot files
+    amrex::Vector<std::string> m_plotVars =
+#if (AMREX_SPACEDIM == 3)
+        {"velx","vely","velz","gpx","gpy","gpz","density","tracer","magvel","vort","vfrac"};
+#else
+        {"velx","vely","gpx","gpy","density","tracer","magvel","vort","vfrac"};
+#endif
+
+    // smallplotfile allows users to output certain variables at a different frequency.
+    // Off by default.
+    int m_smallplot_int = -1;
+    amrex::Real m_smallplot_per_approx = -1.0;
+    // No smallplot_per_exact because it requires changing the timestep
+    int m_last_smallplt = -1;
+    bool m_smallplotfile_on_restart = false;
+
+    std::string m_smallplot_file{"smallplt"};
+
+    // Require user to choose smallplotfile variables
+    amrex::Vector<std::string> m_smallplotVars;
+
 
 #ifdef INCFLO_USE_PARTICLES
-    int m_plt_particle_count = 0;
-
     // Particle container with all particle species
     ParticleData particleData;
 
@@ -626,7 +646,8 @@ private:
 
         amrex::MultiFab mac_phi; // cell-centered pressure used in MAC projection
 
-        // nodal pressure multifab
+        // Pressure MultiFabs (only one will actually be used)
+        amrex::MultiFab p_cc;
         amrex::MultiFab p_nd;
 
         // cell-centered pressure gradient
@@ -851,7 +872,7 @@ private:
         return m_bcrec_force_d.data(); }
 
     [[nodiscard]] amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
-    get_nodal_projection_bc (amrex::Orientation::Side side) const noexcept;
+    get_projection_bc (amrex::Orientation::Side side) const noexcept;
     [[nodiscard]] amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>
     get_mac_projection_bc (amrex::Orientation::Side side) const noexcept;
 
@@ -901,7 +922,9 @@ private:
     void copy_from_old_to_new_temperature (int lev, amrex::IntVect const& ng = amrex::IntVect{0});
 
     void Advance ();
-    bool writeNow ();
+    bool writeNow () { return writeNow(m_plot_int, m_plot_per_approx, m_plot_per_exact); }
+    bool writeNow (int a_plot_int, amrex::Real a_plot_per_approx,
+                   amrex::Real a_plot_per_exact);
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -977,6 +1000,8 @@ private:
     void WriteJobInfo (const std::string& path) const;
     void WriteCheckPointFile () const;
     void WritePlotFile ();
+    void WritePlotVariables (amrex::Vector<std::string> vars, const std::string& plotfilename);
+    virtual void WriteSmallPlotFile ();
     void ReadCheckpointFile ();
 };
 

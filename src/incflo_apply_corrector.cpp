@@ -161,7 +161,9 @@ void incflo::ApplyCorrector()
     // Project velocity field, update pressure
     // **********************************************************************************************
     bool incremental_projection = false;
-    ApplyProjection(get_density_nph_const(), new_time,m_dt,incremental_projection);
+    ApplyProjection(get_density_nph_const(),
+                    AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
+                    GetVecOfPtrs(w_mac)),new_time,m_dt,incremental_projection);
 
 #ifdef AMREX_USE_EB
     // **********************************************************************************************

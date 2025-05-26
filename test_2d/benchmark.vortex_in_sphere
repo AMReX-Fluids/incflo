@@ -54,7 +54,6 @@ incflo.probtype         =   66
 
 nodal_proj.verbose = 4
 
-amr.plt_ccse_regtest    =   1
-amr.plt_vfrac           =   1
+amr.plotVariables = velx vely gpx gpy density tracer vfrac
 
 nodal_proj.mg_max_coarsening_level = 3

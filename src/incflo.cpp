@@ -96,6 +96,11 @@ void incflo::InitData ()
             WritePlotFile();
             m_last_plt = 0;
         }
+        if (m_smallplot_int > 0 || m_smallplot_per_approx > 0)
+        {
+            WriteSmallPlotFile();
+            m_last_smallplt = 0;
+        }
         if (m_KE_int > 0)
         {
             amrex::Abort("xxxxx m_KE_int todo");
@@ -115,6 +120,11 @@ void incflo::InitData ()
         {
             WritePlotFile();
             m_last_plt = 0;
+        }
+        if (m_smallplotfile_on_restart)
+        {
+            WriteSmallPlotFile();
+            m_last_smallplt = 0;
         }
     }
 
@@ -166,6 +176,11 @@ void incflo::Evolve()
             WritePlotFile();
             m_last_plt = m_nstep;
         }
+        if (writeNow(m_smallplot_int, m_smallplot_per_approx, -1.))
+        {
+            WriteSmallPlotFile();
+            m_last_smallplt = m_nstep;
+        }
 
         if(m_check_int > 0 && (m_nstep % m_check_int == 0))
         {
@@ -196,11 +211,35 @@ void incflo::Evolve()
 }
 
 void
-incflo::ApplyProjection (Vector<MultiFab const*> density,
+incflo::ApplyProjection (Vector<MultiFab const*> const& density,
+                         AMREX_D_DECL(Vector<MultiFab*> const& u_mac,
+                                      Vector<MultiFab*> const& v_mac,
+                                      Vector<MultiFab*> const& w_mac),
                          Real time, Real scaling_factor, bool incremental)
 {
     BL_PROFILE("incflo::ApplyProjection");
-    ApplyNodalProjection(std::move(density),time,scaling_factor,incremental);
+    if (m_use_cc_proj)
+    {
+        ApplyCCProjection(density,AMREX_D_DECL(u_mac,v_mac,w_mac),
+                          time,scaling_factor,incremental);
+    }
+    else
+    {
+        ApplyNodalProjection(density,time,scaling_factor,incremental);
+    }
+}
+
+void
+incflo::ApplyProjection (Vector<MultiFab const*> const& density,
+                         Vector<MultiFab      *> const& vel,
+                         Vector<MultiFab      *> const& divu_Source,
+                         Real time, Real scaling_factor, bool incremental,
+                         bool set_inflow_bc)
+{
+    AMREX_ALWAYS_ASSERT("This is not yet coded for ccproj!");
+
+    ApplyNodalProjection(density, vel, divu_Source, time, scaling_factor,
+                         incremental, set_inflow_bc);
 }
 
 // Make a new level from scratch using provided BoxArray and DistributionMapping.
@@ -254,28 +293,28 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 }
 
 bool
-incflo::writeNow()
+incflo::writeNow(int a_plot_int, Real a_plot_per_approx, Real a_plot_per_exact)
 {
     bool write_now = false;
 
-    if ( ( m_plot_int > 0 && (m_nstep % m_plot_int == 0) ) ||
-         (m_plot_per_exact  > 0 && (std::abs(std::remainder(m_cur_time, m_plot_per_exact)) < 1.e-12) ) ) {
+    if ( ( a_plot_int > 0 && (m_nstep % a_plot_int == 0) ) ||
+         (a_plot_per_exact  > 0 && (std::abs(std::remainder(m_cur_time, a_plot_per_exact)) < 1.e-12) ) ) {
         write_now = true;
-    } else if (m_plot_per_approx > 0.0) {
-        // Check to see if we've crossed a m_plot_per_approx interval by comparing
+    } else if (a_plot_per_approx > 0.0) {
+        // Check to see if we've crossed a a_plot_per_approx interval by comparing
         // the number of intervals that have elapsed for both the current
         // time and the time at the beginning of this timestep.
 
-        int num_per_old = static_cast<int>(std::round((m_cur_time-m_dt) / m_plot_per_approx));
-        int num_per_new = static_cast<int>(std::round((m_cur_time     ) / m_plot_per_approx));
+        int num_per_old = static_cast<int>(std::round((m_cur_time-m_dt) / a_plot_per_approx));
+        int num_per_new = static_cast<int>(std::round((m_cur_time     ) / a_plot_per_approx));
 
         // Before using these, however, we must test for the case where we're
         // within machine epsilon of the next interval. In that case, increment
-        // the counter, because we have indeed reached the next m_plot_per_approx interval
+        // the counter, because we have indeed reached the next a_plot_per_approx interval
         // at this point.
 
         const Real eps = std::numeric_limits<Real>::epsilon() * Real(10.0) * std::abs(m_cur_time);
-        const Real next_plot_time = (num_per_old + 1) * m_plot_per_approx;
+        const Real next_plot_time = (num_per_old + 1) * a_plot_per_approx;
 
         if ((num_per_new == num_per_old) && std::abs(m_cur_time - next_plot_time) <= eps)
         {

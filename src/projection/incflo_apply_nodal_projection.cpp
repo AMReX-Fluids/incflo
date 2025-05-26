@@ -123,8 +123,8 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
     // Perform projection
     std::unique_ptr<Hydro::NodalProjector> nodal_projector;
 
-    auto bclo = get_nodal_projection_bc(Orientation::low);
-    auto bchi = get_nodal_projection_bc(Orientation::high);
+    auto bclo = get_projection_bc(Orientation::low);
+    auto bchi = get_projection_bc(Orientation::high);
 
     for (int lev = 0; lev <= finest_level; ++lev) {
 #ifdef AMREX_USE_EB

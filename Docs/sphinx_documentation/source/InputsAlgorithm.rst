@@ -28,6 +28,9 @@ The following inputs must be preceded by "incflo."
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  mu_s                |  scalar diffusivity                                                   |  Real(s)    |  0.0         |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
+|  use_cc_proj         |  Use cell-centered rather than nodal pressure; this changes the       |  bool       | false        |
+|                      |  which approximate projection we use                                  |             |              |
++----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  use_tensor_solve    |  In velocity solve, use multicomponent :math:`\nabla \cdot \tau`      |  bool       |  true        |
 |                      |  otherwise use separate solves for each velocity component            |             |              |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+

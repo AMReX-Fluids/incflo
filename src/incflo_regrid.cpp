@@ -34,7 +34,12 @@ void incflo::MakeNewLevelFromCoarse (int lev,
         fillcoarsepatch_tracer(lev, time, new_leveldata->tracer, 0);
     }
     fillcoarsepatch_gradp(lev, time, new_leveldata->gp, 0);
-    new_leveldata->p_nd.setVal(0.0);
+
+    if (m_use_cc_proj) {
+        new_leveldata->p_cc.setVal(0.0);
+    } else {
+        new_leveldata->p_nd.setVal(0.0);
+    }
 
     m_leveldata[lev] = std::move(new_leveldata);
     m_factory[lev] = std::move(new_fact);
@@ -82,7 +87,12 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
         fillpatch_tracer(lev, time, new_leveldata->tracer, 0);
     }
     fillpatch_gradp(lev, time, new_leveldata->gp, 0);
-    new_leveldata->p_nd.setVal(0.0);
+
+    if (m_use_cc_proj) {
+        new_leveldata->p_cc.setVal(0.0);
+    } else {
+        new_leveldata->p_nd.setVal(0.0);
+    }
 
     m_leveldata[lev] = std::move(new_leveldata);
     m_factory[lev] = std::move(new_fact);

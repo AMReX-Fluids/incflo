@@ -1,2 +1,3 @@
 CEXE_sources += incflo_projection_bc.cpp
+CEXE_sources += incflo_apply_cc_projection.cpp
 CEXE_sources += incflo_apply_nodal_projection.cpp

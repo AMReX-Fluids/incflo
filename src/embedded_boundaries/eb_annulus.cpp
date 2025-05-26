@@ -55,10 +55,16 @@ void incflo::make_eb_annulus()
     amrex::Print() << " Direction:       " << direction << std::endl;
     amrex::Print() << " Outer radius:    " << outer_radius << std::endl;
     amrex::Print() << " Inner radius:    " << inner_radius << std::endl;
-    amrex::Print() << " Outer center:    "
-                   << outer_center[0] << ", " << outer_center[1] << ", " << outer_center[2] << std::endl;
-    amrex::Print() << " Inner center:    "
-                   << inner_center[0] << ", " << inner_center[1] << ", " << inner_center[2] << std::endl;
+    amrex::Print() << " Outer center:    " << outer_center[0] << ", " << outer_center[1]
+#if (AMREX_SPACEDIM ==3)
+                   << ", " << outer_center[2]
+#endif
+                   << std::endl;
+    amrex::Print() << " Inner center:    " << inner_center[0] << ", " << inner_center[1]
+#if (AMREX_SPACEDIM ==3)
+                   << ", " << inner_center[2]
+#endif
+                   << std::endl;
     amrex::Print() << " Offset:          " << offset << std::endl;
     amrex::Print() << " Smallest gap:    " << smallest_gap_width << std::endl;
     amrex::Print() << " Standoff:        " << standoff << std::endl;

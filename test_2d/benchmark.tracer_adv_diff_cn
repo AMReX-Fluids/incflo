@@ -83,5 +83,4 @@ incflo.verbose          =   2           # incflo_level
 mac_proj.verbose        =   1           # MAC Projector
 nodal_proj.verbose      =   1           # Nodal Projector
 
-amr.plt_ccse_regtest    =  1
-amr.plt_vfrac           =  1
+amr.plotVariables = velx vely gpx gpy density tracer vfrac
