@@ -141,6 +141,7 @@ void incflo::ReadParameters ()
         if ( !pp.queryarr("ic_t", m_ic_t, 0, m_ntrac) ) {
             m_ic_t.resize(m_ntrac, 0.);
         }
+        pp.query("ic_tem", m_ic_tem);
 
         // Viscosity (if constant)
         pp.query("mu", m_mu);

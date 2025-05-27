@@ -29,6 +29,10 @@ void incflo::prob_init_fluid (int lev)
         ld.tracer.setVal(m_ic_t[comp], comp, 1);
     }
 
+    if (m_use_temperature) {
+        ld.temperature.setVal(m_ic_tem);
+    }
+
     for (MFIter mfi(ld.density); mfi.isValid(); ++mfi)
     {
         const Box& vbx = mfi.validbox();

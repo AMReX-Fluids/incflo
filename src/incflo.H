@@ -394,6 +394,7 @@ private:
     amrex::Real m_ic_w = amrex::Real(0.0);
     amrex::Real m_ic_p = amrex::Real(0.0);
     amrex::Vector<amrex::Real> m_ic_t = amrex::Vector<amrex::Real> (m_ntrac, amrex::Real(0.0));
+    amrex::Real m_ic_tem = amrex::Real(1.0);
 
     amrex::Vector<amrex::Real> m_t_old;
     amrex::Vector<amrex::Real> m_t_new;
