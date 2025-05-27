@@ -150,28 +150,33 @@ void
 DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
                                    Vector<MultiFab*> const& density,
                                    Vector<MultiFab const*> const& eta,
-                                   amrex::Vector<int> const& iconserv,
+                                   amrex::Vector<int> const& use_rho,
                                    Real dt)
 {
     //
     // Solves
-    //      alpha a - beta div ( b grad )
+    //      [alpha a - beta div ( b grad )] sca = RHS
     //
-    // So for conservative: d(rho sca) / dt - div mu grad sca = -div(U rho sca) + rho H -->
-    //                      ( rho - dt div mu grad ) sca^(n+1) = rho sca^(*,n+1)
-    //      alpha: 1
-    //      a: rho
-    //      beta: dt
-    //      b: mu
-    //      RHS: density * a_scalar
+    // If use_rho, solve
+    //      ( rho - dt div mu grad ) sca^(n+1) = rho sca^(*,n+1)
+    //          alpha: 1
+    //          a: rho
+    //          beta: dt
+    //          b: mu
+    //          RHS: density * a_scalar
+    // This corresponds to the conservative scalar equation:
+    //     d(rho sca) / dt - div mu grad sca = -div(U rho sca) + rho H
+    // And also to the (non-conservative) temperature equation with rho -> rhoCp
     //
-    // So for non- conservative: d sca / dt - div mu grad sca = -U dot grad sca + H -->
-    //                           ( 1 - dt div mu grad ) sca^(n+1) = sca^(*,n+1)
-    //      alpha: 1
-    //      a: 1
-    //      beta: dt
-    //      b: mu
-    //      RHS: a_scalar
+    // If !use_rho, solve
+    //      ( 1 - dt div mu grad ) sca^(n+1) = sca^(*,n+1)
+    //          alpha: 1
+    //          a: 1
+    //          beta: dt
+    //          b: mu
+    //          RHS: a_scalar
+    // Which corresponds to the non-conservative scalar equation:
+    //    d(sca) / dt - div mu grad sca = -U dot grad sca + H
 
     if (m_verbose > 0) {
         amrex::Print() << "Diffusing scalars one at a time ..." << std::endl;
@@ -190,7 +195,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
     {
         m_eb_scal_solve_op->setScalars(1.0, dt);
         for (int lev = 0; lev <= finest_level; ++lev) {
-            if ( iconserv[0] ) {
+            if ( use_rho[0] ) {
                 m_eb_scal_solve_op->setACoeffs(lev, *density[lev]);
             } else {
                 m_eb_scal_solve_op->setACoeffs(lev, 1.0);
@@ -202,7 +207,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
     {
         m_reg_scal_solve_op->setScalars(1.0, dt);
         for (int lev = 0; lev <= finest_level; ++lev) {
-            if ( iconserv[0] ) {
+            if ( use_rho[0] ) {
                 m_reg_scal_solve_op->setACoeffs(lev, *density[lev]);
             } else {
                 m_reg_scal_solve_op->setACoeffs(lev, 1.0);
@@ -223,8 +228,8 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
             for (int lev = 0; lev <= finest_level; ++lev) {
                 // Only reset Acoeff if necessary.
                 if (comp > 0 &&
-                    ( m_incflo->m_has_mixedBC || (iconserv[comp] != iconserv[comp-1]) ) ) {
-                    if ( iconserv[comp] ) {
+                    ( m_incflo->m_has_mixedBC || (use_rho[comp] != use_rho[comp-1]) ) ) {
+                    if ( use_rho[comp] ) {
                         m_eb_scal_solve_op->setACoeffs(lev, *density[lev]);
                     } else {
                         m_eb_scal_solve_op->setACoeffs(lev, 1.0);
@@ -239,8 +244,8 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
 #endif
         {
             for (int lev = 0; lev <= finest_level; ++lev) {
-                if ( comp > 0 && (iconserv[comp] != iconserv[comp-1]) ) {
-                    if ( iconserv[comp] ) {
+                if ( comp > 0 && (use_rho[comp] != use_rho[comp-1]) ) {
+                    if ( use_rho[comp] ) {
                         m_reg_scal_solve_op->setACoeffs(lev, *density[lev]);
                     } else {
                         m_reg_scal_solve_op->setACoeffs(lev, 1.0);
@@ -257,7 +262,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
         for (int lev = 0; lev <= finest_level; ++lev) {
             phi.emplace_back(*a_scalar[lev], amrex::make_alias, comp, 1);
 
-            if ( !iconserv[comp] ) {
+            if ( !use_rho[comp] ) {
                 rhs.emplace_back(*a_scalar[lev], amrex::make_alias, comp, 1);
             } else {
                 rhs.emplace_back(rhs_c[lev], amrex::make_alias, 0, 1);
@@ -551,7 +556,7 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
             amrex::single_level_redistribute(laps_tmp[lev],
                                              *a_laps[lev], 0, n_comp,
                                              m_incflo->Geom(lev));
-            // This will use SRD if that's what's set for m_redistribution_type
+            // FIXME? This will use SRD if that's what's set for m_redistribution_type
             // Need to think about how to make this work with temperature b/c BC is different
             // auto const& bc = m_incflo->get_tracer_bcrec_device_ptr();
             // m_incflo->redistribute_term(*a_laps[lev], laps_tmp[lev], *a_scalar[lev],

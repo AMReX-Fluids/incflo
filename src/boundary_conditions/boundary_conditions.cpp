@@ -22,7 +22,6 @@ void incflo::init_bcs ()
                      m_bc_velocity[ori][1] = 0.0;,
                      m_bc_velocity[ori][2] = 0.0;);
         m_bc_tracer[ori].resize(m_ntrac,0.0);
-// FIXME?  do i want something reasonable here, or force users to set inputs?
         m_bc_temperature[ori] = 1.0;
 
         ParmParse pp(bcid);
@@ -309,8 +308,7 @@ void incflo::init_bcs ()
 #else
     std::memcpy
 #endif
-            (m_bcrec_density_d.data(), m_bcrec_density.data(), sizeof(BCRec));
-    }
+        (m_bcrec_density_d.data(), m_bcrec_density.data(), sizeof(BCRec));
 
     if (m_ntrac > 0)
     {

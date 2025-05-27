@@ -96,7 +96,7 @@ public:
 
     void compute_tra_forces (amrex::Vector<amrex::MultiFab*> const& tra_forces,
                              amrex::Vector<amrex::MultiFab const*> const& density);
-    void compute_T_forces (amrex::Vector<amrex::MultiFab*> const& T_forces,
+    void compute_tem_forces (amrex::Real time,
                              amrex::Vector<amrex::MultiFab const*> const& density);
     void compute_vel_forces (amrex::Vector<amrex::MultiFab*> const& vel_forces,
                              amrex::Vector<amrex::MultiFab const*> const& velocity,
@@ -155,6 +155,7 @@ public:
                                   amrex::Vector<amrex::MultiFab      *> const& vel_forces,
                                   amrex::Vector<amrex::MultiFab      *> const& tra_forces,
                                   amrex::Vector<amrex::MultiFab      *> const& tem_forces,
+                                  amrex::Vector<amrex::MultiFab      *> const& cp,
                                   amrex::Real time);
 
     void compute_MAC_projected_velocities (
@@ -172,8 +173,8 @@ public:
     void update_density  (StepType step_type);
     void update_tracer   (StepType step_type, amrex::Vector<amrex::MultiFab>& tra_eta,
                                               amrex::Vector<amrex::MultiFab>& tra_forces);
-    void update_temperature (StepType step_type, amrex::Vector<amrex::MultiFab>& T_eta,
-                                              amrex::Vector<amrex::MultiFab>& T_forces);
+    void update_temperature (StepType step_type, amrex::Vector<amrex::MultiFab>& tem_eta,
+                                                 amrex::Vector<amrex::MultiFab>& scratch);
     void update_velocity (StepType step_type, amrex::Vector<amrex::MultiFab>& vel_eta,
                                               amrex::Vector<amrex::MultiFab>& vel_forces);
 
@@ -313,7 +314,9 @@ public:
                                      amrex::Geometry& lev_geom,
                                      amrex::Real time, int nghost);
     void compute_tracer_diff_coeff (amrex::Vector<amrex::MultiFab*> const& tra_eta, int nghost);
-    void compute_temperature_diff_coeff (amrex::Vector<amrex::MultiFab*> const& eta, int nghost);
+    void compute_temperature_diff_coeff (amrex::Real time, amrex::Vector<amrex::MultiFab*> const& eta);
+
+    void compute_cp (int lev, MFIter& mfi, Array4<Real> const& cp);
 
 #ifdef AMREX_USE_EB
     ///////////////////////////////////////////////////////////////////////////
@@ -475,6 +478,10 @@ private:
 
     // Scalar diffusive coefficient
     amrex::Vector<amrex::Real> m_mu_s;
+    // Thermal diffusivity
+    amrex::Real m_mu_T = 0.;
+    // specific heat capacity
+    amrex::Real m_cp = 1.;
 
     // Density (if constant)
     amrex::Real m_ro_0 = 1.0;
@@ -666,8 +673,8 @@ private:
         amrex::MultiFab divtau_o;
         amrex::MultiFab laps;
         amrex::MultiFab laps_o;
-        amrex::MultiFab laps_T;
-        amrex::MultiFab laps_T_o;
+        amrex::MultiFab laps_tem;
+        amrex::MultiFab laps_tem_o;
     };
 
     bool m_use_temperature = false;
@@ -713,6 +720,8 @@ private:
     amrex::Gpu::DeviceVector<int> m_iconserv_density_d;
     amrex::Vector<int> m_iconserv_tracer;
     amrex::Gpu::DeviceVector<int> m_iconserv_tracer_d;
+    amrex::Vector<int> m_iconserv_temperature;
+    amrex::Gpu::DeviceVector<int> m_iconserv_temperature_d;
 
     std::unique_ptr<DiffusionTensorOp> m_diffusion_tensor_op;
     std::unique_ptr<DiffusionScalarOp> m_diffusion_scalar_op;
@@ -812,6 +821,7 @@ private:
     amrex::Vector<amrex::MultiFab*> get_mac_phi () noexcept;
     amrex::Vector<amrex::MultiFab*> get_vel_forces () noexcept;
     amrex::Vector<amrex::MultiFab*> get_tra_forces () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_tem_forces () noexcept;
     amrex::Vector<amrex::MultiFab*> get_conv_velocity_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_conv_velocity_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_conv_density_old () noexcept;
@@ -824,8 +834,8 @@ private:
     amrex::Vector<amrex::MultiFab*> get_divtau_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_laps_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_laps_new () noexcept;
-    amrex::Vector<amrex::MultiFab*> get_laps_T_old () noexcept;
-    amrex::Vector<amrex::MultiFab*> get_laps_T_new () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_laps_tem_old () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_laps_tem_new () noexcept;
     //
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_velocity_old_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_velocity_new_const () const noexcept;
@@ -841,7 +851,7 @@ private:
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_temperature_new_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_vel_forces_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tra_forces_const () const noexcept;
-    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_T_forces_const () const noexcept;
+    [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_tem_forces_const () const noexcept;
 
     [[nodiscard]] amrex::Vector<int> const& get_velocity_iconserv () const noexcept { return m_iconserv_velocity; }
     [[nodiscard]] amrex::Vector<int> const& get_density_iconserv () const noexcept { return m_iconserv_density; }

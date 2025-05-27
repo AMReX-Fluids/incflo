@@ -44,7 +44,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
             laps_o.define(ba, dm, my_incflo->m_ntrac, 0, MFInfo(), fact);
         }
         if (my_incflo->m_use_temperature) {
-            laps_T_o.define(ba, dm, 1, 0, MFInfo(), fact);
+            laps_tem_o.define(ba, dm, 1, 0, MFInfo(), fact);
         }
     } else {
         conv_velocity.define(ba, dm, AMREX_SPACEDIM   , 0, MFInfo(), fact);
@@ -68,8 +68,8 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
                 laps_o.define(ba, dm, my_incflo->m_ntrac, 0, MFInfo(), fact);
             }
             if (my_incflo->m_use_temperature) {
-                laps_T.define  (ba, dm, 1, 0, MFInfo(), fact);
-                laps_T_o.define(ba, dm, 1, 0, MFInfo(), fact);
+                laps_tem.define  (ba, dm, 1, 0, MFInfo(), fact);
+                laps_tem_o.define(ba, dm, 1, 0, MFInfo(), fact);
             }
         }
     }

@@ -18,7 +18,7 @@ public:
     void diffuse_scalar (amrex::Vector<amrex::MultiFab*> const& a_scalar,
                          amrex::Vector<amrex::MultiFab*> const& density,
                          amrex::Vector<amrex::MultiFab const*> const& eta,
-                         amrex::Vector<int> const& iconserv,
+                         amrex::Vector<int> const& use_rho,
                          amrex::Real dt);
 
     void diffuse_vel_components (

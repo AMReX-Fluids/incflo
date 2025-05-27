@@ -6,15 +6,17 @@ using namespace amrex;
 //
 //  1. Use u = vel_old to compute
 //
-//      if (!advect_momentum) then
-//          conv_u  = - u grad u
-//      else
-//          conv_u  = - del dot (rho u u)
+//
+//      conv_u  = - u grad u         ,  if (!advect_momentum)
+//              = - del dot (rho u u),  otherwise
+//
 //      conv_r  = - div( u rho  )
-//      if (m_iconserv_tracer) then
-//          conv_t  = - div( u trac )
-//      else
-//          conv_t  = - u dot grad trac
+//
+//      conv_tra  = - div( u trac )  ,  if (m_iconserv_tracer)
+//                = - u dot grad trac,  otherwise
+//
+//      conv_tem = - u dot grad temperature
+//
 //      eta_old     = visosity at m_cur_time
 //      if (m_diff_type == DiffusionType::Explicit)
 //         divtau _old = div( eta ( (grad u) + (grad u)^T ) ) / rho^n
@@ -23,24 +25,30 @@ using namespace amrex;
 //         divtau_old  = 0.0
 //         rhs = u + dt * conv
 //
-//      eta     = eta at new_time
-//
 //  2. Add explicit forcing term i.e. gravity + lagged pressure gradient
 //
 //      rhs += dt * ( g - grad(p + p0) / rho^nph )
 //
 //  3. A. If (m_diff_type == DiffusionType::Implicit)
-//        solve implicit diffusion equation for u*
+//        solve implicit diffusion equation for u*, tracers, temperature
 //
-//     ( 1 - dt / rho^nph * div ( eta grad ) ) u* = u^n + dt * conv_u
-//                                                  + dt * ( g - grad(p + p0) / rho^nph )
+//       ( 1 - dt / rho^nph * div ( eta grad ) ) u* = u^n + dt * conv_u
+//                                                    + dt * ( g - grad(p + p0) / rho^nph )
+//
+//       Tracer, for conservative:
+//               ( rho - dt div mu grad ) tra^(n+1) = rho tra^(n) - dt * div(U rho tra) + dt * rho H
+//       or for non-conservative:
+//                 ( 1 - dt div mu grad ) tra^(n+1) = tra^(n) - dt * U dot grad tra + dt * H
+//
+//       Temperature:
+//           ( rho*cp - dt div mu_T grad ) T^(n+1) = rho*cp T^n - rho*cp dt U dot grad T + H_T
 //
 //     B. If (m_diff_type == DiffusionType::Crank-Nicolson)
-//        solve semi-implicit diffusion equation for u*
+//        solve semi-implicit diffusion equation for u*, tracers, temperature
 //
-//     ( 1 - (dt/2) / rho^nph * div ( eta_old grad ) ) u* = u^n +
-//            dt * conv_u + (dt/2) / rho * div (eta_old grad) u^n
-//          + dt * ( g - grad(p + p0) / rho^nph )
+//       ( 1 - (dt/2) / rho^nph * div ( eta_old grad ) ) u* = u^n +
+//              dt * conv_u + (dt/2) / rho * div (eta_old grad) u^n
+//            + dt * ( g - grad(p + p0) / rho^nph )
 //
 //  4. Apply projection
 //
@@ -98,27 +106,29 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Allocate space for half-time density
     // *************************************************************************************
     // Forcing terms for velocity, tracers, temperature
-    Vector<MultiFab> vel_forces, tra_forces, T_forces;
+    Vector<MultiFab> vel_forces, tra_forces, tem_forces;
 
-    Vector<MultiFab> vel_eta, tra_eta, T_eta;
+    Vector<MultiFab> vel_eta, tra_eta, tem_eta;
 
     // *************************************************************************************
-    // Allocate space for the forcing terms
+    // Allocate space for the forcing terms and viscosity / diffusive coefficients
     // *************************************************************************************
+    int nghost_eta = 1;
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel_forces.emplace_back(grids[lev], dmap[lev], AMREX_SPACEDIM, nghost_force(),
                                 MFInfo(), Factory(lev));
-        vel_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+        vel_eta.emplace_back(grids[lev], dmap[lev], 1, nghost_eta, MFInfo(), Factory(lev));
 
         if (m_advect_tracer) {
             tra_forces.emplace_back(grids[lev], dmap[lev], m_ntrac, nghost_force(),
                                     MFInfo(), Factory(lev));
-            tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, 1, MFInfo(), Factory(lev));
+            tra_eta.emplace_back(grids[lev], dmap[lev], m_ntrac, nghost_eta,
+                                 MFInfo(), Factory(lev));
         }
         if (m_use_temperature) {
-            T_forces.emplace_back(grids[lev], dmap[lev], 1, nghost_force(),
-                                    MFInfo(), Factory(lev));
-            T_eta.emplace_back(grids[lev], dmap[lev], 1, 1, MFInfo(), Factory(lev));
+            tem_forces.emplace_back(grids[lev], dmap[lev], 1, nghost_force(),
+                                  MFInfo(), Factory(lev));
+            tem_eta.emplace_back(grids[lev], dmap[lev], 1, nghost_eta, MFInfo(), Factory(lev));
         }
     }
 
@@ -127,7 +137,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     compute_viscosity(GetVecOfPtrs(vel_eta),
                       get_density_old(), get_velocity_old(),
-                      m_cur_time, 1);
+                      m_cur_time, nghost_eta);
 
     // *************************************************************************************
     // Compute explicit viscous term
@@ -144,17 +154,16 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     if (m_advect_tracer)
     {
-        compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta),tra_eta[0].nComp());
+        compute_tracer_diff_coeff(GetVecOfPtrs(tra_eta), nghost_eta);
         if (need_divtau()) {
             compute_laps(get_laps_old(), get_tracer_old_const(), GetVecOfConstPtrs(tra_eta));
         }
     }
     if (m_use_temperature)
     {
-        compute_temperature_diff_coeff(GetVecOfPtrs(T_eta),T_eta[0].nComp());
+        compute_temperature_diff_coeff(m_cur_time, GetVecOfPtrs(tem_eta));
         if (need_divtau()) {
-            compute_laps(get_laps_T_old(), get_temperature_old_const(), GetVecOfConstPtrs(T_eta));
-            // Multiply by rho cp
+            compute_laps(get_laps_T_old(), get_temperature_old_const(), GetVecOfConstPtrs(tem_eta));
         }
     }
 
@@ -181,11 +190,15 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Note that if advection_type != "MOL" then we call compute_tra_forces inside this routine
     // *************************************************************************************
     compute_convective_term(get_conv_velocity_old(), get_conv_density_old(), get_conv_tracer_old(),
+                            get_conv_temperature_old(),
                             get_velocity_old_const(), get_density_old_const(), get_tracer_old_const(),
+                            get_temperature_old_const(),
                             AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                             GetVecOfPtrs(w_mac)),
+                            // FIXME??? WIll VecOfPtrs work if we don't allocate anything as for !use_T
+                            // I think it will, but don't forget to test...
                             GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
-                            m_cur_time);
+                            GetVecOfPtrs(tem_forces), m_cur_time);
 
     // *************************************************************************************
     // Update density
@@ -196,6 +209,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Update tracer
     // **********************************************************************************************
     update_tracer(StepType::Predictor, tra_eta, tra_forces);
+
+    // **********************************************************************************************
+    // Update temperature
+    // **********************************************************************************************
+    update_temperature(StepType::Predictor, tem_eta, tem_forces);
 
     // **********************************************************************************************
     // Update velocity

@@ -16,6 +16,8 @@ target_sources(incflo
    incflo_update_density.cpp
    incflo_update_tracer.cpp
    incflo_update_velocity.cpp
+   incflo_update_temperature.cpp
+   incflo_specific_heat.cpp
    incflo_utils.cpp
    main.cpp
    )

@@ -2,10 +2,35 @@
 
 using namespace amrex;
 
+// Compute temperature forcing terms.
+void incflo::compute_tem_forces (Real /*time*/, Vector<MultiFab*> const& tem_forces)
+{
+    if (m_use_temperature) {
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            for (MFIter mfi(*tem_forces[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi)
+            {
+                Box const& bx = mfi.tilebox();
+                Array4<Real> const& tem_f = tem_forces[lev]->array(mfi);
+
+                ParallelFor(bx,
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    // Just Q here, don't include rhoCp
+                    // For now we don't have any external forces on temperature
+                    tem_f(i,j,k) = 0.0;
+                });
+            }
+        }
+    }
+}
+
 void incflo::compute_tra_forces (Vector<MultiFab*> const& tra_forces,
                                  Vector<MultiFab const*> const& density)
 {
-    // NOTE: this routine must return the force term for the update of (rho s), NOT just s.
     if (m_advect_tracer) {
 
         auto const* iconserv = get_tracer_iconserv_device_ptr();

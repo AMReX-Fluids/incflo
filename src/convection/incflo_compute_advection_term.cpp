@@ -28,6 +28,10 @@ void incflo::init_advection ()
     m_iconserv_density.resize(1, 1);
     m_iconserv_density_d.resize(1, 1);
 
+    // Temperature is always updated non-conservatively
+    m_iconserv_temperature.resize(1, 0);
+    m_iconserv_temperature_d.resize(1, 0);
+
     // Advect scalars conservatively?
     m_iconserv_tracer.resize(m_ntrac, 1);
     ParmParse pp("incflo");
@@ -71,6 +75,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     int n_flux_comp = AMREX_SPACEDIM;
     if (!m_constant_density) n_flux_comp += 1;
     if ( m_advect_tracer)    n_flux_comp += m_ntrac;
+    if ( m_use_temperature)  n_flux_comp += 1;
 
     // This will hold state on faces
     Vector<MultiFab> face_x(finest_level+1);
@@ -196,13 +201,37 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         if (m_use_temperature)
         {
-            compute_T_forces(tem_forces, get_density_old_const());
-            if (m_godunov_include_diff_in_forcing)
-                for (int lev = 0; lev <= finest_level; ++lev)
-                    // FIXME? Saxpy? with 1/rhocp - could be as low as point function or by level?
-                    MultiFab::Add(*tem_forces[lev], m_leveldata[lev]->laps_T_o, 0, 0, 1, 0);
-            if (nghost_force() > 0)
-                fillpatch_force(m_cur_time, tem_forces, nghost_force());
+            compute_T_forces(m_cur_time, tem_forces);
+            for (int lev = 0; lev <= finest_level; ++lev) {
+                auto& ld = *m_leveldata[lev];
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+                for (MFIter mfi(*density[lev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+                    Box const& bx = mfi.tilebox();
+                    FArrayBox cp_fab(bx, 1, The_Async_Arena());
+                    Array4<Real      > const& cp    = cp_fab.array();
+                    Array4<Real const> const& rho   = density[lev]->array(mfi);
+                    Array4<Real      > const& tem_f = tem_forces[lev]->array(mfi);
+
+                    compute_cp(lev, mfi, cp);
+                    if (m_godunov_include_diff_in_forcing) {
+                        Array4<Real const> const& laps = ld.laps_tem_o.const_array(mfi);
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        {
+                            tem_f(i,j,k) = (tem_f(i,j,k) + laps(i,j,k)) / (rho(i,j,k)*cp(i,j,k));
+                        });
+                    } else {
+                        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                        {
+                            tem_f(i,j,k) /= ( rho(i,j,k)*cp(i,j,k) );
+                        });
+
+                    }
+                }
+            }
+            if (nghost_force() > 0) {
+                fillpatch_force(m_cur_time, tem_forces, nghost_force()); }
         }
 
     } // end m_advection_type
@@ -316,6 +345,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         MultiFab  vel_nph(    vel[lev]->boxArray(),    vel[lev]->DistributionMap(),AMREX_SPACEDIM,1);
         MultiFab  rho_nph(density[lev]->boxArray(),density[lev]->DistributionMap(),1,1);
         MultiFab trac_nph( tracer[lev]->boxArray(), tracer[lev]->DistributionMap(),m_ntrac,1);
+        MultiFab temp_nph;
+        if (m_use_temperature) {
+            temp_nph.define(temperature[lev]->boxArray(),temperature[lev]->DistributionMap(),1,1);
+        }
 
         if (m_advection_type != "MOL") {
             vel_nph.setVal(0.);
@@ -344,6 +377,11 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                     }
                 }
             }
+
+            if (m_use_temperature) {
+                temp_nph.setVal(0.);
+                fillphysbc_temperature(lev, time_nph, temp_nph, 1);
+            }
         }
 
         // ************************************************************************
@@ -366,8 +404,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 tracBC_MF = make_BC_MF(lev, m_bcrec_tracer_d, "tracer");
             }
         }
-        // FIXME? do all the scalars really need individual BC MFs?
-        // Need to think about general mixed BC vs inflow-outflow only?
+        // FIXME? this may just work as long as we add temp in make_BC_MF()
         std::unique_ptr<iMultiFab> tempBC_MF;
         if (m_use_temperature && m_has_mixedBC) {
             Abort("Temperature equation with mixed BC not completed yet");
@@ -577,7 +614,6 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             if (m_use_temperature) {
                 // Temperature adveciton is always non-conservative
 
-                // FIXME- check this!!!
                 face_comp += m_ntrac;
                 ncomp = 1;
                 is_velocity = false;

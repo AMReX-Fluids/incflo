@@ -142,3 +142,11 @@ void incflo::compute_tracer_diff_coeff (Vector<MultiFab*> const& tra_eta, int ng
         }
     }
 }
+
+void incflo::compute_temperature_diff_coeff (Real /*time*/, Vector<MultiFab*> const& tem_eta)
+{
+    for (auto *mf : tem_eta) { // loop over levels
+        mf->setVal(m_mu_T);
+    }
+}
+

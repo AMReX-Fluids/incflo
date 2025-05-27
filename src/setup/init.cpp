@@ -170,6 +170,11 @@ void incflo::ReadParameters ()
             // Maybe will want to disallow EB flow with T at first...
         }
 #endif
+
+        // Thermal diffusivity (if constant)
+        pp.query("mu_T", m_mu_T);
+        pp.query("cp", m_cp);
+
     } // end prefix incflo
 
     ReadIOParameters();
@@ -267,6 +272,11 @@ void incflo::ReadIOParameters()
 #ifdef INCFLO_USE_PARTICLES
         m_plotVars.push_back("particle_count");
 #endif
+    }
+
+    if (m_use_temperature) {
+        // Add temperature to the default list
+        m_plotVars.push_back("temperature");
     }
 
     // Helper function to update m_plotVars according to m_plt_* flags
