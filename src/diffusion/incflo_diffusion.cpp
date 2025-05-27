@@ -73,13 +73,13 @@ incflo::diffuse_scalar(Vector<MultiFab      *> const& scalar,
 }
 
 void
-incflo::diffuse_temperature(Vector<MultiFab      *> const& scalar,
-                            Vector<MultiFab      *> const& density,
+incflo::diffuse_temperature(Vector<MultiFab      *> const& temperature,
+                            Vector<MultiFab      *> const& rhocp,
                             Vector<MultiFab const*> const& eta,
                             Real dt_diff)
 {
-    amrex::Vector<const int> const use_density = {1};
-    get_diffusion_scalar_op()->diffuse_scalar(scalar, density, eta, use_density, dt_diff);
+    get_diffusion_scalar_op()->diffuse_scalar(temperature, rhocp, eta,
+                                              {1} /* use rhocp */, dt_diff);
 }
 
 void

@@ -571,6 +571,115 @@ struct IncfloTracFill
     }
 };
 
+struct IncfloTempFill
+{
+    int probtype;
+    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM*2> bcv_tem;
+    amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>, AMREX_SPACEDIM*2> bcv_vel;
+
+    AMREX_GPU_HOST
+    constexpr IncfloTempFill (int a_probtype,
+                              amrex::GpuArray<amrex::Real, AMREX_SPACEDIM*2> const& a_bcv_tem,
+                              amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>,AMREX_SPACEDIM*2> const& a_bcv_vel)
+        : probtype(a_probtype), bcv_tem(a_bcv_tem), bcv_vel(a_bcv_vel) {}
+
+    AMREX_GPU_DEVICE
+    void operator() (const amrex::IntVect& iv, amrex::Array4<amrex::Real> const& temperature,
+                     const int /*dcomp*/, const int /*numcomp*/,
+                     amrex::GeometryData const& geom, const amrex::Real /*time*/,
+                     const amrex::BCRec* bcr, const int bcomp,
+                     const int /*orig_comp*/) const
+    {
+        using namespace amrex;
+
+        // do something for external Dirichlet (amrex::BCType::ext_dir)
+        const int i = iv[0];
+        const int j = iv[1];
+#if (AMREX_SPACEDIM == 3)
+        const int k = iv[2];
+#else
+        const int k = 0;
+#endif
+
+        const Box& domain_box = geom.Domain();
+
+        const BCRec& bc = bcr[bcomp];
+
+        if (1101 == probtype && i < domain_box.smallEnd(0))
+        {
+            int direction = 1;
+            int half_num_cells = domain_box.length(direction) / 2;
+            if (j > half_num_cells) {
+                // Here we take the inflow BC specified in inputs file
+                temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)];
+            }
+        }
+        else if (1101 == probtype && i > domain_box.bigEnd(0))
+        {
+            int direction = 1;
+            int half_num_cells = domain_box.length(direction) / 2;
+            if (j <= half_num_cells) {
+                temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)];
+            }
+        }
+#if (AMREX_SPACEDIM == 3)
+        else if (1102 == probtype && j > domain_box.bigEnd(1))
+        {
+            int direction = 2;
+            int half_num_cells = domain_box.length(direction) / 2;
+            if (k <= half_num_cells) {
+                temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
+            }
+        }
+#endif
+        else if ( (i < domain_box.smallEnd(0)) &&
+                  ( (bc.lo(0) == amrex::BCType::ext_dir) ||
+                    (bc.lo(0) == amrex::BCType::direction_dependent &&
+                     bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][0] >= 0.) ) )
+        {
+            temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)];
+        }
+        else if ( (i > domain_box.bigEnd(0)) &&
+                  ( (bc.hi(0) == amrex::BCType::ext_dir) ||
+                    (bc.hi(0) == amrex::BCType::direction_dependent &&
+                     bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][0] <= 0.) ) )
+        {
+            temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)];
+        }
+
+        if ( (j < domain_box.smallEnd(1)) &&
+             ( (bc.lo(1) == amrex::BCType::ext_dir) ||
+               (bc.lo(1) == amrex::BCType::direction_dependent &&
+                bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][1] >= 0.) ) )
+        {
+            temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)];
+        }
+        else if ( (j > domain_box.bigEnd(1)) &&
+                  ( (bc.hi(1) == amrex::BCType::ext_dir) ||
+                    (bc.hi(1) == amrex::BCType::direction_dependent &&
+                     bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][1] <= 0.) ) )
+        {
+            temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
+        }
+#if (AMREX_SPACEDIM == 3)
+        if ( (k < domain_box.smallEnd(2)) &&
+             ( (bc.lo(2) == amrex::BCType::ext_dir) ||
+               (bc.lo(2) == amrex::BCType::direction_dependent &&
+                bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][2] >= 0.) ) )
+        {
+            temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)];
+        }
+        else if ( (k > domain_box.bigEnd(2)) &&
+                  ( (bc.hi(2) == amrex::BCType::ext_dir) ||
+                    (bc.hi(2) == amrex::BCType::direction_dependent &&
+                     bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][2] <= 0.) ) )
+        {
+            temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)];
+        }
+#endif
+    }
+};
+
 struct IncfloForFill
 {
     int probtype;

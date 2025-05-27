@@ -8,12 +8,13 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
 
     if (!m_use_temperature) { return; }
 
-    Real new_time = m_cur_time + m_dt;
+    Real const  new_time = m_cur_time + m_dt;
+    Real const half_time = m_cur_time + m_dt/2.;
 
     // *************************************************************************************
     // Compute the temperature forcing terms
     // *************************************************************************************
-    compute_tem_forces(GetVecOfPtrs(scratch),  get_density_nph_const());
+    compute_tem_forces(half_time, GetVecOfPtrs(scratch));
 
     // *************************************************************************************
     // Compute explicit diffusive term (if corrector)
@@ -44,16 +45,15 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
             {
                 Box const& bx = mfi.tilebox();
                 Array4<Real const> const& tem_o   = ld.temperature_o.const_array(mfi);
-                Array4<Real const> const& rho_o   = ld.density_o.const_array(mfi);
-                Array4<Real> const& tem           = ld.temperature.array(mfi);
+                Array4<Real      > const& tem     = ld.temperature.array(mfi);
                 Array4<Real const> const& rho_h   = ld.density_nph.const_array(mfi);
                 Array4<Real const> const& dtdt_o  = ld.conv_temperature_o.const_array(mfi);
                 // temperature forcing term (Q) is in scratch
-                Array4<Real const> const& tem_f   = scratch[lev].const_array(mfi);
+                Array4<Real      > const& tem_f   = scratch[lev].array(mfi);
 
                 FArrayBox cp_fab(bx, 1, The_Async_Arena());
+                compute_cp(lev, mfi, cp_fab);
                 Array4<Real      > const& cp      = cp_fab.array();
-                compute_cp(lev, mfi, cp);
 
                 if (m_diff_type == DiffusionType::Explicit)
                 {
@@ -71,8 +71,6 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
 
                     ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        Real cp;
-                        get_cp(cp);
                         tem(i,j,k) = tem_o(i,j,k) + l_dt *
                             ( dtdt_o(i,j,k) + (tem_f(i,j,k) + m_half*laps_o(i,j,k))/(rho_h(i,j,k) * cp(i,j,k)) );
                         // Save rhoCp for use in implicit solve.
@@ -84,10 +82,8 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
                 {
                     ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        Real cp;
-                        get_cp(cp);
                         tem(i,j,k) = tem_o(i,j,k) + l_dt *
-                            ( dtdt_o(i,j,k) + tem_f(i,j,k))/(rho_h(i,j,k) * cp(i,j,k)) );
+                            (dtdt_o(i,j,k) + tem_f(i,j,k)) / (rho_h(i,j,k) * cp(i,j,k));
                         // Save rhoCp for use in implicit solve.
                         // Reuse scratch space since we are done with forcing now.
                         tem_f(i,j,k) = rho_h(i,j,k) * cp(i,j,k);

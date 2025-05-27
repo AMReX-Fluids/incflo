@@ -26,3 +26,14 @@ void incflo::fillphysbc_tracer (int lev, Real time, MultiFab& tracer, int ng)
         physbc.FillBoundary(tracer, 0, m_ntrac, IntVect(ng), time, 0);
     }
 }
+
+void incflo::fillphysbc_temperature (int lev, Real time, MultiFab& temperature, int ng)
+{
+    if (m_use_temperature)
+    {
+        PhysBCFunct<GpuBndryFuncFab<IncfloTempFill> > physbc
+            (geom[lev], get_temperature_bcrec(),
+             IncfloTempFill{m_probtype, m_bc_temperature, m_bc_velocity});
+        physbc.FillBoundary(temperature, 0, 1, IntVect(ng), time, 0);
+    }
+}

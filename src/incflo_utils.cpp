@@ -32,6 +32,18 @@ Vector<MultiFab*> incflo::get_tracer_eb () noexcept
     return r;
 }
 
+Vector<MultiFab*> incflo::get_temperature_eb () noexcept
+{
+    Vector<MultiFab*> r;
+    if (m_use_temperature) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->temperature_eb));
+        }
+    }
+    return r;
+}
+
 Vector<MultiFab*> incflo::get_velocity_old () noexcept
 {
     Vector<MultiFab*> r;
@@ -98,6 +110,30 @@ Vector<MultiFab*> incflo::get_tracer_new () noexcept
     r.reserve(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
         r.push_back(&(m_leveldata[lev]->tracer));
+    }
+    return r;
+}
+
+Vector<MultiFab*> incflo::get_temperature_old () noexcept
+{
+    Vector<MultiFab*> r;
+    if (m_use_temperature) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->temperature_o));
+        }
+    }
+    return r;
+}
+
+Vector<MultiFab*> incflo::get_temperature_new () noexcept
+{
+    Vector<MultiFab*> r;
+    if (m_use_temperature) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->temperature));
+        }
     }
     return r;
 }
@@ -172,6 +208,30 @@ Vector<MultiFab*> incflo::get_conv_tracer_new () noexcept
     return r;
 }
 
+Vector<MultiFab*> incflo::get_conv_temperature_old () noexcept
+{
+    Vector<MultiFab*> r;
+    if (m_use_temperature) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->conv_temperature_o));
+        }
+    }
+    return r;
+}
+
+Vector<MultiFab*> incflo::get_conv_temperature_new () noexcept
+{
+    Vector<MultiFab*> r;
+    if (m_use_temperature) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->conv_temperature));
+        }
+    }
+    return r;
+}
+
 Vector<MultiFab*> incflo::get_divtau_old () noexcept
 {
     Vector<MultiFab*> r;
@@ -208,6 +268,30 @@ Vector<MultiFab*> incflo::get_laps_new () noexcept
     r.reserve(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
         r.push_back(&(m_leveldata[lev]->laps));
+    }
+    return r;
+}
+
+Vector<MultiFab*> incflo::get_laps_tem_old () noexcept
+{
+    Vector<MultiFab*> r;
+    if (m_use_temperature) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->laps_tem_o));
+        }
+    }
+    return r;
+}
+
+Vector<MultiFab*> incflo::get_laps_tem_new () noexcept
+{
+    Vector<MultiFab*> r;
+    if (m_use_temperature) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->laps_tem));
+        }
     }
     return r;
 }
@@ -278,6 +362,30 @@ Vector<MultiFab const*> incflo::get_tracer_new_const () const noexcept
     r.reserve(finest_level+1);
     for (int lev = 0; lev <= finest_level; ++lev) {
         r.push_back(&(m_leveldata[lev]->tracer));
+    }
+    return r;
+}
+
+Vector<MultiFab const*> incflo::get_temperature_old_const () const noexcept
+{
+    Vector<MultiFab const*> r;
+    if (m_use_temperature) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->temperature_o));
+        }
+    }
+    return r;
+}
+
+Vector<MultiFab const*> incflo::get_temperature_new_const () const noexcept
+{
+    Vector<MultiFab const*> r;
+    if (m_use_temperature) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->temperature));
+        }
     }
     return r;
 }
@@ -361,5 +469,21 @@ void incflo::copy_from_old_to_new_tracer (int lev, IntVect const& ng)
     if (m_ntrac > 0) {
         MultiFab::Copy(m_leveldata[lev]->tracer,
                        m_leveldata[lev]->tracer_o, 0, 0, m_ntrac, ng);
+    }
+}
+
+void incflo::copy_from_new_to_old_temperature (IntVect const& ng)
+{
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        MultiFab::Copy(m_leveldata[lev]->temperature_o,
+                       m_leveldata[lev]->temperature, 0, 0, 1, ng);
+    }
+}
+
+void incflo::copy_from_old_to_new_temperature (IntVect const& ng)
+{
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        MultiFab::Copy(m_leveldata[lev]->temperature,
+                       m_leveldata[lev]->temperature_o, 0, 0, 1, ng);
     }
 }

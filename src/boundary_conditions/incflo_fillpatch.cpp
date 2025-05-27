@@ -114,6 +114,43 @@ void incflo::fillpatch_tracer (int lev, Real time, MultiFab& tracer, int ng)
     }
 }
 
+void incflo::fillpatch_temperature (int lev, Real time, MultiFab& temperature, int ng)
+{
+    if (!m_use_temperature) return;
+
+    if (lev == 0) {
+        PhysBCFunct<GpuBndryFuncFab<IncfloTempFill> > physbc
+            (geom[lev], get_temperature_bcrec(), IncfloTempFill{m_probtype, m_bc_temperature, m_bc_velocity});
+        FillPatchSingleLevel(temperature, IntVect(ng), time,
+                             {&(m_leveldata[lev]->temperature_o),
+                              &(m_leveldata[lev]->temperature)},
+                             {m_t_old[lev], m_t_new[lev]}, 0, 0, 1, geom[lev],
+                             physbc, 0);
+    } else {
+        const auto& bcrec = get_temperature_bcrec();
+        PhysBCFunct<GpuBndryFuncFab<IncfloTempFill> > cphysbc
+            (geom[lev-1], bcrec, IncfloTempFill{m_probtype, m_bc_temperature, m_bc_velocity});
+        PhysBCFunct<GpuBndryFuncFab<IncfloTempFill> > fphysbc
+            (geom[lev], bcrec, IncfloTempFill{m_probtype, m_bc_temperature, m_bc_velocity});
+#ifdef AMREX_USE_EB
+        Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
+            (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
+#else
+        Interpolater* mapper = &cell_cons_interp;
+#endif
+        FillPatchTwoLevels(temperature, IntVect(ng), time,
+                           {&(m_leveldata[lev-1]->temperature_o),
+                            &(m_leveldata[lev-1]->temperature)},
+                           {m_t_old[lev-1], m_t_new[lev-1]},
+                           {&(m_leveldata[lev]->temperature_o),
+                            &(m_leveldata[lev]->temperature)},
+                           {m_t_old[lev], m_t_new[lev]},
+                           0, 0, 1, geom[lev-1], geom[lev],
+                           cphysbc, 0, fphysbc, 0,
+                           refRatio(lev-1), mapper, bcrec, 0);
+    }
+}
+
 void incflo::fillpatch_gradp (int lev, Real time, MultiFab& gp, int ng)
 {
     if (lev == 0) {
@@ -229,6 +266,28 @@ void incflo::fillcoarsepatch_tracer (int lev, Real time, MultiFab& tracer, int n
 #endif
     amrex::InterpFromCoarseLevel(tracer, IntVect(ng), time,
                                  m_leveldata[lev-1]->tracer, 0, 0, m_ntrac,
+                                 geom[lev-1], geom[lev],
+                                 cphysbc, 0, fphysbc, 0,
+                                 refRatio(lev-1), mapper, bcrec, 0);
+}
+
+void incflo::fillcoarsepatch_temperature (int lev, Real time, MultiFab& temperature, int ng)
+{
+    if (m_use_temperature) return;
+
+    const auto& bcrec = get_temperature_bcrec();
+    PhysBCFunct<GpuBndryFuncFab<IncfloTempFill> > cphysbc
+        (geom[lev-1], bcrec, IncfloTempFill{m_probtype, m_bc_temperature, m_bc_velocity});
+    PhysBCFunct<GpuBndryFuncFab<IncfloTempFill> > fphysbc
+        (geom[lev], bcrec, IncfloTempFill{m_probtype, m_bc_temperature, m_bc_velocity});
+#ifdef AMREX_USE_EB
+    Interpolater* mapper = (EBFactory(0).isAllRegular()) ?
+        (Interpolater*)(&cell_cons_interp) : (Interpolater*)(&eb_cell_cons_interp);
+#else
+    Interpolater* mapper = &cell_cons_interp;
+#endif
+    amrex::InterpFromCoarseLevel(temperature, IntVect(ng), time,
+                                 m_leveldata[lev-1]->temperature, 0, 0, 1,
                                  geom[lev-1], geom[lev],
                                  cphysbc, 0, fphysbc, 0,
                                  refRatio(lev-1), mapper, bcrec, 0);

@@ -429,6 +429,7 @@ void incflo::InitialIterations ()
     copy_from_new_to_old_velocity();
     copy_from_new_to_old_density();
     copy_from_new_to_old_tracer();
+    copy_from_new_to_old_temperature();
 
     int initialisation = 1;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
@@ -462,6 +463,7 @@ void incflo::InitialIterations ()
         copy_from_old_to_new_velocity();
         copy_from_old_to_new_density();
         copy_from_old_to_new_tracer();
+        copy_from_old_to_new_temperature();
     }
 
     // Reset dt to get initial step as specified, otherwise we can see increase to dt

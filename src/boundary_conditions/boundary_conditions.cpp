@@ -134,7 +134,7 @@ void incflo::init_bcs ()
             // We potentially read in values at no-slip walls in the event that the
             // tracer has Dirichlet bcs
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
-            pp.query("temperature", m_bc_temperature[ori], 0, 1);
+            pp.query("temperature", m_bc_temperature[ori]);
 
             // Set mathematical BCs
             AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::ext_dir);,
@@ -165,7 +165,7 @@ void incflo::init_bcs ()
             // We potentially read in values at slip walls in the event that the
             // tracer has Dirichlet bcs
             pp.queryarr("tracer", m_bc_tracer[ori], 0, m_ntrac);
-            pp.query("temperature", m_bc_temperature[ori], 0, 1);
+            pp.query("temperature", m_bc_temperature[ori]);
 
             // Tangential directions have hoextrap
             AMREX_D_TERM(m_bcrec_velocity[0].set(ori, BCType::hoextrap);,

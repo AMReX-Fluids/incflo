@@ -163,7 +163,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     {
         compute_temperature_diff_coeff(m_cur_time, GetVecOfPtrs(tem_eta));
         if (need_divtau()) {
-            compute_laps(get_laps_T_old(), get_temperature_old_const(), GetVecOfConstPtrs(tem_eta));
+            compute_laps(get_laps_tem_old(), get_temperature_old_const(), GetVecOfConstPtrs(tem_eta));
         }
     }
 
@@ -194,9 +194,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                             get_velocity_old_const(), get_density_old_const(), get_tracer_old_const(),
                             get_temperature_old_const(),
                             AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                            GetVecOfPtrs(w_mac)),
-                            // FIXME??? WIll VecOfPtrs work if we don't allocate anything as for !use_T
-                            // I think it will, but don't forget to test...
+                                         GetVecOfPtrs(w_mac)),
                             GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
                             GetVecOfPtrs(tem_forces), m_cur_time);
 

@@ -32,6 +32,7 @@ void incflo::Advance()
     copy_from_new_to_old_velocity();
     copy_from_new_to_old_density();
     copy_from_new_to_old_tracer();
+    copy_from_new_to_old_temperature();
 
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
