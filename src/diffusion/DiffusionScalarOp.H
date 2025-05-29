@@ -19,6 +19,7 @@ public:
                          amrex::Vector<amrex::MultiFab*> const& density,
                          amrex::Vector<amrex::MultiFab const*> const& eta,
                          amrex::Vector<int> const& use_rho,
+                         amrex::Vector<amrex::BCRec> bcrec,
                          amrex::Real dt);
 
     void diffuse_vel_components (
@@ -29,7 +30,8 @@ public:
 
     void compute_laps (amrex::Vector<amrex::MultiFab*> const& laps,
                        amrex::Vector<amrex::MultiFab const*> const& a_scalar,
-                       amrex::Vector<amrex::MultiFab const*> const& eta);
+                       amrex::Vector<amrex::MultiFab const*> const& eta,
+                       amrex::Vector<amrex::BCRec> bcrec);
 
     void compute_divtau (amrex::Vector<amrex::MultiFab*> const& a_divtau,
                          amrex::Vector<amrex::MultiFab const*> const& a_vel,

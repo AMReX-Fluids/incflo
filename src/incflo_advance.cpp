@@ -41,6 +41,9 @@ void incflo::Advance()
         if (m_advect_tracer) {
             fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
         }
+        if (m_use_temperature) {
+            fillpatch_temperature(lev, m_t_old[lev], m_leveldata[lev]->temperature_o, ng);
+        }
     }
 
 #ifdef AMREX_USE_EB
@@ -49,6 +52,7 @@ void incflo::Advance()
          set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb()[lev], 1);
          set_eb_density(lev, m_t_old[lev], *get_density_eb()[lev], 1);
          set_eb_tracer(lev, m_t_old[lev], *get_tracer_eb()[lev], 1);
+         set_eb_temperature(lev, m_t_old[lev], *get_temperature_eb()[lev], 1);
        }
     }
 #endif
@@ -61,6 +65,9 @@ void incflo::Advance()
             fillpatch_density(lev, m_t_new[lev], m_leveldata[lev]->density, ng);
             if (m_advect_tracer) {
                 fillpatch_tracer(lev, m_t_new[lev], m_leveldata[lev]->tracer, ng);
+            }
+            if (m_use_temperature) {
+                fillpatch_temperature(lev, m_t_new[lev], m_leveldata[lev]->temperature, ng);
             }
         }
 

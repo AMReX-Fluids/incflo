@@ -344,7 +344,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         // For time-dependent Dirichlet BCs
         MultiFab  vel_nph(    vel[lev]->boxArray(),    vel[lev]->DistributionMap(),AMREX_SPACEDIM,1);
         MultiFab  rho_nph(density[lev]->boxArray(),density[lev]->DistributionMap(),1,1);
-        MultiFab trac_nph( tracer[lev]->boxArray(), tracer[lev]->DistributionMap(),m_ntrac,1);
+        MultiFab trac_nph;
+        if (m_advect_tracer && (m_ntrac>0)) {
+            trac_nph.define( tracer[lev]->boxArray(), tracer[lev]->DistributionMap(),m_ntrac,1);
+        }
         MultiFab temp_nph;
         if (m_use_temperature) {
             temp_nph.define(temperature[lev]->boxArray(),temperature[lev]->DistributionMap(),1,1);
@@ -614,7 +617,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             if (m_use_temperature) {
                 // Temperature adveciton is always non-conservative
 
-                face_comp += m_ntrac;
+                face_comp = (m_advect_tracer && (m_ntrac>0)) ? m_ntrac : 0;
+                face_comp += (m_constant_density) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
                 ncomp = 1;
                 is_velocity = false;
                 allow_inflow_on_outflow = false;
@@ -673,7 +677,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         MultiFab dvdt_tmp(vel[lev]->boxArray(),dmap[lev],AMREX_SPACEDIM,3,MFInfo(),Factory(lev));
         MultiFab drdt_tmp(vel[lev]->boxArray(),dmap[lev],1             ,3,MFInfo(),Factory(lev));
         MultiFab dtdt_tmp(vel[lev]->boxArray(),dmap[lev],m_ntrac       ,3,MFInfo(),Factory(lev));
-        MultiFab dtemdt_tmp(vel[lev]->boxArray(),dmap[lev],1             ,3,MFInfo(),Factory(lev));
+        MultiFab dtemdt_tmp(vel[lev]->boxArray(),dmap[lev],1           ,3,MFInfo(),Factory(lev));
 
         // Must initialize to zero because not all values may be set, e.g. outside the domain.
         dvdt_tmp.setVal(0.);
@@ -865,9 +869,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
         if (m_use_temperature)
         {
-            int flux_comp = m_ntrac;
+            int flux_comp = (m_advect_tracer && (m_ntrac>0)) ? m_ntrac : 0;
             flux_comp += (m_constant_density) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
-
+            Print()<<"Computing temperature conv ..."<<flux_comp
+                   <<"\nComputing temperature comp ..."<<flux_x[lev].nComp()<<std::endl;
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -883,12 +888,12 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                  AMREX_D_DECL(flux_x[lev].const_array(mfi,flux_comp),
                                                               flux_y[lev].const_array(mfi,flux_comp),
                                                               flux_z[lev].const_array(mfi,flux_comp)),
-                                                 vfrac.const_array(mfi), m_ntrac, geom[lev], mult,
+                                                 vfrac.const_array(mfi), 1, geom[lev], mult,
                                                  fluxes_are_area_weighted,
                                                  m_eb_flow.enabled ?
                                                     get_velocity_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  m_eb_flow.enabled ?
-                                                    get_tracer_eb()[lev]->const_array(mfi) : Array4<Real const>{},
+                                                    get_temperature_eb()[lev]->const_array(mfi) : Array4<Real const>{},
                                                  flagfab.const_array(),
                                                  (flagfab.getType(bx) != FabType::regular) ?
                                                     ebfact->getBndryArea().const_array(mfi) : Array4<Real const>{},

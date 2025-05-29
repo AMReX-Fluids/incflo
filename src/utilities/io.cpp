@@ -394,6 +394,8 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
                 fillpatch_velocity(lev, m_cur_time, m_leveldata[lev]->velocity, ng);
                 fillpatch_density(lev, m_cur_time, m_leveldata[lev]->density, ng);
                 fillpatch_tracer(lev, m_cur_time, m_leveldata[lev]->tracer, ng);
+                // Whether temperature fillpatch is needed depends on form of forcing term
+                // fillpatch_temperature(lev, m_cur_time, m_leveldata[lev]->temperature, ng);
             }
             break;
         }

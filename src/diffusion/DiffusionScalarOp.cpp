@@ -32,11 +32,6 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                  m_incflo->DistributionMap(0,finest_level),
                                                  info_solve, ebfact);
         m_eb_scal_solve_op->setMaxOrder(m_mg_maxorder);
-        // For now, code requires (in more than 1 place) that m_ntrac>=1 and all the tracers have the same BCs
-        m_eb_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
-                                                                        m_incflo->m_bcrec_tracer[0].lo()),
-                                        m_incflo->get_diffuse_scalar_bc(Orientation::high,
-                                                                        m_incflo->m_bcrec_tracer[0].hi()));
 
         if (!m_incflo->useTensorSolve())
         {
@@ -56,11 +51,6 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                      m_incflo->DistributionMap(0,finest_level),
                                                      info_apply, ebfact);
             m_eb_scal_apply_op->setMaxOrder(m_mg_maxorder);
-
-            m_eb_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
-                                                                            m_incflo->m_bcrec_tracer[0].lo()),
-                                            m_incflo->get_diffuse_scalar_bc(Orientation::high,
-                                                                            m_incflo->m_bcrec_tracer[0].hi()));
         }
 
         if ( (m_incflo->need_divtau() && !m_incflo->useTensorSolve()) ||
@@ -83,10 +73,6 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                       m_incflo->DistributionMap(0,m_incflo->finestLevel()),
                                                       info_solve);
         m_reg_scal_solve_op->setMaxOrder(m_mg_maxorder);
-        m_reg_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
-                                                                         m_incflo->m_bcrec_tracer[0].lo()),
-                                         m_incflo->get_diffuse_scalar_bc(Orientation::high,
-                                                                         m_incflo->m_bcrec_tracer[0].hi()));
 
         if (!m_incflo->useTensorSolve())
         {
@@ -104,10 +90,6 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                           m_incflo->DistributionMap(0,m_incflo->finestLevel()),
                                                           info_apply);
             m_reg_scal_apply_op->setMaxOrder(m_mg_maxorder);
-            m_reg_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
-                                                                             m_incflo->m_bcrec_tracer[0].lo()),
-                                             m_incflo->get_diffuse_scalar_bc(Orientation::high,
-                                                                             m_incflo->m_bcrec_tracer[0].hi()));
         }
 
         if ( (m_incflo->need_divtau() && !m_incflo->useTensorSolve()) ||
@@ -151,6 +133,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
                                    Vector<MultiFab*> const& density,
                                    Vector<MultiFab const*> const& eta,
                                    amrex::Vector<int> const& use_rho,
+                                   amrex::Vector<amrex::BCRec> bcrec,
                                    Real dt)
 {
     //
@@ -220,6 +203,11 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
 #ifdef AMREX_USE_EB
         if (m_eb_scal_solve_op)
         {
+            m_eb_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
+                                                                            bcrec[0].lo()),
+                                            m_incflo->get_diffuse_scalar_bc(Orientation::high,
+                                                                            bcrec[0].hi()));
+
             if ( m_incflo->m_has_mixedBC && comp>0 ) {
                 // Must reset scalars (and Acoef, done below) to reuse solver with Robin BC
                 m_eb_scal_solve_op->setScalars(1.0, dt);
@@ -243,6 +231,11 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
         else
 #endif
         {
+            m_reg_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
+                                                                             bcrec[comp].lo()),
+                                             m_incflo->get_diffuse_scalar_bc(Orientation::high,
+                                                                             bcrec[comp].hi()));
+
             for (int lev = 0; lev <= finest_level; ++lev) {
                 if ( comp > 0 && (use_rho[comp] != use_rho[comp-1]) ) {
                     if ( use_rho[comp] ) {
@@ -486,7 +479,8 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
 
 void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                                       Vector<MultiFab const*> const& a_scalar,
-                                      Vector<MultiFab const*> const& a_eta)
+                                      Vector<MultiFab const*> const& a_eta,
+                                      amrex::Vector<amrex::BCRec> bcrec)
 {
     BL_PROFILE("DiffusionScalarOp::compute_laps");
 
@@ -513,8 +507,12 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
         // For when we use the stencil for centroid values
         // m_eb_scal_apply_op->setPhiOnCentroid();
 
-        // FIXME? Can we do the solve together now?
         for (int comp = 0; comp < n_comp; ++comp) {
+            m_eb_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
+                                                                            bcrec[comp].lo()),
+                                            m_incflo->get_diffuse_scalar_bc(Orientation::high,
+                                                                            bcrec[comp].hi()));
+
             int eta_comp = comp;
 
             if ( m_incflo->m_has_mixedBC && comp>0 ){
@@ -570,6 +568,10 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
         m_reg_scal_apply_op->setScalars(0.0, -1.0);
 
         for (int comp = 0; comp < n_comp; ++comp) {
+            m_reg_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
+                                                                             bcrec[comp].lo()),
+                                             m_incflo->get_diffuse_scalar_bc(Orientation::high,
+                                                                             bcrec[comp].hi()));
 
             int eta_comp = comp;
 

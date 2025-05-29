@@ -429,4 +429,73 @@ incflo::set_eb_tracer (int lev, Real /*time*/, MultiFab& eb_tracer, int nghost)
      IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
      eb_tracer.FillBoundary(0,m_ntrac,ng_vect,gm.periodicity());
 }
+
+void
+incflo::set_eb_temperature (int lev, Real /*time*/, MultiFab& eb_temperature, int nghost)
+{
+    Geometry const& gm = Geom(lev);
+    eb_temperature.setVal(0.);
+
+    const auto& factory =
+       dynamic_cast<EBFArrayBoxFactory const&>(eb_temperature.Factory());
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+     for (MFIter mfi(eb_temperature, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+       const Box& bx = mfi.tilebox();
+       const auto& flagfab      = factory.getMultiEBCellFlagFab()[mfi];
+
+       if (flagfab.getType(bx) == FabType::singlevalued) {
+          const auto& flags_arr    = flagfab.const_array();
+          const auto& eb_temperature_arr   = eb_temperature[mfi].array();
+          const auto& norm_arr     = factory.getBndryNormal()[mfi].const_array();
+
+          bool has_normal = m_eb_flow.has_normal;
+          GpuArray<Real, AMREX_SPACEDIM> normal{0.};
+          if (has_normal) {
+             AMREX_D_TERM(
+             normal[0] = m_eb_flow.normal[0];,
+             normal[1] = m_eb_flow.normal[1];,
+             normal[2] = m_eb_flow.normal[2]);
+          }
+          Real pad = std::numeric_limits<float>::epsilon();
+          Real normal_tol = m_eb_flow.normal_tol;
+          Real norm_tol_lo = Real(-1.) - (normal_tol + pad);
+          Real norm_tol_hi = Real(-1.) + (normal_tol + pad);
+
+          Real eb_flow_temperature = m_eb_flow.temperature;
+
+          ParallelFor(bx, [flags_arr,eb_temperature_arr,norm_arr,has_normal,normal,
+                 norm_tol_lo, norm_tol_hi, eb_flow_temperature]
+             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+           {
+             if (flags_arr(i,j,k).isSingleValued()) {
+                Real mask = Real(1.0);
+
+                if(has_normal) {
+#if (AMREX_SPACEDIM==3)
+                  Real dotprod = norm_arr(i,j,k,0)*normal[0]
+                                 + norm_arr(i,j,k,1)*normal[1]
+                                 + norm_arr(i,j,k,2)*normal[2];
+#else
+                  Real dotprod = norm_arr(i,j,k,0)*normal[0]
+                                 + norm_arr(i,j,k,1)*normal[1];
+#endif
+
+                  mask = ((norm_tol_lo <= dotprod) &&
+                          (dotprod <= norm_tol_hi)) ? Real(1.0) : Real(0.0);
+                }
+
+                eb_temperature_arr(i,j,k) = mask*eb_flow_temperature;
+             }
+           });
+       }
+     }
+
+     // We make sure to only fill "nghost" ghost cells so we don't accidentally
+     // over-write good ghost cell values with unfilled ghost cell values
+     IntVect ng_vect(AMREX_D_DECL(nghost,nghost,nghost));
+     eb_temperature.FillBoundary(0,1,ng_vect,gm.periodicity());
+}
 #endif

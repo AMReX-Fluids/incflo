@@ -23,7 +23,7 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
     {
         compute_temperature_diff_coeff(new_time, GetVecOfPtrs(tem_eta));
         if (m_diff_type == DiffusionType::Explicit) {
-            compute_laps(get_laps_new(), get_temperature_new_const(), GetVecOfConstPtrs(tem_eta));
+            compute_laps_T(get_laps_new(), get_temperature_new_const(), GetVecOfConstPtrs(tem_eta));
         }
     }
 

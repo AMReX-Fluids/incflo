@@ -166,7 +166,10 @@ void incflo::ReadParameters ()
             amrex::Abort("Temperature equation not yet implemented with MOL option");
         }
 #ifdef AMREX_USE_EB
-        if (m_use_temperature) {
+        std::string geom_type = "all_regular";
+        pp.query("geometry", geom_type);
+
+        if ( m_use_temperature && !(geom_type=="all_regular") ) {
             amrex::Abort("Temperature equation not yet tested with EB");
             // Maybe will want to disallow EB flow with T at first...
         }
@@ -453,6 +456,9 @@ void incflo::InitialIterations ()
         if (m_advect_tracer) {
             fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
         }
+        if (m_use_temperature) {
+            fillpatch_temperature(lev, m_t_old[lev], m_leveldata[lev]->temperature_o, ng);
+        }
     }
 
     for (int iter = 0; iter < m_initial_iterations; ++iter)
@@ -631,6 +637,12 @@ incflo::InitialRedistribution ()
             ld.tracer.FillBoundary(geom[lev].periodicity());
             MultiFab::Copy(ld.tracer_o, ld.tracer, 0, 0, m_ntrac, ld.tracer.nGrow());
             fillpatch_tracer(lev, m_t_new[lev], ld.tracer_o, 3);
+        }
+        if (m_use_temperature)
+        {
+            ld.temperature.FillBoundary(geom[lev].periodicity());
+            MultiFab::Copy(ld.temperature_o, ld.temperature, 0, 0, 1, ld.temperature.nGrow());
+            fillpatch_temperature(lev, m_t_new[lev], ld.temperature_o, 3);
         }
 
         for (MFIter mfi(ld.density,TilingIfNotGPU()); mfi.isValid(); ++mfi)

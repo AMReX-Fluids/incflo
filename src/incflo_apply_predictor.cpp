@@ -163,7 +163,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     {
         compute_temperature_diff_coeff(m_cur_time, GetVecOfPtrs(tem_eta));
         if (need_divtau()) {
-            compute_laps(get_laps_tem_old(), get_temperature_old_const(), GetVecOfConstPtrs(tem_eta));
+            compute_laps_T(get_laps_tem_old(), get_temperature_old_const(), GetVecOfConstPtrs(tem_eta));
         }
     }
 

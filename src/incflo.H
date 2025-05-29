@@ -131,6 +131,7 @@ public:
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
     void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
     void set_eb_tracer (int lev, amrex::Real time, amrex::MultiFab& eb_tracer, int nghost);
+    void set_eb_temperature (int lev, amrex::Real time, amrex::MultiFab& eb_temperature, int nghost);
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
@@ -247,6 +248,10 @@ public:
     void compute_laps (amrex::Vector<amrex::MultiFab      *> const& laps,
                        amrex::Vector<amrex::MultiFab const*> const& scalar,
                        amrex::Vector<amrex::MultiFab const*> const& eta);
+
+    void compute_laps_T (amrex::Vector<amrex::MultiFab      *> const& laps,
+                         amrex::Vector<amrex::MultiFab const*> const& scalar,
+                         amrex::Vector<amrex::MultiFab const*> const& eta);
 
     void diffuse_scalar (amrex::Vector<amrex::MultiFab      *> const& scalar,
                          amrex::Vector<amrex::MultiFab      *> const& density,
@@ -544,6 +549,7 @@ private:
        // scalars
        amrex::Real density{1.};
        amrex::Vector<amrex::Real> tracer;
+       amrex::Real temperature{1.};
 
        EBFlow_t ()
 
