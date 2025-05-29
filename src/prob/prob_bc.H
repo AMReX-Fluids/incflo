@@ -44,14 +44,14 @@ struct IncfloVelFill
             if (i < domain_box.smallEnd(0))
             {
                 int dir = 0;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+dir];
+                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][dir];
 
                 int td1 = (dir+1)%AMREX_SPACEDIM;
-                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+td1];
+                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][td1];
 
 #if (AMREX_SPACEDIM == 3)
                 int td2 = (dir+2)%AMREX_SPACEDIM;
-                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+td2];
+                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][td2];
 #endif
 
                 // This may modify the normal velocity for specific problems
@@ -115,14 +115,14 @@ struct IncfloVelFill
             if (i > domain_box.bigEnd(0))
             {
                 int dir = 0;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+dir];
+                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][dir];
 
                 int td1 = (dir+1)%AMREX_SPACEDIM;
-                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+td1];
+                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][td1];
 
 #if (AMREX_SPACEDIM == 3)
                 int td2 = (dir+2)%AMREX_SPACEDIM;
-                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+td2];
+                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][td2];
 #endif
 
                 // This may modify the normal velocity for specific problems
@@ -173,14 +173,14 @@ struct IncfloVelFill
             if (j < domain_box.smallEnd(1))
             {
                 int dir = 1;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][orig_comp+dir];
+                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][dir];
 
                 int td1 = (dir+1)%AMREX_SPACEDIM;
-                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][orig_comp+td1];
+                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][td1];
 
 #if (AMREX_SPACEDIM == 3)
                 int td2 = (dir+2)%AMREX_SPACEDIM;
-                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][orig_comp+td2];
+                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][td2];
 #endif
 
                 // This may modify the normal velocity for specific problems
@@ -222,14 +222,14 @@ struct IncfloVelFill
             if (j > domain_box.bigEnd(1))
             {
                 int dir = 1;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+dir];
+                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][dir];
 
                 int td1 = (dir+1)%AMREX_SPACEDIM;
-                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+td1];
+                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][td1];
 
 #if (AMREX_SPACEDIM == 3)
                 int td2 = (dir+2)%AMREX_SPACEDIM;
-                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+td2];
+                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][td2];
 #endif
 
                 // This may modify the normal velocity for specific problems
@@ -277,13 +277,13 @@ struct IncfloVelFill
             if (k < domain_box.smallEnd(2))
             {
                 int dir = 2;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+dir];
+                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][dir];
 
                 int td1 = (dir+1)%AMREX_SPACEDIM;
-                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+td1];
+                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][td1];
 
                 int td2 = (dir+2)%AMREX_SPACEDIM;
-                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+td2];
+                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][td2];
 
                 // This may modify the normal velocity for specific problems
                 if (33 == probtype)
@@ -321,13 +321,13 @@ struct IncfloVelFill
             if (k > domain_box.bigEnd(2))
             {
                 int dir = 2;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][orig_comp+dir];
+                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][dir];
 
                 int td1 = (dir+1)%AMREX_SPACEDIM;
-                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][orig_comp+td1];
+                amrex::Real tang_vel1 = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][td1];
 
                 int td2 = (dir+2)%AMREX_SPACEDIM;
-                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][orig_comp+td2];
+                amrex::Real tang_vel2 = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][td2];
 
                 if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
                      (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
