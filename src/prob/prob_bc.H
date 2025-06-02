@@ -85,7 +85,11 @@ struct IncfloVelFill
                 else if ( (bc.lo(dir) == amrex::BCType::ext_dir) ||
                           (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel >= 0.) )
                 {
-                    vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
+                    if ( orig_comp+nc == dir ) {
+                        vel(i,j,k,dcomp+nc) = norm_vel;
+                    } else {
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][orig_comp+nc];
+                    }
                 }
                 else if (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel < 0.)
                 {
@@ -123,7 +127,11 @@ struct IncfloVelFill
                 else if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
                           (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
                 {
-                    vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
+                    if ( orig_comp+nc == dir ) {
+                        vel(i,j,k,dcomp+nc) = norm_vel;
+                    } else {
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][orig_comp+nc];
+                    }
                 }
                 else if (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
                 {
@@ -156,7 +164,11 @@ struct IncfloVelFill
                 if ( (bc.lo(dir) == amrex::BCType::ext_dir) ||
                      (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel >= 0.) )
                 {
-                    vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][orig_comp+nc];
+                    if ( orig_comp+nc == dir ) {
+                        vel(i,j,k,dcomp+nc) = norm_vel;
+                    } else {
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][orig_comp+nc];
+                    }
                 }
                 else if (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel < 0.)
                 {
@@ -193,7 +205,11 @@ struct IncfloVelFill
                     if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
                          (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
                     {
-                        vel(i,j,k,dcomp+nc) =  bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
+                        if ( orig_comp+nc == dir ) {
+                            vel(i,j,k,dcomp+nc) = norm_vel;
+                        } else {
+                            vel(i,j,k,dcomp+nc) =  bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
+                        }
                     }
                     else if (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
                     {
@@ -226,7 +242,11 @@ struct IncfloVelFill
                 if ( (bc.lo(dir) == amrex::BCType::ext_dir) ||
                      (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
                 {
-                    vel(i,j,k,dcomp+nc) =  bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+nc];
+                    if ( orig_comp+nc == dir ) {
+                        vel(i,j,k,dcomp+nc) = norm_vel;
+                    } else {
+                        vel(i,j,k,dcomp+nc) =  bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+nc];
+                    }
                 }
                 else if (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
                 {
@@ -245,7 +265,11 @@ struct IncfloVelFill
                 if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
                      (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
                 {
-                    vel(i,j,k,dcomp+nc) =  bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][orig_comp+nc];
+                    if ( orig_comp+nc == dir ) {
+                        vel(i,j,k,dcomp+nc) = norm_vel;
+                    } else {
+                        vel(i,j,k,dcomp+nc) =  bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][orig_comp+nc];
+                    }
                 }
                 else if (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
                 {
