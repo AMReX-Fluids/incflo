@@ -231,6 +231,12 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& tracer,
                     }
                 }
 
+                if (m_incflo->hasEBFlow()) {
+                    MultiFab phi(*m_incflo->get_tracer_eb()[lev], amrex::make_alias, comp, 1);
+                  m_eb_scal_solve_op->setEBDirichlet(lev, phi, *eta[lev]);
+                } // else use default homogeneous Neumann on EB
+
+
                 Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_scalar_eta_to_faces(lev, comp, *eta[lev]);
                 m_eb_scal_solve_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
             }
