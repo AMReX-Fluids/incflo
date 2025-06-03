@@ -8,15 +8,12 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
                               incflo* my_incflo)
     : velocity    (ba, dm, AMREX_SPACEDIM, my_incflo->nghost_state(), MFInfo(), fact),
       velocity_o  (ba, dm, AMREX_SPACEDIM, my_incflo->nghost_state(), MFInfo(), fact),
-      velocity_eb (ba, dm, AMREX_SPACEDIM, my_incflo->nghost_state(), MFInfo(), fact),
 
       density     (ba, dm, 1             , my_incflo->nghost_state(), MFInfo(), fact),
-      density_eb  (ba, dm, 1             , my_incflo->nghost_state(), MFInfo(), fact),
       density_o   (ba, dm, 1             , my_incflo->nghost_state(), MFInfo(), fact),
       density_nph (ba, dm, 1             , my_incflo->nghost_state(), MFInfo(), fact),
 
       tracer    (ba, dm, my_incflo->m_ntrac, my_incflo->nghost_state(), MFInfo(), fact),
-      tracer_eb (ba, dm, my_incflo->m_ntrac, my_incflo->nghost_state(), MFInfo(), fact),
       tracer_o  (ba, dm, my_incflo->m_ntrac, my_incflo->nghost_state(), MFInfo(), fact),
 
       mac_phi   (ba, dm, 1             , 1       , MFInfo(), fact),
@@ -31,6 +28,13 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
     } else {
         p_nd.define(convert(ba,IntVect::TheNodeVector()), dm, 1, 0, MFInfo(), fact);
     }
+#ifdef AMREX_USE_EB
+    if (my_incflo->hasEBFlow()) {
+        velocity_eb.define(ba, dm, AMREX_SPACEDIM, my_incflo->nghost_state(), MFInfo(), fact);
+        density_eb.define (ba, dm, 1             , my_incflo->nghost_state(), MFInfo(), fact);
+        tracer_eb.define  (ba, dm, my_incflo->m_ntrac, my_incflo->nghost_state(), MFInfo(), fact);
+    }
+#endif
     if (my_incflo->m_advection_type != "MOL") {
         divtau_o.define(ba, dm, AMREX_SPACEDIM, 0, MFInfo(), fact);
         if (my_incflo->m_advect_tracer) {

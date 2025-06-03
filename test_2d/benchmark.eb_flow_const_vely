@@ -28,6 +28,9 @@ incflo.fluid_model      =   "newtonian" # Fluid model (rheology)
 incflo.mu               =   0.001       # Dynamic viscosity coefficient
 incflo.constant_density =   true        #
 
+incflo.advect_tracer = true
+incflo.mu_s = 0.1
+
 incflo.advection_type        =  "Godunov" 
 incflo.redistribution_type   =  "StateRedist" 
 
@@ -81,3 +84,4 @@ nodal_proj.verbose        =   1         # Nodal Projector
 #               EB FLOW                 #
 #.......................................#
 eb_flow.vel_mag        =  0.1
+eb_flow.tracer         =  1.
