@@ -93,7 +93,7 @@ struct IncfloVelFill
                 }
                 else if (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel < 0.)
                 {
-                    vel(i,j,k,dcomp+nc) = vel(i+1,j,k,dcomp+nc);
+                    vel(i,j,k,dcomp+nc) = vel(domain_box.smallEnd(0),j,k,dcomp+nc);
                 }
             } // low i
 
@@ -135,7 +135,7 @@ struct IncfloVelFill
                 }
                 else if (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
                 {
-                    vel(i,j,k,dcomp+nc) = vel(i-1,j,k,dcomp+nc);
+                    vel(i,j,k,dcomp+nc) = vel(domain_box.bigEnd(0),j,k,dcomp+nc);
                 }
             } // high i
 
@@ -172,7 +172,7 @@ struct IncfloVelFill
                 }
                 else if (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel < 0.)
                 {
-                    vel(i,j,k,dcomp+nc) = vel(i,j+1,k,dcomp+nc);
+                    vel(i,j,k,dcomp+nc) = vel(i,domain_box.smallEnd(1),k,dcomp+nc);
                 }
             } // low j
 
@@ -213,7 +213,7 @@ struct IncfloVelFill
                     }
                     else if (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
                     {
-                        vel(i,j,k,dcomp+nc) = vel(i,j-1,k,dcomp+nc);
+                        vel(i,j,k,dcomp+nc) = vel(i,domain_box.bigEnd(1),k,dcomp+nc);
                     }
                 } // not 1102
             } // high j
@@ -250,7 +250,7 @@ struct IncfloVelFill
                 }
                 else if (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
                 {
-                    vel(i,j,k,dcomp+nc) = vel(i,j,k+1,dcomp+nc);
+                    vel(i,j,k,dcomp+nc) = vel(i,j,domain_box.smallEnd(2),dcomp+nc);
                 }
             } // low k
 
@@ -273,7 +273,7 @@ struct IncfloVelFill
                 }
                 else if (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
                 {
-                    vel(i,j,k,dcomp+nc) = vel(i,j,k-1,dcomp+nc);
+                    vel(i,j,k,dcomp+nc) = vel(i,j,domain_box.bigEnd(2),dcomp+nc);
                 }
             } // high k
 #endif // 3d
