@@ -102,9 +102,9 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
     if (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit)
     {
         const int ng_diffusion = 1;
-        for (int lev = 0; lev <= finest_level; ++lev)
+        for (int lev = 0; lev <= finest_level; ++lev) {
             fillphysbc_temperature(lev, new_time, m_leveldata[lev]->temperature, ng_diffusion);
-
+        }
         Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : Real(0.5)*m_dt;
         // scratch holds rhoCp
         diffuse_temperature(get_temperature_new(), GetVecOfPtrs(scratch), GetVecOfConstPtrs(tem_eta),

@@ -134,7 +134,7 @@ void incflo::compute_viscosity_at_level (int /*lev*/,
     }
 }
 
-void incflo::compute_tracer_diff_coeff (Vector<MultiFab*> const& tra_eta, int nghost)
+void incflo::compute_tracer_diff_coeff (Vector<MultiFab*> const& tra_eta, int nghost) const
 {
     for (auto *mf : tra_eta) {
         for (int n = 0; n < m_ntrac; ++n) {
@@ -143,7 +143,7 @@ void incflo::compute_tracer_diff_coeff (Vector<MultiFab*> const& tra_eta, int ng
     }
 }
 
-void incflo::compute_temperature_diff_coeff (Real /*time*/, Vector<MultiFab*> const& tem_eta)
+void incflo::compute_temperature_diff_coeff (Real /*time*/, Vector<MultiFab*> const& tem_eta) const
 {
     for (auto *mf : tem_eta) { // loop over levels
         mf->setVal(m_mu_T);

@@ -2,10 +2,10 @@
 
 using namespace amrex;
 
-void incflo::compute_cp (int /*lev*/, MFIter& /*mfi*/, FArrayBox& cp)
+void incflo::compute_cp (int /*lev*/, MFIter& /*mfi*/, FArrayBox& cp) const
 {
     // Get leveldata if desired, e.g.
-    // Array4<Real const> const& rho   = density[lev]->array(mfi);
+    // Array4<Real const> const& rho   = density[lev]->const_array(mfi);
 
     Box const& bx = cp.box();
     Array4<Real> const& cp_a = cp.array();

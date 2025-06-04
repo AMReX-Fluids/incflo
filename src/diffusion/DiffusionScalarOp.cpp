@@ -130,10 +130,10 @@ DiffusionScalarOp::readParameters ()
 
 void
 DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
-                                   Vector<MultiFab*> const& density,
+                                   Vector<MultiFab*> const& chi,
                                    Vector<MultiFab const*> const& eta,
                                    Vector<MultiFab*> const& eb_dirichlet,
-                                   amrex::Vector<int> const& use_rho,
+                                   amrex::Vector<int> const& use_chi,
                                    amrex::Vector<amrex::BCRec> bcrec,
                                    Real dt)
 {
@@ -141,23 +141,23 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
     // Solves
     //      [alpha a - beta div ( b grad )] sca = RHS
     //
-    // If use_rho, solve
-    //      ( rho - dt div mu grad ) sca^(n+1) = rho sca^(*,n+1)
+    // If use_chi, solve
+    //      ( chi - dt div eta grad ) sca^(n+1) = chi sca^(*,n+1)
     //          alpha: 1
-    //          a: rho
+    //          a: chi
     //          beta: dt
-    //          b: mu
-    //          RHS: density * a_scalar
-    // This corresponds to the conservative scalar equation:
+    //          b: eta
+    //          RHS: chi * a_scalar
+    // This corresponds to the conservative scalar equation with chi -> rho:
     //     d(rho sca) / dt - div mu grad sca = -div(U rho sca) + rho H
-    // And also to the (non-conservative) temperature equation with rho -> rhoCp
+    // And also to the (non-conservative) temperature equation with chi -> rhoCp
     //
-    // If !use_rho, solve
-    //      ( 1 - dt div mu grad ) sca^(n+1) = sca^(*,n+1)
+    // If !use_chi, solve
+    //      ( 1 - dt div eta grad ) sca^(n+1) = sca^(*,n+1)
     //          alpha: 1
     //          a: 1
     //          beta: dt
-    //          b: mu
+    //          b: eta
     //          RHS: a_scalar
     // Which corresponds to the non-conservative scalar equation:
     //    d(sca) / dt - div mu grad sca = -U dot grad sca + H
@@ -179,8 +179,8 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
     {
         m_eb_scal_solve_op->setScalars(1.0, dt);
         for (int lev = 0; lev <= finest_level; ++lev) {
-            if ( use_rho[0] ) {
-                m_eb_scal_solve_op->setACoeffs(lev, *density[lev]);
+            if ( use_chi[0] ) {
+                m_eb_scal_solve_op->setACoeffs(lev, *chi[lev]);
             } else {
                 m_eb_scal_solve_op->setACoeffs(lev, 1.0);
             }
@@ -191,8 +191,8 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
     {
         m_reg_scal_solve_op->setScalars(1.0, dt);
         for (int lev = 0; lev <= finest_level; ++lev) {
-            if ( use_rho[0] ) {
-                m_reg_scal_solve_op->setACoeffs(lev, *density[lev]);
+            if ( use_chi[0] ) {
+                m_reg_scal_solve_op->setACoeffs(lev, *chi[lev]);
             } else {
                 m_reg_scal_solve_op->setACoeffs(lev, 1.0);
             }
@@ -217,9 +217,9 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
             for (int lev = 0; lev <= finest_level; ++lev) {
                 // Only reset Acoeff if necessary.
                 if (comp > 0 &&
-                    ( m_incflo->m_has_mixedBC || (use_rho[comp] != use_rho[comp-1]) ) ) {
-                    if ( use_rho[comp] ) {
-                        m_eb_scal_solve_op->setACoeffs(lev, *density[lev]);
+                    ( m_incflo->m_has_mixedBC || (use_chi[comp] != use_chi[comp-1]) ) ) {
+                    if ( use_chi[comp] ) {
+                        m_eb_scal_solve_op->setACoeffs(lev, *chi[lev]);
                     } else {
                         m_eb_scal_solve_op->setACoeffs(lev, 1.0);
                     }
@@ -238,15 +238,16 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
         else
 #endif
         {
+            amrex::ignore_unused(eb_dirichlet);
             m_reg_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
                                                                              bcrec[comp].lo()),
                                              m_incflo->get_diffuse_scalar_bc(Orientation::high,
                                                                              bcrec[comp].hi()));
 
             for (int lev = 0; lev <= finest_level; ++lev) {
-                if ( comp > 0 && (use_rho[comp] != use_rho[comp-1]) ) {
-                    if ( use_rho[comp] ) {
-                        m_reg_scal_solve_op->setACoeffs(lev, *density[lev]);
+                if ( comp > 0 && (use_chi[comp] != use_chi[comp-1]) ) {
+                    if ( use_chi[comp] ) {
+                        m_reg_scal_solve_op->setACoeffs(lev, *chi[lev]);
                     } else {
                         m_reg_scal_solve_op->setACoeffs(lev, 1.0);
                     }
@@ -262,7 +263,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
         for (int lev = 0; lev <= finest_level; ++lev) {
             phi.emplace_back(*a_scalar[lev], amrex::make_alias, comp, 1);
 
-            if ( !use_rho[comp] ) {
+            if ( !use_chi[comp] ) {
                 rhs.emplace_back(*a_scalar[lev], amrex::make_alias, comp, 1);
             } else {
                 rhs.emplace_back(rhs_c[lev], amrex::make_alias, 0, 1);
@@ -273,10 +274,10 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
                     Box const& bx = mfi.tilebox();
                     Array4<Real> const& rhs_a = rhs[lev].array(mfi);
                     Array4<Real const> const& sca_a = a_scalar[lev]->const_array(mfi,comp);
-                    Array4<Real const> const& rho_a = density[lev]->const_array(mfi);
+                    Array4<Real const> const& chi_a = chi[lev]->const_array(mfi);
                     ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
-                        rhs_a(i,j,k) = rho_a(i,j,k) * sca_a(i,j,k);
+                        rhs_a(i,j,k) = chi_a(i,j,k) * sca_a(i,j,k);
                     });
                 }
             }

@@ -168,11 +168,6 @@ void incflo::ReadParameters ()
 #ifdef AMREX_USE_EB
         std::string geom_type = "all_regular";
         pp.query("geometry", geom_type);
-
-        if ( m_use_temperature && !(geom_type=="all_regular") ) {
-            amrex::Abort("Temperature equation not yet tested with EB");
-            // Maybe will want to disallow EB flow with T at first...
-        }
 #endif
 
         // Thermal diffusivity (if constant)

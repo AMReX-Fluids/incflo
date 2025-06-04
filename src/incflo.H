@@ -343,10 +343,11 @@ public:
                                      amrex::MultiFab* vel,
                                      amrex::Geometry& lev_geom,
                                      amrex::Real time, int nghost);
-    void compute_tracer_diff_coeff (amrex::Vector<amrex::MultiFab*> const& tra_eta, int nghost);
-    void compute_temperature_diff_coeff (amrex::Real time, amrex::Vector<amrex::MultiFab*> const& eta);
+    void compute_tracer_diff_coeff (amrex::Vector<amrex::MultiFab*> const& tra_eta, int nghost) const;
+    void compute_temperature_diff_coeff (amrex::Real time,
+                                         amrex::Vector<amrex::MultiFab*> const& eta) const;
 
-    void compute_cp (int lev, amrex::MFIter& mfi, amrex::FArrayBox& cp);
+    void compute_cp (int lev, amrex::MFIter& mfi, amrex::FArrayBox& cp) const;
 
 #ifdef AMREX_USE_EB
     ///////////////////////////////////////////////////////////////////////////
