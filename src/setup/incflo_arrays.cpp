@@ -33,7 +33,7 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
         temperature_o.define (ba, dm, 1, my_incflo->nghost_state(), MFInfo(), fact);
 
         conv_temperature_o.define(ba, dm, 1, 0, MFInfo(), fact);
-    }    
+    }
 #ifdef AMREX_USE_EB
     if (my_incflo->hasEBFlow()) {
         velocity_eb.define(ba, dm, AMREX_SPACEDIM, my_incflo->nghost_state(), MFInfo(), fact);

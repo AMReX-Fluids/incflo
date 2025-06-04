@@ -871,8 +871,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
             int flux_comp = (m_advect_tracer && (m_ntrac>0)) ? m_ntrac : 0;
             flux_comp += (m_constant_density) ? AMREX_SPACEDIM : AMREX_SPACEDIM+1;
-            Print()<<"Computing temperature conv ..."<<flux_comp
-                   <<"\nComputing temperature comp ..."<<flux_x[lev].nComp()<<std::endl;
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
