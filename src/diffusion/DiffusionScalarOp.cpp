@@ -132,6 +132,7 @@ void
 DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
                                    Vector<MultiFab*> const& density,
                                    Vector<MultiFab const*> const& eta,
+                                   Vector<MultiFab*> const& eb_dirichlet,
                                    amrex::Vector<int> const& use_rho,
                                    amrex::Vector<amrex::BCRec> bcrec,
                                    Real dt)
@@ -225,7 +226,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
                 }
 
                 if (m_incflo->hasEBFlow()) {
-                    MultiFab phi(*m_incflo->get_tracer_eb()[lev], amrex::make_alias, comp, 1);
+                    MultiFab phi(*eb_dirichlet[lev], amrex::make_alias, comp, 1);
                   m_eb_scal_solve_op->setEBDirichlet(lev, phi, *eta[lev]);
                 } // else use default homogeneous Neumann on EB
 

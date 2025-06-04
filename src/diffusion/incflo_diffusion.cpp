@@ -79,7 +79,8 @@ incflo::diffuse_scalar(Vector<MultiFab      *> const& scalar,
                        Vector<MultiFab const*> const& eta,
                        Real dt_diff)
 {
-    get_diffusion_scalar_op()->diffuse_scalar(scalar, density, eta, get_tracer_iconserv(),
+    get_diffusion_scalar_op()->diffuse_scalar(scalar, density, eta, get_tracer_eb(),
+                                              get_tracer_iconserv(),
                                               get_tracer_bcrec(), dt_diff);
 }
 
@@ -90,6 +91,7 @@ incflo::diffuse_temperature(Vector<MultiFab      *> const& temperature,
                             Real dt_diff)
 {
     get_diffusion_scalar_op()->diffuse_scalar(temperature, rhocp, eta,
+                                              get_temperature_eb(),
                                               {1} /* use rhocp */,
                                               get_temperature_bcrec(), dt_diff);
 }
