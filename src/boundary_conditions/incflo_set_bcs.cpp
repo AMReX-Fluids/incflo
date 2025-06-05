@@ -464,7 +464,7 @@ incflo::set_eb_temperature (int lev, Real /*time*/, MultiFab& eb_temperature, in
           Real norm_tol_lo = Real(-1.) - (normal_tol + pad);
           Real norm_tol_hi = Real(-1.) + (normal_tol + pad);
 
-          Real eb_flow_temperature = m_eb_flow.temperature;
+          Real eb_flow_temperature = m_eb_flow.temperature[0];
 
           ParallelFor(bx, [flags_arr,eb_temperature_arr,norm_arr,has_normal,normal,
                  norm_tol_lo, norm_tol_hi, eb_flow_temperature]

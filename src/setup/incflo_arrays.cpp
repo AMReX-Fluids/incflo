@@ -38,10 +38,13 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
     if (my_incflo->hasEBFlow()) {
         velocity_eb.define(ba, dm, AMREX_SPACEDIM, my_incflo->nghost_state(), MFInfo(), fact);
         density_eb.define (ba, dm, 1             , my_incflo->nghost_state(), MFInfo(), fact);
+    }
+    // Allow for Dirichlet BC on EB even if there's no flow through the EB
+    if (my_incflo->m_advect_tracer && !my_incflo->m_eb_flow.tracer.empty()) {
         tracer_eb.define  (ba, dm, my_incflo->m_ntrac, my_incflo->nghost_state(), MFInfo(), fact);
-        if (my_incflo->m_use_temperature) {
-            temperature_eb.define(ba, dm, 1, my_incflo->nghost_state(), MFInfo(), fact);
-        }
+    }
+    if (my_incflo->m_use_temperature && !my_incflo->m_eb_flow.temperature.empty()) {
+        temperature_eb.define(ba, dm, 1, my_incflo->nghost_state(), MFInfo(), fact);
     }
 #endif
     if (my_incflo->m_advection_type != "MOL") {

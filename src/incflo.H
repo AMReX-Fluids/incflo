@@ -550,7 +550,7 @@ private:
        // scalars
        amrex::Real density{1.};
        amrex::Vector<amrex::Real> tracer;
-       amrex::Real temperature{1.};
+       amrex::Vector<amrex::Real> temperature;
 
        EBFlow_t ()
 

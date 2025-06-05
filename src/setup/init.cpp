@@ -199,8 +199,13 @@ void incflo::ReadParameters ()
 
        pp_eb_flow.query("density", m_eb_flow.density);
 
-       m_eb_flow.tracer.resize(m_ntrac, 0.0);
-       pp_eb_flow.queryarr("tracer", m_eb_flow.tracer, 0, m_ntrac);
+       if (m_advect_tracer) {
+           pp_eb_flow.queryarr("tracer", m_eb_flow.tracer);
+       }
+
+       if (m_use_temperature) {
+           pp_eb_flow.queryarr("temperature", m_eb_flow.temperature);
+       }
 
        if (pp_eb_flow.contains("vel_mag")) {
           m_eb_flow.enabled = true;
@@ -218,6 +223,13 @@ void incflo::ReadParameters ()
           amrex::Real tol_deg(0.);
           pp_eb_flow.query("normal_tol", tol_deg);
           m_eb_flow.normal_tol = tol_deg*M_PI/amrex::Real(180.);
+       }
+
+       if (m_advect_tracer && m_eb_flow.enabled && m_eb_flow.tracer.empty()) {
+           Abort("Must specify tracer EB value for flow through EB");
+       }
+       if (m_use_temperature && m_eb_flow.enabled && m_eb_flow.temperature.empty()) {
+           Abort("Must specify temperature EB value for flow through EB");
        }
     } // end prefix eb_flow
 #endif

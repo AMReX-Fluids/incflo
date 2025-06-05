@@ -51,11 +51,17 @@ void incflo::Advance()
        for (int lev = 0; lev <= finest_level; ++lev) {
          set_eb_velocity(lev, m_t_old[lev], *get_velocity_eb()[lev], 1);
          set_eb_density(lev, m_t_old[lev], *get_density_eb()[lev], 1);
-         set_eb_tracer(lev, m_t_old[lev], *get_tracer_eb()[lev], 1);
-         if (m_use_temperature) {
-             set_eb_temperature(lev, m_t_old[lev], *get_temperature_eb()[lev], 1);
-         }
        }
+    }
+    if (m_advect_tracer && !m_eb_flow.tracer.empty()) {
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            set_eb_tracer(lev, m_t_old[lev], *get_tracer_eb()[lev], 1);
+        }
+    }
+    if (m_use_temperature && !m_eb_flow.temperature.empty()) {
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            set_eb_temperature(lev, m_t_old[lev], *get_temperature_eb()[lev], 1);
+        }
     }
 #endif
 
