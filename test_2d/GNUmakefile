@@ -1,4 +1,4 @@
-AMREX_HOME ?= ../../amrex_fork
+AMREX_HOME ?= ../../amrex
 AMREX_HYDRO_HOME ?= ../../AMReX-Hydro
 TOP = ..
 
@@ -19,7 +19,7 @@ COMP	   = gnu
 
 USE_MPI    = TRUE
 USE_OMP    = FALSE
-USE_CUDA   = TRUE
+USE_CUDA   = FALSE
 
 USE_HYPRE = FALSE
 

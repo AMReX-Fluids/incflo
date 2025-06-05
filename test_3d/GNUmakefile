@@ -1,4 +1,4 @@
-AMREX_HOME ?= ../../amrex_fork
+AMREX_HOME ?= ../../amrex
 AMREX_HYDRO_HOME ?= ../../AMReX-Hydro
 TOP = ..
 
