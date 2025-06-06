@@ -19,7 +19,8 @@ void incflo::compute_tem_forces (Real /*time*/, Vector<MultiFab*> const& tem_for
                 ParallelFor(bx,
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    // Just Q here, don't include rhoCp
+                    // Just H_T here, as in
+                    //   rho*cp ( dT/dt + U dot grad T) = div mu_T grad T + H_T
                     // For now we don't have any external forces on temperature
                     tem_f(i,j,k) = 0.0;
                 });
