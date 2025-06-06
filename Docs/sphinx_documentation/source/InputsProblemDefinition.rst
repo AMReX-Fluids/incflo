@@ -50,15 +50,18 @@ Setting basic boundary conditions can be specified by inputs preceded by "xlo", 
 |                    | * 'po'  or 'pressure_outflow'                                             |             |           |
 |                    | * 'mi'  or 'mass_inflow'                                                  |             |           |
 |                    | * 'nsw' or 'no_slip_wall'                                                 |             |           |
+|                    | * 'sw' or 'slip_wall'                                                     |             |           |
 |                    | * 'mixed'                                                                 |             |           |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
 | pressure           | Sets boundary pressure for pressure inflows, outflows and mass inflows    |    Real     |  None     |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
-| velocity           | Sets boundary velocity for mass inflows                                   |    Reals    | (0, 0, 0) |
+| velocity           | Sets Dirichlet boundary condition for velocity                            |    Reals    | (0, 0, 0) |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
-| density            | Sets boundary density for mass inflows                                    |    Real     |  1.0      |
+| density            | Sets Dirichlet boundary condition for density                             |    Real     |  1.0      |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
-| tracer             | Sets boundary tracer for mass inflows                                     |    Real     |  0.0      |
+| tracer             | Sets Dirichlet boundary condition for tracer                              |    Real     |  0.0      |
++--------------------+---------------------------------------------------------------------------+-------------+-----------+
+| temperature        | Sets Dirichlet boundary condition for temperature                         |    Real     |  1.0      |
 +--------------------+---------------------------------------------------------------------------+-------------+-----------+
 
    The 'mixed' boundary type allows for inflow and outflow on the same domain face.

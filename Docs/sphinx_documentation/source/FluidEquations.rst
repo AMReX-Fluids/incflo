@@ -12,11 +12,15 @@ Fluid Variables
    +-----------------------+--------------------------------------------------+
    | :math:`\mu_s`         | scalar diffusivity                               |
    +-----------------------+--------------------------------------------------+
+   | :math:`\mu_T`         | thermal conductivity                             |
+   +-----------------------+--------------------------------------------------+
    | :math:`{\bf g}`       | Gravitational acceleration                       |
    +-----------------------+--------------------------------------------------+
    | :math:`{\bf H}_U`     | :math:`= (H_x , H_y , H_z )`, External Forces    |
    +-----------------------+--------------------------------------------------+
    | :math:`H_s`           | External sources                                 |
+   +-----------------------+--------------------------------------------------+
+   | :math:`H_T`           | External heat sources                            |
    +-----------------------+--------------------------------------------------+
 
 Fluid Equations
@@ -43,5 +47,9 @@ or, for non-conservative,
 
 .. math:: \frac{\partial s}{\partial t} + U \cdot \nabla s  =  \nabla \cdot \mu_s \nabla s + H_s
 
-By default, :math:`H_s = 0` and :math:`{\bf H}_U = {\bf 0}`.
+Optional temperature:
+
+.. math:: \rho c_p \left( \frac{\partial T}{\partial t} + U \cdot \nabla T \right)  =  \nabla \cdot \mu_T \nabla T + H_T
+
+By default, :math:`H_s = 0`,  :math:`H_T = 0`, and :math:`{\bf H}_U = {\bf 0}`.
 If gravity is set during runtime, then :math:`{\bf H}_U` defaults to :math:`\rho {\bf g}`.
