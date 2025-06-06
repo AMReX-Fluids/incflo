@@ -31,9 +31,6 @@ incflo.ntrac            =   1           # Number of tracers
 incflo.advect_tracer    =   true        # Should we update them?
 incflo.mu_s             =   0.001       # Scalar diffusion coefficient
 
-incflo.use_temperature = true
-incflo.mu_T            = 0.01
-
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
@@ -55,13 +52,11 @@ geometry.is_periodic    =   0   1   0   # Periodicity x y z (0/1)
 # Boundary conditions
 xlo.type                =   "nsw"
 xlo.velocity            =   0.  0.  0.
-xlo.temperature         =   3.
 xhi.type                =   "nsw"
 xhi.velocity            =   0.  0.  0.
 zlo.type                =   "mi"
 zlo.velocity            =   0.  0.  1.
 zlo.tracer              =   1.
-zlo.temperature         =   2.
 zhi.type                =   "po"
 zhi.pressure            =   0.0
 
@@ -72,9 +67,6 @@ cylinder.radius         = 0.05000001
 cylinder.direction      = 1
 cylinder.center         = 0.2   0.0   0.151
 
-# Dirichlet BC on the EB for temperature
-eb_flow.temperature = 1.
-
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
@@ -83,7 +75,6 @@ incflo.ic_u             =   0.0         #
 incflo.ic_v             =   0.0         #
 incflo.ic_w             =   1.0         #
 incflo.ic_p             =   0.0         #
-incflo.ic_tem           =   2.0         #
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              VERBOSITY                #
