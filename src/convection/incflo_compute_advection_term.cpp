@@ -288,8 +288,22 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                              u_crse[2] = w_mac[lev-1];);
 
 
-                // Divergence preserving interp
-                Interpolater* mapper = &face_divfree_interp;
+                bool rr_eq_2 = true;
+                for ( int dim = 0; dim < AMREX_SPACEDIM; dim++ )
+                {
+                    if (rr[dim] != 2) {
+                        rr_eq_2 = false;
+                        break;
+                    }
+                }
+
+                Interpolater* mapper;
+                if ( rr_eq_2 ) {
+                    // Divergence preserving interp. Restricted to refinement ratio = 2
+                    mapper = &face_divfree_interp;
+                } else {
+                    mapper = &face_linear_interp;
+                }
 
                 const Array<Vector<BCRec>,AMREX_SPACEDIM> bcrecArr = {AMREX_D_DECL(m_bcrec_velocity,
                                                                                    m_bcrec_velocity,
@@ -311,6 +325,178 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                    geom[lev-1], geom[lev],
                                    cbndyFuncArr, idx, fbndyFuncArr, idx,
                                    rr, mapper, bcrecArr, idx);
+
+                if ( !rr_eq_2 )
+                {
+                    //
+                    // Correct u_mac to enforce the divergence constraint in the ghost cells.
+                    // Do this by adjusting only the outer face (wrt the valid region) of the ghost
+                    // cell, i.e. for the hi-x face, adjust umac_x(i+1).
+                    // NOTE that this does not fill grid edges or corners.
+                    //
+
+                    // Need 2 ghost cells here so we can safely check the status of all faces of a
+                    // u_mac ghost cell
+                    iMultiFab coarse_fine_mask(grids[lev], dmap[lev], 1, 2,
+                                               MFInfo(), DefaultFabFactory<IArrayBox>());
+                    // interior  : interior cells (i.e., valid cells)
+                    // covered   : ghost cells covered by valid cells of this FabArray
+                    //             (including periodically shifted valid cells)
+                    // notcovered: ghost cells not covered by valid cells
+                    //             (including ghost cells outside periodic boundaries where the
+                    //             periodically shifted cells don't exist at this level)
+                    // physbnd   : boundary cells outside the domain (excluding periodic boundaries)
+                    static constexpr int level_mask_interior   = 0; // valid cells
+                    static constexpr int level_mask_covered    = 1; // ghost cells covered by valid cells of this level
+                    static constexpr int level_mask_notcovered = 2; // ghost cells not covered
+                    static constexpr int level_mask_physbnd    = 3; // outside domain
+
+                    coarse_fine_mask.BuildMask(geom[lev].Domain(), geom[lev].periodicity(),
+                                               level_mask_covered, level_mask_notcovered, level_mask_physbnd,
+                                               level_mask_interior);
+
+                    const GpuArray<Real,AMREX_SPACEDIM> dx = geom[lev].CellSizeArray();
+                    const GpuArray<Real,AMREX_SPACEDIM> dxinv = geom[lev].InvCellSizeArray();
+
+                    MultiFab volume;
+                    Array<MultiFab,AMREX_SPACEDIM> area;
+                    const bool is_rz = geom[0].IsRZ();
+                    if ( is_rz ) {
+                        geom[lev].GetVolume(volume, grids[lev], dmap[lev], 1);
+                        geom[lev].GetFaceArea(area[0], grids[lev], dmap[lev], 0, 1);
+                        geom[lev].GetFaceArea(area[1], grids[lev], dmap[lev], 1, 1);
+                    }
+
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+                    for (MFIter mfi(coarse_fine_mask,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+                    {
+                        const Box& tbx = mfi.tilebox();
+                        auto const& maskarr = coarse_fine_mask.const_array(mfi);
+                        auto const& umac = u_fine[0]->array(mfi);
+                        auto const& vmac = u_fine[1]->array(mfi);
+                        auto const& wmac = (AMREX_SPACEDIM==3) ? u_fine[2]->array(mfi) : Array4<Real> {};
+
+                        const auto& vol = (is_rz) ?  volume.const_array(mfi): Array4<Real> {};
+                        const auto&  ax = (is_rz) ? area[0].const_array(mfi): Array4<Real> {};
+                        const auto&  ay = (is_rz) ? area[1].const_array(mfi): Array4<Real> {};
+#if (AMREX_SPACEDIM == 2)
+                        int ks =  0;
+                        int ke =  0;
+#else
+                        int ks = -1;
+                        int ke =  1;
+#endif
+
+                        AMREX_HOST_DEVICE_FOR_3D(mfi.growntilebox(1), i, j, k,
+                        {
+                            if ( maskarr(i,j,k) == level_mask_notcovered )
+                            {
+                                //
+                                // Leave cells on grid edges/corners unaltered.
+                                // This correction scheme doesn't work for concave edges where a cell
+                                // has faces that are all either valid or touching another ghost cell
+                                // because then there's no "free" face to absorb the divergence constraint
+                                // error.
+                                // There are (>=) 1 case that are treatable, but we don't implement here:
+                                // 1. Convex grid edges (cells that don't have any valid faces), e.g. by
+                                //    dividing the divergence constraint error equally between each face
+                                //    not touching another ghost cell
+                                //
+
+                                int count = 0;
+                                for(int kk(ks); kk<=ke; kk++) {
+                                for(int jj(-1); jj<=1;  jj++) {
+                                for(int ii(-1); ii<=1;  ii++) {
+                                    if ( Math::abs(ii)+Math::abs(jj)+Math::abs(kk) == 1 &&
+                                         (maskarr(i+ii,j+jj,k+kk) == level_mask_interior ||
+                                          maskarr(i+ii,j+jj,k+kk) == level_mask_covered) )
+                                    {
+                                        count++;
+                                    }
+                                }}}
+
+                                if ( count == 1 )
+                                {
+                                    // Incompressible only for now, but div is where a divu=S source term would go
+                                    Real div = 0.0;
+
+                                    if (is_rz)
+                                    {
+                                        Real dux = (ax(i+1,j,k)*umac(i+1,j,k) - ax(i,j,k)*umac(i,j,k));
+                                        Real duy = (ay(i,j+1,k)*vmac(i,j+1,k) - ay(i,j,k)*vmac(i,j,k));
+
+                                        // To avoid inconsistencies between boxes, we make sure to fix box
+                                        // corners (2D) or edges (3D) that are not grid corners/edges.
+                                        // The directional check ensures we only alter one face of these
+                                        // cells.
+                                        // It's unlikely there'd ever be a case of such ghost cells abutting the
+                                        // symmetry axis, but just in case, check here.
+                                        if ( i < tbx.smallEnd(0) && maskarr(i+1,j,k) != level_mask_notcovered
+                                             && ax(i,j,k) != Real(0.0) )
+                                        {
+                                            umac(i,j,k) = (ax(i+1,j,k)*umac(i+1,j,k) + (duy - vol(i,j,k)*div))/ax(i,j,k);
+                                        }
+                                        else if ( i > tbx.bigEnd(0) && maskarr(i-1,j,k) != level_mask_notcovered )
+                                        {
+                                            umac(i+1,j,k) = (ax(i,j,k)*umac(i,j,k) - (duy - vol(i,j,k)*div))/ax(i+1,j,k);
+                                        }
+
+                                        if ( j < tbx.smallEnd(1) && maskarr(i,j+1,k) != level_mask_notcovered )
+                                        {
+                                            vmac(i,j,k) = (ay(i,j+1,k)*vmac(i,j+1,k) + (dux - vol(i,j,k)*div))/ay(i,j,k);
+                                        }
+                                        else if ( j > tbx.bigEnd(1) && maskarr(i,j-1,k) != level_mask_notcovered )
+                                        {
+                                            vmac(i,j+1,k) = (ay(i,j,k)*vmac(i,j,k) - (dux - vol(i,j,k)*div))/ay(i,j+1,k);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Real dux =          dxinv[0]*(umac(i+1,j,k) - umac(i,j,k));
+                                        Real duy =          dxinv[1]*(vmac(i,j+1,k) - vmac(i,j,k));
+                                        Real duz = (wmac) ? dxinv[2]*(wmac(i,j,k+1) - wmac(i,j,k)) : 0.0;
+
+                                        // To avoid inconsistencies between boxes, we make sure to fix box
+                                        // corners (2D) or edges (3D) that are not grid corners/edges.
+                                        // The directional check ensures we only alter one face of these
+                                        // cells.
+                                        if ( i < tbx.smallEnd(0) && maskarr(i+1,j,k) != level_mask_notcovered )
+                                        {
+                                            umac(i,j,k) = umac(i+1,j,k) + dx[0] * (duy + duz - div);
+                                        }
+                                        else if ( i > tbx.bigEnd(0) && maskarr(i-1,j,k) != level_mask_notcovered )
+                                        {
+                                            umac(i+1,j,k) = umac(i,j,k) - dx[0] * (duy + duz - div);
+                                        }
+
+                                        if ( j < tbx.smallEnd(1) && maskarr(i,j+1,k) != level_mask_notcovered )
+                                        {
+                                            vmac(i,j,k) = vmac(i,j+1,k) + dx[1] * (dux + duz - div);
+                                        }
+                                        else if ( j > tbx.bigEnd(1) && maskarr(i,j-1,k) != level_mask_notcovered )
+                                        {
+                                            vmac(i,j+1,k) = vmac(i,j,k) - dx[1] * (dux + duz - div);
+                                        }
+
+                                        if (wmac)
+                                        {
+                                            if ( k < tbx.smallEnd(2) && maskarr(i,j,k+1) != level_mask_notcovered )
+                                            {
+                                                wmac(i,j,k) = wmac(i,j,k+1) + dx[2] * (dux + duy - div);
+                                            }
+                                            else if ( k > tbx.bigEnd(2) && maskarr(i,j,k-1) != level_mask_notcovered )
+                                            {
+                                                wmac(i,j,k+1) = wmac(i,j,k) - dx[2] * (dux + duy - div);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
             }
         } // end umac fill
 
