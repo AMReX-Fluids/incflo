@@ -302,7 +302,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                     // Divergence preserving interp. Restricted to refinement ratio = 2
                     mapper = &face_divfree_interp;
                 } else {
-                    mapper = &face_linear_interp;
+                    mapper = &face_cons_linear_interp;
                 }
 
                 const Array<Vector<BCRec>,AMREX_SPACEDIM> bcrecArr = {AMREX_D_DECL(m_bcrec_velocity,
