@@ -702,8 +702,6 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
         m_reg_vel_apply_op->setScalars(0.0, -1.0);
 
         int eta_comp = 0;
-        Vector<MultiFab> divtau_single;
-        Vector<MultiFab>    vel_single;
 
         for (int lev = 0; lev <= finest_level; ++lev)
         {
@@ -718,6 +716,9 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
             // reset these for each solve
             m_reg_vel_apply_op->setDomainBC(m_incflo->get_diffuse_velocity_bc(Orientation::low ,comp),
                                         m_incflo->get_diffuse_velocity_bc(Orientation::high,comp));
+
+            Vector<MultiFab> divtau_single;
+            Vector<MultiFab>    vel_single;
 
             for (int lev = 0; lev <= finest_level; ++lev) {
                 divtau_single.emplace_back(*a_divtau[lev],amrex::make_alias,comp,1);
