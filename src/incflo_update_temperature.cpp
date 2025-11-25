@@ -67,7 +67,7 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
                 }
                 else if (m_diff_type == DiffusionType::Crank_Nicolson)
                 {
-                    Array4<Real const> const& laps_o = ld.laps_o.const_array(mfi);
+                    Array4<Real const> const& laps_o = ld.laps_tem_o.const_array(mfi);
 
                     ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
