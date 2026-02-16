@@ -33,9 +33,9 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
     AMREX_ASSERT(OK(a_lev, a_lev, a_umac[0].nGrow()-1));
     AMREX_ASSERT(a_lev >= 0 && a_lev < GetParticles().size());
 
-    AMREX_D_TERM(AMREX_ASSERT(a_umac.nGrow() >= 1);,
-                 AMREX_ASSERT(a_vmac.nGrow() >= 1);,
-                 AMREX_ASSERT(a_wmac.nGrow() >= 1););
+    AMREX_D_TERM(AMREX_ASSERT(a_umac[0].nGrow() >= 1);,
+                 AMREX_ASSERT(a_vmac[0].nGrow() >= 1);,
+                 AMREX_ASSERT(a_wmac[0].nGrow() >= 1););
 
     const auto      strttime = amrex::second();
     const Geometry    & geom     = m_gdb->Geom(a_lev);
@@ -164,7 +164,6 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
         {
             auto& ptile = ParticlesAt(a_lev, pti);
             auto& aos  = ptile.GetArrayOfStructs();
-            auto& soa  = ptile.GetStructOfArrays();
             const int n = aos.numParticles();
             auto *p_pbox = aos().data();
 

@@ -233,7 +233,6 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
     {
         auto& ptile = ParticlesAt(lev, pti);
         auto& aos  = ptile.GetArrayOfStructs();
-        auto& soa  = ptile.GetStructOfArrays();
         const int n = aos.numParticles();
         auto *p_pbox = aos().data();
 
