@@ -50,6 +50,18 @@ void incflo::initializeTracerParticles ( ParGDBBase* a_gdb
 
     if (m_use_tracer_particles) namelist_unalloc.remove( incfloParticleNames::tracers );
 
+    // If we've already allocated, then we probably want to resize
+    const auto& particles_namelist( particleData.getNames() );
+    for (auto it = particles_namelist.begin(); it != particles_namelist.end(); ++it) {
+        std::string species_name( *it );
+        if (species_name == incfloParticleNames::tracers)
+        {
+            if (!particleData[incfloParticleNames::tracers]->OK()) {
+                particleData[incfloParticleNames::tracers]->resizeData();
+            }
+        }
+    }
+
     return;
 }
 

@@ -56,21 +56,9 @@ void incflo::InitData ()
         InitFromScratch(m_cur_time);
 
 #ifdef AMREX_USE_EB
-#ifdef INCFLO_USE_PARTICLES
-        const auto& ebfact = EBFactory(0);
-#endif
-#endif
-
-#ifdef INCFLO_USE_PARTICLES
-        initializeTracerParticles( (ParGDBBase*)GetParGDB()
-#ifdef AMREX_USE_EB
-                                  ,ebfact
-#endif
-                                 );
-#endif
-
-#ifdef AMREX_USE_EB
-        InitialRedistribution();
+        if (!EBFactory(0).isAllRegular()) {
+            InitialRedistribution();
+        }
 #endif
 
         if (m_do_initial_proj) {
@@ -279,6 +267,15 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 
     if (m_restart_file.empty()) {
         prob_init_fluid(lev);
+
+#ifdef INCFLO_USE_PARTICLES
+        initializeTracerParticles( (ParGDBBase*)GetParGDB()
+#ifdef AMREX_USE_EB
+                                  ,EBFactory(0)
+#endif
+                                 );
+#endif
+
     }
     //make_mixedBC_mask(lev, grids[lev], dmap[lev]);
 
