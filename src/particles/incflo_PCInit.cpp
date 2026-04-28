@@ -107,9 +107,9 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
 
         ParallelFor(tile_box, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            Real x = plo[0] + (i + 0.5)*dx[0];
-            Real y = plo[1] + (j + 0.5)*dx[1];
-            Real z = plo[2] + (k + 0.5)*dx[2];
+            AMREX_D_TERM(Real x = plo[0] + (i + 0.5)*dx[0];,
+                         Real y = plo[1] + (j + 0.5)*dx[1];,
+                         Real z = plo[2] + (k + 0.5)*dx[2];)
 #ifdef AMREX_USE_EB
             if (vf_arr(i,j,k) > 0.) {
 #endif
@@ -149,9 +149,9 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
         particle_tile.resize(np);
         auto aos = &particle_tile.GetArrayOfStructs()[0];
         auto& soa = particle_tile.GetStructOfArrays();
-        auto* vx_ptr = soa.GetRealData(incflo_ParticlesRealIdxSoA::vx).data();
-        auto* vy_ptr = soa.GetRealData(incflo_ParticlesRealIdxSoA::vy).data();
-        auto* vz_ptr = soa.GetRealData(incflo_ParticlesRealIdxSoA::vz).data();
+        AMREX_D_TERM(auto* vx_ptr = soa.GetRealData(incflo_ParticlesRealIdxSoA::vx).data();,
+                     auto* vy_ptr = soa.GetRealData(incflo_ParticlesRealIdxSoA::vy).data();,
+                     auto* vz_ptr = soa.GetRealData(incflo_ParticlesRealIdxSoA::vz).data());
         auto* mass_ptr = soa.GetRealData(incflo_ParticlesRealIdxSoA::mass).data();
 
         const auto num_particles_arr = num_particles[mfi].array();
@@ -175,17 +175,21 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
                     Real r[3] = {Random(rnd_engine), Random(rnd_engine), Random(rnd_engine)};
                     Real v[3] = {0.0, 0.0, 0.0};
 
-                    Real x = plo[0] + (i + r[0])*dx[0];
-                    Real y = plo[1] + (j + r[1])*dx[1];
-                    Real z = plo[2] + (k + r[2])*dx[2];
+                    AMREX_D_TERM(Real x = plo[0] + (i + r[0])*dx[0];,
+                                 Real y = plo[1] + (j + r[1])*dx[1];,
+                                 Real z = plo[2] + (k + r[2])*dx[2];)
 
                     auto& p = aos[n];
                     p.id()  = pid + n;
                     p.cpu() = my_proc;
 
-                    p.pos(0) = x; p.pos(1) = y; p.pos(2) = z;
+                    AMREX_D_TERM(p.pos(0) = x;,
+                                 p.pos(1) = y;,
+                                 p.pos(2) = z);
 
-                    vx_ptr[n] = v[0]; vy_ptr[n] = v[1]; vz_ptr[n] = v[2];
+                    AMREX_D_TERM(vx_ptr[n] = v[0];,
+                                 vy_ptr[n] = v[1];,
+                                 vz_ptr[n] = v[2]);
 
                     mass_ptr[n] = 1.0e-6;
                }
@@ -200,17 +204,21 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
                     Real r[3] = {0.3, 0.7, 0.25};
                     Real v[3] = {0.0, 0.0, 0.0};
 
-                    Real x = plo[0] + (i + r[0])*dx[0];
-                    Real y = plo[1] + (j + r[1])*dx[1];
-                    Real z = plo[2] + (k + r[2])*dx[2];
+                    AMREX_D_TERM(Real x = plo[0] + (i + r[0])*dx[0];,
+                                 Real y = plo[1] + (j + r[1])*dx[1];,
+                                 Real z = plo[2] + (k + r[2])*dx[2];)
 
                     auto& p = aos[n];
                     p.id()  = pid + n;
                     p.cpu() = my_proc;
 
-                    p.pos(0) = x; p.pos(1) = y; p.pos(2) = z;
+                    AMREX_D_TERM(p.pos(0) = x;,
+                                 p.pos(1) = y;,
+                                 p.pos(2) = z);
 
-                    vx_ptr[n] = v[0]; vy_ptr[n] = v[1]; vz_ptr[n] = v[2];
+                    AMREX_D_TERM(vx_ptr[n] = v[0];,
+                                 vy_ptr[n] = v[1];,
+                                 vz_ptr[n] = v[2]);
 
                     mass_ptr[n] = 1.0e-6;
                }
@@ -220,35 +228,37 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
 
     ParmParse pp("cylinder");
 
-    Real cyl_radius;
-    pp.get("radius",cyl_radius);
+    if ( pp.contains("radius") ) {
+        Real cyl_radius;
+        pp.get("radius",cyl_radius);
 
-    Array<Real,3> cyl_center;
-    pp.get("center",cyl_center);
-    Real x_ctr = cyl_center[0];
-    Real y_ctr = cyl_center[1];
+        Array<Real,3> cyl_center;
+        pp.get("center",cyl_center);
+        Real x_ctr = cyl_center[0];
+        Real y_ctr = cyl_center[1];
 
-    // Remove particles that are outside of the cylinder
-    for (ParIterType pti(*this, lev); pti.isValid(); ++pti)
-    {
-        auto& ptile = ParticlesAt(lev, pti);
-        auto& aos  = ptile.GetArrayOfStructs();
-        const int n = aos.numParticles();
-        auto *p_pbox = aos().data();
-
-        ParallelFor(n, [=] AMREX_GPU_DEVICE (int i)
+        // Remove particles that are outside of the cylinder
+        for (ParIterType pti(*this, lev); pti.isValid(); ++pti)
         {
-            ParticleType& p = p_pbox[i];
+            auto& ptile = ParticlesAt(lev, pti);
+            auto& aos  = ptile.GetArrayOfStructs();
+            const int n = aos.numParticles();
+            auto *p_pbox = aos().data();
 
-            Real x =  p.pos(0) - x_ctr;
-            Real y =  p.pos(1) - y_ctr;
+            ParallelFor(n, [=] AMREX_GPU_DEVICE (int i)
+            {
+                ParticleType& p = p_pbox[i];
 
-            Real r =  std::sqrt(x*x + y*y);
+                Real x =  p.pos(0) - x_ctr;
+                Real y =  p.pos(1) - y_ctr;
 
-            if (r > cyl_radius) {
-                p.id() = -1;
-            }
-        });
+                Real r =  std::sqrt(x*x + y*y);
+
+                if (r > cyl_radius) {
+                    p.id() = -1;
+                }
+            });
+        }
     }
 }
 
