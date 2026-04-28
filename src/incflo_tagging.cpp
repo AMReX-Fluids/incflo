@@ -137,7 +137,6 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
     } // mfi
 
 #ifdef AMREX_USE_EB
-    m_refine_cutcells = true;
     // Refine on cut cells
     if (m_refine_cutcells)
     {
