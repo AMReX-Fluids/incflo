@@ -70,7 +70,7 @@ incflo::compute_laps_T(Vector<MultiFab      *> const& laps,
                        Vector<MultiFab const*> const& eta)
 {
     get_diffusion_scalar_op()->compute_laps(laps, scalar, eta,
-                                            get_tracer_bcrec());
+                                            get_temperature_bcrec());
 }
 
 void

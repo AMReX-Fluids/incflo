@@ -116,10 +116,10 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
         for (int lev = finest_level-1; lev >= 0; --lev) {
 #ifdef AMREX_USE_EB
             amrex::EB_average_down(m_leveldata[lev+1]->temperature, m_leveldata[lev]->temperature,
-                                   0, m_ntrac, refRatio(lev));
+                                   0, 1, refRatio(lev));
 #else
             amrex::average_down(m_leveldata[lev+1]->temperature, m_leveldata[lev]->temperature,
-                                0, m_ntrac, refRatio(lev));
+                                0, 1, refRatio(lev));
 #endif
         }
     }
