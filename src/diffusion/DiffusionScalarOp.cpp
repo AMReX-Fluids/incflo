@@ -163,7 +163,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
     //    d(sca) / dt - div mu grad sca = -U dot grad sca + H
 
     if (m_verbose > 0) {
-        amrex::Print() << "Diffusing scalars one at a time ..." << std::endl;
+        amrex::Print() << "Diffusing scalars one at a time ..." << "\n";
     }
 
     const int finest_level = m_incflo->finestLevel();
@@ -351,7 +351,7 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
     //      b: mu
 
     if (m_verbose > 0) {
-        amrex::Print() << "Diffusing velocity components one at a time ..." << std::endl;
+        amrex::Print() << "Diffusing velocity components one at a time ..." << "\n";
     }
 
     AMREX_ASSERT(vel[0]->nComp() == AMREX_SPACEDIM);

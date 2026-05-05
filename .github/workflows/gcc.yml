@@ -19,21 +19,21 @@ jobs:
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout incflo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         path: incflo
     - name: Checkout AMReX-Hydro
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: AMReX-Codes/amrex
         path: amrex
     - name: Set Up Cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.cache/ccache
         key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
@@ -41,8 +41,8 @@ jobs:
              ccache-${{ github.workflow }}-${{ github.job }}-git-
     - name: Load Dependencies
       run: |
-        amrex/.github/workflows/dependencies/dependencies.sh
-        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 14
+        amrex/.github/workflows/dependencies/dependencies_gcc.sh 14
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy-apt-llvm.sh 21
         amrex/.github/workflows/dependencies/dependencies_ccache.sh
     - name: Build
       run: |
@@ -65,13 +65,13 @@ jobs:
            -DAMREX_HOME=${{ github.workspace }}/amrex                \
            -DAMREX_HYDRO_HOME=${{ github.workspace }}/AMReX-Hydro    \
            -DCMAKE_VERBOSE_MAKEFILE=ON                               \
-           -DCMAKE_CXX_STANDARD=17                                   \
+           -DCMAKE_CXX_STANDARD=20                                   \
            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         make -j 2
 
         ${{github.workspace}}/amrex/Tools/C_scripts/mmclt.py --input ${{github.workspace}}/ccache.log.txt --identifier incflo/src
         make -j2 -f clang-tidy-ccache-misses.mak \
-            CLANG_TIDY=clang-tidy-14 \
+            CLANG_TIDY=clang-tidy-21 \
             CLANG_TIDY_ARGS="--config-file=${{github.workspace}}/incflo/.clang-tidy --warnings-as-errors=*"
 
         ccache -s
@@ -89,21 +89,21 @@ jobs:
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout incflo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         path: incflo
     - name: Checkout AMReX-Hydro
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: AMReX-Codes/amrex
         path: amrex
     - name: Set Up Cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.cache/ccache
         key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
@@ -111,8 +111,8 @@ jobs:
              ccache-${{ github.workflow }}-${{ github.job }}-git-
     - name: Load Dependencies
       run: |
-        amrex/.github/workflows/dependencies/dependencies.sh
-        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 14
+        amrex/.github/workflows/dependencies/dependencies_gcc.sh 14
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy-apt-llvm.sh 21
         amrex/.github/workflows/dependencies/dependencies_ccache.sh
     - name: Build
       run: |
@@ -150,13 +150,13 @@ jobs:
            -DAMReX_DIR=${{ github.workspace }}/amrex_lib/lib/cmake/AMReX \
            -DAMREX_HYDRO_HOME=${{ github.workspace }}/AMReX-Hydro        \
            -DCMAKE_VERBOSE_MAKEFILE=ON                                   \
-           -DCMAKE_CXX_STANDARD=17                                       \
+           -DCMAKE_CXX_STANDARD=20                                       \
            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         make -j 2
 
         ${{github.workspace}}/amrex/Tools/C_scripts/mmclt.py --input ${{github.workspace}}/ccache.log.txt --identifier incflo/src
         make -j2 -f clang-tidy-ccache-misses.mak \
-            CLANG_TIDY=clang-tidy-14 \
+            CLANG_TIDY=clang-tidy-21 \
             CLANG_TIDY_ARGS="--config-file=${{github.workspace}}/incflo/.clang-tidy --warnings-as-errors=*"
 
         ccache -s
@@ -174,21 +174,21 @@ jobs:
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout incflo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         path: incflo
     - name: Checkout AMReX-Hydro
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: AMReX-Codes/amrex
         path: amrex
     - name: Set Up Cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.cache/ccache
         key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
@@ -196,8 +196,8 @@ jobs:
              ccache-${{ github.workflow }}-${{ github.job }}-git-
     - name: Load Dependencies
       run: |
-        amrex/.github/workflows/dependencies/dependencies.sh
-        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 14
+        amrex/.github/workflows/dependencies/dependencies_gcc.sh 14
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy-apt-llvm.sh 21
         amrex/.github/workflows/dependencies/dependencies_ccache.sh
     - name: Build
       run: |
@@ -235,13 +235,13 @@ jobs:
            -DAMReX_DIR=${{ github.workspace }}/amrex_lib/lib/cmake/AMReX \
            -DAMREX_HYDRO_HOME=${{ github.workspace }}/AMReX-Hydro        \
            -DCMAKE_VERBOSE_MAKEFILE=ON                                   \
-           -DCMAKE_CXX_STANDARD=17                                       \
+           -DCMAKE_CXX_STANDARD=20                                       \
            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         make -j 2
 
         ${{github.workspace}}/amrex/Tools/C_scripts/mmclt.py --input ${{github.workspace}}/ccache.log.txt --identifier incflo/src
         make -j2 -f clang-tidy-ccache-misses.mak \
-            CLANG_TIDY=clang-tidy-14 \
+            CLANG_TIDY=clang-tidy-21 \
             CLANG_TIDY_ARGS="--config-file=${{github.workspace}}/incflo/.clang-tidy --warnings-as-errors=*"
 
         ccache -s
@@ -259,21 +259,21 @@ jobs:
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout incflo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         path: incflo
     - name: Checkout AMReX-Hydro
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         repository: AMReX-Codes/amrex
         path: amrex
     - name: Set Up Cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.cache/ccache
         key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
@@ -281,8 +281,8 @@ jobs:
              ccache-${{ github.workflow }}-${{ github.job }}-git-
     - name: Load Dependencies
       run: |
-        amrex/.github/workflows/dependencies/dependencies.sh
-        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 14
+        amrex/.github/workflows/dependencies/dependencies_gcc.sh 14
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy-apt-llvm.sh 21
         amrex/.github/workflows/dependencies/dependencies_ccache.sh
     - name: Build
       run: |
@@ -305,13 +305,13 @@ jobs:
            -DAMREX_HOME=${{ github.workspace }}/amrex                \
            -DAMREX_HYDRO_HOME=${{ github.workspace }}/AMReX-Hydro    \
            -DCMAKE_VERBOSE_MAKEFILE=ON                               \
-           -DCMAKE_CXX_STANDARD=17                                   \
+           -DCMAKE_CXX_STANDARD=20                                   \
            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         make -j 2
 
         ${{github.workspace}}/amrex/Tools/C_scripts/mmclt.py --input ${{github.workspace}}/ccache.log.txt --identifier incflo/src
         make -j2 -f clang-tidy-ccache-misses.mak \
-            CLANG_TIDY=clang-tidy-14 \
+            CLANG_TIDY=clang-tidy-21 \
             CLANG_TIDY_ARGS="--config-file=${{github.workspace}}/incflo/.clang-tidy --warnings-as-errors=*"
 
         ccache -s

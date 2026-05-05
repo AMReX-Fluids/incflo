@@ -28,14 +28,14 @@ void incflo::make_eb_sphere()
     Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0], centervec[1], centervec[2])};
 
     // Print info about sphere
-    amrex::Print() << " " << std::endl;
-    amrex::Print() << " Internal Flow: " << inside << std::endl;
-    amrex::Print() << " Radius:    " << radius << std::endl;
+    amrex::Print() << "\n";
+    amrex::Print() << " Internal Flow: " << inside << "\n";
+    amrex::Print() << " Radius:    " << radius << "\n";
     amrex::Print() << " Center:    " << center[0] << ", " << center[1]
 #if (AMREX_SPACEDIM == 3)
                    << ", " << center[2]
 #endif
-                   << std::endl;
+                   << "\n";
 
     // Build the sphere implicit function
     EB2::SphereIF my_sphere(radius, center, inside);

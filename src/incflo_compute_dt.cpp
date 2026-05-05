@@ -270,7 +270,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     {
         amrex::Print() << "WARNING: fixed_dt does not satisfy CFL condition: \n"
                        << "max dt by CFL     : " << dt_new << "\n"
-                       << "fixed dt specified: " << m_fixed_dt << std::endl;
+                       << "fixed dt specified: " << m_fixed_dt << "\n";
     }
     m_dt = m_fixed_dt;
     }

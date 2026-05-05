@@ -12,7 +12,7 @@ void incflo::ReadRheologyParameters()
      {
          m_fluid_model = FluidModel::Newtonian;
          amrex::Print() << "Newtonian fluid with"
-                        << " mu = " << m_mu << std::endl;
+                        << " mu = " << m_mu << "\n";
      }
      else if(fluid_model_s == "powerlaw")
      {
@@ -24,7 +24,7 @@ void incflo::ReadRheologyParameters()
 
          amrex::Print() << "Power-law fluid with"
                         << " mu = " << m_mu
-                        << ", n = " << m_n_0 <<  std::endl;
+                        << ", n = " << m_n_0 <<  "\n";
      }
      else if(fluid_model_s == "bingham")
      {
@@ -40,7 +40,7 @@ void incflo::ReadRheologyParameters()
          amrex::Print() << "Bingham fluid with"
                         << " mu = " << m_mu
                         << ", tau_0 = " << m_tau_0
-                        << ", papa_reg = " << m_papa_reg << std::endl;
+                        << ", papa_reg = " << m_papa_reg << "\n";
      }
      else if(fluid_model_s == "hb")
      {
@@ -62,7 +62,7 @@ void incflo::ReadRheologyParameters()
                         << " mu = " << m_mu
                         << ", n = " << m_n_0
                         << ", tau_0 = " << m_tau_0
-                        << ", papa_reg = " << m_papa_reg << std::endl;
+                        << ", papa_reg = " << m_papa_reg << "\n";
      }
      else if(fluid_model_s == "smd")
      {
@@ -81,7 +81,7 @@ void incflo::ReadRheologyParameters()
                         << " mu = " << m_mu
                         << ", n = " << m_n_0
                         << ", tau_0 = " << m_tau_0
-                        << ", eta_0 = " << m_eta_0 << std::endl;
+                        << ", eta_0 = " << m_eta_0 << "\n";
      }
      else
      {

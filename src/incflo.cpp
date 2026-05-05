@@ -92,7 +92,7 @@ void incflo::InitData ()
         if (m_KE_int > 0)
         {
             amrex::Abort("xxxxx m_KE_int todo");
-//          amrex::Print() << "Time, Kinetic Energy: " << m_cur_time << ", " << ComputeKineticEnergy() << std::endl;
+//          amrex::Print() << "Time, Kinetic Energy: " << m_cur_time << ", " << ComputeKineticEnergy() << "\n";
         }
     }
     else
@@ -178,13 +178,13 @@ void incflo::Evolve()
 
         if(m_KE_int > 0 && (m_nstep % m_KE_int == 0))
         {
-            amrex::Print() << "Time, Kinetic Energy: " << m_cur_time << ", " << ComputeKineticEnergy() << std::endl;
+            amrex::Print() << "Time, Kinetic Energy: " << m_cur_time << ", " << ComputeKineticEnergy() << "\n";
         }
 
         // Mechanism to terminate incflo normally.
         do_not_evolve = (m_steady_state && SteadyStateReached()) ||
-                        ((m_stop_time > 0. && (m_cur_time >= m_stop_time - 1.e-12 * m_dt)) ||
-                         (m_max_step >= 0 && m_nstep >= m_max_step));
+            ( (m_stop_time > 0. && (m_cur_time >= m_stop_time - (1.e-12 * m_dt))) ||
+              (m_max_step >= 0 && m_nstep >= m_max_step) );
     }
 
     // Output at the final time
@@ -240,9 +240,9 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 
     if (m_verbose > 0)
     {
-        amrex::Print() << "Making new level " << lev << " from scratch" << std::endl;
+        amrex::Print() << "Making new level " << lev << " from scratch" << "\n";
         if (m_verbose > 2) {
-            amrex::Print() << "with BoxArray " << new_grids << std::endl;
+            amrex::Print() << "with BoxArray " << new_grids << "\n";
         }
     }
 
@@ -290,7 +290,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 }
 
 bool
-incflo::writeNow(int a_plot_int, Real a_plot_per_approx, Real a_plot_per_exact)
+incflo::writeNow(int a_plot_int, Real a_plot_per_approx, Real a_plot_per_exact) const
 {
     bool write_now = false;
 
