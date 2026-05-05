@@ -6,7 +6,7 @@ void incflo::WriteMyEBSurface ()
 {
   using namespace amrex;
 
-  amrex::Print() << "Writing the geometry to a vtp file.\n" << std::endl;
+  amrex::Print() << "Writing the geometry to a vtp file.\n" << "\n";
 
   // Only write at the finest level!
   int lev = finest_level;

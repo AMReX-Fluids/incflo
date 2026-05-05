@@ -36,17 +36,17 @@ void incflo::make_eb_cylinder()
     rotation = (rotation/180.)*M_PI;
 
     // Print info about cylinder
-    amrex::Print() << " " << std::endl;
-    amrex::Print() << " Internal Flow: " << inside << std::endl;
-    amrex::Print() << " Radius:    " << radius << std::endl;
-    amrex::Print() << " Direction: " << direction << std::endl;
-    amrex::Print() << " Rotation angle(rad): " << rotation << std::endl;
-    amrex::Print() << " Rotation axe: " << rotation_axe << std::endl;
+    amrex::Print() << " " << "\n";
+    amrex::Print() << " Internal Flow: " << inside << "\n";
+    amrex::Print() << " Radius:    " << radius << "\n";
+    amrex::Print() << " Direction: " << direction << "\n";
+    amrex::Print() << " Rotation angle(rad): " << rotation << "\n";
+    amrex::Print() << " Rotation axe: " << rotation_axe << "\n";
 #if (AMREX_SPACEDIM == 3)
     amrex::Print() << " Center:    " << center[0] << ", " << center[1] << ", " << center[2]
-                   << std::endl;
+                   << "\n";
 #else
-    amrex::Print() << " Center:    " << center[0] << ", " << center[1] << std::endl;
+    amrex::Print() << " Center:    " << center[0] << ", " << center[1] << "\n";
 #endif
 
     // Build the Cylinder implficit function representing the curved walls

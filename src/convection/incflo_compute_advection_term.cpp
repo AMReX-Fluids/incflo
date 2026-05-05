@@ -68,7 +68,9 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
     bool knownFaceStates          = false; // HydroUtils always recompute face states
 
 #ifdef AMREX_USE_EB
-    amrex::Print() << "REDISTRIBUTION TYPE " << m_redistribution_type << std::endl;
+    if ( m_verbose ) {
+        amrex::Print() << "REDISTRIBUTION TYPE " << m_redistribution_type << "\n";
+    }
 #endif
 
     // Make one flux MF at each level to hold all the fluxes (velocity, density, tracers)

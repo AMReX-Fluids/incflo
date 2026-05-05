@@ -14,7 +14,7 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     BL_PROFILE("incflo::MakeNewLevelFromCoarse()");
 
     if (m_verbose > 0) {
-        amrex::Print() << "Making new level " << lev << " from coarse" << std::endl;
+        amrex::Print() << "Making new level " << lev << " from coarse" << "\n";
     }
 
 #ifdef AMREX_USE_EB
@@ -70,7 +70,7 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
     BL_PROFILE("incflo::RemakeLevel()");
 
     if (m_verbose > 0) {
-        amrex::Print() << "Remaking level " << lev << std::endl;
+        amrex::Print() << "Remaking level " << lev << "\n";
     }
 
 #ifdef AMREX_USE_EB

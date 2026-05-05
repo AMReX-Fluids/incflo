@@ -72,7 +72,7 @@ void incflo::WriteCheckPointFile() const
 
     const std::string& checkpointname = amrex::Concatenate(m_check_file, m_nstep);
 
-    amrex::Print() << "\n\t Writing checkpoint " << checkpointname << std::endl;
+    amrex::Print() << "\n\t Writing checkpoint " << checkpointname << "\n";
 
     amrex::PreBuildDirectorHierarchy(checkpointname, level_prefix, finest_level + 1, true);
 
@@ -119,7 +119,7 @@ void incflo::ReadCheckpointFile()
 {
     BL_PROFILE("incflo::ReadCheckpointFile()");
 
-    amrex::Print() << "Restarting from checkpoint " << m_restart_file << std::endl;
+    amrex::Print() << "Restarting from checkpoint " << m_restart_file << "\n";
 
     Real prob_lo[BL_SPACEDIM];
     Real prob_hi[BL_SPACEDIM];
@@ -175,7 +175,7 @@ void incflo::ReadCheckpointFile()
         int i = 0;
         while(lis >> word)
         {
-            prob_lo[i++] = std::stod(word);
+            prob_lo[i++] = std::stod(word); // NOLINT(clang-analyzer-security.ArrayBound)
         }
     }
 
@@ -186,7 +186,7 @@ void incflo::ReadCheckpointFile()
         int i = 0;
         while(lis >> word)
         {
-            prob_hi[i++] = std::stod(word);
+            prob_hi[i++] = std::stod(word); // NOLINT(clang-analyzer-security.ArrayBound)
         }
     }
 
@@ -254,7 +254,7 @@ void incflo::ReadCheckpointFile()
         regrid(0, m_cur_time);
     }
 
-    amrex::Print() << "Restart complete" << std::endl;
+    amrex::Print() << "Restart complete" << "\n";
 }
 
 void incflo::WriteJobInfo(const std::string& path) const
@@ -350,7 +350,7 @@ void incflo::WritePlotFile()
 
     const std::string& plotfilename = amrex::Concatenate(m_plot_file, m_nstep);
 
-    amrex::Print() << "  Writing plotfile " << plotfilename << " at time " << m_cur_time << std::endl;
+    amrex::Print() << "  Writing plotfile " << plotfilename << " at time " << m_cur_time << "\n";
 
     // Write the plotfile
     WritePlotVariables(m_plotVars, plotfilename);
@@ -368,7 +368,7 @@ void incflo::WriteSmallPlotFile()
 
     const std::string& plotfilename = amrex::Concatenate(m_smallplot_file, m_nstep);
 
-    amrex::Print() << "  Writing smallplotfile " << plotfilename << " at time " << m_cur_time << std::endl;
+    amrex::Print() << "  Writing smallplotfile " << plotfilename << " at time " << m_cur_time << "\n";
 
     // Write the plotfile
     WritePlotVariables(m_smallplotVars, plotfilename);
@@ -540,7 +540,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
                 MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 0, icomp, 1, 0);
                 DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_u);
                 amrex::Print() << "Norm0 / Norm2 of u error " <<
-                    mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << std::endl;
+                    mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << "\n";
             }
             pltscaVarsName.push_back("error_u");
             ++icomp;
@@ -552,7 +552,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
                 MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 1, icomp, 1, 0);
                 DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_v);
                 amrex::Print() << "Norm0 / Norm2 of v error " <<
-                    mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << std::endl;
+                    mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << "\n";
             }
             pltscaVarsName.push_back("error_v");
             ++icomp;
@@ -565,7 +565,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
                 MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 2, icomp, 1, 0);
                 DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_w);
                 amrex::Print() << "Norm0 / Norm2 of w error " <<
-                    mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << std::endl;
+                    mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << "\n";
             }
             pltscaVarsName.push_back("error_w");
             ++icomp;
@@ -585,7 +585,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
                 mf[lev].plus(-offset, icomp, 1);
                 DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_p);
                 amrex::Print() << "Norm0 / Norm2 of p error " <<
-                    mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << std::endl;
+                    mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << "\n";
             }
             pltscaVarsName.push_back("error_p");
             ++icomp;
@@ -604,7 +604,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
                 mf[lev].plus(-offset, icomp, 1);
                 DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_mac_p);
                 amrex::Print() << "Norm0 / Norm2 of mac_p error " <<
-                    mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << std::endl;
+                    mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << "\n";
             }
             pltscaVarsName.push_back("error_mac_p");
             ++icomp;
