@@ -21,7 +21,7 @@
 #include <DiffusionTensorOp.H>
 #include <DiffusionScalarOp.H>
 
-enum struct StepType {
+enum struct StepType : std::uint8_t {
     Predictor, Corrector
 };
 
@@ -32,7 +32,7 @@ public:
     friend DiffusionTensorOp;
     friend DiffusionScalarOp;
 
-    enum struct FluidModel {
+    enum struct FluidModel : std::uint8_t {
         Newtonian, powerlaw, Bingham, HerschelBulkley, deSouzaMendesDutra
     };
 
@@ -580,7 +580,7 @@ private:
     // If true use CC projection; if false use nodal projection
     bool m_use_cc_proj = false;
 
-    enum struct DiffusionType {
+    enum struct DiffusionType : std::uint8_t {
         Invalid, Explicit, Crank_Nicolson, Implicit
     };
     DiffusionType m_diff_type = DiffusionType::Implicit;
@@ -716,7 +716,7 @@ private:
 
     amrex::Vector<std::unique_ptr<amrex::FabFactory<amrex::FArrayBox> > > m_factory;
 
-    enum struct BC {
+    enum struct BC : std::uint8_t {
         pressure_inflow, pressure_outflow, mass_inflow, no_slip_wall, slip_wall,
         periodic, mixed, direction_dependent, undefined
     };
@@ -964,9 +964,10 @@ private:
     void copy_from_old_to_new_temperature (      amrex::IntVect const& ng = amrex::IntVect{0});
 
     void Advance ();
-    bool writeNow () { return writeNow(m_plot_int, m_plot_per_approx, m_plot_per_exact); }
-    bool writeNow (int a_plot_int, amrex::Real a_plot_per_approx,
-                   amrex::Real a_plot_per_exact);
+    [[nodiscard]] bool writeNow () {
+        return writeNow(m_plot_int, m_plot_per_approx, m_plot_per_exact); }
+    [[nodiscard]] bool writeNow (int a_plot_int, amrex::Real a_plot_per_approx,
+                                 amrex::Real a_plot_per_exact) const;
 
     ///////////////////////////////////////////////////////////////////////////
     //

@@ -47,25 +47,25 @@ void incflo::make_eb_cyl_tuscan()
     Array<Real, AMREX_SPACEDIM> center2 = {AMREX_D_DECL(centervec2[0], centervec2[1], centervec2[2])};
 
     // Print info about cylinders
-    amrex::Print() << " CYLINDER 1" << std::endl;
-    amrex::Print() << " Direction:       " << direction1 << std::endl;
-    amrex::Print() << " Height:    " << height1 << std::endl;
-    amrex::Print() << " Radius:    " << radius1 << std::endl;
+    amrex::Print() << " CYLINDER 1" << "\n";
+    amrex::Print() << " Direction:       " << direction1 << "\n";
+    amrex::Print() << " Height:    " << height1 << "\n";
+    amrex::Print() << " Radius:    " << radius1 << "\n";
     amrex::Print() << " Center:    " << center1[0] << ", " << center1[1]
 #if (AMREX_SPACEDIM == 3)
                    << ", " << center1[2]
 #endif
-                   << std::endl;
+                   << "\n";
 
-    amrex::Print() << " CYLINDER 2" << std::endl;
-    amrex::Print() << " Direction:       " << direction2 << std::endl;
-    amrex::Print() << " Height:    " << height2 << std::endl;
-    amrex::Print() << " Radius:    " << radius2 << std::endl;
+    amrex::Print() << " CYLINDER 2" << "\n";
+    amrex::Print() << " Direction:       " << direction2 << "\n";
+    amrex::Print() << " Height:    " << height2 << "\n";
+    amrex::Print() << " Radius:    " << radius2 << "\n";
     amrex::Print() << " Center:    " << center2[0] << ", " << center2[1]
 #if (AMREX_SPACEDIM == 3)
                    << ", " << center2[2]
 #endif
-                   << std::endl;
+                   << "\n";
 
     // Build the implicit function as a union of two cylinders
     EB2::CylinderIF cyl1(radius1, height1, direction1, center1, true);

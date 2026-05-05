@@ -14,8 +14,8 @@ using namespace amrex;
  ********************************************************************************/
 void incflo::make_eb_spherecube()
 {
-    amrex::Print() << " " << std::endl;
-    amrex::Print() << " SPERECUUUUBE: " << std::endl;
+    amrex::Print() << " " << "\n";
+    amrex::Print() << " SPERECUUUUBE: " << "\n";
 
     // Build the sphere implicit function
     EB2::SphereIF sphere(0.5, {1.8, 1.8, 2.8}, false);

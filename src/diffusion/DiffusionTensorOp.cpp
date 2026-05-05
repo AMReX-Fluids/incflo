@@ -118,7 +118,7 @@ DiffusionTensorOp::diffuse_velocity (Vector<MultiFab*> const& velocity,
     //      b: mu
 
     if (m_verbose > 0) {
-        amrex::Print() << "Diffusing velocity components all together..." << std::endl;
+        amrex::Print() << "Diffusing velocity components all together..." << "\n";
     }
 
     const int finest_level = m_incflo->finestLevel();

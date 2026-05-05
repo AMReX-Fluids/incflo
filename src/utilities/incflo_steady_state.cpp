@@ -63,9 +63,9 @@ bool incflo::SteadyStateReached()
         // Print out info on steady state checks
         if (m_verbose > 0)
         {
-            amrex::Print() << "\nSteady state check level " << lev << std::endl;
+            amrex::Print() << "\nSteady state check level " << lev << "\n";
             amrex::Print() << "||u-uo||/||uo|| = " << max_relchange
-                           << ", du/dt  = " << max_change/dt << std::endl;
+                           << ", du/dt  = " << max_change/dt << "\n";
         }
     }
 

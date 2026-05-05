@@ -18,7 +18,7 @@ void incflo::make_eb_csg(const std::string& geom_file)
     ParmParse pp("csg");
     pp.query("internal_flow", is_internal_flow);
     if(pp.queryarr("scaling_factor", scaling_factor_vec, 0, AMREX_SPACEDIM)) {
-      amrex::Print() << "WARNING: The implicit function magnitudes will not be scaled" << std::endl;
+      amrex::Print() << "WARNING: The implicit function magnitudes will not be scaled" << "\n";
     }
     Array<Real,AMREX_SPACEDIM> scaling_factor;
     AMREX_D_TERM(scaling_factor[0] = scaling_factor_vec[0];,
@@ -31,7 +31,7 @@ void incflo::make_eb_csg(const std::string& geom_file)
                  translation[1] = translation_vec[1];,
                  translation[2] = translation_vec[2];);
 
-    amrex::Print() << "\n Building geometry with is_internal_flow:  " << is_internal_flow << std::endl;
+    amrex::Print() << "\n Building geometry with is_internal_flow:  " << is_internal_flow << "\n";
     auto csg_if = csg::get_csgif(geom_file, is_internal_flow);
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(csg_if, "Unable to create CsgIF from geometry file");
 
