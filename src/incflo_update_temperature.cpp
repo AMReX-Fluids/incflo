@@ -83,7 +83,7 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
                     ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                     {
                         tem(i,j,k) = tem_o(i,j,k) + l_dt *
-                            (dtdt_o(i,j,k) + tem_f(i,j,k)) / (rho_h(i,j,k) * cp(i,j,k));
+                            (dtdt_o(i,j,k) + tem_f(i,j,k) / (rho_h(i,j,k) * cp(i,j,k)));
                         // Save rhoCp for use in implicit solve.
                         // Reuse scratch space since we are done with forcing now.
                         tem_f(i,j,k) = rho_h(i,j,k) * cp(i,j,k);
