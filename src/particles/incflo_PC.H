@@ -34,9 +34,9 @@ struct incflo_ParticlesIntIdxSoA
 struct incflo_ParticlesRealIdxSoA
 {
     enum {
-        vx = 0,
-        vy,
-        vz,
+        AMREX_D_DECL(vx = 0,
+                     vy,
+                     vz),
         mass,
         ncomps
     };

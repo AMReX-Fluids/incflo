@@ -62,9 +62,9 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
             auto *p_pbox = aos().data();
 
             Array<ParticleReal*,AMREX_SPACEDIM> v_ptr;
-            v_ptr[0] = soa.GetRealData(incflo_ParticlesRealIdxSoA::vx).data();
-            v_ptr[1] = soa.GetRealData(incflo_ParticlesRealIdxSoA::vy).data();
-            v_ptr[2] = soa.GetRealData(incflo_ParticlesRealIdxSoA::vz).data();
+            AMREX_D_TERM(v_ptr[0] = soa.GetRealData(incflo_ParticlesRealIdxSoA::vx).data();,
+                         v_ptr[1] = soa.GetRealData(incflo_ParticlesRealIdxSoA::vy).data();,
+                         v_ptr[2] = soa.GetRealData(incflo_ParticlesRealIdxSoA::vz).data());
 
             const FArrayBox* fab[AMREX_SPACEDIM] = { AMREX_D_DECL(&((*a_umac)[grid]),
                                                                   &((*a_vmac)[grid]),
