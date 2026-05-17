@@ -106,8 +106,8 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
 
             ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                 Real x = problo[0] + (i+0.5)*l_dx;
-                 Real y = problo[1] + (j+0.5)*l_dy;
+                 Real x = problo[0] + (i+Real(0.5))*l_dx;
+                 Real y = problo[1] + (j+Real(0.5))*l_dy;
 
                  // Tag if we are inside the specified box
                  if (x >= xlo && x <= xhi && y >= ylo && y <= yhi)
@@ -122,9 +122,9 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
 
             ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                 Real x = problo[0] + Real(i+0.5)*l_dx;
-                 Real y = problo[1] + Real(j+0.5)*l_dy;
-                 Real z = problo[2] + Real(k+0.5)*l_dz;
+                 Real x = problo[0] + Real(i+Real(0.5))*l_dx;
+                 Real y = problo[1] + Real(j+Real(0.5))*l_dy;
+                 Real z = problo[2] + Real(k+Real(0.5))*l_dz;
 
                  // Tag if we are inside the specified box
                  if (x >= xlo && x <= xhi && y >= ylo && y <= yhi && z >= zlo && z <= zhi)

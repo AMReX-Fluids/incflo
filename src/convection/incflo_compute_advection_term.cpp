@@ -240,7 +240,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
-        Real time_nph = m_cur_time + 0.5*m_dt;
+        Real time_nph = m_cur_time + Real(0.5)*m_dt;
         if (nghost_mac() > 0)
         {
             // FillPatch umac.
@@ -458,7 +458,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                     {
                                         Real dux =          dxinv[0]*(umac(i+1,j,k) - umac(i,j,k));
                                         Real duy =          dxinv[1]*(vmac(i,j+1,k) - vmac(i,j,k));
-                                        Real duz = (wmac) ? dxinv[2]*(wmac(i,j,k+1) - wmac(i,j,k)) : 0.0;
+                                        Real duz = (wmac) ? dxinv[2]*(wmac(i,j,k+1) - wmac(i,j,k)) : Real(0);
 
                                         // To avoid inconsistencies between boxes, we make sure to fix box
                                         // corners (2D) or edges (3D) that are not grid corners/edges.

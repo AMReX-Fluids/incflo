@@ -214,12 +214,12 @@ void incflo::init_rotating_flow (Box const& vbx, Box const& /*gbx*/,
 {
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        Real x = Real(i+0.5)*dx[0] - 0.5;
-        Real y = Real(j+0.5)*dx[1] - 0.5;
+        Real x = (Real(i)+Real(0.5))*dx[0] - Real(0.5);
+        Real y = (Real(j)+Real(0.5))*dx[1] - Real(0.5);
         Real r = std::sqrt(x*x + y*y);
 
-        Real r0 = 0.45;
-        Real const_val = 0.1;
+        Real r0 = Real(0.45);
+        Real const_val = Real(0.1);
 
         // We want flow to be 0 at origin and at cylinder boundary
         //    This will peak at half the radius
@@ -229,20 +229,20 @@ void incflo::init_rotating_flow (Box const& vbx, Box const& /*gbx*/,
         vel(i,j,k,0) = -(y/r) * magvel;
         vel(i,j,k,1) =  (x/r) * magvel;
 #if (AMREX_SPACEDIM == 3)
-        vel(i,j,k,2) = Real(0.0);
+        vel(i,j,k,2) = Real(0);
 #endif
-        Real x_t = Real(i+0.5)*dx[0] - 0.5;
-        Real y_t = Real(j+0.5)*dx[1] - 0.3;
-        Real z_t = Real(k+0.5)*dx[2] - 0.5;
+        Real x_t = Real(i+Real(0.5))*dx[0] - Real(0.5);
+        Real y_t = Real(j+Real(0.5))*dx[1] - Real(0.3);
+        Real z_t = Real(k+Real(0.5))*dx[2] - Real(0.5);
         Real r_t = std::sqrt(x_t*x_t + y_t*y_t + z_t*z_t);
-        Real width = 0.25;
+        Real width = Real(0.25);
 
-        tracer(i,j,k) = Real(0.5)*(Real(1.0)-std::tanh((r_t)/width));
+        tracer(i,j,k) = Real(0.5)*(Real(1)-std::tanh((r_t)/width));
 
-        //if (r_t < 0.2) {
-        //    tracer(i,j,k) = Real(1.0);
+        //if (r_t < Real(0.2)) {
+        //    tracer(i,j,k) = Real(1);
         //} else {
-        //    tracer(i,j,k) = Real(0.0);
+        //    tracer(i,j,k) = Real(0);
        // }
     });
 }
@@ -258,8 +258,8 @@ void incflo::init_taylor_green (Box const& vbx, Box const& /*gbx*/,
 {
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        Real x = Real(i+0.5)*dx[0];
-        Real y = Real(j+0.5)*dx[1];
+        Real x = (Real(i)+Real(0.5))*dx[0];
+        Real y = (Real(j)+Real(0.5))*dx[1];
         constexpr Real twopi = Real(2.0)*Real(3.1415926535897932);
         vel(i,j,k,0) =  std::sin(twopi*x) * std::cos(twopi*y);
         vel(i,j,k,1) = -std::cos(twopi*x) * std::sin(twopi*y);
@@ -275,15 +275,15 @@ void incflo::init_taylor_green3d (Box const& vbx, Box const& /*gbx*/,
                                   Array4<Real> const& /*tracer*/,
                                   Box const& /*domain*/,
                                   GpuArray<Real, AMREX_SPACEDIM> const& dx,
-                                  GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
+                                  GpuArray<Real, AMREX_SPACEDIM> const& problo,
                                   GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        Real x = Real(i+0.5)*dx[0];
-        Real y = Real(j+0.5)*dx[1];
+        Real x = problo[0] + (Real(i)+Real(0.5))*dx[0];
+        Real y = problo[1] + (Real(j)+Real(0.5))*dx[1];
 #if (AMREX_SPACEDIM == 3)
-        Real z = Real(k+0.5)*dx[2];
+        Real z = problo[2] + (Real(k)+Real(0.5))*dx[2];
 #else
         Real z = 0.0_rt;
 #endif
@@ -300,13 +300,13 @@ void incflo::init_taylor_vortex (Box const& vbx, Box const& /*gbx*/,
                                  Array4<Real> const& /*tracer*/,
                                  Box const& /*domain*/,
                                  GpuArray<Real, AMREX_SPACEDIM> const& dx,
-                                 GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
+                                 GpuArray<Real, AMREX_SPACEDIM> const& problo,
                                  GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        Real x = Real(i+0.5)*dx[0];
-        Real y = Real(j+0.5)*dx[1];
+        Real x = problo[0] + (Real(i)+Real(0.5))*dx[0];
+        Real y = problo[1] + (Real(j)+Real(0.5))*dx[1];
         constexpr Real pi = Real(3.1415926535897932);
         constexpr Real u0 = Real(1.0);
         constexpr Real v0 = Real(1.0);
@@ -330,8 +330,8 @@ void incflo::init_vortex_in_sphere (Box const& vbx, Box const& /*gbx*/,
 {
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        Real x = problo[0] + Real(i+0.5)*dx[0];
-        Real y = problo[1] + Real(j+0.5)*dx[1];
+        Real x = problo[0] + (Real(i)+Real(0.5))*dx[0];
+        Real y = problo[1] + (Real(j)+Real(0.5))*dx[1];
         Real deltax = x;
         Real deltay = y;
         Real d_sq = deltax*deltax + deltay*deltay;
@@ -456,62 +456,63 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
 #if (AMREX_SPACEDIM == 2)
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        vel(i,j,k,0) = 1.;
-        vel(i,j,k,1) = 0.5;
+        vel(i,j,k,0) = Real(1);
+        vel(i,j,k,1) = Real(0.5);
 
-        density(i,j,k) = 1.;
+        density(i,j,k) = Real(1);
 
-        Real sum = 0.;
+        Real sum = Real(0);
         for (int jj=0; jj<10; ++jj) {
-            Real yy = (j + (jj+0.5)/10.) * dx[1];
+            Real yy = (j + (jj+Real(0.5))/Real(10)) * dx[1];
             for (int ii=0; ii<10; ++ii) {
-                Real xx = (i + (ii+0.5)/10.) * dx[0];
+                Real xx = (i + (ii+Real(0.5))/Real(10)) * dx[0];
 
-                Real r = std::sqrt( (xx-0.5)*(xx-0.5) + (yy-0.5)*(yy-0.5) );
+                Real r = std::sqrt( (xx-Real(0.5))*(xx-Real(0.5)) + (yy-Real(0.5))*(yy-Real(0.5)) );
 
-                if (r < 0.1) {
-                    sum += 1.;
-                } else if (r == 0.1) {
-                    sum += 0.5;
+                if (r < Real(0.1)) {
+                    sum += Real(1);
+                } else if (r == Real(0.1)) {
+                    sum += Real(0.5);
                 }
 
             }
         }
 
-        tracer(i,j,k) = sum / 100.;
+        tracer(i,j,k) = sum * Real(0.01);
 
     });
 
 #elif (AMREX_SPACEDIM == 3)
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        vel(i,j,k,0) = 1.;
-        vel(i,j,k,1) = 0.5;
-        vel(i,j,k,2) = 0.25;
+        vel(i,j,k,0) = Real(1);
+        vel(i,j,k,1) = Real(0.5);
+        vel(i,j,k,2) = Real(0.25);
 
-        density(i,j,k) = 1.;
+        density(i,j,k) = Real(1);
 
         Real sum = 0.;
         for (int kk=0; kk<10; ++kk) {
-            Real zz = (k + (kk+0.5)/10.) * dx[2];
+            Real zz = (k + (kk+Real(0.5))/Real(10)) * dx[2];
             for (int jj=0; jj<10; ++jj) {
-                Real yy = (j + (jj+0.5)/10.) * dx[1];
+                Real yy = (j + (jj+Real(0.5))/Real(10)) * dx[1];
                 for (int ii=0; ii<10; ++ii) {
-                    Real xx = (i + (ii+0.5)/10.) * dx[0];
+                    Real xx = (i + (ii+Real(0.5))/Real(10)) * dx[0];
 
-                    Real r = std::sqrt( (xx-0.5)*(xx-0.5) + (yy-0.5)*(yy-0.5) + (zz-0.5)*(zz-0.5) );
+                    Real r = std::sqrt( (xx-Real(0.5))*(xx-Real(0.5)) + (yy-Real(0.5))*(yy-Real(0.5))
+                                       +(zz-Real(0.5))*(zz-Real(0.5)) );
 
-                    if (r < 0.1) {
-                        sum += 1.;
-                    } else if (r == 0.1) {
-                        sum += 0.5;
+                    if (r < Real(0.1)) {
+                        sum += Real(1);
+                    } else if (r == Real(0.1)) {
+                        sum += Real(0.5);
                     }
 
                 }
             }
         }
 
-        tracer(i,j,k) = sum / 1000.;
+        tracer(i,j,k) = sum * Real(0.001);
 
     });
 #endif
@@ -522,31 +523,30 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
                                           Array4<Real> const& tracer,
                                           Box const& /*domain*/,
                                           GpuArray<Real, AMREX_SPACEDIM> const& dx,
-                                          GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
+                                          GpuArray<Real, AMREX_SPACEDIM> const& problo,
                                           GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/)
 {
 
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        Real x = (i+0.5)*dx[0];
-        Real y = (j+0.5)*dx[1];
+        Real x = problo[0] + (Real(i)+Real(0.5))*dx[0];
+        Real y = problo[1] + (Real(j)+Real(0.5))*dx[1];
 
+        vel(i,j,k,0) = Real(1);
+        vel(i,j,k,1) = Real(1);
 
-        vel(i,j,k,0) = 1.;
-        vel(i,j,k,1) = 1.;
-
-        density(i,j,k) = 1.;
+        density(i,j,k) = Real(1);
 
 #if (AMREX_SPACEDIM == 2)
-        Real r = std::sqrt( (x-0.5)*(x-0.5) + (y-0.5)*(y-0.5) );
+        Real r = std::sqrt( (x-Real(0.5))*(x-Real(0.5)) + (y-Real(0.5))*(y-Real(0.5)) );
 #elif (AMREX_SPACEDIM == 3)
-        Real z = (k+0.5)*dx[2];
-        vel(i,j,k,2) = 1.;
+        Real z = (Real(k)+Real(0.5))*dx[2];
+        vel(i,j,k,2) = Real(1);
 
-        Real r = std::sqrt( (x-0.5)*(x-0.5) + (y-0.5)*(y-0.5) + (z-0.5)*(z-0.5) );
+        Real r = std::sqrt( (x-Real(0.5))*(x-Real(0.5)) + (y-Real(0.5))*(y-Real(0.5)) + (z-Real(0.5))*(z-Real(0.5)) );
 #endif
 
-        tracer(i,j,k) = exp(-300.*r*r);
+        tracer(i,j,k) = std::exp(-Real(300)*r*r);
     });
 
 }
@@ -639,8 +639,8 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& /*gbx*/,
         vel(i,j,k,0) = Real(0.0);
         vel(i,j,k,1) = Real(0.0);
 
-        Real x = problo[0] + Real(i+0.5)*dx[0];
-        Real y = problo[1] + Real(j+0.5)*dx[1];
+        Real x = problo[0] + (Real(i)+Real(0.5))*dx[0];
+        Real y = problo[1] + (Real(j)+Real(0.5))*dx[1];
 
         const Real r2d = amrex::min(std::abs(x-splitx), Real(0.5)*L_x);
         const Real pertheight = Real(0.5) - Real(0.01)*std::cos(Real(2.0)*pi*r2d/L_x);
@@ -658,9 +658,9 @@ void incflo::init_rayleigh_taylor (Box const& vbx, Box const& /*gbx*/,
         vel(i,j,k,1) = Real(0.0);
         vel(i,j,k,2) = Real(0.0);
 
-        Real x = problo[0] + Real(i+0.5)*dx[0];
-        Real y = problo[1] + Real(j+0.5)*dx[1];
-        Real z = problo[2] + Real(k+0.5)*dx[2];
+        Real x = problo[0] + (Real(i)+Real(0.5))*dx[0];
+        Real y = problo[1] + (Real(j)+Real(0.5))*dx[1];
+        Real z = problo[2] + (Real(k)+Real(0.5))*dx[2];
 
         const Real r2d = amrex::min(std::hypot((x-splitx),(y-splity)), Real(0.5)*L_x);
         const Real pertheight = Real(0.5) - Real(0.01)*std::cos(Real(2.0)*pi*r2d/L_x);
@@ -763,7 +763,7 @@ void incflo::init_boussinesq_bubble (Box const& vbx, Box const& /*gbx*/,
             Real x = Real(i+0.5)*dx[0];
             Real y = Real(j+0.5)*dx[1];
 #if (AMREX_SPACEDIM == 2)
-            Real r = std::sqrt((x-0.25)*(x-0.25) + (y-0.5)*(y-0.5));
+            Real r = std::sqrt((x-Real(0.25))*(x-Real(0.25)) + (y-Real(0.5))*(y-Real(0.5)));
 #elif  (AMREX_SPACEDIM == 3)
             Real z = Real(k+0.5)*dx[2];
             Real r = std::sqrt((x-m_half)*(x-m_half) + (y-m_fourth)*(y-m_fourth) + (z-m_fourth)*(z-m_fourth));
@@ -1111,9 +1111,9 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
             }
-            if (nt > 0 && k <= dhi.z/8)   tracer(i,j,k,0) = Real(1.0);
-            if (nt > 1 && k <= dhi.z/2)   tracer(i,j,k,1) = Real(2.0);
-            if (nt > 2 && k <= dhi.z*3/4) tracer(i,j,k,2) = Real(3.0);
+            if (nt > 0 && k <= dhi.z/Real(8))   tracer(i,j,k,0) = Real(1);
+            if (nt > 1 && k <= dhi.z/Real(2))   tracer(i,j,k,1) = Real(2);
+            if (nt > 2 && k <= dhi.z*3/Real(4)) tracer(i,j,k,2) = Real(3);
         });
     }
     else
@@ -1133,12 +1133,12 @@ void incflo::init_burggraf (Box const& vbx, Box const& /*gbx*/,
 {
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        Real x = Real(i+0.5)*dx[0];
-        Real y = Real(j+0.5)*dx[1];
-        vel(i,j,k,0) =  8.0 * (x*x*x*x - 2.0 * x*x*x + x*x) * (4.0*y*y*y - 2.0*y);
-        vel(i,j,k,1) = -8.0 * (4.0*x*x*x - 6.0 * x*x + 2.*x) * (y*y*y*y - y*y);
+        Real x = (Real(i)+Real(0.5))*dx[0] - Real(0.5);
+        Real y = (Real(j)+Real(0.5))*dx[1] - Real(0.5);
+        vel(i,j,k,0) =  Real(8) * (x*x*x*x - Real(2) * x*x*x + x*x) * (Real(4)*y*y*y - Real(2)*y);
+        vel(i,j,k,1) = -Real(8) * (Real(4)*x*x*x - Real(6) * x*x + Real(2)*x) * (y*y*y*y - y*y);
 #if (AMREX_SPACEDIM == 3)
-        vel(i,j,k,2) = 0.0;
+        vel(i,j,k,2) = Real(0);
 #endif
     });
 }

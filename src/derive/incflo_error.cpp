@@ -128,10 +128,10 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
                     exact = 0.0;
 
                 } else if (err_comp == 0) { // u
-                    exact =  8.0 * (x*x*x*x - 2.0 * x*x*x + x*x) * (4.0*y*y*y - 2.0*y);
+                    exact =  Real(8) * (x*x*x*x - Real(2) * x*x*x + x*x) * (Real(4)*y*y*y - Real(2)*y);
 
                 } else if (err_comp == 1) { // v
-                    exact = -8.0 * (4.0*x*x*x - 6.0 * x*x + 2.*x) * (y*y*y*y - y*y);
+                    exact = -Real(8) * (Real(4)*x*x*x - Real(6) * x*x + Real(2)*x) * (y*y*y*y - y*y);
                 }
 
                 err(i,j,k,soln_comp) -= exact;

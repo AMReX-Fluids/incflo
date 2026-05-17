@@ -121,10 +121,10 @@ void incflo::compute_vel_forces_on_level (int lev,
                 });
 
             } else if (m_probtype == 16) {
-                Real Re = 1./m_mu;  // Note this assumes you are running exactly the problem set up, with U = 1 and L = 1 and rho = 1.
+                Real Re = Real(1)/m_mu;  // Note this assumes you are running exactly the problem set up, with U = 1 and L = 1 and rho = 1.
                 ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    Real rhoinv = Real(1.0)/rho(i,j,k);
+                    Real rhoinv = Real(1)/rho(i,j,k);
 
                     if (include_pressure_gradient)
                     {
@@ -137,29 +137,29 @@ void incflo::compute_vel_forces_on_level (int lev,
                                      vel_f(i,j,k,2) = -(               l_gp0[2])*rhoinv + l_gravity[2];);
                     }
 
-                    Real x = (i+0.5) * dx[0];
-                    Real y = (j+0.5) * dx[1];
+                    Real x = (i+Real(0.5)) * dx[0];
+                    Real y = (j+Real(0.5)) * dx[1];
 
-                    Real f     = x*x*x*x - 2.*x*x*x + x*x;
+                    Real f     = x*x*x*x - Real(2)*x*x*x + x*x;
                     Real g     = y*y*y*y - y*y;
-                    Real capF  =  0.2 * x*x*x*x*x   -  0.5 * x*x*x*x   + (1./3.)* x*x*x;
-                    Real capF1 = -4.0 * x*x*x*x*x*x + 12.0 * x*x*x*x*x - 14.    * x*x*x*x + 8.0 * x*x*x - 2.0 * x*x;
-                    Real capF2 = 0.5 * f * f;
-                    Real capG1 = -24.0 * y*y*y*y*y + 8.0 * y*y*y - 4.0 * y;
+                    Real capF  = Real(0.2) * x*x*x*x*x   - Real(0.5) * x*x*x*x   + (Real(1)/Real(3)) * x*x*x;
+                    Real capF1 = Real(-4)  * x*x*x*x*x*x + Real(12)  * x*x*x*x*x -  Real(14)         * x*x*x*x + Real(8) * x*x*x - Real(2) * x*x;
+                    Real capF2 = Real(0.5) * f * f;
+                    Real capG1 = Real(-24) * y*y*y*y*y + Real(8) * y*y*y - Real(4) * y;
 
-                    Real  fp   = 4.0 * x*x*x - 6.0*x*x + 2.0*x;
-                    //Real  fpp  = 12.0 * x*x - 12.0*x + 2.0;
-                    Real  fppp = 24.0 * x - 12.0;
+                    Real  fp   = Real(4) * x*x*x - Real(6)*x*x + Real(2)*x;
+                    //Real  fpp  = Real(12) * x*x - Real(12)*x + Real(2);
+                    Real  fppp = Real(24) * x - Real(12);
 
-                    Real  gp   =  4.0 * y*y*y - 2.0*y;
-                    Real  gpp  = 12.0 * y*y - 2.0;
+                    Real  gp   =  Real(4) * y*y*y - Real(2)*y;
+                    Real  gpp  = Real(12) * y*y - Real(2);
 
-                    vel_f(i,j,k,1) += 8.0 / Re * (24.0 * capF + 2.0 * fp * gpp + fppp * g) + 64.0 * (capF2 * capG1 - g * gp * capF1);
+                    vel_f(i,j,k,1) += Real(8) / Re * (Real(24) * capF + Real(2) * fp * gpp + fppp * g) + Real(64) * (capF2 * capG1 - g * gp * capF1);
                 });
             } else {
                 ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
-                    Real rhoinv = Real(1.0)/rho(i,j,k);
+                    Real rhoinv = Real(1)/rho(i,j,k);
 
                     if (include_pressure_gradient)
                     {

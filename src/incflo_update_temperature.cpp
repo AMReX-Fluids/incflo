@@ -9,7 +9,7 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
     if (!m_use_temperature) { return; }
 
     Real const  new_time = m_cur_time + m_dt;
-    Real const half_time = m_cur_time + m_dt/2.;
+    Real const half_time = m_cur_time + m_dt * Real(0.5);
 
     // *************************************************************************************
     // Compute the temperature forcing terms

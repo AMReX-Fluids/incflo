@@ -53,23 +53,23 @@ struct IncfloVelFill
                 }
                 else if (31 == probtype)
                 {
-                    amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
-                    norm_vel = amrex::Real(6.) * y * (amrex::Real(1.0)-y);
+                    amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1)/domain_box.length(1));
+                    norm_vel = amrex::Real(6.) * y * (amrex::Real(1)-y);
                 }
                 else if (43 == probtype)
                 {
                     amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
-                    norm_vel = amrex::Real(6.) * y * (amrex::Real(1.0)-y) - 1.0;
+                    norm_vel = amrex::Real(6) * y * (amrex::Real(1)-y) - amrex::Real(1);
                 }
 #if (AMREX_SPACEDIM == 3)
                 else if (311 == probtype)
                 {
-                    amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
-                    norm_vel = amrex::Real(6.) * z * (amrex::Real(1.0)-z);
+                    amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1)/domain_box.length(2));
+                    norm_vel = amrex::Real(6.) * z * (amrex::Real(1)-z);
                 }
                 else if (41 == probtype)
                 {
-                    amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
+                    amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1)/domain_box.length(2));
                     norm_vel = amrex::Real(0.5) * z;
                 }
 #endif
@@ -113,7 +113,7 @@ struct IncfloVelFill
                 else if (43 == probtype)
                 {
                     amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
-                    norm_vel = amrex::Real(6.) * y * (amrex::Real(1.0)-y) - 1.0;
+                    norm_vel = amrex::Real(6) * y * (amrex::Real(1.0)-y) - amrex::Real(1);
                 }
 
                 // This is a special case -- all the logic is contained here
@@ -188,7 +188,7 @@ struct IncfloVelFill
                 if (16 == probtype)
                 {
                     amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
-                    norm_vel = 16.0 * (x*x*x*x - 2.0 * x*x*x + x*x);
+                    norm_vel = amrex::Real(16) * (x*x*x*x - amrex::Real(2) * x*x*x + x*x);
                 }
 
 #if (AMREX_SPACEDIM == 3)

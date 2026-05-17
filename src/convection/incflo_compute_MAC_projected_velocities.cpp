@@ -198,7 +198,7 @@ incflo::compute_MAC_projected_velocities (
     {
         MultiFab time_dep_inflow_vel(vel[lev]->boxArray(),vel[lev]->DistributionMap(),AMREX_SPACEDIM,1);
         time_dep_inflow_vel.setVal(0.);
-        fillphysbc_velocity(lev, m_cur_time+0.5*l_dt, time_dep_inflow_vel, 1);
+        fillphysbc_velocity(lev, m_cur_time+Real(0.5)*l_dt, time_dep_inflow_vel, 1);
 
         Box domain(geom[lev].Domain());
         const auto dlo = lbound(domain);
