@@ -32,7 +32,11 @@ void incflo::make_eb_box()
          ************************************************************************/
 
         Vector<Real> boxLo(AMREX_SPACEDIM), boxHi(AMREX_SPACEDIM);
-        Real offset = 1.0e-15;
+#ifdef AMREX_USE_FLOAT
+        Real offset = Real(1e-8);
+#else
+        Real offset = Real(1e-15);
+#endif
         bool inside = true;
 
         for(int i = 0; i < AMREX_SPACEDIM; i++)
@@ -54,8 +58,8 @@ void incflo::make_eb_box()
         // putting them one domain width away
         if(geom[0].isPeriodic(0))
         {
-            xlo = 2.0 * geom[0].ProbLo(0) - geom[0].ProbHi(0);
-            xhi = 2.0 * geom[0].ProbHi(0) - geom[0].ProbLo(0);
+            xlo = Real(2) * geom[0].ProbLo(0) - geom[0].ProbHi(0);
+            xhi = Real(2) * geom[0].ProbHi(0) - geom[0].ProbLo(0);
         }
 
         Real ylo = boxLo[1] + offset;
@@ -65,8 +69,8 @@ void incflo::make_eb_box()
         // putting them one domain width away
         if(geom[0].isPeriodic(1))
         {
-            ylo = 2.0 * geom[0].ProbLo(1) - geom[0].ProbHi(1);
-            yhi = 2.0 * geom[0].ProbHi(1) - geom[0].ProbLo(1);
+            ylo = Real(2) * geom[0].ProbLo(1) - geom[0].ProbHi(1);
+            yhi = Real(2) * geom[0].ProbHi(1) - geom[0].ProbLo(1);
         }
 
 #if (AMREX_SPACEDIM > 2)
@@ -77,8 +81,8 @@ void incflo::make_eb_box()
         // putting them one domain width away
         if(geom[0].isPeriodic(2))
         {
-            zlo = 2.0 * geom[0].ProbLo(2) - geom[0].ProbHi(2);
-            zhi = 2.0 * geom[0].ProbHi(2) - geom[0].ProbLo(2);
+            zlo = Real(2) * geom[0].ProbLo(2) - geom[0].ProbHi(2);
+            zhi = Real(2) * geom[0].ProbHi(2) - geom[0].ProbLo(2);
         }
 #endif
 

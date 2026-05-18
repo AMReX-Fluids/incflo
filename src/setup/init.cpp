@@ -222,7 +222,7 @@ void incflo::ReadParameters ()
 
           amrex::Real tol_deg(0.);
           pp_eb_flow.query("normal_tol", tol_deg);
-          m_eb_flow.normal_tol = tol_deg*M_PI/amrex::Real(180.);
+          m_eb_flow.normal_tol = tol_deg*amrex::Real(M_PI)/amrex::Real(180);
        }
 
        if (m_advect_tracer && m_eb_flow.enabled && m_eb_flow.tracer.empty()) {

@@ -39,7 +39,7 @@ void incflo::make_eb_annulus()
     // Compute distance between cylinder centres
     Real offset = 0.0;
     for(int i = 0; i < AMREX_SPACEDIM; i++)
-        offset += std::pow(outer_center[i] - inner_center[i], 2);
+        offset += amrex::Math::powi<2>(outer_center[i] - inner_center[i]);
     offset = std::sqrt(offset);
 
     // Check that the inner cylinder is fully contained in the outer one

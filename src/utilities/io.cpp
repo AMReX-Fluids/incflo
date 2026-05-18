@@ -175,7 +175,7 @@ void incflo::ReadCheckpointFile()
         int i = 0;
         while(lis >> word)
         {
-            prob_lo[i++] = std::stod(word); // NOLINT(clang-analyzer-security.ArrayBound)
+            prob_lo[i++] = amrex::Real(std::stod(word)); // NOLINT(clang-analyzer-security.ArrayBound)
         }
     }
 
@@ -186,7 +186,7 @@ void incflo::ReadCheckpointFile()
         int i = 0;
         while(lis >> word)
         {
-            prob_hi[i++] = std::stod(word); // NOLINT(clang-analyzer-security.ArrayBound)
+            prob_hi[i++] = amrex::Real(std::stod(word)); // NOLINT(clang-analyzer-security.ArrayBound)
         }
     }
 
