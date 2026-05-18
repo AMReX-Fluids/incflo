@@ -33,7 +33,7 @@ void incflo::make_eb_cylinder()
     pp.getarr("center", centervec, 0, 3);
     Array<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(centervec[0], centervec[1], centervec[2])};
 
-    rotation = (rotation/180.)*Real(M_PI);
+    rotation = (rotation/Real(180))*Real(M_PI);
 
     // Print info about cylinder
     amrex::Print() << " " << "\n";
