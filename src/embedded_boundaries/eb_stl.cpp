@@ -26,7 +26,7 @@ void incflo::make_eb_stl ()
 
     pp.query("internal_flow", is_internal_flow); // This will flip the normal
     pp.query("scaling_factor", scaling_factor);
-    pp.queryarr("translation", translation_vec, 0, 3); // This is the stl center
+    pp.queryarr("translation", translation_vec); // This is the stl center
     pp.query("use_bvh", use_bvh);
 
     if (is_internal_flow) { Print() << "\n Building geometry for internal flow\n"; }
@@ -38,10 +38,11 @@ void incflo::make_eb_stl ()
      *                                                                      *
      ***********************************************************************/
     EB2::IndexSpace::push(
-        new EB2::IndexSpaceSTL(stl_file, scaling_factor,
-                               {translation_vec[0], translation_vec[1], translation_vec[2]},
-                               is_internal_flow, geom[max_level], max_level, 100, /*ngrow*/4,
-                               /* build coarse by coarsening*/ true, EB2::ExtendDomainFace(),
-                               EB2::NumCoarsenOpt(), use_bvh, /*support mvmc*/false));
+        std::make_unique<EB2::IndexSpaceSTL>
+        (stl_file, scaling_factor,
+         Array<Real,3>{translation_vec[0], translation_vec[1], translation_vec[2]},
+         is_internal_flow, geom[max_level], max_level, 100, /*ngrow*/4,
+         /* build coarse by coarsening*/ true, EB2::ExtendDomainFace(),
+         EB2::NumCoarsenOpt(), use_bvh, /*support mvmc*/false));
 
 }
