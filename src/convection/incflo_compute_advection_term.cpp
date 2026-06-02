@@ -290,17 +290,10 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                              u_crse[2] = w_mac[lev-1];);
 
 
-                bool rr_eq_2 = true;
-                for ( int dim = 0; dim < AMREX_SPACEDIM; dim++ )
-                {
-                    if (rr[dim] != 2) {
-                        rr_eq_2 = false;
-                        break;
-                    }
-                }
+                bool rr_eq_2_4 = std::all_of(rr.begin(), rr.end(), [](int x) { return x == 2 || x == 4;} );
 
                 Interpolater* mapper;
-                if ( rr_eq_2 ) {
+                if ( rr_eq_2_4 ) {
                     // Divergence preserving interp. Restricted to refinement ratio = 2
                     mapper = &face_divfree_interp;
                 } else {
@@ -328,7 +321,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                    cbndyFuncArr, idx, fbndyFuncArr, idx,
                                    rr, mapper, bcrecArr, idx);
 
-                if ( !rr_eq_2 )
+                if ( !rr_eq_2_4 )
                 {
                     //
                     // Correct u_mac to enforce the divergence constraint in the ghost cells.
