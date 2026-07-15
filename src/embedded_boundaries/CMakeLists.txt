@@ -9,6 +9,7 @@ target_sources(incflo
    eb_cyl_tuscan.cpp
    eb_regular.cpp
    eb_sphere.cpp
+   eb_stl.cpp
    eb_chkptfile.cpp
    eb_if.H)
 

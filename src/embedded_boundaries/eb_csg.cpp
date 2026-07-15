@@ -16,6 +16,10 @@ void incflo::make_eb_csg(const std::string& geom_file)
     Vector<Real> translation_vec(AMREX_SPACEDIM, 0.0);
 
     ParmParse pp("csg");
+    pp.query("geometry_filename", geom_file);
+    if (geom_file.empty()) {
+        Abort("Missing or invalid input: csg.geometry_filename = ...\n");
+    }
     pp.query("internal_flow", is_internal_flow);
     if(pp.queryarr("scaling_factor", scaling_factor_vec, 0, AMREX_SPACEDIM)) {
       amrex::Print() << "WARNING: The implicit function magnitudes will not be scaled" << "\n";
