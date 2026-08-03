@@ -1,0 +1,308 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tracer Particles &mdash; incflo 26.09-dev documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=681a4282" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=248dda7b"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Debugging" href="Debugging.html" />
+    <link rel="prev" title="Embedded Boundaries" href="EB.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            incflo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="GettingStarted.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Inputs_Chapter.html">Run-time Inputs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="EB.html">Embedded Boundaries</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tracer Particles</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#enabling-tracer-particles">Enabling tracer particles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tracer-particle-parameters">Tracer particle parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cylinder-constraint">Cylinder constraint</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#initialization">Initialization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#advection">Advection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#output">Output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Debugging.html">Debugging</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">incflo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tracer Particles</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Particles.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tracer-particles">
+<span id="chap-particles"></span><h1>Tracer Particles<a class="headerlink" href="#tracer-particles" title="Link to this heading"></a></h1>
+<p>incflo provides Lagrangian particle support built on AMReX’s <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">ParticleContainer</span></code> machinery, which is
+described in the <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/Particle_Chapter.html">AMReX particle documentation</a>.
+The particle framework is used to seed the flow with massless tracer particles that advect with the fluid
+velocity. These particles can be used to visualize flow structures, to map a mass density back onto the
+mesh for post-processing, and as a refinement criterion for adaptive mesh refinement.</p>
+<p>Particles are organized into species, each of which is an <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo_PC</span></code> object held by the
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">ParticleData</span></code> container in <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">particles</span></code>. At present incflo defines a single
+species, <code class="docutils literal notranslate"><span class="pre">tracer_particles</span></code>, whose run-time parameters are read from the <code class="docutils literal notranslate"><span class="pre">tracer_particles.*</span></code> input
+prefix. The particle module is compiled in with the <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">INCFLO_USE_PARTICLES</span></code> preprocessor flag.</p>
+<section id="enabling-tracer-particles">
+<h2>Enabling tracer particles<a class="headerlink" href="#enabling-tracer-particles" title="Link to this heading"></a></h2>
+<p>Tracer particles are disabled by default. They are activated by setting the following parameter, which
+must be preceded by “incflo”:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>use_tracer_particles</p></td>
+<td><p>Enables the use of tracer particles that advect with the flow.</p></td>
+<td><p>Int</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="tracer-particle-parameters">
+<h2>Tracer particle parameters<a class="headerlink" href="#tracer-particle-parameters" title="Link to this heading"></a></h2>
+<p>The following inputs must be preceded by “tracer_particles” and control how the particles are initialized
+and advected:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>initial_distribution_type</p></td>
+<td><p>Type of particle initialization; currently the only supported
+option is “box”, i.e., a uniform distribution of particles in a box.</p></td>
+<td><p>String</p></td>
+<td><p>box</p></td>
+</tr>
+<tr class="row-odd"><td><p>particle_box_lo</p></td>
+<td><p>Low corner of the box in which particles are initially placed;
+defaults to the low corner of the computational domain.</p></td>
+<td><p>Vector&lt;Real&gt;</p></td>
+<td><p>ProbLo</p></td>
+</tr>
+<tr class="row-even"><td><p>particle_box_hi</p></td>
+<td><p>High corner of the box in which particles are initially placed;
+defaults to the high corner of the computational domain.</p></td>
+<td><p>Vector&lt;Real&gt;</p></td>
+<td><p>ProbHi</p></td>
+</tr>
+<tr class="row-odd"><td><p>place_randomly_in_cells</p></td>
+<td><p>If true, particles are placed at random positions within each cell;
+if false, a fixed offset is used, which is useful for regression
+testing.</p></td>
+<td><p>Bool</p></td>
+<td><p>true</p></td>
+</tr>
+<tr class="row-even"><td><p>initial_particles_per_cell</p></td>
+<td><p>Initial number of particles to place in each grid cell.</p></td>
+<td><p>Int</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p>advect_with_flow</p></td>
+<td><p>If true, particles are advected with the flow velocity using a
+second-order midpoint method; the default is true for tracer
+particles.</p></td>
+<td><p>Bool</p></td>
+<td><p>true</p></td>
+</tr>
+</tbody>
+</table>
+<p>A complete example of the tracer particle inputs is</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">incflo</span><span class="o">.</span><span class="n">use_tracer_particles</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">tracer_particles</span><span class="o">.</span><span class="n">initial_distribution_type</span> <span class="o">=</span> <span class="n">box</span>
+<span class="n">tracer_particles</span><span class="o">.</span><span class="n">initial_particles_per_cell</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">tracer_particles</span><span class="o">.</span><span class="n">particle_box_lo</span> <span class="o">=</span> <span class="mf">0.0</span> <span class="mf">0.0</span> <span class="mf">0.0</span>
+<span class="n">tracer_particles</span><span class="o">.</span><span class="n">particle_box_hi</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="mf">1.0</span> <span class="mf">1.0</span>
+<span class="n">tracer_particles</span><span class="o">.</span><span class="n">advect_with_flow</span> <span class="o">=</span> <span class="n">true</span>
+</pre></div>
+</div>
+</section>
+<section id="cylinder-constraint">
+<h2>Cylinder constraint<a class="headerlink" href="#cylinder-constraint" title="Link to this heading"></a></h2>
+<p>The particle framework includes an optional cylinder constraint that removes particles that leave a
+specified cylindrical region. It is a demonstration of how to keep particles inside a region of interest
+(e.g., flow in a cylinder) and is controlled by the following inputs, which must be preceded by
+“cylinder”:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>radius</p></td>
+<td><p>Radius of the cylinder inside which particles are kept; if set to a
+value greater than zero, particles outside the cylinder are removed
+at initialization and after each advection step.</p></td>
+<td><p>Real</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-odd"><td><p>center</p></td>
+<td><p>Coordinates of a point on the cylinder axis.</p></td>
+<td><p>Vector&lt;Real&gt;</p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td><p>direction</p></td>
+<td><p>Axis along which the cylinder is oriented: 0 = x, 1 = y, 2 = z.</p></td>
+<td><p>Int</p></td>
+<td><p>none</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="initialization">
+<h2>Initialization<a class="headerlink" href="#initialization" title="Link to this heading"></a></h2>
+<p>When tracer particles are enabled, they are initialized as soon as a level is created from scratch in
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">MakeNewLevelFromScratch</span><span class="p">()</span></code>. The only initialization supported at present is a uniform
+distribution in a box (<code class="docutils literal notranslate"><span class="pre">initial_distribution_type</span> <span class="pre">=</span> <span class="pre">box</span></code>), which is implemented in
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo_PC</span><span class="o">::</span><span class="n">initializeParticlesUniformDistributionInBox</span><span class="p">()</span></code> in <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">/</span><span class="n">src</span><span class="o">/</span><span class="n">particles</span><span class="o">/</span><span class="n">incflo_PCInit</span><span class="p">.</span><span class="n">cpp</span></code>:</p>
+<ul class="simple">
+<li><p>Each cell of the box is assigned <code class="docutils literal notranslate"><span class="pre">initial_particles_per_cell</span></code> particles placed at random positions
+within the cell, unless <code class="docutils literal notranslate"><span class="pre">place_randomly_in_cells</span> <span class="pre">=</span> <span class="pre">false</span></code>, in which case a fixed offset is used.</p></li>
+<li><p>If incflo is built with embedded boundary support, particles are only placed in cells with a non-zero
+volume fraction.</p></li>
+<li><p>All particles are initialized with zero velocity and a mass of <span class="math notranslate nohighlight">\(10^{-6}\)</span>.</p></li>
+<li><p>If the cylinder inputs are present, particles lying outside the cylinder are removed immediately after
+initialization.</p></li>
+</ul>
+<p>Note that, as currently implemented, particles are placed only in cells whose indices satisfy
+<span class="math notranslate nohighlight">\(i \bmod 2 = 0\)</span> and <span class="math notranslate nohighlight">\(j \bmod 2 = 1\)</span>, so only one quarter of the cells in the box receive
+particles.</p>
+</section>
+<section id="advection">
+<h2>Advection<a class="headerlink" href="#advection" title="Link to this heading"></a></h2>
+<p>At every time step, the tracer particles are advanced by <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">evolveTracerParticles</span><span class="p">()</span></code>, which is
+called from the predictor step (unless the advection scheme is <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">MOL</span></code>) and from the corrector step of
+the projection algorithm. Each level is advanced with the same time step <span class="math notranslate nohighlight">\(\Delta t\)</span> as the fluid.</p>
+<p>For each particle species with <code class="docutils literal notranslate"><span class="pre">advect_with_flow</span> <span class="pre">=</span> <span class="pre">true</span></code>, <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo_PC</span><span class="o">::</span><span class="n">AdvectWithFlow</span><span class="p">()</span></code> advances
+the particles with a second-order midpoint method using the MAC face velocities:</p>
+<ol class="arabic simple">
+<li><p>In a first pass, the flow velocity at the particle position is interpolated from the MAC face
+velocities and each particle is moved by half a time step to a midpoint position; the original
+position is saved.</p></li>
+<li><p>In a second pass, the velocity is interpolated at the midpoint position and the particle is moved the
+full time step from its saved original position.</p></li>
+</ol>
+<p>The velocity interpolation is performed with <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">mac_interpolate</span></code> in <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">AMReX_TracerParticle_mod_K</span><span class="p">.</span><span class="n">H</span></code>.
+On non-periodic boundaries the particles are reflected back into the domain and the sign of the
+corresponding velocity component is reversed. After advection the particle velocity attribute is set to
+the interpolated flow velocity, and <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">Redistribute</span><span class="p">()</span></code> is called to move particles between MPI ranks
+and levels as needed. If the cylinder constraint is enabled, particles that leave the cylinder are
+removed by setting their ids to -1.</p>
+</section>
+<section id="output">
+<h2>Output<a class="headerlink" href="#output" title="Link to this heading"></a></h2>
+<p>Particle data are written to checkpoint files and to plotfiles using AMReX particle I/O. In addition, the
+following mesh variables can be derived from the particles:</p>
+<ul class="simple">
+<li><p>A particle count per cell (computed with <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo_PC</span><span class="o">::</span><span class="n">Increment</span><span class="p">()</span></code>), which is included in plotfiles
+as <code class="docutils literal notranslate"><span class="pre">particle_count</span></code> and is used in <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">ErrorEst</span><span class="p">()</span></code> as a refinement criterion: when
+<code class="docutils literal notranslate"><span class="pre">incflo.refine_particles</span></code> is true (the default), cells containing at least one particle are tagged
+for refinement.</p></li>
+<li><p>A mass density computed by depositing the particle mass onto the mesh with linear interpolation in
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo_PC</span><span class="o">::</span><span class="n">massDensity</span><span class="p">()</span></code>, which appears in plotfiles as the variable
+<code class="docutils literal notranslate"><span class="pre">tracer_particles_mass_density</span></code>.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="EB.html" class="btn btn-neutral float-left" title="Embedded Boundaries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Debugging.html" class="btn btn-neutral float-right" title="Debugging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

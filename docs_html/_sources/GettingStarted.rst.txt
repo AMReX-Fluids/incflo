@@ -283,6 +283,9 @@ for an available AMReX installation.
 | INCFLO\_FPE     | Build with Floating-Point    | no/yes           | no          |
 |                 | Exceptions checks            |                  |             |
 +-----------------+------------------------------+------------------+-------------+
+| INCFLO\_\       | Build Tracer Particles       | no/yes           | no          |
+| PARTICLES       | support                      |                  |             |
++-----------------+------------------------------+------------------+-------------+
 
 
 
