@@ -273,7 +273,7 @@ void incflo::fillcoarsepatch_tracer (int lev, Real time, MultiFab& tracer, int n
 
 void incflo::fillcoarsepatch_temperature (int lev, Real time, MultiFab& temperature, int ng)
 {
-    if (m_use_temperature) return;
+    if (!m_use_temperature) return;
 
     const auto& bcrec = get_temperature_bcrec();
     PhysBCFunct<GpuBndryFuncFab<IncfloTempFill> > cphysbc
