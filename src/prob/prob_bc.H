@@ -240,7 +240,7 @@ struct IncfloVelFill
                 }
 
                 if ( (bc.lo(dir) == amrex::BCType::ext_dir) ||
-                     (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
+                     (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel >= 0.) )
                 {
                     if ( orig_comp+nc == dir ) {
                         vel(i,j,k,dcomp+nc) = norm_vel;
@@ -248,7 +248,7 @@ struct IncfloVelFill
                         vel(i,j,k,dcomp+nc) =  bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+nc];
                     }
                 }
-                else if (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel > 0.)
+                else if (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel < 0.)
                 {
                     vel(i,j,k,dcomp+nc) = vel(i,j,domain_box.smallEnd(2),dcomp+nc);
                 }
