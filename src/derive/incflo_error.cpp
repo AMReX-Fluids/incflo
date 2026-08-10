@@ -9,6 +9,7 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
                             MultiFab& error, int soln_comp, int err_comp) const
 {
     auto const& dx = lev_geom.CellSizeArray();
+    auto const& problo = lev_geom.ProbLoArray();
 
     // Taylor-Green vortices
     if (1 == m_probtype)
@@ -78,8 +79,8 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
             ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
 
-                Real x = Real(i+0.5)*dx[0];
-                Real y = Real(j+0.5)*dx[1];
+                Real x = problo[0] + Real(i+0.5)*dx[0];
+                Real y = problo[1] + Real(j+0.5)*dx[1];
                 Real exact = Real(0.0); // quiet compiler warning
                 if (err_comp == AMREX_SPACEDIM || err_comp == AMREX_SPACEDIM+1) {  // pressure
 
