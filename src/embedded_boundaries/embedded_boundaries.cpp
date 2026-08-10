@@ -81,7 +81,7 @@ void incflo::MakeEBGeometry()
         make_eb_stl();
     }
 #ifdef CSG_EB
-    else if(!csg_file.empty() || geom_type == "cgs") {
+    else if(!csg_file.empty() || geom_type == "csg") {
         amrex::Print() << "\n Building geometry from .csg file:  " << csg_file << "\n";
         make_eb_csg(csg_file);
     }
