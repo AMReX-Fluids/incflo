@@ -251,7 +251,7 @@ incflo::compute_MAC_projected_velocities (
                 int n = 2;
                 const auto bc = HydroBC::getBC(i, j, k, n, domain, bc_vel_d, velbc_arr);
                 if (k == dlo.z && ( bc.lo(2) == BCType::ext_dir ||
-                                   (bc.lo(2) == BCType::direction_dependent && cc_arr(1,j,k-1,2) >= Real(0.0)) ) ) {
+                                   (bc.lo(2) == BCType::direction_dependent && cc_arr(i,j,k-1,2) >= Real(0.0)) ) ) {
                     wmac_arr(i,j,k) = cc_arr(i,j,k-1,2);
                 }
                 if (k == dhi.z && ( bc.hi(2) == BCType::ext_dir ||
