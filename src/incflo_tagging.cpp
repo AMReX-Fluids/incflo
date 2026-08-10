@@ -145,7 +145,7 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
 #endif
 
 #ifdef INCFLO_USE_PARTICLES
-    if (m_refine_particles)
+    if (m_refine_particles && !particleData.getNames().empty())
     {
         //
         // This allows dynamic refinement based on the number of particles per cell
