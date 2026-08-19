@@ -474,6 +474,7 @@ void incflo::copy_from_old_to_new_tracer (int lev, IntVect const& ng)
 
 void incflo::copy_from_new_to_old_temperature (IntVect const& ng)
 {
+    if (!m_use_temperature) { return; }
     for (int lev = 0; lev <= finest_level; ++lev) {
         MultiFab::Copy(m_leveldata[lev]->temperature_o,
                        m_leveldata[lev]->temperature, 0, 0, 1, ng);
@@ -482,6 +483,7 @@ void incflo::copy_from_new_to_old_temperature (IntVect const& ng)
 
 void incflo::copy_from_old_to_new_temperature (IntVect const& ng)
 {
+    if (!m_use_temperature) { return; }
     for (int lev = 0; lev <= finest_level; ++lev) {
         MultiFab::Copy(m_leveldata[lev]->temperature,
                        m_leveldata[lev]->temperature_o, 0, 0, 1, ng);

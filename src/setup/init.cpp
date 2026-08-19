@@ -437,10 +437,22 @@ void incflo::InitialIterations ()
 {
     BL_PROFILE("incflo::InitialIterations()");
 
-    copy_from_new_to_old_velocity();
-    copy_from_new_to_old_density();
-    copy_from_new_to_old_tracer();
-    copy_from_new_to_old_temperature();
+    int ng = nghost_state();
+    for (int lev = 0; lev <= finest_level; ++lev) {
+            fillpatch_velocity(lev, m_cur_time, m_leveldata[lev]->velocity, ng);
+        fillpatch_density(lev, m_cur_time, m_leveldata[lev]->density, ng);
+        if (m_advect_tracer) {
+            fillpatch_tracer(lev, m_cur_time, m_leveldata[lev]->tracer, ng);
+        }
+        if (m_use_temperature) {
+            fillpatch_temperature(lev, m_cur_time, m_leveldata[lev]->temperature, ng);
+        }
+    }
+
+    copy_from_new_to_old_velocity(IntVect(ng));
+    copy_from_new_to_old_density(IntVect(ng));
+    copy_from_new_to_old_tracer(IntVect(ng));
+    copy_from_new_to_old_temperature(IntVect(ng));
 
     int initialisation = 1;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
@@ -456,23 +468,11 @@ void incflo::InitialIterations ()
     for (int lev = 0; lev <= finest_level; ++lev) m_t_old[lev] = m_t_new[lev];
     for (int lev = 0; lev <= finest_level; ++lev) mac_phi[lev]->setVal(0.);
 
-    int ng = nghost_state();
-    for (int lev = 0; lev <= finest_level; ++lev) {
-            fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
-        fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
-        if (m_advect_tracer) {
-            fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
-        }
-        if (m_use_temperature) {
-            fillpatch_temperature(lev, m_t_old[lev], m_leveldata[lev]->temperature_o, ng);
-        }
-    }
-
     for (int iter = 0; iter < m_initial_iterations; ++iter)
     {
         if (m_verbose) amrex::Print() << "\n In initial_iterations: iter = " << iter << "\n";
 
-     ApplyPredictor(true);
+        ApplyPredictor(true);
 
         copy_from_old_to_new_velocity();
         copy_from_old_to_new_density();
