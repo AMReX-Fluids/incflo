@@ -330,7 +330,10 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
     {
         const int ng_diffusion = 1;
         for (int lev = 0; lev <= finest_level; ++lev) {
+            // Periodic fill necessary for corner ghost cells when physbc and periodic touch
+            m_leveldata[lev]->velocity.FillBoundary(geom[lev].periodicity());
             fillphysbc_velocity(lev, new_time, m_leveldata[lev]->velocity, ng_diffusion);
+            m_leveldata[lev]->density.FillBoundary(geom[lev].periodicity());
             fillphysbc_density (lev, new_time, m_leveldata[lev]->density , ng_diffusion);
         }
 
