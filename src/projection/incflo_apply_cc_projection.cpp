@@ -117,24 +117,28 @@ average_mac_to_ccvel (const Array<MultiFab*,AMREX_SPACEDIM>& fc, MultiFab& cc)
                          auto const& fzma = fc[2]->arrays(););
             MultiFab foo(amrex::convert(cc.boxArray(),IntVect(1)), cc.DistributionMap(), 1, 0,
                          MFInfo().SetAlloc(false));
+            IntVect ng = -cc.nGrowVect();
             ParallelFor(foo, IntVect(0), ncomp,
             [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k, int n) noexcept
             {
+                // The writes here are cell-centered, so the guard must be the valid
+                // cell-centered box -- not the face-nodal boxes used by the twin
+                // average_ccvel_to_mac, which writes face-centered data.
                 Box ccbx(ccma[box_no]);
-                AMREX_D_TERM(Box const& xbx = amrex::surroundingNodes(ccbx,0);,
-                             Box const& ybx = amrex::surroundingNodes(ccbx,1);,
-                             Box const& zbx = amrex::surroundingNodes(ccbx,2););
-                if (xbx.contains(i,j,k) and n == 0) {
-                    ccma[box_no](i,j,k,n) = Real(0.5) * (fxma[box_no](i,j,k) + fxma[box_no](i+1,j,k));
-                }
-                if (ybx.contains(i,j,k) and n == 1) {
-                    ccma[box_no](i,j,k,n) = Real(0.5) * (fyma[box_no](i,j,k) + fyma[box_no](i,j+1,k));
-                }
+                ccbx.grow(ng);
+                if (ccbx.contains(i,j,k)) {
+                    if (n == 0) {
+                        ccma[box_no](i,j,k,n) = Real(0.5) * (fxma[box_no](i,j,k) + fxma[box_no](i+1,j,k));
+                    }
+                    if (n == 1) {
+                        ccma[box_no](i,j,k,n) = Real(0.5) * (fyma[box_no](i,j,k) + fyma[box_no](i,j+1,k));
+                    }
 #if (AMREX_SPACEDIM == 3)
-                if (zbx.contains(i,j,k) and n == 2) {
-                    ccma[box_no](i,j,k,n) = Real(0.5) * (fzma[box_no](i,j,k) + fzma[box_no](i,j,k+1));
-                }
+                    if (n == 2) {
+                        ccma[box_no](i,j,k,n) = Real(0.5) * (fzma[box_no](i,j,k) + fzma[box_no](i,j,k+1));
+                    }
 #endif
+                }
             });
             Gpu::streamSynchronize();
         } else
