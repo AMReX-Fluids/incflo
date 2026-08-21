@@ -23,8 +23,11 @@ void incflo::prob_set_BC_MF (Orientation const& ori, Box const& bx,
         Box const& domain = geom[lev].Domain();
         int half_num_cells  = domain.length(direction) / 2;
 
-        // for this problem, bcs are same for all fields, only ncomp varies
-        int ncomp =  field == "velocity" ? AMREX_SPACEDIM : 1;
+        // for this problem, bcs are same for all fields, only ncomp varies.
+        // This must match the number of components make_BC_MF allocated (bcs.size()),
+        // since HydroBC::getBC reads the mask at every component.
+        int ncomp =  field == "velocity" ? AMREX_SPACEDIM
+                                        : (field == "tracer" ? m_ntrac : 1);
 
         Orientation::Side side = ori.faceDir();
         if (side == Orientation::low) {

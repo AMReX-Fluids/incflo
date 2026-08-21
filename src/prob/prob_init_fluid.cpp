@@ -233,8 +233,14 @@ void incflo::init_rotating_flow (Box const& vbx, Box const& /*gbx*/,
 #endif
         Real x_t = Real(i+Real(0.5))*dx[0] - Real(0.5);
         Real y_t = Real(j+Real(0.5))*dx[1] - Real(0.3);
+#if (AMREX_SPACEDIM == 3)
         Real z_t = Real(k+Real(0.5))*dx[2] - Real(0.5);
         Real r_t = std::sqrt(x_t*x_t + y_t*y_t + z_t*z_t);
+#else
+        // The velocity field is a purely planar rotation, so in 2D the blob is
+        // the mid-plane slice of the 3D one (z_t = 0).
+        Real r_t = std::sqrt(x_t*x_t + y_t*y_t);
+#endif
         Real width = Real(0.25);
 
         tracer(i,j,k) = Real(0.5)*(Real(1)-std::tanh((r_t)/width));
@@ -540,7 +546,7 @@ void incflo::init_circ_traceradvect (Box const& vbx, Box const& /*gbx*/,
 #if (AMREX_SPACEDIM == 2)
         Real r = std::sqrt( (x-Real(0.5))*(x-Real(0.5)) + (y-Real(0.5))*(y-Real(0.5)) );
 #elif (AMREX_SPACEDIM == 3)
-        Real z = (Real(k)+Real(0.5))*dx[2];
+        Real z = problo[2] + (Real(k)+Real(0.5))*dx[2];
         vel(i,j,k,2) = Real(1);
 
         Real r = std::sqrt( (x-Real(0.5))*(x-Real(0.5)) + (y-Real(0.5))*(y-Real(0.5)) + (z-Real(0.5))*(z-Real(0.5)) );
@@ -688,7 +694,13 @@ void incflo::init_tuscan (Box const& vbx, Box const& /*gbx*/,
                      vel(i,j,k,1) = Real(0.0);,
                      vel(i,j,k,2) = Real(0.0););
         density(i,j,k) = Real(1.0);
-        if (k <= half_num_cells) {
+        // half_num_cells comes from the vertical dimension, which is y in 2D and z in 3D
+#if (AMREX_SPACEDIM == 2)
+        const int kvert = j;
+#else
+        const int kvert = k;
+#endif
+        if (kvert <= half_num_cells) {
             tracer(i,j,k) = Real(0.0);
         } else {
             tracer(i,j,k) = Real(0.01);
@@ -866,7 +878,9 @@ void incflo::init_periodic_tracer (Box const& vbx, Box const& /*gbx*/,
                          vel(i,j,k,2) = Real(0.1)*(std::sin(C*(x+y) - Real(0.00042)) + Real(1.0)) * std::exp(z););
             density(i,j,k)  = A + B*(x + y + z);
             tracer(i,j,k,0) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
-            tracer(i,j,k,1) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
+            if (tracer.nComp() > 1) {
+                tracer(i,j,k,1) = A *(std::sin(C*(y+z) - Real(0.00042)) + Real(1.0)) * std::exp(x);
+            }
         });
     } else {
         Abort("Unknown periodic tracer probtype");

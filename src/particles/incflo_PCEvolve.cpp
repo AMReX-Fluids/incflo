@@ -18,7 +18,12 @@ void incflo_PC::EvolveParticles ( int                                        a_l
         AdvectWithFlow(a_lev, a_dt_lev, AMREX_D_DECL(a_umac, a_vmac, a_wmac));
     }
 
-    Redistribute();
+    //
+    // NOTE: we do *not* Redistribute here -- the caller must do that once all
+    //       levels have been advected.  Redistributing after each level would
+    //       hand a particle that crossed from level lev into a level lev+1 grid
+    //       to level lev+1, which then advects it a second time in the same step.
+    //
     return;
 }
 
@@ -96,7 +101,13 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
                         if (!is_periodic[dim] && p.pos(dim) < plo[dim])
                         {
                             p.pos(dim) = 2.0*plo[dim] - p.pos(dim);
-                            v_ptr[dim][i] *= -1.0;
+                            //
+                            // Here v_ptr holds the position at the start of the step,
+                            // which must be mirrored about the boundary we crossed --
+                            // not negated as in the corrector pass below, where v_ptr
+                            // holds the velocity.
+                            //
+                            v_ptr[dim][i] = static_cast<ParticleReal>(2.0*plo[dim]) - v_ptr[dim][i];
                         }
                         //
                         // Reflect off high domain boundaries if not periodic
@@ -104,7 +115,7 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
                         if (!is_periodic[dim] && p.pos(dim) > phi[dim])
                         {
                             p.pos(dim) = 2.0*phi[dim] - p.pos(dim);
-                            v_ptr[dim][i] *= -1.0;
+                            v_ptr[dim][i] = static_cast<ParticleReal>(2.0*phi[dim]) - v_ptr[dim][i];
                         }
                     }
                 } else {
@@ -157,7 +168,7 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
 
         int cyl_direction;
         pp.get("direction",cyl_direction);
-        AMREX_ALWAYS_ASSERT(cyl_direction >= 0 && cyl_direction <= AMREX_SPACEDIM);
+        AMREX_ALWAYS_ASSERT(cyl_direction >= 0 && cyl_direction <= 2);
 
         // Remove particles that are outside of the cylindner
         for (ParIterType pti(*this, a_lev); pti.isValid(); ++pti)
@@ -177,16 +188,26 @@ void incflo_PC::AdvectWithFlow (int                                 a_lev,
                 Real z =  p.pos(2) - z_ctr;
 #endif
 
-                Real r;
+                //
+                // Distance from the axis of the cylinder; in 2D directions 0 and 1
+                // define a slab, matching amrex::EB2::CylinderIF in 2D.
+                //
+                Real r = 0.;
                 if (cyl_direction == 2) {
                     r =  std::sqrt(x*x + y*y);
 #if (AMREX_SPACEDIM == 3)
                 } else if (cyl_direction == 1) {
                     r =  std::sqrt(x*x + z*z);
-                } else if (cyl_direction == 0) {
+                } else {
                     r =  std::sqrt(y*y + z*z);
-#endif
                 }
+#else
+                } else if (cyl_direction == 1) {
+                    r =  std::abs(x);
+                } else {
+                    r =  std::abs(y);
+                }
+#endif
 
                 if (r > cyl_radius) {
                     p.id() = -1;

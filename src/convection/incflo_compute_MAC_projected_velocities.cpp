@@ -93,7 +93,7 @@ incflo::compute_MAC_projected_velocities (
     //
     // Initialize (or redefine the beta in) the MacProjector
     //
-    if (macproj->needInitialization())
+    if (get_mac_projector()->needInitialization())
     {
         LPInfo lp_info;
         lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);

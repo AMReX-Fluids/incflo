@@ -239,7 +239,17 @@ struct IncfloVelFill
                     norm_vel *= amrex::Real(6.0) * y * (amrex::Real(1.0)-y);
                 }
 
-                if ( (bc.lo(dir) == amrex::BCType::ext_dir) ||
+                // This is a special case -- all the logic is contained here
+                if (1100 == probtype)
+                {
+                    // this probtype uses mixed BC on z faces, split along x
+                    int half_num_cells = domain_box.length(0) / 2;
+                    if (i > half_num_cells) {
+                        // Here is the dirichlet portion; we take the inflow BC specified in inputs file
+                        vel(i,j,k,dcomp+nc) = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][orig_comp+nc];
+                    }
+                }
+                else if ( (bc.lo(dir) == amrex::BCType::ext_dir) ||
                      (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel >= 0.) )
                 {
                     if ( orig_comp+nc == dir ) {
@@ -262,7 +272,16 @@ struct IncfloVelFill
                 int dir = 2;
                 amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][dir];
 
-                if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
+                // This is a special case -- all the logic is contained here
+                if (1100 == probtype)
+                {
+                    int half_num_cells = domain_box.length(0) / 2;
+                    if (i <= half_num_cells) {
+                        // Negated to match init_jump's sign flip, as for 1101/1102
+                        vel(i,j,k,dcomp+nc) = -bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][orig_comp+nc];
+                    }
+                }
+                else if ( (bc.hi(dir) == amrex::BCType::ext_dir) ||
                      (bc.hi(dir) == amrex::BCType::direction_dependent && norm_vel <= 0.) )
                 {
                     if ( orig_comp+nc == dir ) {
@@ -338,6 +357,24 @@ struct IncfloDenFill
             int half_num_cells = domain_box.length(direction) / 2;
             if (k <= half_num_cells) {
                 rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
+            }
+        }
+        else if (1100 == probtype && k < domain_box.smallEnd(2))
+        {
+            // this probtype uses mixed BC on z faces
+            int direction = 0;
+            int half_num_cells = domain_box.length(direction) / 2;
+            if (i > half_num_cells) {
+                // Here is the dirichlet portion; we take the inflow BC specified in inputs file
+                rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)];
+            }
+        }
+        else if (1100 == probtype && k > domain_box.bigEnd(2))
+        {
+            int direction = 0;
+            int half_num_cells = domain_box.length(direction) / 2;
+            if (i <= half_num_cells) {
+                rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)];
             }
         }
 #endif
@@ -452,6 +489,24 @@ struct IncfloTracFill
                     tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][n];
                 }
             }
+            else if (1100 == probtype && k < domain_box.smallEnd(2))
+            {
+                // this probtype uses mixed BC on z faces
+                int direction = 0;
+                int half_num_cells = domain_box.length(direction) / 2;
+                if (i > half_num_cells) {
+                    // Here we take the inflow BC specified in inputs file
+                    tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][n];
+                }
+            }
+            else if (1100 == probtype && k > domain_box.bigEnd(2))
+            {
+                int direction = 0;
+                int half_num_cells = domain_box.length(direction) / 2;
+                if (i <= half_num_cells) {
+                    tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][n];
+                }
+            }
 #endif
             else if ( (i < domain_box.smallEnd(0)) &&
                       ( (bc.lo(0) == amrex::BCType::ext_dir) ||
@@ -560,6 +615,24 @@ struct IncfloTempFill
             int half_num_cells = domain_box.length(direction) / 2;
             if (k <= half_num_cells) {
                 temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
+            }
+        }
+        else if (1100 == probtype && k < domain_box.smallEnd(2))
+        {
+            // this probtype uses mixed BC on z faces
+            int direction = 0;
+            int half_num_cells = domain_box.length(direction) / 2;
+            if (i > half_num_cells) {
+                // Here we take the inflow BC specified in inputs file
+                temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)];
+            }
+        }
+        else if (1100 == probtype && k > domain_box.bigEnd(2))
+        {
+            int direction = 0;
+            int half_num_cells = domain_box.length(direction) / 2;
+            if (i <= half_num_cells) {
+                temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)];
             }
         }
 #endif

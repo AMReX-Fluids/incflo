@@ -32,6 +32,7 @@ public:
     void compute_laps (amrex::Vector<amrex::MultiFab*> const& laps,
                        amrex::Vector<amrex::MultiFab const*> const& a_scalar,
                        amrex::Vector<amrex::MultiFab const*> const& eta,
+                       amrex::Vector<amrex::MultiFab*> const& eb_dirichlet,
                        amrex::Vector<amrex::BCRec> bcrec);
 
     void compute_divtau (amrex::Vector<amrex::MultiFab*> const& a_divtau,

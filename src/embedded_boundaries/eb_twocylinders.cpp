@@ -61,14 +61,19 @@ void incflo::make_eb_twocylinders()
     // Build the implicit function as a union of two cylinders
     EB2::CylinderIF cyl1(radius1, direction1, center1, false);
     EB2::CylinderIF cyl2(radius2, direction2, center2, false);
-    auto twocylinders = inside ? EB2::makeComplement(EB2::makeUnion(cyl1, cyl2))
-                               : EB2::makeUnion(cyl1, cyl2);
-
-    // Generate GeometryShop
-    auto gshop = EB2::makeShop(twocylinders);
-
     // Build index space
     int max_level_here = 0;
     int max_coarsening_level = 100;
-    EB2::Build(gshop, geom.back(), max_level_here, max_level_here + max_coarsening_level);
+
+    // NOTE: this must not be written as a ternary -- a conditional expression has
+    // a single type, and ComplementIF's converting constructor is not explicit, so
+    // the "else" branch would be silently wrapped in a complement as well, giving
+    // internal-flow geometry for both settings.
+    if (inside) {
+        auto gshop = EB2::makeShop(EB2::makeComplement(EB2::makeUnion(cyl1, cyl2)));
+        EB2::Build(gshop, geom.back(), max_level_here, max_level_here + max_coarsening_level);
+    } else {
+        auto gshop = EB2::makeShop(EB2::makeUnion(cyl1, cyl2));
+        EB2::Build(gshop, geom.back(), max_level_here, max_level_here + max_coarsening_level);
+    }
 }

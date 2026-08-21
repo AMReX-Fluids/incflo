@@ -113,10 +113,8 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
 #ifdef AMREX_USE_EB
             if (vf_arr(i,j,k) > 0.) {
 #endif
-            if (i%2 == 0 && j%2 == 1) {
             if (particle_init_domain.contains(RealVect(AMREX_D_DECL(x,y,z)))) {
                 num_particles_arr(i,j,k) = particles_per_cell;
-            }
             }
 #ifdef AMREX_USE_EB
             }
@@ -236,6 +234,15 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
         pp.get("center",cyl_center);
         Real x_ctr = cyl_center[0];
         Real y_ctr = cyl_center[1];
+#if (AMREX_SPACEDIM == 3)
+        Real z_ctr = cyl_center[2];
+#endif
+
+        // The cylinder axis matters here exactly as it does in AdvectWithFlow;
+        // assuming a z-parallel axis culls against the wrong axis for direction 0/1.
+        int cyl_direction;
+        pp.get("direction",cyl_direction);
+        AMREX_ALWAYS_ASSERT(cyl_direction >= 0 && cyl_direction < AMREX_SPACEDIM);
 
         // Remove particles that are outside of the cylinder
         for (ParIterType pti(*this, lev); pti.isValid(); ++pti)
@@ -251,8 +258,15 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
 
                 Real x =  p.pos(0) - x_ctr;
                 Real y =  p.pos(1) - y_ctr;
-
+#if (AMREX_SPACEDIM == 3)
+                Real z =  p.pos(2) - z_ctr;
+                Real r = (cyl_direction == 0) ? std::sqrt(y*y + z*z)
+                       : (cyl_direction == 1) ? std::sqrt(x*x + z*z)
+                                              : std::sqrt(x*x + y*y);
+#else
+                // In 2D the only cylinder axis is the out-of-plane one
                 Real r =  std::sqrt(x*x + y*y);
+#endif
 
                 if (r > cyl_radius) {
                     p.id() = -1;

@@ -126,6 +126,27 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
 #endif
 }
 
+// Rebuild macproj on demand.  Note that this must not be done inside ClearLevel:
+// AmrCore::regrid assigns finest_level = new_finest only *after* its ClearLevel
+// loop, so finest_level is still stale there and a multi-level shrink would build
+// a projector with too many levels.  Deferring to the first use gets the final
+// finest_level, and also covers the regrid_on_restart path.
+Hydro::MacProjector*
+incflo::get_mac_projector ()
+{
+    if (!macproj) {
+#ifdef AMREX_USE_EB
+        macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level),
+                          MLMG::Location::FaceCentroid,  // Location of mac_vec
+                          MLMG::Location::FaceCentroid,  // Location of beta
+                          MLMG::Location::CellCenter  ); // Location of solution variable phi
+#else
+        macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
+#endif
+    }
+    return macproj.get();
+}
+
 // Delete level data
 // overrides the pure virtual function in AmrCore
 void incflo::ClearLevel (int lev)

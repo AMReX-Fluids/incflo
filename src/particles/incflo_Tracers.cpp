@@ -76,6 +76,13 @@ void incflo::evolveTracerParticles (AMREX_D_DECL(Vector<MultiFab const*> const& 
             particleData[incfloParticleNames::tracers]->EvolveParticles(lev, m_dt,
                                                                         AMREX_D_DECL(u_mac[lev],v_mac[lev],w_mac[lev]));
         }
+
+        //
+        // Redistribute only once all levels have been advected -- Redistribute
+        // assigns each particle to the finest level containing it, so doing this
+        // inside the loop above would advect a coarse-to-fine crosser twice.
+        //
+        particleData.Redistribute();
     }
 }
 #endif
