@@ -240,15 +240,6 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
         }
     }
 
-    // Define "vel" to be U^* - U^n rather than U^*
-    if (proj_for_small_dt || incremental)
-    {
-        for (int lev = 0; lev <= finest_level; ++lev) {
-            MultiFab::Subtract(m_leveldata[lev]->velocity,
-                               m_leveldata[lev]->velocity_o, 0, 0, AMREX_SPACEDIM, 0);
-        }
-    }
-
     auto bclo = get_projection_bc(Orientation::low);
     auto bchi = get_projection_bc(Orientation::high);
 
@@ -256,6 +247,33 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
     for (int lev = 0; lev <= finest_level; ++lev) {
         vel.push_back(&(m_leveldata[lev]->velocity));
         fillpatch_velocity(lev, m_t_new[lev], *vel[lev], 1);
+    }
+
+    // Define "vel" to be U^* - U^n rather than U^*.
+    //
+    // This must happen *after* the fillpatch above, and must include the ghost
+    // cells: the field being projected is a difference, so its inflow ghosts must
+    // not carry the full physical inflow value (U^n already carries that).  The
+    // nodal twin achieves this by suppressing the inflow fill altogether
+    // (set_inflow_bc = !proj_for_small_dt && !incremental).  Here we instead fill
+    // U^n's ghosts the same way as U^*, at t_old, and subtract including one ghost,
+    // so the inflow ghosts of the difference are the inflow *increment* -- zero for
+    // steady inflow.  Otherwise MOL::ExtrapVelToFacesBox would copy the full
+    // u_inflow onto the inflow faces and the MAC solve would see a spurious
+    // O(u_inflow) divergence source.
+    if (proj_for_small_dt || incremental)
+    {
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            // A temporary, so that fillpatch_velocity is not writing into one of
+            // its own source MultiFabs (it interpolates between velocity_o and
+            // velocity), and so velocity_o itself is left untouched.
+            MultiFab vel_old(m_leveldata[lev]->velocity_o.boxArray(),
+                             m_leveldata[lev]->velocity_o.DistributionMap(),
+                             AMREX_SPACEDIM, 1, MFInfo(), Factory(lev));
+            fillpatch_velocity(lev, m_t_old[lev], vel_old, 1);
+            MultiFab::Subtract(m_leveldata[lev]->velocity, vel_old,
+                               0, 0, AMREX_SPACEDIM, 1);
+        }
     }
 
     // ***************************************************************************************
@@ -293,7 +311,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 
     //
     // Initialize (or redefine the beta in) the MacProjector
-    if (macproj->needInitialization())
+    if (get_mac_projector()->needInitialization())
     {
         LPInfo lp_info;
         lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);

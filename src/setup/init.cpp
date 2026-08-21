@@ -27,6 +27,12 @@ void incflo::ReadParameters ()
         pp.query("refine_particles", m_refine_particles);
 #endif
         pp.query("KE_int", m_KE_int);
+        if (m_KE_int > 0) {
+            // ComputeKineticEnergy() is not implemented (its body is #if 0'd and it
+            // returns 0), so refuse the option here rather than printing a zero as if
+            // it were a real diagnostic.  Checked here so that restarts refuse it too.
+            amrex::Abort("incflo.KE_int > 0: ComputeKineticEnergy() is not implemented yet");
+        }
 
     } // end prefix amr
 

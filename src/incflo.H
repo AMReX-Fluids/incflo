@@ -462,6 +462,13 @@ private:
 
     std::unique_ptr<Hydro::MacProjector> macproj;
 
+    // Lazily (re)builds macproj if it is null.  ClearLevel resets it, and
+    // AmrCore::regrid runs ClearLevel *after* the RemakeLevel /
+    // MakeNewLevelFromCoarse calls, so a regrid that lowers finest_level would
+    // otherwise leave macproj null until the next projection dereferenced it.
+    // Same lazy pattern as get_diffusion_tensor_op / get_diffusion_scalar_op.
+    Hydro::MacProjector* get_mac_projector ();
+
     int m_mac_mg_max_coarsening_level = 100;
 
 #ifdef AMREX_USE_FLOAT
