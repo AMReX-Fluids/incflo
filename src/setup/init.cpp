@@ -234,6 +234,13 @@ void incflo::ReadParameters ()
        if (m_advect_tracer && m_eb_flow.enabled && m_eb_flow.tracer.empty()) {
            Abort("Must specify tracer EB value for flow through EB");
        }
+       // set_eb_tracer reads m_eb_flow.tracer[n] for every n < m_ntrac, and is
+       // called whenever the list is non-empty -- whether or not eb_flow itself
+       // is enabled -- so the list must have exactly ntrac entries.
+       if (!m_eb_flow.tracer.empty() &&
+           static_cast<int>(m_eb_flow.tracer.size()) != m_ntrac) {
+           Abort("eb_flow.tracer must have exactly ntrac values");
+       }
        if (m_use_temperature && m_eb_flow.enabled && m_eb_flow.temperature.empty()) {
            Abort("Must specify temperature EB value for flow through EB");
        }

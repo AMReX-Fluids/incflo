@@ -15,7 +15,7 @@ amrex::Real expterm (amrex::Real nu) noexcept
 struct NonNewtonianViscosity
 {
     incflo::FluidModel fluid_model;
-    amrex::Real mu, n_flow, tau_0, eta_0, papa_reg;
+    amrex::Real mu, n_flow, tau_0, eta_0, papa_reg, sr_floor;
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real operator() (amrex::Real sr) const noexcept {
@@ -23,7 +23,9 @@ struct NonNewtonianViscosity
         {
         case incflo::FluidModel::powerlaw:
         {
-            return mu * std::pow(sr,n_flow-Real(1.0));
+            // Regularize the strain rate so that eta stays finite as sr -> 0 for
+            // shear-thinning fluids (n < 1), and stays non-zero for n > 1.
+            return mu * std::pow(amrex::max(sr,sr_floor),n_flow-Real(1.0));
         }
         case incflo::FluidModel::Bingham:
         {
@@ -82,6 +84,7 @@ void incflo::compute_viscosity_at_level (int /*lev*/,
         non_newtonian_viscosity.tau_0 = m_tau_0;
         non_newtonian_viscosity.eta_0 = m_eta_0;
         non_newtonian_viscosity.papa_reg = m_papa_reg;
+        non_newtonian_viscosity.sr_floor = m_sr_floor;
 
 #ifdef AMREX_USE_EB
         auto const& fact = EBFactory(lev);

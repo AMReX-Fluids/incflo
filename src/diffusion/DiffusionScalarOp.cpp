@@ -226,8 +226,11 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
                 }
 
                 if (!eb_dirichlet[lev]->empty()) {
-                    MultiFab phi(*eb_dirichlet[lev], amrex::make_alias, comp, 1);
-                  m_eb_scal_solve_op->setEBDirichlet(lev, phi, *eta[lev]);
+                    // This op has one component, so the EB beta must be the
+                    // single component of eta that we are solving for
+                    MultiFab phi (*eb_dirichlet[lev], amrex::make_alias, comp, 1);
+                    MultiFab beta(*eta[lev]          , amrex::make_alias, comp, 1);
+                    m_eb_scal_solve_op->setEBDirichlet(lev, phi, beta);
                 } // else use default homogeneous Neumann on EB
 
 
@@ -488,6 +491,7 @@ DiffusionScalarOp::diffuse_vel_components (Vector<MultiFab*> const& vel,
 void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                                       Vector<MultiFab const*> const& a_scalar,
                                       Vector<MultiFab const*> const& a_eta,
+                                      Vector<MultiFab*> const& eb_dirichlet,
                                       amrex::Vector<amrex::BCRec> bcrec)
 {
     BL_PROFILE("DiffusionScalarOp::compute_laps");
@@ -534,6 +538,19 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                 laps_comp.emplace_back(laps_tmp[lev],amrex::make_alias,comp,1);
                 scalar_comp.emplace_back(*a_scalar[lev],amrex::make_alias,comp,1);
 
+                // Use the same EB BC as the implicit solve in diffuse_scalar,
+                // otherwise the explicit and implicit diffusion terms are
+                // inconsistent at the EB.  NOTE that, exactly as for the solve
+                // op, this op is shared by the tracer and temperature passes and
+                // MLEBABecLap has no way to revert an EB Dirichlet BC back to
+                // Neumann, so if only one of tracer_eb/temperature_eb is defined
+                // the other pass will see the EB phi left by the first.
+                if (lev < static_cast<int>(eb_dirichlet.size()) && !eb_dirichlet[lev]->empty()) {
+                    MultiFab phi_eb (*eb_dirichlet[lev], amrex::make_alias, comp    , 1);
+                    MultiFab beta_eb(*a_eta[lev]       , amrex::make_alias, eta_comp, 1);
+                    m_eb_scal_apply_op->setEBDirichlet(lev, phi_eb, beta_eb);
+                } // else use default homogeneous Neumann on EB
+
                 Array<MultiFab,AMREX_SPACEDIM>
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);
 
@@ -572,6 +589,8 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
     else
 #endif
     {
+        amrex::ignore_unused(eb_dirichlet);
+
         // We want to return div (mu grad)) phi
         m_reg_scal_apply_op->setScalars(0.0, -1.0);
 
@@ -635,9 +654,6 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
             divtau_tmp[lev].setVal(0.0);
         }
 
-        for (int lev = 0; lev <= finest_level; ++lev) {
-            m_eb_vel_apply_op->setEBHomogDirichlet(lev, *a_eta[lev]);
-        }
         // We want to return div (mu grad)) phi
         m_eb_vel_apply_op->setScalars(0.0, -1.0);
 
@@ -664,6 +680,16 @@ void DiffusionScalarOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
             for (int lev = 0; lev <= finest_level; ++lev) {
                 divtau_single.emplace_back(divtau_tmp[lev],amrex::make_alias,comp,1);
                 vel_single.emplace_back(       vel[lev],amrex::make_alias,comp,1);
+
+                // Match the implicit solve in diffuse_vel_components; the EB
+                // Dirichlet value is per component, so this must be set inside
+                // the component loop
+                if (m_incflo->hasEBFlow()) {
+                    MultiFab phi(*m_incflo->get_velocity_eb()[lev], amrex::make_alias, comp, 1);
+                    m_eb_vel_apply_op->setEBDirichlet(lev, phi, *a_eta[lev]);
+                } else {
+                    m_eb_vel_apply_op->setEBHomogDirichlet(lev, *a_eta[lev]);
+                }
 
                 if ( m_incflo->m_has_mixedBC ) {
                     auto const robin = m_incflo->make_robinBC_MFs(lev, &vel_single[lev]);

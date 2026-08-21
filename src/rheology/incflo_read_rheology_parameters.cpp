@@ -22,9 +22,18 @@ void incflo::ReadRheologyParameters()
          AMREX_ALWAYS_ASSERT_WITH_MESSAGE(m_n_0 != 1.0,
                  "No point in using power-law rheology with n = 1");
 
+         // The strain rate is floored at this value before evaluating
+         // mu*sr^(n-1), which would otherwise be infinite at sr = 0 for n < 1
+         // (and zero at sr = 0 for n > 1).  Note that sr has units of 1/time,
+         // so the appropriate value is problem-dependent.
+         pp.query("sr_floor", m_sr_floor);
+         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(m_sr_floor > 0.0,
+                 "Power-law strain-rate floor must be positive");
+
          amrex::Print() << "Power-law fluid with"
                         << " mu = " << m_mu
-                        << ", n = " << m_n_0 <<  "\n";
+                        << ", n = " << m_n_0
+                        << ", sr_floor = " << m_sr_floor <<  "\n";
      }
      else if(fluid_model_s == "bingham")
      {
