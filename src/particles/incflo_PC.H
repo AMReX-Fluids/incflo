@@ -98,7 +98,8 @@ class incflo_PC : public amrex::ParticleContainer<  incflo_ParticlesRealIdxAoS::
 #endif
                                          );
 
-        /*! Evolve particles for one time step */
+        /*! Evolve particles on one level for one time step; the caller is
+         *  responsible for calling Redistribute() once all levels are done */
         virtual void EvolveParticles (int,
                                       amrex::Real,
                                       AMREX_D_DECL(const amrex::MultiFab* a_u_mac,
