@@ -574,7 +574,13 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
         else if (vars[n] == "error_p") {
             int icomp_err_p = AMREX_SPACEDIM;
             for (int lev = 0; lev <= finest_level; ++lev)
-                amrex::average_node_to_cellcenter(mf[lev], icomp, m_leveldata[lev]->p_nd, 0, 1);
+            {
+                if (m_use_cc_proj) {
+                    MultiFab::Copy(mf[lev], m_leveldata[lev]->p_cc, 0, icomp, 1, 0);
+                } else {
+                    amrex::average_node_to_cellcenter(mf[lev], icomp, m_leveldata[lev]->p_nd, 0, 1);
+                }
+            }
 
             Real offset = mf[0].sum(icomp,true);
             ParallelDescriptor::ReduceRealSum(offset);
