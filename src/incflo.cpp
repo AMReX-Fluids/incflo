@@ -224,7 +224,7 @@ incflo::ApplyProjection (Vector<MultiFab const*> const& density,
                          Real time, Real scaling_factor, bool incremental,
                          bool set_inflow_bc)
 {
-    AMREX_ALWAYS_ASSERT("This is not yet coded for ccproj!");
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!m_use_cc_proj, "This is not yet coded for ccproj!");
 
     ApplyNodalProjection(density, vel, divu_Source, time, scaling_factor,
                          incremental, set_inflow_bc);

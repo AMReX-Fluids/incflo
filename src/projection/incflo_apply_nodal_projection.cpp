@@ -167,10 +167,9 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
         Vector<Array<MultiFab, AMREX_SPACEDIM>> vel_vec(finest_level+1);
 
         for (int lev = 0; lev <= finest_level; lev++) {
-            auto& ld = *m_leveldata[lev];
-            AMREX_D_TERM(vel_vec[lev][0] = MultiFab(ld.velocity, amrex::make_alias, 0, 1);,
-                         vel_vec[lev][1] = MultiFab(ld.velocity, amrex::make_alias, 1, 1);,
-                         vel_vec[lev][2] = MultiFab(ld.velocity, amrex::make_alias, 2, 1););
+            AMREX_D_TERM(vel_vec[lev][0] = MultiFab(*vel[lev], amrex::make_alias, 0, 1);,
+                         vel_vec[lev][1] = MultiFab(*vel[lev], amrex::make_alias, 1, 1);,
+                         vel_vec[lev][2] = MultiFab(*vel[lev], amrex::make_alias, 2, 1););
         }
 
         HydroUtils::enforceInOutSolvability(GetVecOfArrOfPtrs(vel_vec), get_velocity_bcrec().data(), geom, true);

@@ -677,7 +677,9 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
             for (int lev = 0; lev <= finest_level; ++lev) {
                 MultiFab temp_dat(mf[lev].boxArray(), mf[lev].DistributionMap(), 1, 0);
                 temp_dat.setVal(0);
-                particleData[particles_namelist[0]]->Increment(temp_dat, lev);
+                if (!particles_namelist.empty()) {
+                    particleData[particles_namelist[0]]->Increment(temp_dat, lev);
+                }
                 MultiFab::Copy(mf[lev], temp_dat, 0, icomp, 1, 0);
             }
             pltscaVarsName.push_back("particle_count");

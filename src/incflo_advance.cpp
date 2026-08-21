@@ -9,6 +9,23 @@ void incflo::Advance()
     // Start timing current time step
     Real strt_step = static_cast<Real>(ParallelDescriptor::second());
 
+    int ng = nghost_state();
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        fillpatch_velocity(lev, m_cur_time, m_leveldata[lev]->velocity, ng);
+        fillpatch_density(lev, m_cur_time, m_leveldata[lev]->density, ng);
+        if (m_advect_tracer) {
+            fillpatch_tracer(lev, m_cur_time, m_leveldata[lev]->tracer, ng);
+        }
+        if (m_use_temperature) {
+            fillpatch_temperature(lev, m_cur_time, m_leveldata[lev]->temperature, ng);
+        }
+    }
+
+    copy_from_new_to_old_velocity(IntVect(ng));
+    copy_from_new_to_old_density(IntVect(ng));
+    copy_from_new_to_old_tracer(IntVect(ng));
+    copy_from_new_to_old_temperature(IntVect(ng));
+
     // Compute time step size
     int initialisation = ( m_dt < 0 );
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
@@ -27,23 +44,6 @@ void incflo::Advance()
                        << ": from old_time " << m_cur_time
                        << " to new time " << m_cur_time + m_dt
                        << " with dt = " << m_dt << ".\n" << "\n";
-    }
-
-    copy_from_new_to_old_velocity();
-    copy_from_new_to_old_density();
-    copy_from_new_to_old_tracer();
-    copy_from_new_to_old_temperature();
-
-    int ng = nghost_state();
-    for (int lev = 0; lev <= finest_level; ++lev) {
-        fillpatch_velocity(lev, m_t_old[lev], m_leveldata[lev]->velocity_o, ng);
-        fillpatch_density(lev, m_t_old[lev], m_leveldata[lev]->density_o, ng);
-        if (m_advect_tracer) {
-            fillpatch_tracer(lev, m_t_old[lev], m_leveldata[lev]->tracer_o, ng);
-        }
-        if (m_use_temperature) {
-            fillpatch_temperature(lev, m_t_old[lev], m_leveldata[lev]->temperature_o, ng);
-        }
     }
 
 #ifdef AMREX_USE_EB

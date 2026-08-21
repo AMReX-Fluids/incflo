@@ -18,7 +18,7 @@ void incflo_PC::massDensity ( MultiFab&  a_mf,
     const auto plo = geom.ProbLoArray();
     const auto dxi = geom.InvCellSizeArray();
 
-    const Real inv_cell_volume = dxi[0]*dxi[1]*dxi[2];
+    const Real inv_cell_volume = AMREX_D_TERM(dxi[0], *dxi[1], *dxi[2]);
     a_mf.setVal(0.0);
 
     ParticleToMesh( *this, a_mf, a_lev,

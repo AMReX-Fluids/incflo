@@ -1148,8 +1148,8 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
             }
 
             if (m_use_temperature) {
-                auto const& bc_tem = get_tracer_bcrec_device_ptr();
-                redistribute_term(mfi, *conv_tem[lev], dtemdt_tmp,//fixme
+                auto const& bc_tem = get_temperature_bcrec_device_ptr();
+                redistribute_term(mfi, *conv_tem[lev], dtemdt_tmp,
                                   *temperature[lev],
                                   bc_tem, lev);
             }

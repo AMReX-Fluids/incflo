@@ -362,6 +362,15 @@ incflo::set_eb_tracer (int lev, Real /*time*/, MultiFab& eb_tracer, int nghost)
     const auto& factory =
        dynamic_cast<EBFArrayBoxFactory const&>(eb_tracer.Factory());
 
+    // These are box-independent, and must outlive every kernel launched in the
+    // MFIter loop below, which captures eb_flow_tracer.
+    int num_trac = m_ntrac;
+    Gpu::DeviceVector<Real> eb_flow_tracer_dv;
+    for(int n(0); n < num_trac; ++n) {
+       eb_flow_tracer_dv.push_back(m_eb_flow.tracer[n]);
+    }
+    Real* eb_flow_tracer = eb_flow_tracer_dv.data();
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -386,14 +395,6 @@ incflo::set_eb_tracer (int lev, Real /*time*/, MultiFab& eb_tracer, int nghost)
           Real normal_tol = m_eb_flow.normal_tol;
           Real norm_tol_lo = Real(-1.) - (normal_tol + pad);
           Real norm_tol_hi = Real(-1.) + (normal_tol + pad);
-
-          int num_trac = m_ntrac;
-          // Create a device vector
-          Gpu::DeviceVector<Real> eb_flow_tracer_dv;
-          for(int n(0); n < num_trac; ++n) {
-             eb_flow_tracer_dv.push_back(m_eb_flow.tracer[n]);
-          }
-          Real* eb_flow_tracer = eb_flow_tracer_dv.data();
 
           ParallelFor(bx, [flags_arr,eb_tracer_arr,norm_arr,has_normal,normal,
                  norm_tol_lo, norm_tol_hi, num_trac, eb_flow_tracer]

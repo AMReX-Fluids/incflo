@@ -47,8 +47,11 @@ void incflo::update_tracer (StepType step_type, Vector<MultiFab>& tra_eta, Vecto
         if (m_diff_type == DiffusionType::Crank_Nicolson || m_diff_type == DiffusionType::Implicit)
         {
             const int ng_diffusion = 1;
-            for (int lev = 0; lev <= finest_level; ++lev)
+            for (int lev = 0; lev <= finest_level; ++lev) {
+                // Periodic fill necessary for corner ghost cells when physbc and periodic touch
+                m_leveldata[lev]->tracer.FillBoundary(geom[lev].periodicity());
                 fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
+            }
 
             Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : Real(0.5)*m_dt;
             diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);

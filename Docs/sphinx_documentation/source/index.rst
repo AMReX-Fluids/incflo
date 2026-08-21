@@ -22,4 +22,5 @@ Active development in incflo is ongoing in the development branch.
    ManagingGridHierarchy_Chapter
    Fluids_Chapter
    EB
+   Particles
    Debugging
