@@ -311,7 +311,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
 
     //
     // Initialize (or redefine the beta in) the MacProjector
-    if (get_mac_projector()->needInitialization())
+    if (macproj->needInitialization())
     {
         LPInfo lp_info;
         lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
