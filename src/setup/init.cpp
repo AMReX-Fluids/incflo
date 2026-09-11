@@ -57,8 +57,8 @@ void incflo::ReadParameters ()
 
         // This limits dt growth per time step
         pp.query("dt_change_max", m_dt_change_max);
-        if ( m_dt_change_max < 1.0 || m_dt_change_max > 1.1 ) {
-            amrex::Abort("We require 1. < dt_change_max <= 1.1");
+        if ( m_dt_change_max < 1.0_rt || m_dt_change_max > 1.1_rt ) {
+            amrex::Abort("We require 1. <= dt_change_max <= 1.1");
         }
 
         // Physics
