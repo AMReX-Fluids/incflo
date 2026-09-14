@@ -231,6 +231,9 @@ void DiffusionTensorOp::compute_divtau (Vector<MultiFab*> const& a_divtau,
                              AMREX_SPACEDIM, 1, MFInfo(),
                              a_velocity[lev]->Factory());
         MultiFab::Copy(velocity[lev], *a_velocity[lev], 0, 0, AMREX_SPACEDIM, 1);
+#ifdef AMREX_USE_EB
+        EB_set_covered(velocity[lev], 0, AMREX_SPACEDIM, 1, Real(0.0));
+#endif
     }
 
 #ifdef AMREX_USE_EB
