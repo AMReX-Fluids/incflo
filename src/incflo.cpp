@@ -6,6 +6,9 @@
 #include <utility>
 #endif
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include <memory>
 
 using namespace amrex;
@@ -129,12 +132,31 @@ void incflo::Evolve()
 {
     BL_PROFILE("incflo::Evolve()");
 
+    // Track elapsed time in double locally to avoid float32 accumulation drift
+    // in single-precision builds; m_cur_time stays Real for AMReX interfaces.
+    double cur_time = m_cur_time;
+
+    auto stop_time_reached = [this] (double a_cur_time) -> bool
+    {
+        if (m_stop_time <= Real(0.0)) {
+            return false;
+        }
+
+        double const stop_time = m_stop_time;
+        double const dt = std::abs(m_dt);
+        double const scale = std::max(std::abs(stop_time), std::abs(a_cur_time));
+        Real const real_eps = std::numeric_limits<Real>::epsilon();
+        double const tol = std::max(1.e-12 * dt, 16.0 * real_eps * scale);
+        return a_cur_time >= stop_time - tol;
+    };
+
     // The stop_time test here mirrors the loop-exit test below, tolerance included, so
     // that restarting from the final checkpoint of a completed run does not take an
     // extra step past stop_time.
     bool do_not_evolve = ((m_max_step == 0) ||
-                           ((m_stop_time > 0.) && (m_cur_time >= m_stop_time - (1.e-12 * m_dt))) ||
-                           ((m_stop_time <= 0.) && (m_max_step <= 0)) || (m_max_step >= 0 && m_nstep >= m_max_step) )
+                          stop_time_reached(cur_time) ||
+                          ((m_stop_time <= Real(0.0)) && (m_max_step <= 0)) ||
+                          (m_max_step >= 0 && m_nstep >= m_max_step))
                          && !m_steady_state;
 
     while(!do_not_evolve)
@@ -154,16 +176,17 @@ void incflo::Evolve()
         }
 
         // Advance to time t + dt
-        Advance();
+        Advance(cur_time);
         m_nstep++;
-        m_cur_time += m_dt;
+        cur_time += m_dt;
+        m_cur_time = static_cast<Real>(cur_time);
 
         if (writeNow())
         {
             WritePlotFile();
             m_last_plt = m_nstep;
         }
-        if (writeNow(m_smallplot_int, m_smallplot_per_approx, -1.))
+        if (writeNow(m_smallplot_int, m_smallplot_per_approx, Real(-1.0)))
         {
             WriteSmallPlotFile();
             m_last_smallplt = m_nstep;
@@ -182,8 +205,8 @@ void incflo::Evolve()
 
         // Mechanism to terminate incflo normally.
         do_not_evolve = (m_steady_state && SteadyStateReached()) ||
-            ( (m_stop_time > 0. && (m_cur_time >= m_stop_time - (1.e-12 * m_dt))) ||
-              (m_max_step >= 0 && m_nstep >= m_max_step) );
+            (stop_time_reached(cur_time) ||
+             (m_max_step >= 0 && m_nstep >= m_max_step));
     }
 
     // Output at the final time
