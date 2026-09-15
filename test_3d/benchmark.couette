@@ -52,6 +52,6 @@ yhi.velocity            =   1.  0.  0.
 #.......................................#
 incflo.verbose          =   2           # incflo_level
 mac_proj.verbose        =   0           # MAC Projector
-nodal_proj.verbose      =   5           # Nodal Projector
+nodal_proj.verbose      =   0           # Nodal Projector
 
 amr.plt_ccse_regtest    =   1
