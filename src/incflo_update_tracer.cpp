@@ -6,7 +6,7 @@ void incflo::update_tracer (StepType step_type, Vector<MultiFab>& tra_eta, Vecto
 {
     BL_PROFILE("incflo::update_tracer");
 
-    Real new_time = new_time_real();
+    Real new_time = m_cur_time + m_dt;
 
     if (m_advect_tracer)
     {
@@ -53,7 +53,7 @@ void incflo::update_tracer (StepType step_type, Vector<MultiFab>& tra_eta, Vecto
                 fillphysbc_tracer(lev, new_time, m_leveldata[lev]->tracer, ng_diffusion);
             }
 
-            Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? dt_real() : real_time(0.5*m_dt);
+            Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : Real(0.5)*m_dt;
             diffuse_scalar(get_tracer_new(), get_density_new(), GetVecOfConstPtrs(tra_eta), dt_diff);
         }
         else

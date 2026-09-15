@@ -8,8 +8,8 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
 
     if (!m_use_temperature) { return; }
 
-    Real const  new_time = new_time_real();
-    Real const half_time = real_time(m_cur_time + 0.5*m_dt);
+    Real const  new_time = m_cur_time + m_dt;
+    Real const half_time = m_cur_time + m_dt * Real(0.5);
 
     // *************************************************************************************
     // Compute the temperature forcing terms
@@ -32,7 +32,7 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
     // *************************************************************************************
     if (step_type == StepType::Predictor) {
         constexpr Real m_half = Real(0.5);
-        Real l_dt = dt_real();
+        Real l_dt = m_dt;
 
         for (int lev = 0; lev <= finest_level; lev++)
         {
@@ -107,7 +107,7 @@ void incflo::update_temperature (StepType step_type, Vector<MultiFab>& tem_eta, 
             m_leveldata[lev]->temperature.FillBoundary(geom[lev].periodicity());
             fillphysbc_temperature(lev, new_time, m_leveldata[lev]->temperature, ng_diffusion);
         }
-        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? dt_real() : real_time(0.5*m_dt);
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : Real(0.5)*m_dt;
         // scratch holds rhoCp
         diffuse_temperature(get_temperature_new(), GetVecOfPtrs(scratch), GetVecOfConstPtrs(tem_eta),
                             dt_diff);

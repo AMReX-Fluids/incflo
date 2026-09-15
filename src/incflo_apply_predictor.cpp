@@ -79,7 +79,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     BL_PROFILE("incflo::ApplyPredictor");
 
     // We use the new time value for things computed on the "*" state
-    Real new_time = new_time_real();
+    Real new_time = m_cur_time + m_dt;
 
     // *************************************************************************************
     // Allocate space for the MAC velocities
@@ -137,7 +137,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     compute_viscosity(GetVecOfPtrs(vel_eta),
                       get_density_old(), get_velocity_old(),
-                      cur_time_real(), nghost_eta);
+                      m_cur_time, nghost_eta);
 
     // *************************************************************************************
     // Compute explicit viscous term
@@ -161,7 +161,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     }
     if (m_use_temperature)
     {
-        compute_temperature_diff_coeff(cur_time_real(), GetVecOfPtrs(tem_eta));
+        compute_temperature_diff_coeff(m_cur_time, GetVecOfPtrs(tem_eta));
         if (need_divtau()) {
             compute_laps_T(get_laps_tem_old(), get_temperature_old_const(), GetVecOfConstPtrs(tem_eta));
         }
@@ -180,7 +180,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // *************************************************************************************
     compute_MAC_projected_velocities(get_velocity_old_const(), get_density_old_const(),
                                      AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                                     GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), cur_time_real());
+                                     GetVecOfPtrs(w_mac)), GetVecOfPtrs(vel_forces), m_cur_time);
 
     // *************************************************************************************
     // if (advection_type == "Godunov")
@@ -196,7 +196,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
                             AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
                                          GetVecOfPtrs(w_mac)),
                             GetVecOfPtrs(vel_forces), GetVecOfPtrs(tra_forces),
-                            GetVecOfPtrs(tem_forces), cur_time_real());
+                            GetVecOfPtrs(tem_forces), m_cur_time);
 
     // *************************************************************************************
     // Update density
@@ -223,7 +223,7 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // **********************************************************************************************
     ApplyProjection(get_density_nph_const(),
                     AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                    GetVecOfPtrs(w_mac)), new_time, dt_real(), incremental_projection);
+                    GetVecOfPtrs(w_mac)),new_time,m_dt,incremental_projection);
 
 #ifdef INCFLO_USE_PARTICLES
     // **************************************************************************************

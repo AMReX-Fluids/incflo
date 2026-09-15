@@ -7,7 +7,7 @@ void incflo::tracer_explicit_update (Vector<MultiFab> const& tra_forces)
     if (m_advect_tracer == 0) { return; }
 
     constexpr Real m_half = Real(0.5);
-    Real l_dt = dt_real();
+    Real l_dt = m_dt;
     int l_ntrac = m_ntrac;
     for (int lev = 0; lev <= finest_level; lev++)
     {
@@ -98,7 +98,7 @@ void incflo::tracer_explicit_update_corrector (Vector<MultiFab> const& tra_force
     if (m_advect_tracer == 0) { return; }
 
     constexpr Real m_half = Real(0.5);
-    Real l_dt = dt_real();
+    Real l_dt = m_dt;
     int l_ntrac = m_ntrac;
     for (int lev = 0; lev <= finest_level; lev++)
     {

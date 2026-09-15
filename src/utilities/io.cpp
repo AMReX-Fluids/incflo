@@ -208,7 +208,7 @@ void incflo::ReadCheckpointFile()
         // Create distribution mapping
         DistributionMapping dm{ba, ParallelDescriptor::NProcs()};
 
-        MakeNewLevelFromScratch(lev, cur_time_real(), ba, dm);
+        MakeNewLevelFromScratch(lev, m_cur_time, ba, dm);
     }
 
     /***************************************************************************
@@ -251,7 +251,7 @@ void incflo::ReadCheckpointFile()
 #endif
 
     if ( m_regrid_on_restart ) {
-        regrid(0, cur_time_real());
+        regrid(0, m_cur_time);
     }
 
     amrex::Print() << "Restart complete" << "\n";
@@ -391,9 +391,9 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
 #else
                 const int ng = 1;
 #endif
-                fillpatch_velocity(lev, cur_time_real(), m_leveldata[lev]->velocity, ng);
-                fillpatch_density(lev, cur_time_real(), m_leveldata[lev]->density, ng);
-                fillpatch_tracer(lev, cur_time_real(), m_leveldata[lev]->tracer, ng);
+                fillpatch_velocity(lev, m_cur_time, m_leveldata[lev]->velocity, ng);
+                fillpatch_density(lev, m_cur_time, m_leveldata[lev]->density, ng);
+                fillpatch_tracer(lev, m_cur_time, m_leveldata[lev]->tracer, ng);
                 // Whether temperature fillpatch is needed depends on form of forcing term
                 // fillpatch_temperature(lev, m_cur_time, m_leveldata[lev]->temperature, ng);
             }
@@ -538,7 +538,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
             for (int lev = 0; lev <= finest_level; ++lev)
             {
                 MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 0, icomp, 1, 0);
-                DiffFromExact(lev, Geom(lev), cur_time_real(), dt_real(), mf[lev], icomp, icomp_err_u);
+                DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_u);
                 amrex::Print() << "Norm0 / Norm2 of u error " <<
                     mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << "\n";
             }
@@ -550,7 +550,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
             for (int lev = 0; lev <= finest_level; ++lev)
             {
                 MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 1, icomp, 1, 0);
-                DiffFromExact(lev, Geom(lev), cur_time_real(), dt_real(), mf[lev], icomp, icomp_err_v);
+                DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_v);
                 amrex::Print() << "Norm0 / Norm2 of v error " <<
                     mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << "\n";
             }
@@ -563,7 +563,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
             for (int lev = 0; lev <= finest_level; ++lev)
             {
                 MultiFab::Copy(mf[lev], m_leveldata[lev]->velocity, 2, icomp, 1, 0);
-                DiffFromExact(lev, Geom(lev), cur_time_real(), dt_real(), mf[lev], icomp, icomp_err_w);
+                DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_w);
                 amrex::Print() << "Norm0 / Norm2 of w error " <<
                     mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << "\n";
             }
@@ -589,7 +589,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
             for (int lev = 0; lev <= finest_level; ++lev)
             {
                 mf[lev].plus(-offset, icomp, 1);
-                DiffFromExact(lev, Geom(lev), cur_time_real(), dt_real(), mf[lev], icomp, icomp_err_p);
+                DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_p);
                 amrex::Print() << "Norm0 / Norm2 of p error " <<
                     mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << "\n";
             }
@@ -608,7 +608,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
             for (int lev = 0; lev <= finest_level; ++lev)
             {
                 mf[lev].plus(-offset, icomp, 1);
-                DiffFromExact(lev, Geom(lev), cur_time_real(), dt_real(), mf[lev], icomp, icomp_err_mac_p);
+                DiffFromExact(lev, Geom(lev), m_cur_time, m_dt, mf[lev], icomp, icomp_err_mac_p);
                 amrex::Print() << "Norm0 / Norm2 of mac_p error " <<
                     mf[lev].norm0(icomp) << " " << mf[lev].norm2(icomp) / std::sqrt(mf[lev].boxArray().numPts()) << "\n";
             }
@@ -623,7 +623,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
                                            &m_leveldata[lev]->density,
                                            &m_leveldata[lev]->velocity,
                                            Geom(lev),
-                                           cur_time_real(), 0);
+                                           m_cur_time, 0);
             }
             pltscaVarsName.push_back("eta");
             ++icomp;
@@ -631,7 +631,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
         else if (vars[n] == "magvel") {
             for (int lev = 0; lev <= finest_level; ++lev) {
                 MultiFab magvel(mf[lev], amrex::make_alias, icomp, 1);
-                ComputeMagVel(lev, cur_time_real(), magvel, m_leveldata[lev]->velocity);
+                ComputeMagVel(lev, m_cur_time, magvel, m_leveldata[lev]->velocity);
             }
             pltscaVarsName.push_back("magvel");
             ++icomp;
@@ -641,7 +641,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
             for (int lev = 0; lev <= finest_level; ++lev) {
                 (m_leveldata[lev]->velocity).FillBoundary(geom[lev].periodicity());
                 MultiFab vort(mf[lev], amrex::make_alias, icomp, 1);
-                ComputeVorticity(lev, cur_time_real(), vort, m_leveldata[lev]->velocity);
+                ComputeVorticity(lev, m_cur_time, vort, m_leveldata[lev]->velocity);
             }
             pltscaVarsName.push_back("vort");
             ++icomp;
@@ -667,7 +667,7 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
                                             &strainrate,
                                             &m_leveldata[lev]->velocity,
                                             Geom(lev),
-                                            cur_time_real(), 0);
+                                            m_cur_time, 0);
             }
             pltscaVarsName.push_back("strainrate");
             ++icomp;
@@ -719,5 +719,5 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
 
     // Write the plotfile
     amrex::WriteMultiLevelPlotfile(plotfilename, finest_level + 1, GetVecOfConstPtrs(mf),
-                                   pltscaVarsName, Geom(), cur_time_real(), istep, refRatio());
+                                   pltscaVarsName, Geom(), m_cur_time, istep, refRatio());
 }

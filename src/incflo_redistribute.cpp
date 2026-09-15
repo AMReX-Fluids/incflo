@@ -90,7 +90,7 @@ incflo::redistribute_term ( MFIter const& mfi,
                              scratch, flag,
                              AMREX_D_DECL(apx, apy, apz), vfrac,
                              AMREX_D_DECL(fcx, fcy, fcz), ccc,
-                             bc, geom[lev], dt_real(), m_redistribution_type);
+                             bc, geom[lev], m_dt, m_redistribution_type);
     }
     else
     {

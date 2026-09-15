@@ -8,7 +8,7 @@ void incflo::update_density (StepType step_type)
 
     int ng = (step_type == StepType::Corrector) ? 0 : 1;
 
-    Real l_dt = dt_real();
+    Real l_dt = m_dt;
 
     if (!m_constant_density)
     {

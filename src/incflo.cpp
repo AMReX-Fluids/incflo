@@ -6,6 +6,9 @@
 #include <utility>
 #endif
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include <memory>
 
 using namespace amrex;
@@ -53,7 +56,7 @@ void incflo::InitData ()
 
         // This is an AmrCore member function which recursively makes new levels
         // with MakeNewLevelFromScratch.
-        InitFromScratch(cur_time_real());
+        InitFromScratch(m_cur_time);
 
 #ifdef AMREX_USE_EB
         if (!EBFactory(0).isAllRegular()) {
@@ -129,12 +132,31 @@ void incflo::Evolve()
 {
     BL_PROFILE("incflo::Evolve()");
 
+    // Track elapsed time in double locally to avoid float32 accumulation drift
+    // in single-precision builds; m_cur_time stays Real for AMReX interfaces.
+    double cur_time = static_cast<double>(m_cur_time);
+
+    auto stop_time_reached = [this] (double a_cur_time) -> bool
+    {
+        if (m_stop_time <= Real(0.0)) {
+            return false;
+        }
+
+        double const stop_time = static_cast<double>(m_stop_time);
+        double const dt = std::abs(static_cast<double>(m_dt));
+        double const scale = std::max(std::abs(stop_time), std::abs(a_cur_time));
+        double const real_eps = static_cast<double>(std::numeric_limits<Real>::epsilon());
+        double const tol = std::max(1.e-12 * dt, 16.0 * real_eps * scale);
+        return a_cur_time >= stop_time - tol;
+    };
+
     // The stop_time test here mirrors the loop-exit test below, tolerance included, so
     // that restarting from the final checkpoint of a completed run does not take an
     // extra step past stop_time.
     bool do_not_evolve = ((m_max_step == 0) ||
-                           ((m_stop_time > 0.) && (m_cur_time >= m_stop_time - (1.e-12 * m_dt))) ||
-                           ((m_stop_time <= 0.) && (m_max_step <= 0)) || (m_max_step >= 0 && m_nstep >= m_max_step) )
+                          stop_time_reached(cur_time) ||
+                          ((m_stop_time <= Real(0.0)) && (m_max_step <= 0)) ||
+                          (m_max_step >= 0 && m_nstep >= m_max_step))
                          && !m_steady_state;
 
     while(!do_not_evolve)
@@ -147,23 +169,24 @@ void incflo::Evolve()
         if (m_regrid_int > 0 && m_nstep > 0 && m_nstep%m_regrid_int == 0)
         {
             if (m_verbose > 0) amrex::Print() << "Regridding...\n";
-            regrid(0, cur_time_real());
+            regrid(0, m_cur_time);
             if (m_verbose > 0 && ParallelDescriptor::IOProcessor()) {
                 printGridSummary(amrex::OutStream(), 0, finest_level);
             }
         }
 
         // Advance to time t + dt
-        Advance();
+        Advance(cur_time);
         m_nstep++;
-        m_cur_time += m_dt;
+        cur_time += static_cast<double>(m_dt);
+        m_cur_time = static_cast<Real>(cur_time);
 
         if (writeNow())
         {
             WritePlotFile();
             m_last_plt = m_nstep;
         }
-        if (writeNow(m_smallplot_int, m_smallplot_per_approx, -1.))
+        if (writeNow(m_smallplot_int, m_smallplot_per_approx, Real(-1.0)))
         {
             WriteSmallPlotFile();
             m_last_smallplt = m_nstep;
@@ -182,8 +205,8 @@ void incflo::Evolve()
 
         // Mechanism to terminate incflo normally.
         do_not_evolve = (m_steady_state && SteadyStateReached()) ||
-            ( (m_stop_time > 0. && (m_cur_time >= m_stop_time - (1.e-12 * m_dt))) ||
-              (m_max_step >= 0 && m_nstep >= m_max_step) );
+            (stop_time_reached(cur_time) ||
+             (m_max_step >= 0 && m_nstep >= m_max_step));
     }
 
     // Output at the final time
@@ -289,7 +312,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 }
 
 bool
-incflo::writeNow(int a_plot_int, double a_plot_per_approx, double a_plot_per_exact) const
+incflo::writeNow(int a_plot_int, Real a_plot_per_approx, Real a_plot_per_exact) const
 {
     bool write_now = false;
 
@@ -312,8 +335,8 @@ incflo::writeNow(int a_plot_int, double a_plot_per_approx, double a_plot_per_exa
         // the counter, because we have indeed reached the next a_plot_per_approx interval
         // at this point.
 
-        const double eps = std::numeric_limits<double>::epsilon() * 10.0 * std::abs(m_cur_time);
-        const double next_plot_time = (num_per_old + 1) * a_plot_per_approx;
+        const Real eps = std::numeric_limits<Real>::epsilon() * Real(10.0) * std::abs(m_cur_time);
+        const Real next_plot_time = (num_per_old + 1) * a_plot_per_approx;
 
         if ((num_per_new == num_per_old) && std::abs(m_cur_time - next_plot_time) <= eps)
         {

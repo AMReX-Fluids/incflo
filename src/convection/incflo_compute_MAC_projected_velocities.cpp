@@ -16,7 +16,7 @@ incflo::compute_MAC_projected_velocities (
                                  Real /*time*/)
 {
     BL_PROFILE("incflo::compute_MAC_projected_velocities()");
-    Real l_dt = dt_real();
+    Real l_dt = m_dt;
 
     auto mac_phi = get_mac_phi();
 
@@ -60,7 +60,7 @@ incflo::compute_MAC_projected_velocities (
         } // end m_godunov_include_diff_in_forcing
 
         if (nghost_force() > 0) {
-            fillpatch_force(cur_time_real(), vel_forces, nghost_force());
+            fillpatch_force(m_cur_time, vel_forces, nghost_force());
         }
 
     } // end m_advection_type
@@ -198,7 +198,7 @@ incflo::compute_MAC_projected_velocities (
     {
         MultiFab time_dep_inflow_vel(vel[lev]->boxArray(),vel[lev]->DistributionMap(),AMREX_SPACEDIM,1);
         time_dep_inflow_vel.setVal(0.);
-        fillphysbc_velocity(lev, real_time(m_cur_time + 0.5*m_dt), time_dep_inflow_vel, 1);
+        fillphysbc_velocity(lev, m_cur_time+Real(0.5)*l_dt, time_dep_inflow_vel, 1);
 
         Box domain(geom[lev].Domain());
         const auto dlo = lbound(domain);

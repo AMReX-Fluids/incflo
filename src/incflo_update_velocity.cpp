@@ -6,9 +6,9 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
 {
     BL_PROFILE("incflo::update_velocity");
 
-    Real new_time = new_time_real();
+    Real new_time = m_cur_time + m_dt;
 
-    Real l_dt   = dt_real();
+    Real l_dt   = m_dt;
     Real l_half = Real(0.5);
 
     if (step_type == StepType::Predictor) {
@@ -337,7 +337,7 @@ void incflo::update_velocity (StepType step_type, Vector<MultiFab>& vel_eta, Vec
             fillphysbc_density (lev, new_time, m_leveldata[lev]->density , ng_diffusion);
         }
 
-        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? dt_real() : real_time(0.5*m_dt);
+        Real dt_diff = (m_diff_type == DiffusionType::Implicit) ? m_dt : l_half*m_dt;
         diffuse_velocity(get_velocity_new(), get_density_new(), GetVecOfConstPtrs(vel_eta), dt_diff);
     }
 }

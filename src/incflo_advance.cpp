@@ -2,7 +2,7 @@
 
 using namespace amrex;
 
-void incflo::Advance()
+void incflo::Advance(double cur_time)
 {
     BL_PROFILE("incflo::Advance");
 
@@ -11,13 +11,13 @@ void incflo::Advance()
 
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
-        fillpatch_velocity(lev, cur_time_real(), m_leveldata[lev]->velocity, ng);
-        fillpatch_density(lev, cur_time_real(), m_leveldata[lev]->density, ng);
+        fillpatch_velocity(lev, m_cur_time, m_leveldata[lev]->velocity, ng);
+        fillpatch_density(lev, m_cur_time, m_leveldata[lev]->density, ng);
         if (m_advect_tracer) {
-            fillpatch_tracer(lev, cur_time_real(), m_leveldata[lev]->tracer, ng);
+            fillpatch_tracer(lev, m_cur_time, m_leveldata[lev]->tracer, ng);
         }
         if (m_use_temperature) {
-            fillpatch_temperature(lev, cur_time_real(), m_leveldata[lev]->temperature, ng);
+            fillpatch_temperature(lev, m_cur_time, m_leveldata[lev]->temperature, ng);
         }
     }
 
@@ -29,13 +29,13 @@ void incflo::Advance()
     // Compute time step size
     int initialisation = ( m_dt < 0 );
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
-    ComputeDt(initialisation, explicit_diffusion);
+    ComputeDt(initialisation, explicit_diffusion, cur_time);
 
     // Set new and old time to correctly use in fillpatching
     for(int lev = 0; lev <= finest_level; lev++)
     {
-        m_t_old[lev] = cur_time_real();
-        m_t_new[lev] = new_time_real();
+        m_t_old[lev] = static_cast<Real>(cur_time);
+        m_t_new[lev] = static_cast<Real>(cur_time + static_cast<double>(m_dt));
     }
 
     if (m_verbose > 0)

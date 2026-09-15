@@ -73,7 +73,7 @@ void incflo::evolveTracerParticles (AMREX_D_DECL(Vector<MultiFab const*> const& 
     if (m_use_tracer_particles) {
         for (int lev = 0; lev <= finest_level; ++lev)
         {
-            particleData[incfloParticleNames::tracers]->EvolveParticles(lev, dt_real(),
+            particleData[incfloParticleNames::tracers]->EvolveParticles(lev, m_dt,
                                                                         AMREX_D_DECL(u_mac[lev],v_mac[lev],w_mac[lev]));
         }
 

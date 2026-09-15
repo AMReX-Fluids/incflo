@@ -70,7 +70,7 @@ void incflo::ApplyCorrector()
     BL_PROFILE("incflo::ApplyCorrector");
 
     // We use the new time value for things computed on the "*" state
-    Real new_time = new_time_real();
+    Real new_time = m_cur_time + m_dt;
 
     // *************************************************************************************
     // Allocate space for the MAC velocities
@@ -163,7 +163,7 @@ void incflo::ApplyCorrector()
     bool incremental_projection = false;
     ApplyProjection(get_density_nph_const(),
                     AMREX_D_DECL(GetVecOfPtrs(u_mac), GetVecOfPtrs(v_mac),
-                    GetVecOfPtrs(w_mac)), new_time, dt_real(), incremental_projection);
+                    GetVecOfPtrs(w_mac)),new_time,m_dt,incremental_projection);
 
 #ifdef AMREX_USE_EB
     // **********************************************************************************************
