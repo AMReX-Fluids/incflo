@@ -469,7 +469,7 @@ void incflo::InitialIterations ()
 
     int initialisation = 1;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
-    ComputeDt(initialisation, explicit_diffusion, static_cast<double>(m_cur_time));
+    ComputeDt(initialisation, explicit_diffusion, m_cur_time);
 
     if (m_verbose && m_initial_iterations > 0)
     {

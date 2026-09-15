@@ -134,7 +134,7 @@ void incflo::Evolve()
 
     // Track elapsed time in double locally to avoid float32 accumulation drift
     // in single-precision builds; m_cur_time stays Real for AMReX interfaces.
-    double cur_time = static_cast<double>(m_cur_time);
+    double cur_time = m_cur_time;
 
     auto stop_time_reached = [this] (double a_cur_time) -> bool
     {
@@ -142,10 +142,10 @@ void incflo::Evolve()
             return false;
         }
 
-        double const stop_time = static_cast<double>(m_stop_time);
-        double const dt = std::abs(static_cast<double>(m_dt));
+        double const stop_time = m_stop_time;
+        double const dt = std::abs(m_dt);
         double const scale = std::max(std::abs(stop_time), std::abs(a_cur_time));
-        double const real_eps = static_cast<double>(std::numeric_limits<Real>::epsilon());
+        Real const real_eps = std::numeric_limits<Real>::epsilon();
         double const tol = std::max(1.e-12 * dt, 16.0 * real_eps * scale);
         return a_cur_time >= stop_time - tol;
     };
@@ -178,7 +178,7 @@ void incflo::Evolve()
         // Advance to time t + dt
         Advance(cur_time);
         m_nstep++;
-        cur_time += static_cast<double>(m_dt);
+        cur_time += m_dt;
         m_cur_time = static_cast<Real>(cur_time);
 
         if (writeNow())

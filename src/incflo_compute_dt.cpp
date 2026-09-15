@@ -246,9 +246,9 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion, double cur_
     // so single-precision builds do not clip because of accumulated time drift.
     if (m_plot_per_exact > Real(0.0))
     {
-        double const plot_per_exact = static_cast<double>(m_plot_per_exact);
-        double const dt_new_d = static_cast<double>(dt_new);
-        double const eps_d = static_cast<double>(eps);
+        double const plot_per_exact = m_plot_per_exact;
+        double const dt_new_d = dt_new;
+        double const eps_d = eps;
         if (std::trunc((cur_time + dt_new_d + eps_d) / plot_per_exact) >
             std::trunc((cur_time + eps_d) / plot_per_exact))
         {
@@ -260,8 +260,8 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion, double cur_
     // Do not overshoot the final time if not running to steady state.
     if (!m_steady_state && m_stop_time > Real(0.0))
     {
-        double const stop_time = static_cast<double>(m_stop_time);
-        double const dt_new_d = static_cast<double>(dt_new);
+        double const stop_time = m_stop_time;
+        double const dt_new_d = dt_new;
         if (cur_time + dt_new_d > stop_time)
         {
             dt_new = static_cast<Real>(stop_time - cur_time);

@@ -35,7 +35,7 @@ void incflo::Advance(double cur_time)
     for(int lev = 0; lev <= finest_level; lev++)
     {
         m_t_old[lev] = static_cast<Real>(cur_time);
-        m_t_new[lev] = static_cast<Real>(cur_time + static_cast<double>(m_dt));
+        m_t_new[lev] = static_cast<Real>(cur_time + m_dt);
     }
 
     if (m_verbose > 0)
