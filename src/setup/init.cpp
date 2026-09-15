@@ -57,7 +57,7 @@ void incflo::ReadParameters ()
 
         // This limits dt growth per time step
         pp.query("dt_change_max", m_dt_change_max);
-        if ( m_dt_change_max < 1.0_rt || m_dt_change_max > 1.1_rt ) {
+        if ( m_dt_change_max < 1.0 || m_dt_change_max > 1.1 ) {
             amrex::Abort("We require 1. <= dt_change_max <= 1.1");
         }
 
@@ -452,13 +452,13 @@ void incflo::InitialIterations ()
 
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
-            fillpatch_velocity(lev, m_cur_time, m_leveldata[lev]->velocity, ng);
-        fillpatch_density(lev, m_cur_time, m_leveldata[lev]->density, ng);
+        fillpatch_velocity(lev, cur_time_real(), m_leveldata[lev]->velocity, ng);
+        fillpatch_density(lev, cur_time_real(), m_leveldata[lev]->density, ng);
         if (m_advect_tracer) {
-            fillpatch_tracer(lev, m_cur_time, m_leveldata[lev]->tracer, ng);
+            fillpatch_tracer(lev, cur_time_real(), m_leveldata[lev]->tracer, ng);
         }
         if (m_use_temperature) {
-            fillpatch_temperature(lev, m_cur_time, m_leveldata[lev]->temperature, ng);
+            fillpatch_temperature(lev, cur_time_real(), m_leveldata[lev]->temperature, ng);
         }
     }
 
@@ -494,8 +494,8 @@ void incflo::InitialIterations ()
     }
 
     // Reset dt to get initial step as specified, otherwise we can see increase to dt
-    m_prev_dt = Real(-1.0);
-    m_dt = Real(-1.0);
+    m_prev_dt = -1.0;
+    m_dt = -1.0;
 }
 
 // Project velocity field to make sure initial velocity is divergence-free
@@ -532,7 +532,7 @@ void incflo::InitialProjection()
 
     ApplyProjection(get_density_new_const(),
                     AMREX_D_DECL(GetVecOfPtrs(u_mac_tmp), GetVecOfPtrs(v_mac_tmp),
-                    GetVecOfPtrs(w_mac_tmp)),m_cur_time,dummy_dt,incremental_projection);
+                    GetVecOfPtrs(w_mac_tmp)), cur_time_real(), dummy_dt, incremental_projection);
 
 
     // We set p and gp back to zero (p0 may still be still non-zero)
@@ -621,7 +621,7 @@ void incflo::InitialPressureProjection()
 
     // FIXME FIXME FIXME - THIS ONLY WORKS RIGHT FOR NODAL PROJ
     ApplyProjection(get_density_new_const(), GetVecOfPtrs(vel), Source,
-                    m_cur_time, dummy_dt, false /*incremental*/,
+                    cur_time_real(), dummy_dt, false /*incremental*/,
                     true /*set_inflow_bc*/);
 }
 

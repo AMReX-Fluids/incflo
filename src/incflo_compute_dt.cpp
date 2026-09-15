@@ -1,5 +1,6 @@
 #include <incflo.H>
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -194,28 +195,30 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
                                  ParallelContext::CommunicatorSub());
 
     // Combined CFL conditioner
-    Real comb_cfl = cd_cfl + std::sqrt(cd_cfl*cd_cfl + Real(4.0) * forc_cfl);
+    double const cd_cfl_d = static_cast<double>(cd_cfl);
+    double const forc_cfl_d = static_cast<double>(forc_cfl);
+    double const comb_cfl = cd_cfl_d + std::sqrt(cd_cfl_d*cd_cfl_d + 4.0 * forc_cfl_d);
 
     // Update dt
-    Real dt_new;
-    if (comb_cfl > 0.)
+    double dt_new;
+    if (comb_cfl > 0.0)
     {
-        dt_new = Real(2.0) * m_cfl / comb_cfl;
+        dt_new = 2.0 * m_cfl / comb_cfl;
 
     } else {
 
         // This is totally random but just a way to set a timestep
         // when the initial velocity is zero and the forcing term
         // is not a body force
-        auto const dx    = geom[finest_level].CellSizeArray();
-        dt_new = std::min(dx[0],dx[1]);
+        auto const dx = geom[finest_level].CellSizeArray();
+        dt_new = static_cast<double>(std::min(dx[0], dx[1]));
 #if (AMREX_SPACEDIM == 3)
-        dt_new = std::min(dt_new,dx[2]);
+        dt_new = std::min(dt_new, static_cast<double>(dx[2]));
 #endif
     }
 
     // Optionally reduce CFL for initial step
-    if(initialization)
+    if (initialization)
     {
         dt_new *= m_init_shrink;
     }
@@ -223,59 +226,61 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     // Protect against very small comb_cfl
     // This may happen, for example, when the initial velocity field
     // is zero for an inviscid flow with no external forcing
-    Real eps = std::numeric_limits<Real>::epsilon();
-    if(! initialization && comb_cfl <= eps)
+    double const real_eps = static_cast<double>(std::numeric_limits<Real>::epsilon());
+    double const time_eps = std::numeric_limits<double>::epsilon();
+    if (!initialization && comb_cfl <= real_eps)
     {
-        dt_new = Real(0.5) * m_dt;
+        dt_new = 0.5 * m_dt;
     }
 
     // Don't let the timestep grow by more than m_dt_change_max per step
     // unless the previous time step was unduly shrunk to match m_plot_per_exact
-    Real allowed_change_factor = m_dt_change_max;
-    if( (m_dt > Real(0.0)) && !(m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
+    double const allowed_change_factor = m_dt_change_max;
+    if ((m_dt > 0.0) && !(m_plot_per_exact > 0.0 && m_last_plt == m_nstep && m_nstep > 0))
     {
-        dt_new = amrex::min(dt_new, allowed_change_factor * m_prev_dt);
+        dt_new = std::min(dt_new, allowed_change_factor * m_prev_dt);
     }
-    else if ( (m_dt > Real(0.0)) && (m_plot_per_exact > 0 && m_last_plt == m_nstep && m_nstep > 0) )
+    else if ((m_dt > 0.0) && (m_plot_per_exact > 0.0 && m_last_plt == m_nstep && m_nstep > 0))
     {
-        dt_new = amrex::min( dt_new, allowed_change_factor * amrex::max(m_prev_dt, m_prev_prev_dt) );
+        dt_new = std::min(dt_new, allowed_change_factor * std::max(m_prev_dt, m_prev_prev_dt));
     }
 
     // Don't overshoot specified plot times
-    if(m_plot_per_exact > Real(0.0) &&
-            (std::trunc((m_cur_time + dt_new + eps) / m_plot_per_exact) > std::trunc((m_cur_time + eps) / m_plot_per_exact)))
+    if (m_plot_per_exact > 0.0 &&
+        (std::trunc((m_cur_time + dt_new + time_eps) / m_plot_per_exact) >
+         std::trunc((m_cur_time + time_eps) / m_plot_per_exact)))
     {
         dt_new = std::trunc((m_cur_time + dt_new) / m_plot_per_exact) * m_plot_per_exact - m_cur_time;
     }
 
     // Don't overshoot the final time if not running to steady state
-    if(!m_steady_state && m_stop_time > Real(0.0))
+    if (!m_steady_state && m_stop_time > 0.0)
     {
-        if(m_cur_time + dt_new > m_stop_time)
+        if (m_cur_time + dt_new > m_stop_time)
         {
             dt_new = m_stop_time - m_cur_time;
         }
     }
 
     // Make sure the timestep is not set to zero after a m_plot_per_exact stop
-    if (dt_new < eps)
+    if (dt_new < time_eps)
     {
-        dt_new = Real(0.5) * m_dt;
+        dt_new = 0.5 * m_dt;
     }
 
     // If using fixed time step, check CFL condition and give warning if not satisfied
-    if (m_fixed_dt > Real(0.0))
+    if (m_fixed_dt > 0.0)
     {
-    if(dt_new < m_fixed_dt)
-    {
-        amrex::Print() << "WARNING: fixed_dt does not satisfy CFL condition: \n"
-                       << "max dt by CFL     : " << dt_new << "\n"
-                       << "fixed dt specified: " << m_fixed_dt << "\n";
-    }
-    m_dt = m_fixed_dt;
+        if (dt_new < m_fixed_dt)
+        {
+            amrex::Print() << "WARNING: fixed_dt does not satisfy CFL condition: \n"
+                           << "max dt by CFL     : " << dt_new << "\n"
+                           << "fixed dt specified: " << m_fixed_dt << "\n";
+        }
+        m_dt = m_fixed_dt;
     }
     else
     {
-    m_dt = dt_new;
+        m_dt = dt_new;
     }
 }

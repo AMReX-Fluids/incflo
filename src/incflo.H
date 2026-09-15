@@ -405,27 +405,34 @@ private:
     amrex::Vector<amrex::Real> m_t_old;
     amrex::Vector<amrex::Real> m_t_new;
 
-    // Times
-    amrex::Real m_cur_time     = amrex::Real( 0.0);
-    amrex::Real m_dt           = amrex::Real(-1.0);
-    amrex::Real m_prev_dt      = amrex::Real(-1.0);
-    amrex::Real m_prev_prev_dt = amrex::Real(-1.0);
+    // Keep time-step bookkeeping in double precision even in single-precision builds.
+    double m_cur_time     =  0.0;
+    double m_dt           = -1.0;
+    double m_prev_dt      = -1.0;
+    double m_prev_prev_dt = -1.0;
+
+    [[nodiscard]] static amrex::Real real_time (double a_time) noexcept {
+        return static_cast<amrex::Real>(a_time);
+    }
+    [[nodiscard]] amrex::Real cur_time_real () const noexcept { return real_time(m_cur_time); }
+    [[nodiscard]] amrex::Real dt_real () const noexcept { return real_time(m_dt); }
+    [[nodiscard]] amrex::Real new_time_real () const noexcept { return real_time(m_cur_time + m_dt); }
 
     // Time step counter
     int m_nstep         = -1;
 
     // Stop simulation if cur_time reaches stop_time OR nstep reaches max_step
     // OR steady_state = true AND steady_state_tol is reached
-    amrex::Real m_stop_time = amrex::Real(-1.0);
+    double m_stop_time = -1.0;
     int m_max_step = -1;
     bool m_steady_state = false;
     amrex::Real m_steady_state_tol = amrex::Real(1.0e-5);
 
     // Options to control time stepping
-    amrex::Real m_cfl = amrex::Real(0.5);
-    amrex::Real m_fixed_dt = amrex::Real(-1.);
-    amrex::Real m_init_shrink = amrex::Real(0.1);
-    amrex::Real m_dt_change_max = amrex::Real(1.1);
+    double m_cfl = 0.5;
+    double m_fixed_dt = -1.0;
+    double m_init_shrink = 0.1;
+    double m_dt_change_max = 1.1;
 
     // Initial projection / iterations
     bool m_do_initial_proj          = true;
@@ -600,16 +607,16 @@ private:
     amrex::Real m_papa_reg = 0.0;
     //! Lower bound on the strain rate used by the power-law viscosity, so that
     //! eta = mu*sr^(n-1) stays finite (and non-zero) at zero strain rate
-    amrex::Real m_sr_floor = 1.e-9;
+    amrex::Real m_sr_floor = amrex::Real(1.e-9);
     amrex::Real m_eta_0 = 0.0;
 
     int m_plot_int = -1;
 
     // Dump plotfiles at as close as possible to the designated period *without* changing dt
-    amrex::Real m_plot_per_approx = -1.0;
+    double m_plot_per_approx = -1.0;
 
     // Dump plotfiles at exactcly the designated period by changing dt
-    amrex::Real m_plot_per_exact  = -1.0;
+    double m_plot_per_exact  = -1.0;
 
     int m_last_plt = -1;
     std::string m_plot_file{"plt"};
@@ -638,7 +645,7 @@ private:
     // smallplotfile allows users to output certain variables at a different frequency.
     // Off by default.
     int m_smallplot_int = -1;
-    amrex::Real m_smallplot_per_approx = -1.0;
+    double m_smallplot_per_approx = -1.0;
     // No smallplot_per_exact because it requires changing the timestep
     int m_last_smallplt = -1;
     bool m_smallplotfile_on_restart = false;
@@ -983,8 +990,8 @@ private:
     void Advance ();
     [[nodiscard]] bool writeNow () {
         return writeNow(m_plot_int, m_plot_per_approx, m_plot_per_exact); }
-    [[nodiscard]] bool writeNow (int a_plot_int, amrex::Real a_plot_per_approx,
-                                 amrex::Real a_plot_per_exact) const;
+    [[nodiscard]] bool writeNow (int a_plot_int, double a_plot_per_approx,
+                                 double a_plot_per_exact) const;
 
     ///////////////////////////////////////////////////////////////////////////
     //

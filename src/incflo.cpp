@@ -53,7 +53,7 @@ void incflo::InitData ()
 
         // This is an AmrCore member function which recursively makes new levels
         // with MakeNewLevelFromScratch.
-        InitFromScratch(m_cur_time);
+        InitFromScratch(cur_time_real());
 
 #ifdef AMREX_USE_EB
         if (!EBFactory(0).isAllRegular()) {
@@ -147,7 +147,7 @@ void incflo::Evolve()
         if (m_regrid_int > 0 && m_nstep > 0 && m_nstep%m_regrid_int == 0)
         {
             if (m_verbose > 0) amrex::Print() << "Regridding...\n";
-            regrid(0, m_cur_time);
+            regrid(0, cur_time_real());
             if (m_verbose > 0 && ParallelDescriptor::IOProcessor()) {
                 printGridSummary(amrex::OutStream(), 0, finest_level);
             }
@@ -289,7 +289,7 @@ void incflo::MakeNewLevelFromScratch (int lev, Real time, const BoxArray& new_gr
 }
 
 bool
-incflo::writeNow(int a_plot_int, Real a_plot_per_approx, Real a_plot_per_exact) const
+incflo::writeNow(int a_plot_int, double a_plot_per_approx, double a_plot_per_exact) const
 {
     bool write_now = false;
 
@@ -312,8 +312,8 @@ incflo::writeNow(int a_plot_int, Real a_plot_per_approx, Real a_plot_per_exact) 
         // the counter, because we have indeed reached the next a_plot_per_approx interval
         // at this point.
 
-        const Real eps = std::numeric_limits<Real>::epsilon() * Real(10.0) * std::abs(m_cur_time);
-        const Real next_plot_time = (num_per_old + 1) * a_plot_per_approx;
+        const double eps = std::numeric_limits<double>::epsilon() * 10.0 * std::abs(m_cur_time);
+        const double next_plot_time = (num_per_old + 1) * a_plot_per_approx;
 
         if ((num_per_new == num_per_old) && std::abs(m_cur_time - next_plot_time) <= eps)
         {

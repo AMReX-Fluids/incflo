@@ -187,7 +187,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         } // end m_godunov_include_diff_in_forcing
 
         if (nghost_force() > 0)
-            fillpatch_force(m_cur_time, vel_forces, nghost_force());
+            fillpatch_force(cur_time_real(), vel_forces, nghost_force());
 
         // Note that for conservative tracers, this is forcing for (rho s)
         // and for non-conservative, this is forcing for s
@@ -198,12 +198,12 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 for (int lev = 0; lev <= finest_level; ++lev)
                     MultiFab::Add(*tra_forces[lev], m_leveldata[lev]->laps_o, 0, 0, m_ntrac, 0);
             if (nghost_force() > 0)
-                fillpatch_force(m_cur_time, tra_forces, nghost_force());
+                fillpatch_force(cur_time_real(), tra_forces, nghost_force());
         }
 
         if (m_use_temperature)
         {
-            compute_tem_forces(m_cur_time, tem_forces);
+            compute_tem_forces(cur_time_real(), tem_forces);
             for (int lev = 0; lev <= finest_level; ++lev) {
                 auto& ld = *m_leveldata[lev];
 #ifdef _OPENMP
@@ -233,14 +233,14 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                 }
             }
             if (nghost_force() > 0) {
-                fillpatch_force(m_cur_time, tem_forces, nghost_force()); }
+                fillpatch_force(cur_time_real(), tem_forces, nghost_force()); }
         }
 
     } // end m_advection_type
 
     for (int lev = 0; lev <= finest_level; ++lev)
     {
-        Real time_nph = m_cur_time + Real(0.5)*m_dt;
+        Real time_nph = real_time(m_cur_time + 0.5*m_dt);
         if (nghost_mac() > 0)
         {
             // FillPatch umac.
@@ -672,7 +672,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                          : m_advect_momentum
                                                              ? rhovel_f.const_array()
                                                              : vel_forces[lev]->const_array(mfi),
-                                                     geom[lev], m_dt,
+                                                     geom[lev], dt_real(),
                                                      get_velocity_bcrec(),
                                                      get_velocity_bcrec_device_ptr(),
                                                      get_velocity_iconserv_device_ptr(),
@@ -710,7 +710,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                                       v_mac[lev]->const_array(mfi),
                                                                       w_mac[lev]->const_array(mfi)),
                                                          divu_arr, Array4<Real const>{},
-                                                         geom[lev], m_dt,
+                                                         geom[lev], dt_real(),
                                                          get_density_bcrec(),
                                                          get_density_bcrec_device_ptr(),
                                                          get_density_iconserv_device_ptr(),
@@ -778,7 +778,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                        w_mac[lev]->const_array(mfi)),
                                           divu_arr,
                                           (!tra_forces.empty()) ? tra_forces[lev]->const_array(mfi) : Array4<Real const>{},
-                                          geom[lev], m_dt,
+                                          geom[lev], dt_real(),
                                           get_tracer_bcrec(),
                                           get_tracer_bcrec_device_ptr(),
                                           get_tracer_iconserv_device_ptr(),
@@ -820,7 +820,7 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
                                                        w_mac[lev]->const_array(mfi)),
                                           divu_arr,
                                           (!tem_forces.empty()) ? tem_forces[lev]->const_array(mfi) : Array4<Real const>{},
-                                          geom[lev], m_dt,
+                                          geom[lev], dt_real(),
                                           get_temperature_bcrec(),
                                           get_temperature_bcrec_device_ptr(),
                                           m_iconserv_temperature_d.data(),
