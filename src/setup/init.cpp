@@ -15,6 +15,11 @@ void incflo::ReadParameters ()
     pp.query("stop_time", m_stop_time);
     pp.query("max_step", m_max_step);
     pp.query("steady_state", m_steady_state);
+    if (m_steady_state) {
+        // SteadyStateReached() is a stub that Aborts, so refuse the option up
+        // front instead of taking one step (with the stop_time cap disabled) first.
+        amrex::Abort("steady_state = 1: SteadyStateReached() is not implemented yet");
+    }
     }
 
     { // Prefix amr

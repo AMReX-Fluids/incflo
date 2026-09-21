@@ -1166,8 +1166,10 @@ void incflo::init_burggraf (Box const& vbx, Box const& /*gbx*/,
 {
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        Real x = (Real(i)+Real(0.5))*dx[0] - Real(0.5);
-        Real y = (Real(j)+Real(0.5))*dx[1] - Real(0.5);
+        // Same cell coordinates as the probtype-16 forcing (incflo_compute_forces.cpp),
+        // the lid profile (prob_bc.H) and DiffFromExact: the cavity is [0,1]^2.
+        Real x = (Real(i)+Real(0.5))*dx[0];
+        Real y = (Real(j)+Real(0.5))*dx[1];
         vel(i,j,k,0) =  Real(8) * (x*x*x*x - Real(2) * x*x*x + x*x) * (Real(4)*y*y*y - Real(2)*y);
         vel(i,j,k,1) = -Real(8) * (Real(4)*x*x*x - Real(6) * x*x + Real(2)*x) * (y*y*y*y - y*y);
 #if (AMREX_SPACEDIM == 3)

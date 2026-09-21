@@ -33,6 +33,15 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                  info_solve, ebfact);
         m_eb_scal_solve_op->setMaxOrder(m_mg_maxorder);
 
+        if (m_incflo->m_use_temperature)
+        {
+            m_eb_tem_solve_op = std::make_unique<MLEBABecLap>(m_incflo->Geom(0,finest_level),
+                                                     m_incflo->boxArray(0,finest_level),
+                                                     m_incflo->DistributionMap(0,finest_level),
+                                                     info_solve, ebfact);
+            m_eb_tem_solve_op->setMaxOrder(m_mg_maxorder);
+        }
+
         if (!m_incflo->useTensorSolve())
         {
             m_eb_vel_solve_op = std::make_unique<MLEBABecLap>(m_incflo->Geom(0,finest_level),
@@ -51,6 +60,15 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
                                                      m_incflo->DistributionMap(0,finest_level),
                                                      info_apply, ebfact);
             m_eb_scal_apply_op->setMaxOrder(m_mg_maxorder);
+
+            if (m_incflo->m_use_temperature)
+            {
+                m_eb_tem_apply_op = std::make_unique<MLEBABecLap>(m_incflo->Geom(0,finest_level),
+                                                         m_incflo->boxArray(0,finest_level),
+                                                         m_incflo->DistributionMap(0,finest_level),
+                                                         info_apply, ebfact);
+                m_eb_tem_apply_op->setMaxOrder(m_mg_maxorder);
+            }
         }
 
         if ( (m_incflo->need_divtau() && !m_incflo->useTensorSolve()) ||
@@ -135,8 +153,10 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
                                    Vector<MultiFab*> const& eb_dirichlet,
                                    amrex::Vector<int> const& use_chi,
                                    amrex::Vector<amrex::BCRec> bcrec,
-                                   Real dt)
+                                   Real dt,
+                                   bool is_temperature)
 {
+    amrex::ignore_unused(is_temperature);
     //
     // Solves
     //      [alpha a - beta div ( b grad )] sca = RHS
@@ -168,6 +188,12 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
 
     const int finest_level = m_incflo->finestLevel();
 
+#ifdef AMREX_USE_EB
+    // Tracer and temperature must not share an EB op (see the header)
+    MLEBABecLap* eb_op = is_temperature ? m_eb_tem_solve_op.get()
+                                        : m_eb_scal_solve_op.get();
+#endif
+
     Vector<MultiFab> rhs_c(finest_level+1);
     // Note only conservative uses this rhs_c container
     for (int lev = 0; lev <= finest_level; ++lev) {
@@ -175,14 +201,14 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
     }
 
 #ifdef AMREX_USE_EB
-    if (m_eb_scal_solve_op)
+    if (eb_op)
     {
-        m_eb_scal_solve_op->setScalars(1.0, dt);
+        eb_op->setScalars(1.0, dt);
         for (int lev = 0; lev <= finest_level; ++lev) {
             if ( use_chi[0] ) {
-                m_eb_scal_solve_op->setACoeffs(lev, *chi[lev]);
+                eb_op->setACoeffs(lev, *chi[lev]);
             } else {
-                m_eb_scal_solve_op->setACoeffs(lev, 1.0);
+                eb_op->setACoeffs(lev, 1.0);
             }
         }
     }
@@ -202,16 +228,16 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
     for (int comp = 0; comp < a_scalar[0]->nComp(); ++comp)
     {
 #ifdef AMREX_USE_EB
-        if (m_eb_scal_solve_op)
+        if (eb_op)
         {
-            m_eb_scal_solve_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
-                                                                            bcrec[0].lo()),
-                                            m_incflo->get_diffuse_scalar_bc(Orientation::high,
-                                                                            bcrec[0].hi()));
+            eb_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
+                                                               bcrec[0].lo()),
+                               m_incflo->get_diffuse_scalar_bc(Orientation::high,
+                                                               bcrec[0].hi()));
 
             if ( m_incflo->m_has_mixedBC && comp>0 ) {
                 // Must reset scalars (and Acoef, done below) to reuse solver with Robin BC
-                m_eb_scal_solve_op->setScalars(1.0, dt);
+                eb_op->setScalars(1.0, dt);
             }
 
             for (int lev = 0; lev <= finest_level; ++lev) {
@@ -219,9 +245,9 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
                 if (comp > 0 &&
                     ( m_incflo->m_has_mixedBC || (use_chi[comp] != use_chi[comp-1]) ) ) {
                     if ( use_chi[comp] ) {
-                        m_eb_scal_solve_op->setACoeffs(lev, *chi[lev]);
+                        eb_op->setACoeffs(lev, *chi[lev]);
                     } else {
-                        m_eb_scal_solve_op->setACoeffs(lev, 1.0);
+                        eb_op->setACoeffs(lev, 1.0);
                     }
                 }
 
@@ -230,12 +256,12 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
                     // single component of eta that we are solving for
                     MultiFab phi (*eb_dirichlet[lev], amrex::make_alias, comp, 1);
                     MultiFab beta(*eta[lev]          , amrex::make_alias, comp, 1);
-                    m_eb_scal_solve_op->setEBDirichlet(lev, phi, beta);
+                    eb_op->setEBDirichlet(lev, phi, beta);
                 } // else use default homogeneous Neumann on EB
 
 
                 Array<MultiFab,AMREX_SPACEDIM> b = m_incflo->average_scalar_eta_to_faces(lev, comp, *eta[lev]);
-                m_eb_scal_solve_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
+                eb_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
             }
         }
         else
@@ -286,19 +312,19 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
             }
 
 #ifdef AMREX_USE_EB
-            if (m_eb_scal_solve_op) {
+            if (eb_op) {
                 if ( m_incflo->m_has_mixedBC ) {
                     auto const robin = m_incflo->make_robinBC_MFs(lev, &phi[lev]);
 
-                    m_eb_scal_solve_op->setLevelBC(lev, &phi[lev],
-                                                   &robin[0], &robin[1], &robin[2]);
+                    eb_op->setLevelBC(lev, &phi[lev],
+                                      &robin[0], &robin[1], &robin[2]);
                 }
                 else {
-                    m_eb_scal_solve_op->setLevelBC(lev, &phi[lev]);
+                    eb_op->setLevelBC(lev, &phi[lev]);
                 }
 
                 // For when we use the stencil for centroid values
-                // m_eb_scal_solve_op->setPhiOnCentroid();
+                // eb_op->setPhiOnCentroid();
             } else
 #endif
             {
@@ -307,7 +333,7 @@ DiffusionScalarOp::diffuse_scalar (Vector<MultiFab*> const& a_scalar,
         }
 
 #ifdef AMREX_USE_EB
-        MLMG mlmg(m_eb_scal_solve_op ? static_cast<MLLinOp&>(*m_eb_scal_solve_op) : static_cast<MLLinOp&>(*m_reg_scal_solve_op));
+        MLMG mlmg(eb_op ? static_cast<MLLinOp&>(*eb_op) : static_cast<MLLinOp&>(*m_reg_scal_solve_op));
 #else
         MLMG mlmg(*m_reg_scal_solve_op);
 #endif
@@ -492,15 +518,20 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
                                       Vector<MultiFab const*> const& a_scalar,
                                       Vector<MultiFab const*> const& a_eta,
                                       Vector<MultiFab*> const& eb_dirichlet,
-                                      amrex::Vector<amrex::BCRec> bcrec)
+                                      amrex::Vector<amrex::BCRec> bcrec,
+                                      bool is_temperature)
 {
     BL_PROFILE("DiffusionScalarOp::compute_laps");
+    amrex::ignore_unused(is_temperature);
 
     int finest_level = m_incflo->finestLevel();
     int n_comp = a_laps[0]->nComp();
 
 #ifdef AMREX_USE_EB
-    if (m_eb_scal_apply_op)
+    // Tracer and temperature must not share an EB op (see the header)
+    MLEBABecLap* eb_op = is_temperature ? m_eb_tem_apply_op.get()
+                                        : m_eb_scal_apply_op.get();
+    if (eb_op)
     {
         Vector<MultiFab> laps_tmp(finest_level+1);
         int tmp_comp = (m_incflo->m_redistribution_type == "StateRedist") ? 3 : 2;
@@ -514,22 +545,22 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
 
         // We want to return div (mu grad)) phi
-        m_eb_scal_apply_op->setScalars(0.0, -1.0);
+        eb_op->setScalars(0.0, -1.0);
 
         // For when we use the stencil for centroid values
-        // m_eb_scal_apply_op->setPhiOnCentroid();
+        // eb_op->setPhiOnCentroid();
 
         for (int comp = 0; comp < n_comp; ++comp) {
-            m_eb_scal_apply_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
-                                                                            bcrec[comp].lo()),
-                                            m_incflo->get_diffuse_scalar_bc(Orientation::high,
-                                                                            bcrec[comp].hi()));
+            eb_op->setDomainBC(m_incflo->get_diffuse_scalar_bc(Orientation::low,
+                                                               bcrec[comp].lo()),
+                               m_incflo->get_diffuse_scalar_bc(Orientation::high,
+                                                               bcrec[comp].hi()));
 
             int eta_comp = comp;
 
             if ( m_incflo->m_has_mixedBC && comp>0 ){
                 // Must reset scalars to reuse solver with Robin BC
-                m_eb_scal_apply_op->setScalars(0.0, -1.0);
+                eb_op->setScalars(0.0, -1.0);
             }
 
             Vector<MultiFab> laps_comp;
@@ -540,35 +571,31 @@ void DiffusionScalarOp::compute_laps (Vector<MultiFab*> const& a_laps,
 
                 // Use the same EB BC as the implicit solve in diffuse_scalar,
                 // otherwise the explicit and implicit diffusion terms are
-                // inconsistent at the EB.  NOTE that, exactly as for the solve
-                // op, this op is shared by the tracer and temperature passes and
-                // MLEBABecLap has no way to revert an EB Dirichlet BC back to
-                // Neumann, so if only one of tracer_eb/temperature_eb is defined
-                // the other pass will see the EB phi left by the first.
+                // inconsistent at the EB.
                 if (lev < static_cast<int>(eb_dirichlet.size()) && !eb_dirichlet[lev]->empty()) {
                     MultiFab phi_eb (*eb_dirichlet[lev], amrex::make_alias, comp    , 1);
                     MultiFab beta_eb(*a_eta[lev]       , amrex::make_alias, eta_comp, 1);
-                    m_eb_scal_apply_op->setEBDirichlet(lev, phi_eb, beta_eb);
+                    eb_op->setEBDirichlet(lev, phi_eb, beta_eb);
                 } // else use default homogeneous Neumann on EB
 
                 Array<MultiFab,AMREX_SPACEDIM>
                     b = m_incflo->average_scalar_eta_to_faces(lev, eta_comp, *a_eta[lev]);
 
-                m_eb_scal_apply_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
+                eb_op->setBCoeffs(lev, GetArrOfConstPtrs(b), MLMG::Location::FaceCentroid);
 
                 if ( m_incflo->m_has_mixedBC ) {
 
                     auto const robin = m_incflo->make_robinBC_MFs(lev, &scalar_comp[lev]);
 
-                    m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev],
-                                                   &robin[0], &robin[1], &robin[2]);
+                    eb_op->setLevelBC(lev, &scalar_comp[lev],
+                                      &robin[0], &robin[1], &robin[2]);
                 }
                 else {
-                    m_eb_scal_apply_op->setLevelBC(lev, &scalar_comp[lev]);
+                    eb_op->setLevelBC(lev, &scalar_comp[lev]);
                 }
             }
 
-            MLMG mlmg(*m_eb_scal_apply_op);
+            MLMG mlmg(*eb_op);
             mlmg.apply(GetVecOfPtrs(laps_comp), GetVecOfPtrs(scalar_comp));
         }
 
