@@ -208,6 +208,12 @@ incflo::compute_MAC_projected_velocities (
             velBC_MF = make_BC_MF(lev, m_bcrec_velocity_d, "velocity");
         }
 
+        // On a direction_dependent face IncfloVelFill writes the prescribed velocity
+        // into the ghost cell only where it points into the domain; on the outflow
+        // part it copies the interior cell, which is 0 here because
+        // time_dep_inflow_vel was zeroed above.  The inflow tests below must
+        // therefore be strict, otherwise the outflow part of the face is treated as
+        // zero inflow and the extrapolated outflow velocity is lost.
         for (MFIter mfi(time_dep_inflow_vel,false); mfi.isValid(); ++mfi)
         {
             Box const& bx = mfi.validbox();
@@ -222,11 +228,11 @@ incflo::compute_MAC_projected_velocities (
                 int n = 0;
                 const auto bc = HydroBC::getBC(i, j, k, n, domain, bc_vel_d, velbc_arr);
                 if (i == dlo.x && ( bc.lo(0) == BCType::ext_dir ||
-                                   (bc.lo(0) == BCType::direction_dependent && cc_arr(i-1,j,k,0) >= Real(0.0)) ) ) {
+                                   (bc.lo(0) == BCType::direction_dependent && cc_arr(i-1,j,k,0) >  Real(0.0)) ) ) {
                     umac_arr(i,j,k) = cc_arr(i-1,j,k,0);
                 }
                 if (i == dhi.x && ( bc.hi(0) == BCType::ext_dir ||
-                                   (bc.hi(0) == BCType::direction_dependent && cc_arr(i+1,j,k,0) <= Real(0.0)) ) ) {
+                                   (bc.hi(0) == BCType::direction_dependent && cc_arr(i+1,j,k,0) <  Real(0.0)) ) ) {
                     umac_arr(i+1,j,k) = cc_arr(i+1,j,k,0);
                 }
             });
@@ -236,11 +242,11 @@ incflo::compute_MAC_projected_velocities (
                 int n = 1;
                 const auto bc = HydroBC::getBC(i, j, k, n, domain, bc_vel_d, velbc_arr);
                 if (j == dlo.y && ( bc.lo(1) == BCType::ext_dir||
-                                   (bc.lo(1) == BCType::direction_dependent && cc_arr(i,j-1,k,1) >= Real(0.0)) ) ) {
+                                   (bc.lo(1) == BCType::direction_dependent && cc_arr(i,j-1,k,1) >  Real(0.0)) ) ) {
                     vmac_arr(i,j,k) = cc_arr(i,j-1,k,1);
                 }
                 if (j == dhi.y && ( bc.hi(1) == BCType::ext_dir ||
-                                   (bc.hi(1) == BCType::direction_dependent && cc_arr(i,j+1,k,1) <= Real(0.0)) ) ) {
+                                   (bc.hi(1) == BCType::direction_dependent && cc_arr(i,j+1,k,1) <  Real(0.0)) ) ) {
                     vmac_arr(i,j+1,k) = cc_arr(i,j+1,k,1);
                 }
             });
@@ -251,11 +257,11 @@ incflo::compute_MAC_projected_velocities (
                 int n = 2;
                 const auto bc = HydroBC::getBC(i, j, k, n, domain, bc_vel_d, velbc_arr);
                 if (k == dlo.z && ( bc.lo(2) == BCType::ext_dir ||
-                                   (bc.lo(2) == BCType::direction_dependent && cc_arr(i,j,k-1,2) >= Real(0.0)) ) ) {
+                                   (bc.lo(2) == BCType::direction_dependent && cc_arr(i,j,k-1,2) >  Real(0.0)) ) ) {
                     wmac_arr(i,j,k) = cc_arr(i,j,k-1,2);
                 }
                 if (k == dhi.z && ( bc.hi(2) == BCType::ext_dir ||
-                                   (bc.hi(2) == BCType::direction_dependent && cc_arr(i,j,k+1,2) <= Real(0.0)) ) ) {
+                                   (bc.hi(2) == BCType::direction_dependent && cc_arr(i,j,k+1,2) <  Real(0.0)) ) ) {
                     wmac_arr(i,j,k+1) = cc_arr(i,j,k+1,2);
                 }
             });
