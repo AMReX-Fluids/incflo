@@ -80,7 +80,7 @@ incflo::compute_laps_T(Vector<MultiFab      *> const& laps,
                        Vector<MultiFab const*> const& eta)
 {
     get_diffusion_scalar_op()->compute_laps(laps, scalar, eta, get_temperature_eb(),
-                                            get_temperature_bcrec());
+                                            get_temperature_bcrec(), true);
 }
 
 void
@@ -103,7 +103,7 @@ incflo::diffuse_temperature(Vector<MultiFab      *> const& temperature,
     get_diffusion_scalar_op()->diffuse_scalar(temperature, rhocp, eta,
                                               get_temperature_eb(),
                                               {1} /* use rhocp */,
-                                              get_temperature_bcrec(), dt_diff);
+                                              get_temperature_bcrec(), dt_diff, true);
 }
 
 void

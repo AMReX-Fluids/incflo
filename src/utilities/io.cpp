@@ -149,6 +149,12 @@ void incflo::ReadCheckpointFile()
     // Finest level
     is >> finest_level;
     GotoNextLine(is);
+    if (finest_level > max_level) {
+        // grids/dmap/m_leveldata/m_t_new are sized max_level+1
+        amrex::Abort("ReadCheckpointFile: checkpoint finest_level ("
+                     + std::to_string(finest_level) + ") exceeds amr.max_level ("
+                     + std::to_string(max_level) + ")");
+    }
 
     // Step count
     is >> m_nstep;
