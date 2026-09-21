@@ -5,6 +5,95 @@
 #include <AMReX_Geometry.H>
 #include <AMReX_PhysBCFunct.H>
 
+// Normal velocity prescribed on a domain face, including the probtype-specific
+// inflow profiles.  Every fill functor uses this so that the direction_dependent
+// inflow/outflow decision is the same for velocity, density, tracer and
+// temperature.  (Probtype 16 is a moving wall, not an inflow, and so is handled
+// in IncfloVelFill directly.)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+amrex::Real incflo_bc_normal_velocity (int probtype, amrex::Orientation face,
+                                       int i, int j, int k,
+                                       amrex::Box const& domain_box, amrex::Real time,
+                                       amrex::GpuArray<amrex::GpuArray<amrex::Real, AMREX_SPACEDIM>, AMREX_SPACEDIM*2> const& bcv_vel)
+{
+    amrex::ignore_unused(i,j,k,time);
+    const int dir = face.coordDir();
+    amrex::Real norm_vel = bcv_vel[face][dir];
+
+    if (dir == 0 && face.isLow())
+    {
+        if (42 == probtype)
+        {
+            norm_vel = time;
+        }
+        else if (31 == probtype)
+        {
+            amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1)/domain_box.length(1));
+            norm_vel = amrex::Real(6.) * y * (amrex::Real(1)-y);
+        }
+        else if (43 == probtype)
+        {
+            amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
+            norm_vel = amrex::Real(6) * y * (amrex::Real(1)-y) - amrex::Real(1);
+        }
+#if (AMREX_SPACEDIM == 3)
+        else if (311 == probtype)
+        {
+            amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1)/domain_box.length(2));
+            norm_vel = amrex::Real(6.) * z * (amrex::Real(1)-z);
+        }
+        else if (41 == probtype)
+        {
+            amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1)/domain_box.length(2));
+            norm_vel = amrex::Real(0.5) * z;
+        }
+#endif
+    }
+    else if (dir == 0 && face.isHigh())
+    {
+        if (42 == probtype)
+        {
+            norm_vel = time;
+        }
+        else if (43 == probtype)
+        {
+            amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
+            norm_vel = amrex::Real(6) * y * (amrex::Real(1.0)-y) - amrex::Real(1);
+        }
+    }
+    else if (dir == 1 && face.isLow())
+    {
+#if (AMREX_SPACEDIM == 3)
+        if (32 == probtype)
+        {
+            amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
+            norm_vel *= amrex::Real(6.) * z * (amrex::Real(1.0)-z);
+        }
+#endif
+        if (322 == probtype)
+        {
+            amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
+            norm_vel *= amrex::Real(6.) * x * (amrex::Real(1.0)-x);
+        }
+    }
+#if (AMREX_SPACEDIM == 3)
+    else if (dir == 2 && face.isLow())
+    {
+        if (33 == probtype)
+        {
+            amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
+            norm_vel *= amrex::Real(6.0) * x * (amrex::Real(1.0)-x);
+        }
+        else if (333 == probtype)
+        {
+            amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
+            norm_vel *= amrex::Real(6.0) * y * (amrex::Real(1.0)-y);
+        }
+    }
+#endif
+    return norm_vel;
+}
+
 struct IncfloVelFill
 {
     int probtype;
@@ -44,35 +133,9 @@ struct IncfloVelFill
             if (i < domain_box.smallEnd(0))
             {
                 int dir = 0;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][dir];
-
-                // This may modify the normal velocity for specific problems
-                if (42 == probtype)
-                {
-                    norm_vel = time;
-                }
-                else if (31 == probtype)
-                {
-                    amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1)/domain_box.length(1));
-                    norm_vel = amrex::Real(6.) * y * (amrex::Real(1)-y);
-                }
-                else if (43 == probtype)
-                {
-                    amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
-                    norm_vel = amrex::Real(6) * y * (amrex::Real(1)-y) - amrex::Real(1);
-                }
-#if (AMREX_SPACEDIM == 3)
-                else if (311 == probtype)
-                {
-                    amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1)/domain_box.length(2));
-                    norm_vel = amrex::Real(6.) * z * (amrex::Real(1)-z);
-                }
-                else if (41 == probtype)
-                {
-                    amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1)/domain_box.length(2));
-                    norm_vel = amrex::Real(0.5) * z;
-                }
-#endif
+                amrex::Real norm_vel = incflo_bc_normal_velocity(probtype,
+                    amrex::Orientation(amrex::Direction::x,amrex::Orientation::low),
+                    i, j, k, domain_box, time, bcv_vel);
 
                 // This is a special case -- all the logic is contained here
                 if (1101 == probtype)
@@ -103,18 +166,9 @@ struct IncfloVelFill
             if (i > domain_box.bigEnd(0))
             {
                 int dir = 0;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][dir];
-
-                // This may modify the normal velocity for specific problems
-                if (42 == probtype)
-                {
-                    norm_vel = time;
-                }
-                else if (43 == probtype)
-                {
-                    amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
-                    norm_vel = amrex::Real(6) * y * (amrex::Real(1.0)-y) - amrex::Real(1);
-                }
+                amrex::Real norm_vel = incflo_bc_normal_velocity(probtype,
+                    amrex::Orientation(amrex::Direction::x,amrex::Orientation::high),
+                    i, j, k, domain_box, time, bcv_vel);
 
                 // This is a special case -- all the logic is contained here
                 if (1101 == probtype)
@@ -145,21 +199,9 @@ struct IncfloVelFill
             if (j < domain_box.smallEnd(1))
             {
                 int dir = 1;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][dir];
-
-                // This may modify the normal velocity for specific problems
-#if (AMREX_SPACEDIM == 3)
-                if (32 == probtype)
-                {
-                    amrex::Real z = amrex::Real(k+0.5)*(amrex::Real(1.0)/domain_box.length(2));
-                    norm_vel *= amrex::Real(6.) * z * (amrex::Real(1.0)-z);
-                }
-#endif
-                if (322 == probtype)
-                {
-                    amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
-                    norm_vel *= amrex::Real(6.) * x * (amrex::Real(1.0)-x);
-                }
+                amrex::Real norm_vel = incflo_bc_normal_velocity(probtype,
+                    amrex::Orientation(amrex::Direction::y,amrex::Orientation::low),
+                    i, j, k, domain_box, time, bcv_vel);
 
                 if ( (bc.lo(dir) == amrex::BCType::ext_dir) ||
                      (bc.lo(dir) == amrex::BCType::direction_dependent && norm_vel >= 0.) )
@@ -182,14 +224,9 @@ struct IncfloVelFill
             if (j > domain_box.bigEnd(1))
             {
                 int dir = 1;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][dir];
-
-                // This may modify the normal velocity for specific problems
-                if (16 == probtype)
-                {
-                    amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
-                    norm_vel = amrex::Real(16) * (x*x*x*x - amrex::Real(2) * x*x*x + x*x);
-                }
+                amrex::Real norm_vel = incflo_bc_normal_velocity(probtype,
+                    amrex::Orientation(amrex::Direction::y,amrex::Orientation::high),
+                    i, j, k, domain_box, time, bcv_vel);
 
 #if (AMREX_SPACEDIM == 3)
                 if (1102 == probtype)
@@ -207,6 +244,12 @@ struct IncfloVelFill
                     {
                         if ( orig_comp+nc == dir ) {
                             vel(i,j,k,dcomp+nc) = norm_vel;
+                        } else if (16 == probtype && orig_comp+nc == 0) {
+                            // Burggraf lid: the prescribed profile is the *tangential*
+                            // velocity u = 16 x^2 (1-x)^2 on the high-y wall; the normal
+                            // velocity keeps the wall value.
+                            amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
+                            vel(i,j,k,dcomp+nc) = amrex::Real(16) * (x*x*x*x - amrex::Real(2) * x*x*x + x*x);
                         } else {
                             vel(i,j,k,dcomp+nc) =  bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][orig_comp+nc];
                         }
@@ -225,19 +268,9 @@ struct IncfloVelFill
             if (k < domain_box.smallEnd(2))
             {
                 int dir = 2;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][dir];
-
-                // This may modify the normal velocity for specific problems
-                if (33 == probtype)
-                {
-                    amrex::Real x = amrex::Real(i+0.5)*(amrex::Real(1.0)/domain_box.length(0));
-                    norm_vel *= amrex::Real(6.0) * x * (amrex::Real(1.0)-x);
-                }
-                else if (333 == probtype)
-                {
-                    amrex::Real y = amrex::Real(j+0.5)*(amrex::Real(1.0)/domain_box.length(1));
-                    norm_vel *= amrex::Real(6.0) * y * (amrex::Real(1.0)-y);
-                }
+                amrex::Real norm_vel = incflo_bc_normal_velocity(probtype,
+                    amrex::Orientation(amrex::Direction::z,amrex::Orientation::low),
+                    i, j, k, domain_box, time, bcv_vel);
 
                 // This is a special case -- all the logic is contained here
                 if (1100 == probtype)
@@ -270,7 +303,9 @@ struct IncfloVelFill
             if (k > domain_box.bigEnd(2))
             {
                 int dir = 2;
-                amrex::Real norm_vel = bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][dir];
+                amrex::Real norm_vel = incflo_bc_normal_velocity(probtype,
+                    amrex::Orientation(amrex::Direction::z,amrex::Orientation::high),
+                    i, j, k, domain_box, time, bcv_vel);
 
                 // This is a special case -- all the logic is contained here
                 if (1100 == probtype)
@@ -314,7 +349,7 @@ struct IncfloDenFill
     AMREX_GPU_DEVICE
     void operator() (const amrex::IntVect& iv, amrex::Array4<amrex::Real> const& rho,
                      const int /*dcomp*/, const int /*numcomp*/,
-                     amrex::GeometryData const& geom, const amrex::Real /*time*/,
+                     amrex::GeometryData const& geom, const amrex::Real time,
                      const amrex::BCRec* bcr, const int bcomp,
                      const int /*orig_comp*/) const
     {
@@ -381,47 +416,74 @@ struct IncfloDenFill
         else if ( (i < domain_box.smallEnd(0)) &&
                   ( (bc.lo(0) == amrex::BCType::ext_dir) ||
                     (bc.lo(0) == amrex::BCType::direction_dependent &&
-                     bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][0] >= 0.) ) )
+                     incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::x,amrex::Orientation::low), i, j, k, domain_box, time, bcv_vel) >= 0.) ) )
         {
             rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)];
         }
         else if ( (i > domain_box.bigEnd(0)) &&
                   ( (bc.hi(0) == amrex::BCType::ext_dir) ||
                     (bc.hi(0) == amrex::BCType::direction_dependent &&
-                     bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][0] <= 0.) ) )
+                     incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::x,amrex::Orientation::high), i, j, k, domain_box, time, bcv_vel) <= 0.) ) )
         {
             rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)];
+        }
+        // Outflow part of a direction_dependent face: extrapolate the interior cell.
+        // Nobody else fills these ghost cells -- filcc has no case for
+        // BCType::direction_dependent -- so without this they keep stale data.
+        else if ( (i < domain_box.smallEnd(0)) && (bc.lo(0) == amrex::BCType::direction_dependent) )
+        {
+            rho(i,j,k) = rho(domain_box.smallEnd(0),j,k);
+        }
+        else if ( (i > domain_box.bigEnd(0)) && (bc.hi(0) == amrex::BCType::direction_dependent) )
+        {
+            rho(i,j,k) = rho(domain_box.bigEnd(0),j,k);
         }
 
         if ( (j < domain_box.smallEnd(1)) &&
               ( (bc.lo(1) == amrex::BCType::ext_dir) ||
                 (bc.lo(1) == amrex::BCType::direction_dependent &&
-                 bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][1] >= 0.) ) )
+                 incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::y,amrex::Orientation::low), i, j, k, domain_box, time, bcv_vel) >= 0.) ) )
         {
             rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)];
         }
         else if ( (j > domain_box.bigEnd(1)) &&
                   ( (bc.hi(1) == amrex::BCType::ext_dir) ||
                     (bc.hi(1) == amrex::BCType::direction_dependent &&
-                     bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][1] <= 0.) ) )
+                     incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::y,amrex::Orientation::high), i, j, k, domain_box, time, bcv_vel) <= 0.) ) )
         {
             rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
+        }
+        else if ( (j < domain_box.smallEnd(1)) && (bc.lo(1) == amrex::BCType::direction_dependent) )
+        {
+            rho(i,j,k) = rho(i,domain_box.smallEnd(1),k);
+        }
+        else if ( (j > domain_box.bigEnd(1)) && (bc.hi(1) == amrex::BCType::direction_dependent) )
+        {
+            rho(i,j,k) = rho(i,domain_box.bigEnd(1),k);
         }
 #if (AMREX_SPACEDIM == 3)
          if ( (k < domain_box.smallEnd(2)) &&
               ( (bc.lo(2) == amrex::BCType::ext_dir) ||
                 (bc.lo(2) == amrex::BCType::direction_dependent &&
-                 bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][2] >= 0.) ) )
+                 incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::z,amrex::Orientation::low), i, j, k, domain_box, time, bcv_vel) >= 0.) ) )
         {
             rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)];
+        }
+        else if ( (k < domain_box.smallEnd(2)) && (bc.lo(2) == amrex::BCType::direction_dependent) )
+        {
+            rho(i,j,k) = rho(i,j,domain_box.smallEnd(2));
         }
 
         if ( (k > domain_box.bigEnd(2)) &&
                   ( (bc.hi(2) == amrex::BCType::ext_dir) ||
                     (bc.hi(2) == amrex::BCType::direction_dependent &&
-                     bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][2] <= 0.) ) )
+                     incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::z,amrex::Orientation::high), i, j, k, domain_box, time, bcv_vel) <= 0.) ) )
         {
             rho(i,j,k) = bcv_den[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)];
+        }
+        else if ( (k > domain_box.bigEnd(2)) && (bc.hi(2) == amrex::BCType::direction_dependent) )
+        {
+            rho(i,j,k) = rho(i,j,domain_box.bigEnd(2));
         }
 #endif
     }
@@ -442,7 +504,7 @@ struct IncfloTracFill
     AMREX_GPU_DEVICE
     void operator() (const amrex::IntVect& iv, amrex::Array4<amrex::Real> const& tracer,
                      const int /*dcomp*/, const int /*numcomp*/,
-                     amrex::GeometryData const& geom, const amrex::Real /*time*/,
+                     amrex::GeometryData const& geom, const amrex::Real time,
                      const amrex::BCRec* bcr, const int bcomp,
                      const int /*orig_comp*/) const
     {
@@ -511,46 +573,73 @@ struct IncfloTracFill
             else if ( (i < domain_box.smallEnd(0)) &&
                       ( (bc.lo(0) == amrex::BCType::ext_dir) ||
                         (bc.lo(0) == amrex::BCType::direction_dependent &&
-                         bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][0] >= 0.) ) )
+                         incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::x,amrex::Orientation::low), i, j, k, domain_box, time, bcv_vel) >= 0.) ) )
             {
                 tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][n];
             }
             else if ( (i > domain_box.bigEnd(0)) &&
                       ( (bc.hi(0) == amrex::BCType::ext_dir) ||
                         (bc.hi(0) == amrex::BCType::direction_dependent &&
-                         bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][0] <= 0.) ) )
+                         incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::x,amrex::Orientation::high), i, j, k, domain_box, time, bcv_vel) <= 0.) ) )
             {
                 tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][n];
+            }
+            // Outflow part of a direction_dependent face: extrapolate the interior cell.
+            // Nobody else fills these ghost cells -- filcc has no case for
+            // BCType::direction_dependent -- so without this they keep stale data.
+            else if ( (i < domain_box.smallEnd(0)) && (bc.lo(0) == amrex::BCType::direction_dependent) )
+            {
+                tracer(i,j,k,n) = tracer(domain_box.smallEnd(0),j,k,n);
+            }
+            else if ( (i > domain_box.bigEnd(0)) && (bc.hi(0) == amrex::BCType::direction_dependent) )
+            {
+                tracer(i,j,k,n) = tracer(domain_box.bigEnd(0),j,k,n);
             }
 
             if ( (j < domain_box.smallEnd(1)) &&
                   ( (bc.lo(1) == amrex::BCType::ext_dir) ||
                     (bc.lo(1) == amrex::BCType::direction_dependent &&
-                     bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][1] >= 0.) ) )
+                     incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::y,amrex::Orientation::low), i, j, k, domain_box, time, bcv_vel) >= 0.) ) )
             {
                 tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][n];
             }
             else if ( (j > domain_box.bigEnd(1)) &&
                       ( (bc.hi(1) == amrex::BCType::ext_dir) ||
                         (bc.hi(1) == amrex::BCType::direction_dependent &&
-                         bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][1] <= 0.) ) )
+                         incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::y,amrex::Orientation::high), i, j, k, domain_box, time, bcv_vel) <= 0.) ) )
             {
                 tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][n];
+            }
+            else if ( (j < domain_box.smallEnd(1)) && (bc.lo(1) == amrex::BCType::direction_dependent) )
+            {
+                tracer(i,j,k,n) = tracer(i,domain_box.smallEnd(1),k,n);
+            }
+            else if ( (j > domain_box.bigEnd(1)) && (bc.hi(1) == amrex::BCType::direction_dependent) )
+            {
+                tracer(i,j,k,n) = tracer(i,domain_box.bigEnd(1),k,n);
             }
 #if (AMREX_SPACEDIM == 3)
             if ( (k < domain_box.smallEnd(2)) &&
                  ( (bc.lo(2) == amrex::BCType::ext_dir) ||
                    (bc.lo(2) == amrex::BCType::direction_dependent &&
-                    bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][2] >= 0.) ) )
+                    incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::z,amrex::Orientation::low), i, j, k, domain_box, time, bcv_vel) >= 0.) ) )
             {
                 tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][n];
             }
             else if ( (k > domain_box.bigEnd(2)) &&
                       ( (bc.hi(2) == amrex::BCType::ext_dir) ||
                         (bc.hi(2) == amrex::BCType::direction_dependent &&
-                         bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][2] <= 0.) ) )
+                         incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::z,amrex::Orientation::high), i, j, k, domain_box, time, bcv_vel) <= 0.) ) )
             {
                 tracer(i,j,k,n) = bcv_tra[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][n];
+            }
+            else if ( (k < domain_box.smallEnd(2)) && (bc.lo(2) == amrex::BCType::direction_dependent) )
+            {
+                tracer(i,j,k,n) = tracer(i,j,domain_box.smallEnd(2),n);
+            }
+            else if ( (k > domain_box.bigEnd(2)) && (bc.hi(2) == amrex::BCType::direction_dependent) )
+            {
+                tracer(i,j,k,n) = tracer(i,j,domain_box.bigEnd(2),n);
             }
 #endif
         }
@@ -572,7 +661,7 @@ struct IncfloTempFill
     AMREX_GPU_DEVICE
     void operator() (const amrex::IntVect& iv, amrex::Array4<amrex::Real> const& temperature,
                      const int /*dcomp*/, const int /*numcomp*/,
-                     amrex::GeometryData const& geom, const amrex::Real /*time*/,
+                     amrex::GeometryData const& geom, const amrex::Real time,
                      const amrex::BCRec* bcr, const int bcomp,
                      const int /*orig_comp*/) const
     {
@@ -639,46 +728,73 @@ struct IncfloTempFill
         else if ( (i < domain_box.smallEnd(0)) &&
                   ( (bc.lo(0) == amrex::BCType::ext_dir) ||
                     (bc.lo(0) == amrex::BCType::direction_dependent &&
-                     bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)][0] >= 0.) ) )
+                     incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::x,amrex::Orientation::low), i, j, k, domain_box, time, bcv_vel) >= 0.) ) )
         {
             temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::x,amrex::Orientation::low)];
         }
         else if ( (i > domain_box.bigEnd(0)) &&
                   ( (bc.hi(0) == amrex::BCType::ext_dir) ||
                     (bc.hi(0) == amrex::BCType::direction_dependent &&
-                     bcv_vel[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)][0] <= 0.) ) )
+                     incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::x,amrex::Orientation::high), i, j, k, domain_box, time, bcv_vel) <= 0.) ) )
         {
             temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::x,amrex::Orientation::high)];
+        }
+        // Outflow part of a direction_dependent face: extrapolate the interior cell.
+        // Nobody else fills these ghost cells -- filcc has no case for
+        // BCType::direction_dependent -- so without this they keep stale data.
+        else if ( (i < domain_box.smallEnd(0)) && (bc.lo(0) == amrex::BCType::direction_dependent) )
+        {
+            temperature(i,j,k) = temperature(domain_box.smallEnd(0),j,k);
+        }
+        else if ( (i > domain_box.bigEnd(0)) && (bc.hi(0) == amrex::BCType::direction_dependent) )
+        {
+            temperature(i,j,k) = temperature(domain_box.bigEnd(0),j,k);
         }
 
         if ( (j < domain_box.smallEnd(1)) &&
              ( (bc.lo(1) == amrex::BCType::ext_dir) ||
                (bc.lo(1) == amrex::BCType::direction_dependent &&
-                bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)][1] >= 0.) ) )
+                incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::y,amrex::Orientation::low), i, j, k, domain_box, time, bcv_vel) >= 0.) ) )
         {
             temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::y,amrex::Orientation::low)];
         }
         else if ( (j > domain_box.bigEnd(1)) &&
                   ( (bc.hi(1) == amrex::BCType::ext_dir) ||
                     (bc.hi(1) == amrex::BCType::direction_dependent &&
-                     bcv_vel[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)][1] <= 0.) ) )
+                     incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::y,amrex::Orientation::high), i, j, k, domain_box, time, bcv_vel) <= 0.) ) )
         {
             temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::y,amrex::Orientation::high)];
+        }
+        else if ( (j < domain_box.smallEnd(1)) && (bc.lo(1) == amrex::BCType::direction_dependent) )
+        {
+            temperature(i,j,k) = temperature(i,domain_box.smallEnd(1),k);
+        }
+        else if ( (j > domain_box.bigEnd(1)) && (bc.hi(1) == amrex::BCType::direction_dependent) )
+        {
+            temperature(i,j,k) = temperature(i,domain_box.bigEnd(1),k);
         }
 #if (AMREX_SPACEDIM == 3)
         if ( (k < domain_box.smallEnd(2)) &&
              ( (bc.lo(2) == amrex::BCType::ext_dir) ||
                (bc.lo(2) == amrex::BCType::direction_dependent &&
-                bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)][2] >= 0.) ) )
+                incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::z,amrex::Orientation::low), i, j, k, domain_box, time, bcv_vel) >= 0.) ) )
         {
             temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::z,amrex::Orientation::low)];
         }
         else if ( (k > domain_box.bigEnd(2)) &&
                   ( (bc.hi(2) == amrex::BCType::ext_dir) ||
                     (bc.hi(2) == amrex::BCType::direction_dependent &&
-                     bcv_vel[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)][2] <= 0.) ) )
+                     incflo_bc_normal_velocity(probtype, amrex::Orientation(amrex::Direction::z,amrex::Orientation::high), i, j, k, domain_box, time, bcv_vel) <= 0.) ) )
         {
             temperature(i,j,k) = bcv_tem[amrex::Orientation(amrex::Direction::z,amrex::Orientation::high)];
+        }
+        else if ( (k < domain_box.smallEnd(2)) && (bc.lo(2) == amrex::BCType::direction_dependent) )
+        {
+            temperature(i,j,k) = temperature(i,j,domain_box.smallEnd(2));
+        }
+        else if ( (k > domain_box.bigEnd(2)) && (bc.hi(2) == amrex::BCType::direction_dependent) )
+        {
+            temperature(i,j,k) = temperature(i,j,domain_box.bigEnd(2));
         }
 #endif
     }

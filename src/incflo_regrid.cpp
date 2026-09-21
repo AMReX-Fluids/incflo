@@ -59,10 +59,6 @@ void incflo::MakeNewLevelFromCoarse (int lev,
 #else
     macproj = std::make_unique<Hydro::MacProjector>(Geom(0,lev));
 #endif
-
-#ifdef INCFLO_USE_PARTICLES
-    particleData.Redistribute();
-#endif
 }
 
 // Remake an existing level using provided BoxArray and DistributionMapping and
@@ -119,10 +115,6 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
                       MLMG::Location::CellCenter  ); // Location of solution variable phi
 #else
     macproj = std::make_unique<Hydro::MacProjector>(Geom(0,finest_level));
-#endif
-
-#ifdef INCFLO_USE_PARTICLES
-    particleData.Redistribute();
 #endif
 }
 

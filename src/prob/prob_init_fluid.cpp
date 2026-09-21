@@ -1035,11 +1035,30 @@ void incflo::init_plane_poiseuille (Box const& vbx, Box const& /*gbx*/,
             if (nt > 2 && i <= dhi.x*3/4) tracer(i,j,k,2) = 3.0;
         });
     }
-    else if (42 == m_probtype || 43 == m_probtype)
+    else if (42 == m_probtype)
     {
         ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             vel(i,j,k,0) = 0.0;
+            const int nt = tracer.nComp();
+            for (int n = 0; n < nt; ++n) {
+                tracer(i,j,k,n) = 0.0;
+            }
+        });
+    }
+    else if (43 == m_probtype)
+    {
+        // Start from the zero-net-flux in/out profile that IncfloVelFill imposes on
+        // the x faces (prob_bc.H), so that the outflow part of the direction_dependent
+        // boundary has a non-zero velocity when the initial projection enforces
+        // in/out solvability.
+        ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            Real y = Real(j+0.5)*dyinv;
+            AMREX_D_TERM(vel(i,j,k,0) = Real(6.0) * y * (Real(1.0)-y) - Real(1.0);,
+                         vel(i,j,k,1) = Real(0.0);,
+                         vel(i,j,k,2) = Real(0.0););
+
             const int nt = tracer.nComp();
             for (int n = 0; n < nt; ++n) {
                 tracer(i,j,k,n) = 0.0;
