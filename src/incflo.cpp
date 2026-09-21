@@ -170,6 +170,13 @@ void incflo::Evolve()
         {
             if (m_verbose > 0) amrex::Print() << "Regridding...\n";
             regrid(0, m_cur_time);
+#ifdef INCFLO_USE_PARTICLES
+            // This must be done after regrid() returns: inside RemakeLevel /
+            // MakeNewLevelFromCoarse the ParGDB still sees the old BoxArray,
+            // DistributionMapping and finest_level, so a Redistribute there would
+            // map the particles onto the pre-regrid layout.
+            particleData.Redistribute();
+#endif
             if (m_verbose > 0 && ParallelDescriptor::IOProcessor()) {
                 printGridSummary(amrex::OutStream(), 0, finest_level);
             }

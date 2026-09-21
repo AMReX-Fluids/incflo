@@ -229,7 +229,10 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // **************************************************************************************
     // Update the particle positions
     // **************************************************************************************
-    if (m_advection_type != "MOL") {
+    // Not during the initial pressure iterations: the fields are reset after each
+    // of those, but the particle positions would not be, so the particles would
+    // start the run m_initial_iterations*dt ahead of the fluid.
+    if (m_advection_type != "MOL" && !incremental_projection) {
         evolveTracerParticles(AMREX_D_DECL(GetVecOfConstPtrs(u_mac), GetVecOfConstPtrs(v_mac),
                                            GetVecOfConstPtrs(w_mac)));
     }

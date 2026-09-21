@@ -52,6 +52,51 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion, double cur_
 
        compute_vel_forces_on_level (lev, vel_forces, vel, rho, tra_o, tra);
 
+       // Explicit-diffusion bound: the largest diffusivity that is applied
+       // explicitly, divided by rho.  We must use the strain-rate dependent
+       // viscosity here (not just the constant m_mu) and we must cover the tracer
+       // and temperature diffusivities as well, since those are updated explicitly
+       // with the same m_diff_type switch.  Covered cells are set to zero.
+       MultiFab nu;
+       if (explicit_diffusion) {
+           nu.define(grids[lev], dmap[lev], 1, 0, MFInfo(), Factory(lev));
+           compute_viscosity_at_level(lev, &nu, &m_leveldata[lev]->density,
+                                      &m_leveldata[lev]->velocity, geom[lev],
+                                      m_cur_time, 0);
+           Real mu_s_max = Real(0.0);
+           if (m_advect_tracer) {
+               for (int n = 0; n < m_ntrac; ++n) {
+                   mu_s_max = amrex::max(mu_s_max, m_mu_s[n]);
+               }
+           }
+           Real mu_T_eff = m_use_temperature ? m_mu_T / m_cp : Real(0.0);
+#ifdef AMREX_USE_EB
+           auto const& dt_flags = EBFactory(lev).getMultiEBCellFlagFab();
+#endif
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+           for (MFIter mfi(nu,TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+               Box const& bx = mfi.tilebox();
+               Array4<Real> const& nu_a = nu.array(mfi);
+               Array4<Real const> const& r = rho.const_array(mfi);
+#ifdef AMREX_USE_EB
+               Array4<EBCellFlag const> const& f = dt_flags.const_array(mfi);
+#endif
+               ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+               {
+#ifdef AMREX_USE_EB
+                   if (f(i,j,k).isCovered()) { nu_a(i,j,k) = Real(0.0); return; }
+#endif
+                   Real rinv = Real(1.0)/r(i,j,k);
+                   // Velocity and temperature diffuse with eta/rho and mu_T/(rho cp);
+                   // a non-conservative tracer diffuses with mu_s itself.
+                   nu_a(i,j,k) = amrex::max(amrex::max(nu_a(i,j,k), mu_T_eff)*rinv,
+                                            mu_s_max*amrex::max(Real(1.0), rinv));
+               });
+           }
+       }
+
 #ifdef AMREX_USE_EB
         if (!vel.isAllRegular()) {
             auto const& flag = EBFactory(lev).getMultiEBCellFlagFab();
@@ -72,22 +117,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion, double cur_
                            return mx;
                        });
             if (explicit_diffusion) {
-                diff_lev = amrex::ReduceMax(rho, flag, 0,
-                           [=] AMREX_GPU_HOST_DEVICE (Box const& b,
-                                                      Array4<Real const> const& r,
-                                                      Array4<EBCellFlag const> const& f) -> Real
-                          {
-                              Real mx = Real(-1.0);
-                              amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
-                              {
-                                  if (!f(i,j,k).isCovered()) {
-                                      Real rho_inv = Real(1.0)/r(i,j,k);
-                                      mx = amrex::max(rho_inv, mx);
-                                  }
-                              });
-                              return mx;
-                          });
-                diff_lev *= m_mu;
+                diff_lev = nu.max(0, 0, true);
             }
 
             // Forcing term -- old way of computing
@@ -131,19 +161,7 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion, double cur_
                        });
 
             if (explicit_diffusion) {
-                diff_lev = amrex::ReduceMax(rho, 0,
-                           [=] AMREX_GPU_HOST_DEVICE (Box const& b,
-                                                      Array4<Real const> const& r) -> Real
-                           {
-                               Real mx = Real(-1.0);
-                               amrex::Loop(b, [=,&mx] (int i, int j, int k) noexcept
-                               {
-                                   Real rho_inv = Real(1.0)/r(i,j,k);
-                                   mx = amrex::max(rho_inv, mx);
-                               });
-                               return mx;
-                           });
-                diff_lev *= m_mu;
+                diff_lev = nu.max(0, 0, true);
             }
 
             // Forcing term -- old way of computing
