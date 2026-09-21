@@ -79,7 +79,7 @@ void incflo::InitData ()
 
         // xxxxx TODO averagedown ???
 
-        if (m_check_int > 0) { WriteCheckPointFile(); }
+        if (m_check_int > 0) { WriteCheckPointFile(); m_last_chk = 0; }
 
         // Plot initial distribution
         if (m_plot_int > 0 || m_plot_per_exact > 0 || m_plot_per_approx > 0)
@@ -98,6 +98,11 @@ void incflo::InitData ()
         // Read starting configuration from chk file.
         ReadCheckpointFile();
 
+        // The checkpoint just read is the checkpoint for this step; without this
+        // the final-output block in Evolve() rewrites it (renaming the original to
+        // *.old.*) when the restart does not take any steps.
+        m_last_chk = m_nstep;
+
 #ifdef INCFLO_USE_PARTICLES
         particleData.Redistribute();
 #endif
@@ -105,12 +110,12 @@ void incflo::InitData ()
         if (m_plotfile_on_restart)
         {
             WritePlotFile();
-            m_last_plt = 0;
+            m_last_plt = m_nstep;
         }
         if (m_smallplotfile_on_restart)
         {
             WriteSmallPlotFile();
-            m_last_smallplt = 0;
+            m_last_smallplt = m_nstep;
         }
     }
 

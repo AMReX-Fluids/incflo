@@ -6,7 +6,9 @@ void incflo::update_density (StepType step_type)
 {
     BL_PROFILE("incflo::update_density");
 
-    int ng = (step_type == StepType::Corrector) ? 0 : 1;
+    // One ghost cell in both passes: ApplyCCProjection averages density_nph to
+    // faces and reads its ghost cells, so the corrector must refresh them too.
+    const int ng = 1;
 
     Real l_dt = m_dt;
 
