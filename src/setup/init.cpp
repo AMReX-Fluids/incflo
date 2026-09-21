@@ -57,8 +57,8 @@ void incflo::ReadParameters ()
 
         // This limits dt growth per time step
         pp.query("dt_change_max", m_dt_change_max);
-        if ( m_dt_change_max < 1.0 || m_dt_change_max > 1.1 ) {
-            amrex::Abort("We require 1. < dt_change_max <= 1.1");
+        if ( m_dt_change_max < 1.0_rt || m_dt_change_max > 1.1_rt ) {
+            amrex::Abort("We require 1. <= dt_change_max <= 1.1");
         }
 
         // Physics
@@ -452,7 +452,7 @@ void incflo::InitialIterations ()
 
     int ng = nghost_state();
     for (int lev = 0; lev <= finest_level; ++lev) {
-            fillpatch_velocity(lev, m_cur_time, m_leveldata[lev]->velocity, ng);
+        fillpatch_velocity(lev, m_cur_time, m_leveldata[lev]->velocity, ng);
         fillpatch_density(lev, m_cur_time, m_leveldata[lev]->density, ng);
         if (m_advect_tracer) {
             fillpatch_tracer(lev, m_cur_time, m_leveldata[lev]->tracer, ng);
@@ -469,7 +469,7 @@ void incflo::InitialIterations ()
 
     int initialisation = 1;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
-    ComputeDt(initialisation, explicit_diffusion);
+    ComputeDt(initialisation, explicit_diffusion, m_cur_time);
 
     if (m_verbose && m_initial_iterations > 0)
     {

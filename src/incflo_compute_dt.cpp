@@ -1,5 +1,6 @@
 #include <incflo.H>
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -22,7 +23,7 @@ using namespace amrex;
 //
 // WARNING: We use a slightly modified version of C in the implementation below
 //
-void incflo::ComputeDt (int initialization, bool explicit_diffusion)
+void incflo::ComputeDt (int initialization, bool explicit_diffusion, double cur_time)
 {
     BL_PROFILE("incflo::ComputeDt");
 
@@ -241,19 +242,29 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
         dt_new = amrex::min( dt_new, allowed_change_factor * amrex::max(m_prev_dt, m_prev_prev_dt) );
     }
 
-    // Don't overshoot specified plot times
-    if(m_plot_per_exact > Real(0.0) &&
-            (std::trunc((m_cur_time + dt_new + eps) / m_plot_per_exact) > std::trunc((m_cur_time + eps) / m_plot_per_exact)))
+    // Do not overshoot specified plot times. Use double-precision cur_time
+    // so single-precision builds do not clip because of accumulated time drift.
+    if (m_plot_per_exact > Real(0.0))
     {
-        dt_new = std::trunc((m_cur_time + dt_new) / m_plot_per_exact) * m_plot_per_exact - m_cur_time;
+        double const plot_per_exact = m_plot_per_exact;
+        double const dt_new_d = dt_new;
+        double const eps_d = eps;
+        if (std::trunc((cur_time + dt_new_d + eps_d) / plot_per_exact) >
+            std::trunc((cur_time + eps_d) / plot_per_exact))
+        {
+            dt_new = static_cast<Real>(
+                std::trunc((cur_time + dt_new_d) / plot_per_exact) * plot_per_exact - cur_time);
+        }
     }
 
-    // Don't overshoot the final time if not running to steady state
-    if(!m_steady_state && m_stop_time > Real(0.0))
+    // Do not overshoot the final time if not running to steady state.
+    if (!m_steady_state && m_stop_time > Real(0.0))
     {
-        if(m_cur_time + dt_new > m_stop_time)
+        double const stop_time = m_stop_time;
+        double const dt_new_d = dt_new;
+        if (cur_time + dt_new_d > stop_time)
         {
-            dt_new = m_stop_time - m_cur_time;
+            dt_new = static_cast<Real>(stop_time - cur_time);
         }
     }
 
@@ -266,16 +277,16 @@ void incflo::ComputeDt (int initialization, bool explicit_diffusion)
     // If using fixed time step, check CFL condition and give warning if not satisfied
     if (m_fixed_dt > Real(0.0))
     {
-    if(dt_new < m_fixed_dt)
-    {
-        amrex::Print() << "WARNING: fixed_dt does not satisfy CFL condition: \n"
-                       << "max dt by CFL     : " << dt_new << "\n"
-                       << "fixed dt specified: " << m_fixed_dt << "\n";
-    }
-    m_dt = m_fixed_dt;
+        if(dt_new < m_fixed_dt)
+        {
+            amrex::Print() << "WARNING: fixed_dt does not satisfy CFL condition: \n"
+                           << "max dt by CFL     : " << dt_new << "\n"
+                           << "fixed dt specified: " << m_fixed_dt << "\n";
+        }
+        m_dt = m_fixed_dt;
     }
     else
     {
-    m_dt = dt_new;
+        m_dt = dt_new;
     }
 }

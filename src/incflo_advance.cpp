@@ -2,7 +2,7 @@
 
 using namespace amrex;
 
-void incflo::Advance()
+void incflo::Advance(double cur_time)
 {
     BL_PROFILE("incflo::Advance");
 
@@ -29,13 +29,13 @@ void incflo::Advance()
     // Compute time step size
     int initialisation = ( m_dt < 0 );
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
-    ComputeDt(initialisation, explicit_diffusion);
+    ComputeDt(initialisation, explicit_diffusion, cur_time);
 
     // Set new and old time to correctly use in fillpatching
     for(int lev = 0; lev <= finest_level; lev++)
     {
-        m_t_old[lev] = m_cur_time;
-        m_t_new[lev] = m_cur_time + m_dt;
+        m_t_old[lev] = static_cast<Real>(cur_time);
+        m_t_new[lev] = static_cast<Real>(cur_time + m_dt);
     }
 
     if (m_verbose > 0)
@@ -86,12 +86,12 @@ void incflo::Advance()
     particleData.Redistribute();
 #endif
 
-    // // This sums over all levels
-    // if (m_test_tracer_conservation) {
-    //     Real sum = volumeWeightedSum(get_tracer_new_const(),0,geom,ref_ratio);
-    //     amrex::Print() << "Sum tracer volume wgt2 = " << m_cur_time+m_dt << " " <<
-    //                        sum << "\n";
-    // }
+    // This sums over all levels
+    if (m_test_tracer_conservation) {
+        Real sum = amrex::volumeWeightedSum(get_tracer_new_const(), 0, Geom(), refRatio());
+        amrex::Print() << "Sum tracer volume wgt = " << m_cur_time+m_dt << " " <<
+            sum << "\n";
+    }
 
     // Stop timing current time step
     Real end_step = static_cast<Real>(ParallelDescriptor::second()) - strt_step;

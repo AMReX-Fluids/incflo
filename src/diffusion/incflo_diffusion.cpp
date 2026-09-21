@@ -310,6 +310,7 @@ incflo::average_velocity_eta_to_faces (int lev, MultiFab const& cc_eta) const
     //      (this should be the same for scalar and eta)
     EB_interp_CellCentroid_to_FaceCentroid (cc_eta, GetArrOfPtrs(r), 0, 0, 1, geom[lev],
                                             get_tracer_bcrec());
+    EB_set_covered_faces(GetArrOfPtrs(r), Real(0.0));
     // amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc_eta, Geom(lev));
 #else
     amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc_eta, Geom(lev));
@@ -335,6 +336,7 @@ incflo::average_scalar_eta_to_faces (int lev, int comp, MultiFab const& cc_eta) 
 #ifdef AMREX_USE_EB
     EB_interp_CellCentroid_to_FaceCentroid (cc, GetArrOfPtrs(r), 0, 0, 1, geom[lev],
                                             get_tracer_bcrec());
+    EB_set_covered_faces(GetArrOfPtrs(r), Real(0.0));
 #else
     amrex::average_cellcenter_to_face(GetArrOfPtrs(r), cc, Geom(lev));
 #endif

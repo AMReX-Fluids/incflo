@@ -90,7 +90,7 @@ public:
     // Delete level data
     void ClearLevel (int lev) override;
 
-    void ComputeDt (int initialization, bool explicit_diffusion);
+    void ComputeDt (int initialization, bool explicit_diffusion, double cur_time);
 
     amrex::Real vol_wgt_sum (amrex::Vector<amrex::MultiFab*> const& mf, int icomp);
 
@@ -600,7 +600,7 @@ private:
     amrex::Real m_papa_reg = 0.0;
     //! Lower bound on the strain rate used by the power-law viscosity, so that
     //! eta = mu*sr^(n-1) stays finite (and non-zero) at zero strain rate
-    amrex::Real m_sr_floor = 1.e-9;
+    amrex::Real m_sr_floor = amrex::Real(1.e-9);
     amrex::Real m_eta_0 = 0.0;
 
     int m_plot_int = -1;
@@ -980,7 +980,7 @@ private:
     void copy_from_old_to_new_tracer   (int lev, amrex::IntVect const& ng = amrex::IntVect{0});
     void copy_from_old_to_new_temperature (      amrex::IntVect const& ng = amrex::IntVect{0});
 
-    void Advance ();
+    void Advance (double cur_time);
     [[nodiscard]] bool writeNow () {
         return writeNow(m_plot_int, m_plot_per_approx, m_plot_per_exact); }
     [[nodiscard]] bool writeNow (int a_plot_int, amrex::Real a_plot_per_approx,
