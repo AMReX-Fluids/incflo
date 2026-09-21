@@ -351,12 +351,26 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
         cc_gphi[lev].setVal(0.);
     }
 
+    // Scratch face velocities for the projection.  The u_mac/v_mac/w_mac passed in
+    // are the caller's MAC-projected half-time velocities, which the caller still
+    // needs after this routine (tracer particle advection, small-cell correction),
+    // so they must not be overwritten here.
+    Vector<Array<MultiFab,AMREX_SPACEDIM> > umac_proj(finest_level+1);
     Vector<Array<MultiFab*,AMREX_SPACEDIM> > mac_vec(finest_level+1);
     for (int lev=0; lev <= finest_level; ++lev)
     {
-        AMREX_D_TERM(mac_vec[lev][0] = u_mac[lev];,
-                     mac_vec[lev][1] = v_mac[lev];,
-                     mac_vec[lev][2] = w_mac[lev];);
+        AMREX_D_TERM(umac_proj[lev][0].define(u_mac[lev]->boxArray(), dmap[lev], 1,
+                                              u_mac[lev]->nGrow(), MFInfo(), Factory(lev));,
+                     umac_proj[lev][1].define(v_mac[lev]->boxArray(), dmap[lev], 1,
+                                              v_mac[lev]->nGrow(), MFInfo(), Factory(lev));,
+                     umac_proj[lev][2].define(w_mac[lev]->boxArray(), dmap[lev], 1,
+                                              w_mac[lev]->nGrow(), MFInfo(), Factory(lev)););
+        AMREX_D_TERM(umac_proj[lev][0].setVal(0.);,
+                     umac_proj[lev][1].setVal(0.);,
+                     umac_proj[lev][2].setVal(0.););
+        AMREX_D_TERM(mac_vec[lev][0] = &umac_proj[lev][0];,
+                     mac_vec[lev][1] = &umac_proj[lev][1];,
+                     mac_vec[lev][2] = &umac_proj[lev][2];);
     }
 
     // Compute velocity on faces
@@ -367,7 +381,7 @@ void incflo::ApplyCCProjection (Vector<MultiFab const*> density,
         vel[lev]->FillBoundary(geom[lev].periodicity());
 #if 1
         MOL::ExtrapVelToFaces(*vel[lev],
-                              AMREX_D_DECL(*u_mac[lev], *v_mac[lev], *w_mac[lev]),
+                              AMREX_D_DECL(*mac_vec[lev][0], *mac_vec[lev][1], *mac_vec[lev][2]),
                               geom[lev],
                               get_velocity_bcrec(), get_velocity_bcrec_device_ptr());
 

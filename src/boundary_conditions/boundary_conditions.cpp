@@ -203,6 +203,12 @@ void incflo::init_bcs ()
 #ifdef AMREX_USE_EB
             // ReadParameters() already called
             if (m_advection_type != "Godunov") { amrex::Abort("mixed BCs require Godunov"); }
+            // MLTensorOp/MLEBTensorOp have no Robin BC, so the mixed BC is only
+            // supported by the component-wise velocity solve.  Catch this here rather
+            // than at the first diffusion solve of the first time step.
+            if (use_tensor_solve) {
+                amrex::Abort("mixed BCs require incflo.use_tensor_solve = false");
+            }
 
             ParmParse ipp("incflo");
             std::string eb_geom = "null";

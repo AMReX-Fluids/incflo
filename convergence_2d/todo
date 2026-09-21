@@ -4,9 +4,12 @@ rm -rf out* plt* chk*
 ../test_no_eb_2d/incflo2d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 64  64   incflo.use_mac_phi_in_godunov = false incflo.fixed_dt = 0.004 > out.64.false
 ../test_no_eb_2d/incflo2d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 128 128  incflo.use_mac_phi_in_godunov = false incflo.fixed_dt = 0.002 > out.128.false
 
-../test_no_eb_2d/incflo2d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 16  16   incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.016 > out.16.true
-../test_no_eb_2d/incflo2d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 32  32   incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.008 > out.32.true
-../test_no_eb_2d/incflo2d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 64  64   incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.004 > out.64.true
-../test_no_eb_2d/incflo2d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 128 128  incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.002 > out.128.true
+# incflo.use_mac_phi_in_godunov is not implemented (it drops grad p from the MAC
+# face prediction but nothing ever reads mac_phi back), so the runs below are
+# disabled; the code aborts if the option is set to true.
+#../test_no_eb_2d/incflo2d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 16  16   incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.016 > out.16.true
+#../test_no_eb_2d/incflo2d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 32  32   incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.008 > out.32.true
+#../test_no_eb_2d/incflo2d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 64  64   incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.004 > out.64.true
+#../test_no_eb_2d/incflo2d.gnu.MPI.ex benchmark.taylor_vortex_decaying amr.n_cell = 128 128  incflo.use_mac_phi_in_godunov = true incflo.fixed_dt = 0.002 > out.128.true
 
 source todo_print

@@ -1,6 +1,7 @@
 #include <AMReX_ParmParse.H>
 #include <AMReX_EB2.H>
 
+#include <string>
 #include <algorithm>
 #include <incflo.H>
 
@@ -86,11 +87,30 @@ void incflo::MakeEBGeometry()
         make_eb_csg(csg_file);
     }
 #endif
-    else
+    else if (geom_type.empty() || geom_type == "all_regular")
     {
         amrex::Print() << "\n No EB geometry declared in inputs => "
                        << " Will build all regular geometry." << "\n";
         make_eb_regular();
+    }
+    else
+    {
+        // An unrecognised name (a typo, a 3D-only geometry in a 2D build, or "csg"
+        // in a build without CSG support) must not silently become a regular
+        // geometry: the user asked for an embedded boundary and would get a plain
+        // box with no diagnostic.
+        std::string msg = "incflo.geometry = " + geom_type + " is not a known EB geometry";
+#ifndef CSG_EB
+        if (geom_type == "csg") {
+            msg += " in this build (csg requires a build with CSG support)";
+        }
+#endif
+#if (AMREX_SPACEDIM == 2)
+        if (geom_type == "twocylinders" || geom_type == "spherecube" || geom_type == "tuscan") {
+            msg += " in this build (it is only available in 3D)";
+        }
+#endif
+        amrex::Abort(msg);
     }
     amrex::Print() << "Done making the EB geometry index space.\n" << "\n";
 

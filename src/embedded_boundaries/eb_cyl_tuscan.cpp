@@ -76,7 +76,10 @@ void incflo::make_eb_cyl_tuscan()
     auto gshop = EB2::makeShop(twocylinders);
 
     // Build index space
-    int max_level_here = 0;
+    // geom.back() is the finest AMR level; requiring max_level coarsenings
+    // makes AMReX build EB data (including domain ghost cells) for every
+    // AMR level, as documented for EB2::Build.
+    int max_level_here = max_level;
     int max_coarsening_level = 100;
     EB2::Build(gshop, geom.back(), max_level_here, max_level_here + max_coarsening_level);
 }

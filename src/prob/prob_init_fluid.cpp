@@ -97,6 +97,12 @@ void incflo::prob_init_fluid (int lev)
         }
         else if (1100 == m_probtype || 1101 == m_probtype || 1102 == m_probtype)
         {
+#if (AMREX_SPACEDIM == 2)
+            if (1100 == m_probtype || 1102 == m_probtype) {
+                amrex::Abort("prob_init_fluid: probtypes 1100 and 1102 involve the z direction "
+                             "and need a 3D build");
+            }
+#endif
             init_jump(vbx, gbx,
                       ld.velocity.array(mfi),
                       ld.density.array(mfi),
@@ -717,32 +723,41 @@ void incflo::init_jump (Box const& vbx, Box const& /*gbx*/,
                         GpuArray<Real, AMREX_SPACEDIM> const& /*problo*/,
                         GpuArray<Real, AMREX_SPACEDIM> const& /*probhi*/) const
 {
+    // Only 1101 (jump along y, flipping u) is meaningful in 2D; 1100 and 1102 flip w
+    // / index the z direction and are refused for a 2D build in prob_init_fluid.
     int direction = 0;
     if (1101 == m_probtype) {
         direction = 1;
     }
+#if (AMREX_SPACEDIM == 3)
     else if (1102 == m_probtype) {
         direction = 2;
     }
+#endif
 
     int half_num_cells = domain.length(direction) / 2;
     ParallelFor(vbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+#if (AMREX_SPACEDIM == 3)
         if (direction == 0) {
             if (i <= half_num_cells) {
                 vel(i,j,k,2) = -vel(i,j,k,2);
             }
         }
-        else if (direction == 1) {
+        else
+#endif
+        if (direction == 1) {
             if (j <= half_num_cells) {
                 vel(i,j,k,0) = -vel(i,j,k,0);
             }
         }
+#if (AMREX_SPACEDIM == 3)
         else if (direction == 2) {
             if (k <= half_num_cells) {
                 vel(i,j,k,1) = -vel(i,j,k,1);
             }
         }
+#endif
     });
 }
 

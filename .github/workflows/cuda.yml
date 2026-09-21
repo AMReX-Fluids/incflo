@@ -129,6 +129,7 @@ jobs:
            -DINCFLO_MPI=ON                                           \
            -DINCFLO_OMP=OFF                                          \
            -DINCFLO_EB=OFF                                           \
+           -DINCFLO_PARTICLES=ON                                     \
            -DINCFLO_CUDA=ON                                          \
            -DAMReX_GPU_BACKEND=CUDA                                  \
            -DAMReX_CUDA_ARCH=70                                      \

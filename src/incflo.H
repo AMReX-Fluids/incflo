@@ -125,8 +125,6 @@ public:
     amrex::iMultiFab make_nodalBC_mask (int lev);
     amrex::Vector<amrex::MultiFab> make_robinBC_MFs(int lev, amrex::MultiFab* state = nullptr);
 
-    void set_inflow_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int nghost);
-
 #ifdef AMREX_USE_EB
     void set_eb_velocity (int lev, amrex::Real time, amrex::MultiFab& eb_vel, int nghost);
     void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
@@ -288,9 +286,6 @@ public:
                                       amrex::Array4<amrex::Real> const& robin_f,
                                       amrex::Array4<amrex::Real const> const& bcval,
                                       int lev);
-
-    void prob_set_inflow_velocity (int grid_id, amrex::Orientation ori, amrex::Box const& bx,
-                                   amrex::Array4<amrex::Real> const& v, int lev, amrex::Real time);
 
 #include "incflo_prob_I.H"
 #include "incflo_prob_usr_I.H"

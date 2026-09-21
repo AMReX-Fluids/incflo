@@ -2,6 +2,11 @@
 #include <AMReX_PlotFileUtil.H>
 #include <AMReX_buildInfo.H>
 #include <incflo.H>
+#ifdef AMREX_USE_EB
+#include <AMReX_EB2.H>
+#endif
+
+#include <cmath>
 
 using namespace amrex;
 
@@ -198,6 +203,21 @@ void incflo::ReadCheckpointFile()
 
     // Set up problem domain
     RealBox rb(prob_lo, prob_hi);
+#ifdef AMREX_USE_EB
+    // The EB index space was built in the incflo constructor from the inputs'
+    // geometry.prob_lo/prob_hi; the physical domain is about to be reset from the
+    // checkpoint header, so refuse a mismatch instead of silently leaving the EB at
+    // the wrong physical location.
+    if (!EB2::IndexSpace::top().getLevel(Geom(0)).isAllRegular()) {
+        for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+            if (std::abs(prob_lo[idim] - Geom(0).ProbLo(idim)) > Real(1.e-12) ||
+                std::abs(prob_hi[idim] - Geom(0).ProbHi(idim)) > Real(1.e-12)) {
+                amrex::Abort("ReadCheckpointFile: geometry.prob_lo/prob_hi differ from the "
+                             "checkpoint, but the EB geometry was already built from the inputs");
+            }
+        }
+    }
+#endif
     Geometry::ResetDefaultProbDomain(rb);
     for (int lev = 0; lev <= max_level; ++lev) {
         SetGeometry(lev, Geometry(Geom(lev).Domain(), rb, Geom(lev).CoordInt(),
@@ -679,9 +699,8 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
             ++icomp;
         }
         else if (vars[n] == "divu") {
-            amrex::Abort("plt_divu: xxxxx TODO");
-            pltscaVarsName.push_back("divu");
-            ++icomp;
+            // Refused in ReadIOParameters; kept here so the list stays exhaustive.
+            amrex::Abort("plotfile variable 'divu' (amr.plt_divu) is not implemented");
         }
         else if (vars[n] == "particle_count") {
 #ifdef INCFLO_USE_PARTICLES

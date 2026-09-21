@@ -62,7 +62,10 @@ void incflo::make_eb_twocylinders()
     EB2::CylinderIF cyl1(radius1, direction1, center1, false);
     EB2::CylinderIF cyl2(radius2, direction2, center2, false);
     // Build index space
-    int max_level_here = 0;
+    // geom.back() is the finest AMR level; requiring max_level coarsenings
+    // makes AMReX build EB data (including domain ghost cells) for every
+    // AMR level, as documented for EB2::Build.
+    int max_level_here = max_level;
     int max_coarsening_level = 100;
 
     // NOTE: this must not be written as a ternary -- a conditional expression has

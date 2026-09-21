@@ -23,6 +23,11 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
       conv_density_o  (ba, dm, 1                 , 0, MFInfo(), fact),
       conv_tracer_o   (ba, dm, my_incflo->m_ntrac, 0, MFInfo(), fact)
 {
+    // mac_phi is only written by the MAC projection when use_mac_phi_in_godunov is
+    // on, but it can be plotted ("macphi", "error_mac_p") on any level, including
+    // levels created by regrid or restart, so it must not hold uninitialized memory.
+    mac_phi.setVal(0.0);
+
     if (my_incflo->m_use_cc_proj) {
         p_cc.define(ba                                  , dm, 1, 1, MFInfo(), fact);
     } else {
