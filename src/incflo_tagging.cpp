@@ -156,13 +156,18 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
         //      then come back at the next regridding
         //
         const auto& particles_namelist( particleData.getNames() );
+        auto* pc = particleData[particles_namelist[0]];
+        if (pc == nullptr) {
+            amrex::Abort("incflo::ErrorEst: no particle container named "
+                         +particles_namelist[0]);
+        }
         std::unique_ptr<MultiFab> mf = std::make_unique<MultiFab>(grids[levc], dmap[levc], 1, 0);
         mf->setVal(0.0);
         IntVect rr = IntVect::TheUnitVector();
         for (int lev = levc; lev <= finest_level; lev++)
         {
             MultiFab temp_dat(grids[lev], dmap[lev], 1, 0); temp_dat.setVal(0);
-            particleData[particles_namelist[0]]->IncrementWithTotal(temp_dat, lev);
+            pc->Increment(temp_dat, lev);
 
             MultiFab temp_dat_crse(grids[levc], dmap[levc], 1, 0); temp_dat_crse.setVal(0);
 

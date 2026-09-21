@@ -705,11 +705,19 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
         else if (vars[n] == "particle_count") {
 #ifdef INCFLO_USE_PARTICLES
             const auto& particles_namelist( particleData.getNames() );
+            incflo_PC* pc = nullptr;
+            if (!particles_namelist.empty()) {
+                pc = particleData[particles_namelist[0]];
+                if (pc == nullptr) {
+                    amrex::Abort("incflo::WritePlotVariables: no particle container named "
+                                 +particles_namelist[0]);
+                }
+            }
             for (int lev = 0; lev <= finest_level; ++lev) {
                 MultiFab temp_dat(mf[lev].boxArray(), mf[lev].DistributionMap(), 1, 0);
                 temp_dat.setVal(0);
-                if (!particles_namelist.empty()) {
-                    particleData[particles_namelist[0]]->Increment(temp_dat, lev);
+                if (pc != nullptr) {
+                    pc->Increment(temp_dat, lev);
                 }
                 MultiFab::Copy(mf[lev], temp_dat, 0, icomp, 1, 0);
             }
