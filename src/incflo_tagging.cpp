@@ -160,6 +160,7 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
         if (pc == nullptr) {
             amrex::Abort("incflo::ErrorEst: no particle container named "
                          +particles_namelist[0]);
+            return; // not reached: Abort() does not return
         }
         std::unique_ptr<MultiFab> mf = std::make_unique<MultiFab>(grids[levc], dmap[levc], 1, 0);
         mf->setVal(0.0);

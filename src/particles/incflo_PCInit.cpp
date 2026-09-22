@@ -45,8 +45,6 @@ void incflo_PC::readInputs ()
 
     m_advect_w_flow = (m_name == incfloParticleNames::tracers ? true : false);
     pp.query("advect_with_flow", m_advect_w_flow);
-
-    return;
 }
 
 /*! Initialize particles in domain */
@@ -71,7 +69,6 @@ void incflo_PC::InitializeParticles (
                 << m_name << " particle species.\n";
         Error("See error message!");
     }
-    return;
 }
 
 /*! Uniform distribution: the number of particles per grid cell is specified
@@ -132,7 +129,7 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
 
         int np = 0;
         {
-            int ncell = num_particles[mfi].numPts();
+            int ncell = static_cast<int>(num_particles[mfi].numPts());
             const int* in = num_particles[mfi].dataPtr();
             int* out = offsets[mfi].dataPtr();
             np = Scan::PrefixSum<int>( ncell,
@@ -145,7 +142,7 @@ void incflo_PC::initializeParticlesUniformDistributionInBox ( const RealBox& par
 
         auto& particle_tile = DefineAndReturnParticleTile(lev, mfi);
         particle_tile.resize(np);
-        auto aos = &particle_tile.GetArrayOfStructs()[0];
+        auto* aos = &particle_tile.GetArrayOfStructs()[0];
         auto& soa = particle_tile.GetStructOfArrays();
         AMREX_D_TERM(auto* vx_ptr = soa.GetRealData(incflo_ParticlesRealIdxSoA::vx).data();,
                      auto* vy_ptr = soa.GetRealData(incflo_ParticlesRealIdxSoA::vy).data();,

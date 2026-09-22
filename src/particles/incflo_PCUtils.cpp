@@ -34,8 +34,6 @@ void incflo_PC::massDensity ( MultiFab&  a_mf,
                     return mass*inv_cell_volume;
                 });
         });
-
-    return;
 }
 
 #endif
