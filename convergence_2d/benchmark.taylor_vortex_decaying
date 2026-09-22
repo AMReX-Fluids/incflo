@@ -5,13 +5,12 @@ stop_time               =   0.2         # Max (simulated) time to evolve
 max_step                =  -1           # Max number of time steps
 steady_state            =   0           # Steady-state solver? 
 
-incflo.use_godunov = true               #
+incflo.advection_type = "Godunov"  #
 incflo.use_ppm     = true               #
 incflo.use_mac_phi_in_godunov = false   #
 
 incflo.initial_iterations = 10
 
-incflo.v = 4
 incflo.verbose = 4
 
 amr.max_grid_size = 1024

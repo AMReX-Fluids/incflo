@@ -1,3 +1,8 @@
+# WARNING: as shipped this deck has no flow driver (fully periodic, zero initial
+#          velocity, zero gravity and zero delp), because the rotating cylinders
+#          that cylinder.speed below was meant to prescribe are not implemented.
+#          It therefore simulates a fluid at rest.
+
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
@@ -47,7 +52,9 @@ annulus.outer_radius    =   4.0         # Outer cylinder radius
 annulus.inner_radius    =   1.0         # Inner cylinder radius
 annulus.outer_center    =   5.0 5.0 0.  # Outer cylinder center
 annulus.inner_center    =   5.0 5.0 0.  # Inner cylinder center
-cylinder.speed          =   0.1 
+# NOTE: a rotating EB wall is not implemented -- nothing in incflo reads
+#       cylinder.speed, so this key is kept only as a record of the intent.
+# cylinder.speed          =   0.1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #          NUMERICAL PARAMETERS         #

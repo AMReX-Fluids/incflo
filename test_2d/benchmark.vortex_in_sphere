@@ -32,7 +32,7 @@ incflo.mu               =   0.0         # Dynamic viscosity coefficient
 amr.n_cell              =   64  64      # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
 amr.v = 1
-incflo.v = 1
+incflo.verbose = 1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #

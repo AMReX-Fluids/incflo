@@ -72,7 +72,9 @@ class incflo_PC : public amrex::ParticleContainer<  incflo_ParticlesRealIdxAoS::
         {
             BL_PROFILE("incflo_PC::incflo_PC()");
             m_name = a_name;
-            readInputs();
+            // Qualified so that this is a static call: a derived class is not yet
+            // constructed here, so virtual dispatch would not reach its override.
+            incflo_PC::readInputs();
         }
 
         /*! Constructor */
@@ -88,7 +90,9 @@ class incflo_PC : public amrex::ParticleContainer<  incflo_ParticlesRealIdxAoS::
         {
             BL_PROFILE("incflo_PC::incflo_PC()");
             m_name = a_name;
-            readInputs();
+            // Qualified so that this is a static call: a derived class is not yet
+            // constructed here, so virtual dispatch would not reach its override.
+            incflo_PC::readInputs();
         }
 
         /*! Initialize particles in domain */
@@ -102,9 +106,9 @@ class incflo_PC : public amrex::ParticleContainer<  incflo_ParticlesRealIdxAoS::
          *  responsible for calling Redistribute() once all levels are done */
         virtual void EvolveParticles (int,
                                       amrex::Real,
-                                      AMREX_D_DECL(const amrex::MultiFab* a_u_mac,
-                                                   const amrex::MultiFab* a_v_mac,
-                                                   const amrex::MultiFab* a_w_mac));
+                                      AMREX_D_DECL(const amrex::MultiFab* a_umac,
+                                                   const amrex::MultiFab* a_vmac,
+                                                   const amrex::MultiFab* a_wmac));
 
         /*! Get real-type particle attribute names */
         virtual amrex::Vector<std::string> varNames () const
@@ -123,9 +127,9 @@ class incflo_PC : public amrex::ParticleContainer<  incflo_ParticlesRealIdxAoS::
         /*! Uses midpoint method to advance particles using flow velocity. */
         virtual void AdvectWithFlow ( int,
                                       amrex::Real,
-                                      AMREX_D_DECL(const amrex::MultiFab* a_u_mac,
-                                                   const amrex::MultiFab* a_v_mac,
-                                                   const amrex::MultiFab* a_w_mac));
+                                      AMREX_D_DECL(const amrex::MultiFab* a_umac,
+                                                   const amrex::MultiFab* a_vmac,
+                                                   const amrex::MultiFab* a_wmac));
 
         /*! Compute mass density */
         virtual void massDensity ( amrex::MultiFab&, const int&, const int& a_comp = 0) const;
@@ -153,7 +157,7 @@ class incflo_PC : public amrex::ParticleContainer<  incflo_ParticlesRealIdxAoS::
         // public due to CUDA extended lambda capture rules
 
         /*! Default particle initialization */
-        void initializeParticlesUniformDistributionInBox ( const amrex::RealBox& particle_box
+        void initializeParticlesUniformDistributionInBox ( const amrex::RealBox& particle_init_domain
 #ifdef AMREX_USE_EB
                                                           ,amrex::EBFArrayBoxFactory const& ebfact
 #endif

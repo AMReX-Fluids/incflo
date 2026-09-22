@@ -50,7 +50,9 @@ cylinder.internal_flow  =   false
 cylinder.radius         =   0.5  
 cylinder.direction      =   2
 cylinder.center         =   3.  3.  .0 
-cylinder.speed          =   0.15
+# NOTE: a rotating EB wall is not implemented -- nothing in incflo reads
+#       cylinder.speed, so this key is kept only as a record of the intent.
+# cylinder.speed          =   0.15
 
 # Boundary conditions
 ylo.type                =   "nsw"

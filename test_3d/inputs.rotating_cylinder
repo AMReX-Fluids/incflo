@@ -1,3 +1,8 @@
+# WARNING: as shipped this deck has no flow driver (fully periodic, probtype 0,
+#          zero initial velocity, zero gravity and no delp), because the rotating
+#          cylinder that cylinder.speed below was meant to prescribe is not
+#          implemented.  It therefore simulates a fluid at rest.
+
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #            SIMULATION STOP            #
 #.......................................#
@@ -48,7 +53,9 @@ cylinder.internal_flow  =   false
 cylinder.radius         =   0.5  
 cylinder.direction      =   2
 cylinder.center         =   3.  3.  .0 
-cylinder.speed          =   0.1 
+# NOTE: a rotating EB wall is not implemented -- nothing in incflo reads
+#       cylinder.speed, so this key is kept only as a record of the intent.
+# cylinder.speed          =   0.1
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #

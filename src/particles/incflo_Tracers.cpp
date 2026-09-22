@@ -11,14 +11,13 @@ void incflo::readTracerParticlesParams ()
 {
     ParmParse pp("incflo");
 
-    m_use_tracer_particles = 0;
+    m_use_tracer_particles = false;
 
-    pp.query(std::string("use_"+incfloParticleNames::tracers).c_str(), m_use_tracer_particles);
+    pp.query("use_"+incfloParticleNames::tracers, m_use_tracer_particles);
 
     if (m_use_tracer_particles) {
         particleData.addName(incfloParticleNames::tracers);
     }
-    return;
 }
 
 /*! Initialize tracer particles */
@@ -32,12 +31,12 @@ void incflo::initializeTracerParticles ( ParGDBBase* a_gdb
 
     for (auto it = namelist_unalloc.begin(); it != namelist_unalloc.end(); ++it) {
 
-        std::string species_name( *it );
+        const std::string& species_name( *it );
 
         if (species_name == incfloParticleNames::tracers)
         {
             AMREX_ASSERT(m_use_tracer_particles);
-            incflo_PC* pc = new incflo_PC(a_gdb, incfloParticleNames::tracers);
+            auto* pc = new incflo_PC(a_gdb, incfloParticleNames::tracers);
 #ifdef AMREX_USE_EB
             pc->InitializeParticles(ebfact);
 #else
@@ -55,17 +54,21 @@ void incflo::initializeTracerParticles ( ParGDBBase* a_gdb
     // just created; the restart path gets this from ParticleContainer::Restart.
     const auto& particles_namelist( particleData.getNames() );
     for (auto it = particles_namelist.begin(); it != particles_namelist.end(); ++it) {
-        std::string species_name( *it );
+        const std::string& species_name( *it );
         if (species_name == incfloParticleNames::tracers)
         {
-            if (!particleData[incfloParticleNames::tracers]->OK()) {
-                particleData[incfloParticleNames::tracers]->resizeData();
+            auto* pc = particleData[incfloParticleNames::tracers];
+            if (pc == nullptr) {
+                amrex::Abort("incflo::initializeTracerParticles: no particle container named "
+                             +incfloParticleNames::tracers);
+                return; // not reached: Abort() does not return
             }
-            particleData[incfloParticleNames::tracers]->Redistribute();
+            if (!pc->OK()) {
+                pc->resizeData();
+            }
+            pc->Redistribute();
         }
     }
-
-    return;
 }
 
 /*! Evolve tracers particles for one time step*/
@@ -74,10 +77,16 @@ void incflo::evolveTracerParticles (AMREX_D_DECL(Vector<MultiFab const*> const& 
                                                  Vector<MultiFab const*> const& w_mac))
 {
     if (m_use_tracer_particles) {
+        auto* pc = particleData[incfloParticleNames::tracers];
+        if (pc == nullptr) {
+            amrex::Abort("incflo::evolveTracerParticles: no particle container named "
+                         +incfloParticleNames::tracers);
+            return; // not reached: Abort() does not return
+        }
         for (int lev = 0; lev <= finest_level; ++lev)
         {
-            particleData[incfloParticleNames::tracers]->EvolveParticles(lev, m_dt,
-                                                                        AMREX_D_DECL(u_mac[lev],v_mac[lev],w_mac[lev]));
+            pc->EvolveParticles(lev, m_dt,
+                                AMREX_D_DECL(u_mac[lev],v_mac[lev],w_mac[lev]));
         }
 
         //

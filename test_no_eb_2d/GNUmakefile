@@ -26,4 +26,8 @@ USE_EB = FALSE
 
 USE_CSG = FALSE
 
+# Set to TRUE to build the tracer-particle module (src/particles, and every
+# INCFLO_USE_PARTICLES block); needed for incflo.use_tracer_particles = 1.
+USE_PARTICLES = FALSE
+
 include ../src/Make.incflo

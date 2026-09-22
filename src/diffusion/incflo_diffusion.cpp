@@ -178,6 +178,14 @@ incflo::get_diffuse_tensor_bc (Orientation::Side side) const noexcept
                 r[dir][dir] = LinOpBCType::Dirichlet;
                 break;
             }
+            case BC::mixed:
+            {
+                // Neither MLTensorOp nor MLEBTensorOp implements Robin BCs, so the
+                // mixed BC can only be done by the component-wise velocity solve.
+                amrex::Abort("get_diffuse_tensor_bc: mixed BCs are not supported by the "
+                             "tensor solve; set incflo.use_tensor_solve = false");
+                break;
+            }
             default:
                 amrex::Abort("get_diffuse_tensor_bc: undefined BC type");
             };
@@ -236,7 +244,7 @@ incflo::get_diffuse_velocity_bc (Orientation::Side side, int comp) const noexcep
                 break;
             }
             default:
-                amrex::Abort("get_diffuse_tensor_bc: undefined BC type");
+                amrex::Abort("get_diffuse_velocity_bc: undefined BC type");
             };
         }
     }

@@ -72,7 +72,6 @@ incflo.geometry         = "cylinder"
 
 cylinder.internal_flow = true
 cylinder.radius = 0.172
-cylinder.height = -1.0
 cylinder.rotation = 30
 cylinder.rotation_axe = 2
 

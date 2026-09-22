@@ -106,10 +106,6 @@ distribution in a box (``initial_distribution_type = box``), which is implemente
 - If the cylinder inputs are present, particles lying outside the cylinder are removed immediately after
   initialization.
 
-Note that, as currently implemented, particles are placed only in cells whose indices satisfy
-:math:`i \bmod 2 = 0` and :math:`j \bmod 2 = 1`, so only one quarter of the cells in the box receive
-particles.
-
 Advection
 ---------
 
@@ -141,8 +137,8 @@ following mesh variables can be derived from the particles:
 
 - A particle count per cell (computed with :cpp:`incflo_PC::Increment()`), which is included in plotfiles
   as ``particle_count`` and is used in :cpp:`incflo::ErrorEst()` as a refinement criterion: when
-  ``incflo.refine_particles`` is true (the default), cells containing at least one particle are tagged
+  ``amr.refine_particles`` is true (the default), cells containing at least one particle are tagged
   for refinement.
 - A mass density computed by depositing the particle mass onto the mesh with linear interpolation in
-  :cpp:`incflo_PC::massDensity()`, which appears in plotfiles as the variable
-  ``tracer_particles_mass_density``.
+  :cpp:`incflo_PC::massDensity()`. This is not yet connected to the plotfile writer, so there is no
+  ``tracer_particles_mass_density`` plot variable at present.

@@ -4,6 +4,8 @@
 #include <AMReX_EB_Redistribution.H>
 #endif
 
+#include <cmath>
+
 using namespace amrex;
 
 void incflo::ReadParameters ()
@@ -83,6 +85,14 @@ void incflo::ReadParameters ()
         pp.query("godunov_use_forces_in_trans"      , m_godunov_use_forces_in_trans);
         pp.query("godunov_include_diff_in_forcing"  , m_godunov_include_diff_in_forcing);
         pp.query("use_mac_phi_in_godunov"           , m_use_mac_phi_in_godunov);
+        if (m_use_mac_phi_in_godunov) {
+            // Only half of this option exists: it drops grad p from the forcing used
+            // to predict the MAC velocities, and mac_phi is solved for and doubled
+            // (see compute_MAC_projected_velocities) but never read back as the
+            // pressure anywhere in the Godunov forcing.
+            amrex::Abort("incflo.use_mac_phi_in_godunov is not implemented: mac_phi is "
+                         "never used as the pressure in the Godunov forcing");
+        }
         pp.query("use_cc_proj"                      , m_use_cc_proj);
 
         // What type of redistribution algorithm;
@@ -128,6 +138,19 @@ void incflo::ReadParameters ()
             amrex::Abort("We cannot have use_tensor_correction be true and diffusion type not Implicit");
         }
 
+        // With use_tensor_correction, compute_divtau redefines divtau as the
+        // (tensor - scalar) difference, because the scalar part is handled by the
+        // implicit solve in update_velocity.  ld.divtau_o is then *not* the full
+        // explicit viscous term that the Godunov edge-state forcing expects, so
+        // including it there would give the predictor essentially no viscous
+        // forcing instead of div(eta grad u)/rho.
+        if (use_tensor_correction && m_godunov_include_diff_in_forcing) {
+            m_godunov_include_diff_in_forcing = false;
+            amrex::Print() << "WARNING: incflo.use_tensor_correction = 1 sets "
+                              "godunov_include_diff_in_forcing = 0, because divtau_o then holds "
+                              "only the tensor-minus-scalar correction, not the full viscous term\n";
+        }
+
         if (m_advection_type == "MOL" && m_cfl > 0.5) {
             amrex::Abort("We currently require cfl <= 0.5 when using the MOL advection scheme");
         }
@@ -149,6 +172,12 @@ void incflo::ReadParameters ()
         pp.query("ic_v", m_ic_v);
         pp.query("ic_w", m_ic_w);
         pp.query("ic_p", m_ic_p);
+        if (std::abs(m_ic_p) > Real(0.0)) {
+            // set_background_pressure copies ic_p into m_p000, and nothing reads
+            // m_p000, so a non-zero initial pressure would be silently dropped.
+            amrex::Abort("incflo.ic_p is not implemented: it only sets m_p000, which no code "
+                         "reads, so a non-zero initial pressure would be silently ignored");
+        }
         if ( !pp.queryarr("ic_t", m_ic_t, 0, m_ntrac) ) {
             m_ic_t.resize(m_ntrac, 0.);
         }
@@ -446,6 +475,21 @@ void incflo::ReadIOParameters()
         m_smallplotVars.clear();
         pp.queryarr("smallplotVariables", m_smallplotVars);
     }
+
+    // "divu" is accepted by the parsing above (amr.plt_divu, amr.plotVariables or
+    // amr.smallplotVariables), but WritePlotVariables has no implementation for it
+    // and only aborts.  Refuse it here rather than after the whole initialization,
+    // at the first plotfile.
+    for (auto const& v : m_plotVars) {
+        if (v == "divu") {
+            amrex::Abort("plotfile variable 'divu' (amr.plt_divu) is not implemented");
+        }
+    }
+    for (auto const& v : m_smallplotVars) {
+        if (v == "divu") {
+            amrex::Abort("smallplotfile variable 'divu' is not implemented");
+        }
+    }
 }
 
 //
@@ -624,10 +668,15 @@ void incflo::InitialPressureProjection()
     // Always zero this here
     Vector<MultiFab*> Source(finest_level+1, nullptr);
 
+    // The field being projected is a body force, (rho-rho0)/rho * g, not a velocity,
+    // so its ghost cells must not be filled with the inflow velocity (and there is
+    // nothing meaningful for enforceInOutSolvability to rescale).  Leave the ghost
+    // cells at zero, as the incremental/small-dt projections do, so that the
+    // boundary nodes see grad(phi).n = F.n, i.e. hydrostatic balance.
     // FIXME FIXME FIXME - THIS ONLY WORKS RIGHT FOR NODAL PROJ
     ApplyProjection(get_density_new_const(), GetVecOfPtrs(vel), Source,
                     m_cur_time, dummy_dt, false /*incremental*/,
-                    true /*set_inflow_bc*/);
+                    false /*set_inflow_bc*/);
 }
 
 #ifdef AMREX_USE_EB

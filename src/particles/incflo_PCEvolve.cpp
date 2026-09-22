@@ -24,7 +24,6 @@ void incflo_PC::EvolveParticles ( int                                        a_l
     //       hand a particle that crossed from level lev into a level lev+1 grid
     //       to level lev+1, which then advects it a second time in the same step.
     //
-    return;
 }
 
 //
