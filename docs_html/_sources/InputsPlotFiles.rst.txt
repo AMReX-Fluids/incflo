@@ -23,6 +23,7 @@ as whether the EB geometry should be written out.
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 | write_eb_surface    | Should we write out the EB geometry in vtp format                     |   Bool      | False     |
 |                     | If true, it will only be written once,after initialization or restart |             |           |
+|                     | NOTE: this key takes the "incflo" prefix (incflo.write_eb_surface)    |             |           |
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 
 The following inputs must be preceded by "amr" and control what variables will be written in plotfiles.
@@ -66,7 +67,7 @@ and if using EB, volume fraction.
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 | plt_strainrate      | Save strain rate to plot file                                         |    Int      | 0         |
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
-| plt_divu            | Save velocity divergence to plot file                                 |    Int      | 0         |
+| plt_divu            | Not implemented: requesting divu is refused when the inputs are read  |    Int      | 0         |
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 | plt_vfrac           | Save EB volume fraction to plot file                                  |    Int      | 1         |
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+

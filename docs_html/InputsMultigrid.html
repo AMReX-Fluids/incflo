@@ -95,7 +95,10 @@
 <span id="chap-inputsmultigrid"></span><h1>Multigrid Inputs<a class="headerlink" href="#multigrid-inputs" title="Link to this heading"></a></h1>
 <p>Below is a list of the most commonly used multigrid settings options.
 To control the nodal projection precede with “nodal_proj”, for the MAC projection use “mac_proj”, and
-for the diffusion solver use “diffusion”</p>
+for the diffusion solvers use “scalar_diffusion” (tracers, temperature and the component-wise
+velocity solve) or “tensor_diffusion” (the tensor velocity solve).  The diffusion solvers read
+the verbosity and iteration keys with an “<a href="#id1"><span class="problematic" id="id2">mg_</span></a>” prefix: mg_verbose, mg_bottom_verbose,
+mg_max_iter, mg_bottom_maxiter, mg_maxorder.</p>
 <table class="docutils align-default">
 <tbody>
 <tr class="row-odd"><td></td>
@@ -113,7 +116,7 @@ for the diffusion solver use “diffusion”</p>
 <td><p>Int</p></td>
 <td><p>0</p></td>
 </tr>
-<tr class="row-even"><td><p>rtol</p></td>
+<tr class="row-even"><td><p>mg_rtol</p></td>
 <td><p>Relative tolerance</p></td>
 <td><div class="line-block">
 <div class="line">Real</div>
@@ -126,7 +129,7 @@ for the diffusion solver use “diffusion”</p>
 </div>
 </td>
 </tr>
-<tr class="row-odd"><td><p>atol</p></td>
+<tr class="row-odd"><td><p>mg_atol</p></td>
 <td><p>Absolute tolerance</p></td>
 <td><div class="line-block">
 <div class="line">Real</div>
@@ -140,17 +143,17 @@ for the diffusion solver use “diffusion”</p>
 </td>
 </tr>
 <tr class="row-even"><td><p>maxiter</p></td>
-<td><p>Maximum number of iterations</p></td>
+<td><p>Maximum number of iterations (diffusion: mg_max_iter)</p></td>
 <td><p>Int</p></td>
-<td><p>nodal 100
+<td><p>nodal 100
 MAC   200
 diffusion 100</p></td>
 </tr>
 <tr class="row-odd"><td><p>bottom_maxiter</p></td>
-<td><p>Maximum number of iterations in the
-bottom solver if using bicg, cg, bicgcg or cgbicg</p></td>
+<td><p>Maximum number of iterations in the bottom solver
+if using bicg, cg, bicgcg or cgbicg (diffusion: mg_bottom_maxiter)</p></td>
 <td><p>Int</p></td>
-<td><p>nodal 100
+<td><p>nodal 100
 MAC   200
 diffusion 100</p></td>
 </tr>

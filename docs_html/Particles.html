@@ -233,9 +233,6 @@ volume fraction.</p></li>
 <li><p>If the cylinder inputs are present, particles lying outside the cylinder are removed immediately after
 initialization.</p></li>
 </ul>
-<p>Note that, as currently implemented, particles are placed only in cells whose indices satisfy
-<span class="math notranslate nohighlight">\(i \bmod 2 = 0\)</span> and <span class="math notranslate nohighlight">\(j \bmod 2 = 1\)</span>, so only one quarter of the cells in the box receive
-particles.</p>
 </section>
 <section id="advection">
 <h2>Advection<a class="headerlink" href="#advection" title="Link to this heading"></a></h2>
@@ -265,11 +262,11 @@ following mesh variables can be derived from the particles:</p>
 <ul class="simple">
 <li><p>A particle count per cell (computed with <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo_PC</span><span class="o">::</span><span class="n">Increment</span><span class="p">()</span></code>), which is included in plotfiles
 as <code class="docutils literal notranslate"><span class="pre">particle_count</span></code> and is used in <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="o">::</span><span class="n">ErrorEst</span><span class="p">()</span></code> as a refinement criterion: when
-<code class="docutils literal notranslate"><span class="pre">incflo.refine_particles</span></code> is true (the default), cells containing at least one particle are tagged
+<code class="docutils literal notranslate"><span class="pre">amr.refine_particles</span></code> is true (the default), cells containing at least one particle are tagged
 for refinement.</p></li>
 <li><p>A mass density computed by depositing the particle mass onto the mesh with linear interpolation in
-<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo_PC</span><span class="o">::</span><span class="n">massDensity</span><span class="p">()</span></code>, which appears in plotfiles as the variable
-<code class="docutils literal notranslate"><span class="pre">tracer_particles_mass_density</span></code>.</p></li>
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo_PC</span><span class="o">::</span><span class="n">massDensity</span><span class="p">()</span></code>. This is not yet connected to the plotfile writer, so there is no
+<code class="docutils literal notranslate"><span class="pre">tracer_particles_mass_density</span></code> plot variable at present.</p></li>
 </ul>
 </section>
 </section>

@@ -140,7 +140,8 @@ if -1 then no plotfiles will be written at this frequency</p></td>
 </tr>
 <tr class="row-even"><td><p>write_eb_surface</p></td>
 <td><p>Should we write out the EB geometry in vtp format
-If true, it will only be written once,after initialization or restart</p></td>
+If true, it will only be written once,after initialization or restart
+NOTE: this key takes the “incflo” prefix (incflo.write_eb_surface)</p></td>
 <td><p>Bool</p></td>
 <td><p>False</p></td>
 </tr>
@@ -238,7 +239,7 @@ overwritten by plotVariables or plt_* flags)</p></td>
 <td><p>0</p></td>
 </tr>
 <tr class="row-odd"><td><p>plt_divu</p></td>
-<td><p>Save velocity divergence to plot file</p></td>
+<td><p>Not implemented: requesting divu is refused when the inputs are read</p></td>
 <td><p>Int</p></td>
 <td><p>0</p></td>
 </tr>
