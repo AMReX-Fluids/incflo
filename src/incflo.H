@@ -130,6 +130,8 @@ public:
     void set_eb_density (int lev, amrex::Real time, amrex::MultiFab& eb_density, int nghost);
     void set_eb_tracer (int lev, amrex::Real time, amrex::MultiFab& eb_tracer, int nghost);
     void set_eb_temperature (int lev, amrex::Real time, amrex::MultiFab& eb_temperature, int nghost);
+    // Fill the EB Dirichlet data at m_t_old on all levels
+    void set_eb_bcs ();
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
