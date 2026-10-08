@@ -21,16 +21,16 @@ jobs:
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wextra-semi -Wunreachable-code -Wnon-virtual-dtor -Wno-sign-compare -Wno-missing-braces -Wno-unused-variable -Wno-shadow"}
     steps:
     - name: Checkout incflo
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         path: incflo
     - name: Checkout AMReX-Hydro
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Codes/amrex
         path: amrex
