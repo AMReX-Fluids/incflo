@@ -3,6 +3,8 @@ name: SYCL
 
 on:
   push:
+    branches-ignore:
+      - 'dependabot/**'
   pull_request:
   schedule:
     - cron: "13 8 * * *"
