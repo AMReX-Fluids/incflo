@@ -3,6 +3,8 @@ name: GCC
 
 on:
   push:
+    branches-ignore:
+      - 'dependabot/**'
   pull_request:
   schedule:
     - cron: "13 8 * * *"
@@ -19,21 +21,21 @@ jobs:
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout incflo
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         path: incflo
     - name: Checkout AMReX-Hydro
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Codes/amrex
         path: amrex
     - name: Set Up Cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ~/.cache/ccache
         key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
@@ -89,21 +91,21 @@ jobs:
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout incflo
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         path: incflo
     - name: Checkout AMReX-Hydro
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Codes/amrex
         path: amrex
     - name: Set Up Cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ~/.cache/ccache
         key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
@@ -174,21 +176,21 @@ jobs:
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout incflo
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         path: incflo
     - name: Checkout AMReX-Hydro
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Codes/amrex
         path: amrex
     - name: Set Up Cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ~/.cache/ccache
         key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
@@ -259,21 +261,21 @@ jobs:
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout incflo
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         path: incflo
     - name: Checkout AMReX-Hydro
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Fluids/AMReX-Hydro
         path: AMReX-Hydro
     - name: Checkout AMReX
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Codes/amrex
         path: amrex
     - name: Set Up Cache
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ~/.cache/ccache
         key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
