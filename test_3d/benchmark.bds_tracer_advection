@@ -45,8 +45,8 @@ amr.max_grid_size_z     =   1024
 amr.blocking_factor     = 1
 
 incflo.tag_region = true
-incflo.tag_region_lo = 0.  1.  
-incflo.tag_region_hi = 0.5 2.
+incflo.tag_region_lo = 1.  0.   0.
+incflo.tag_region_hi = 2.  0.5  0.5 
 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#

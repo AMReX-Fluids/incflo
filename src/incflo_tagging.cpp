@@ -33,14 +33,20 @@ void incflo::ErrorEst (int levc, TagBoxArray& tags, Real time, int /*ngrow*/)
             gradrhoerr_v.resize(max_level+1, last);
         }
 
-        tag_region_lo.resize(3);
-        tag_region_hi.resize(3);
-
         tag_region = false;
         pp.query("tag_region", tag_region);
 
-        pp.queryarr("tag_region_lo", tag_region_lo);
-        pp.queryarr("tag_region_hi", tag_region_hi);
+        if (tag_region) {
+            // The region is a box: one coordinate per direction for each corner.  With
+            // fewer, the tagging below would read past the end of the arrays.
+            if (pp.countval("tag_region_lo") != AMREX_SPACEDIM ||
+                pp.countval("tag_region_hi") != AMREX_SPACEDIM) {
+                amrex::Abort("incflo.tag_region_lo and incflo.tag_region_hi must each have "
+                             + std::to_string(AMREX_SPACEDIM) + " values");
+            }
+            pp.getarr("tag_region_lo", tag_region_lo, 0, AMREX_SPACEDIM);
+            pp.getarr("tag_region_hi", tag_region_hi, 0, AMREX_SPACEDIM);
+        }
     }
 
     const auto   tagval = TagBox::SET;
