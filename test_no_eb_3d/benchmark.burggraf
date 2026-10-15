@@ -36,26 +36,29 @@ incflo.mu               =   1.0         # Dynamic viscosity coefficient
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
-amr.n_cell              =     8   8     # Grid cells at coarsest AMRlevel
+# The flow is 2D in x-y; z is periodic and 8 cells deep.  With N x N cells
+# in x-y, set the z entry of geometry.prob_hi to 8/N so the cells are cubes
+# (as test_convergence_burggraf does).  The last n_cell/fixed_dt pair wins.
+amr.n_cell              =     8   8   8 # Grid cells at coarsest AMRlevel
 incflo.fixed_dt         =   0.01        # 
 
-amr.n_cell              =    64  64     # Grid cells at coarsest AMRlevel
+amr.n_cell              =    64  64   8 # Grid cells at coarsest AMRlevel
 incflo.fixed_dt         =   0.002       # 0.9 * 1/128
 
-amr.n_cell              =   128 128     # Grid cells at coarsest AMRlevel
+amr.n_cell              =   128 128   8 # Grid cells at coarsest AMRlevel
 incflo.fixed_dt         =   0.001       # 0.9 * 1/128
 
-amr.n_cell              =    32  32     # Grid cells at coarsest AMRlevel
+amr.n_cell              =    32  32   8 # Grid cells at coarsest AMRlevel
 incflo.fixed_dt         =   0.004       # 0.9 * 1/128
 
-amr.n_cell              =    16  16     # Grid cells at coarsest AMRlevel
+amr.n_cell              =    16  16   8 # Grid cells at coarsest AMRlevel
 incflo.fixed_dt         =   0.008       # 0.9 * 1/128
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #
 #.......................................#
 geometry.prob_lo        =   0.  0.  0.  # Lo corner coordinates
-geometry.prob_hi        =   1.  1.  1.  # Hi corner coordinates
+geometry.prob_hi        =   1.  1.  0.5 # Hi corner coordinates
 geometry.is_periodic    =   0   0   1   # Periodicity x y z (0/1)
 
 # Boundary conditions
