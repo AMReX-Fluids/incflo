@@ -28,7 +28,8 @@ as whether the EB geometry should be written out.
 
 The following inputs must be preceded by "amr" and control what variables will be written in plotfiles.
 By default, incflo plotfiles contain the velocity, pressure gradient, density, tracer, velocity magnitude, vorticity,
-and if using EB, volume fraction.
+and if using EB, volume fraction. With ``incflo.use_divu_source = 1`` they also contain ``divu_source``, the source
+:math:`S` in the divergence constraint :math:`\nabla \cdot U = S`.
 
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 |                     | Description                                                           |   Type      | Default   |

@@ -139,6 +139,21 @@
 <p>Incompressibility constraint:</p>
 <div class="math notranslate nohighlight">
 \[\nabla \cdot U = 0\]</div>
+<p>or, with <code class="docutils literal notranslate"><span class="pre">incflo.use_divu_source</span> <span class="pre">=</span> <span class="pre">1</span></code>, the constraint</p>
+<div class="math notranslate nohighlight">
+\[\nabla \cdot U = S\]</div>
+<p>for a given source <span class="math notranslate nohighlight">\(S\)</span>, as in low Mach number models. Mass is still conserved, so
+the density changes along particle paths as <span class="math notranslate nohighlight">\(D\rho/Dt = -\rho S\)</span>. With
+<code class="docutils literal notranslate"><span class="pre">incflo.constant_density</span> <span class="pre">=</span> <span class="pre">1</span></code> the density is not evolved, so mass is not conserved:
+the constraint adds mass at the rate <span class="math notranslate nohighlight">\(\rho_0 S\)</span> per unit volume. That is not a low
+Mach number model, and incflo warns about it, but it has exact solutions that are useful
+for testing. <span class="math notranslate nohighlight">\(S\)</span> comes from <code class="docutils literal notranslate"><span class="pre">incflo::compute_divu_source</span></code>, which by default
+uses an analytic <span class="math notranslate nohighlight">\(S\)</span> defined for the chosen <code class="docutils literal notranslate"><span class="pre">incflo.probtype</span></code>. It is virtual,
+so a class derived from <code class="docutils literal notranslate"><span class="pre">incflo</span></code> can compute <span class="math notranslate nohighlight">\(S\)</span> from the state instead.
+In a closed domain (only walls and periodic boundaries) the
+projections can only enforce <span class="math notranslate nohighlight">\(\nabla \cdot U = S - \bar{S}\)</span>, where <span class="math notranslate nohighlight">\(\bar{S}\)</span> is
+the mean of <span class="math notranslate nohighlight">\(S\)</span>; incflo warns when <span class="math notranslate nohighlight">\(\bar{S} \ne 0\)</span>. That is a uniform change
+of the thermodynamic pressure, which incflo does not evolve.</p>
 <p>Tracer(s): for conservative,</p>
 <div class="math notranslate nohighlight">
 \[\frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  =  \nabla \cdot \mu_s \nabla s + \rho H_s\]</div>

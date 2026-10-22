@@ -39,6 +39,23 @@ Incompressibility constraint:
 
 .. math:: \nabla \cdot U = 0
 
+or, with ``incflo.use_divu_source = 1``, the constraint
+
+.. math:: \nabla \cdot U = S
+
+for a given source :math:`S`, as in low Mach number models. Mass is still conserved, so
+the density changes along particle paths as :math:`D\rho/Dt = -\rho S`. With
+``incflo.constant_density = 1`` the density is not evolved, so mass is not conserved:
+the constraint adds mass at the rate :math:`\rho_0 S` per unit volume. That is not a low
+Mach number model, and incflo warns about it, but it has exact solutions that are useful
+for testing. :math:`S` comes from ``incflo::compute_divu_source``, which by default
+uses an analytic :math:`S` defined for the chosen ``incflo.probtype``. It is virtual,
+so a class derived from ``incflo`` can compute :math:`S` from the state instead.
+In a closed domain (only walls and periodic boundaries) the
+projections can only enforce :math:`\nabla \cdot U = S - \bar{S}`, where :math:`\bar{S}` is
+the mean of :math:`S`; incflo warns when :math:`\bar{S} \ne 0`. That is a uniform change
+of the thermodynamic pressure, which incflo does not evolve.
+
 Tracer(s): for conservative,
 
 .. math:: \frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  =  \nabla \cdot \mu_s \nabla s + \rho H_s

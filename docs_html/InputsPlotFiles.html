@@ -17,6 +17,7 @@
       <script src="_static/documentation_options.js?v=3d8aadd5"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -149,7 +150,8 @@ NOTE: this key takes the “incflo” prefix (incflo.write_eb_surface)</p></td>
 </table>
 <p>The following inputs must be preceded by “amr” and control what variables will be written in plotfiles.
 By default, incflo plotfiles contain the velocity, pressure gradient, density, tracer, velocity magnitude, vorticity,
-and if using EB, volume fraction.</p>
+and if using EB, volume fraction. With <code class="docutils literal notranslate"><span class="pre">incflo.use_divu_source</span> <span class="pre">=</span> <span class="pre">1</span></code> they also contain <code class="docutils literal notranslate"><span class="pre">divu_source</span></code>, the source
+<span class="math notranslate nohighlight">\(S\)</span> in the divergence constraint <span class="math notranslate nohighlight">\(\nabla \cdot U = S\)</span>.</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"></th>
