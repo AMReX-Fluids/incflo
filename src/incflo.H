@@ -112,6 +112,23 @@ public:
                                        const amrex::MultiFab& tracer_new,
                                        bool include_pressure_gradient = true);
 
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    // Divergence constraint div(u) = S
+    //
+    ///////////////////////////////////////////////////////////////////////////
+
+    // Fill the valid region of divu_source with S at the given time, computed from the
+    // given state, which has at least one filled ghost cell (temperature is empty
+    // unless incflo.use_temperature = 1).  The default uses the analytic S of the
+    // probtype (prob_divu_source).  Virtual so that a derived class can compute S from
+    // the state instead.
+    virtual void compute_divu_source (amrex::Vector<amrex::MultiFab      *> const& divu_source,
+                                      amrex::Vector<amrex::MultiFab const*> const& density,
+                                      amrex::Vector<amrex::MultiFab const*> const& tracer,
+                                      amrex::Vector<amrex::MultiFab const*> const& temperature,
+                                      amrex::Real time);
+
 
     ///////////////////////////////////////////////////////////////////////////
     //
@@ -274,6 +291,7 @@ public:
     ///////////////////////////////////////////////////////////////////////////
 
     void prob_init_fluid (int lev);
+    void prob_divu_source (int lev, amrex::MultiFab& divu_source, amrex::Real time) const;
     void prob_set_BC_MF (amrex::Orientation const& ori, amrex::Box const& bx,
                          amrex::Array4<int> const& mask, int lev,
                          int inflow_val, int outflow_val, std::string const& field);
@@ -519,6 +537,11 @@ private:
     // specific heat capacity
     amrex::Real m_cp = 1.;
 
+    // Divergence constraint div(u) = S instead of div(u) = 0
+    bool m_use_divu_source = false;
+    // Only warn once about a closed domain with a non-zero integral of S
+    bool m_divu_solvability_warned = false;
+
     // Density (if constant)
     amrex::Real m_ro_0 = 1.0;
 
@@ -715,6 +738,13 @@ private:
         amrex::MultiFab laps_o;
         amrex::MultiFab laps_tem;
         amrex::MultiFab laps_tem_o;
+
+        // Source term S in the divergence constraint div(u) = S
+        amrex::MultiFab divu_source;
+        amrex::MultiFab divu_source_o;
+        amrex::MultiFab divu_source_nph;
+        // Lagged time derivative of S, (S^n - S^(n-1)) / dt^(n-1)
+        amrex::MultiFab dsdt;
     };
 
     bool m_use_temperature = false;
@@ -816,6 +846,9 @@ private:
         return (m_advection_type == "MOL") ? 0 : 1;
     }
 
+    // S at n+1/2 is read in one ghost cell by the Godunov edge-state prediction
+    [[nodiscard]] static int nghost_divu_source_nph () { return 1; }
+
 #ifdef AMREX_USE_EB
     [[nodiscard]] static int nghost_eb_basic ()
     { return 5; }
@@ -884,6 +917,9 @@ private:
     amrex::Vector<amrex::MultiFab*> get_laps_new () noexcept;
     amrex::Vector<amrex::MultiFab*> get_laps_tem_old () noexcept;
     amrex::Vector<amrex::MultiFab*> get_laps_tem_new () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_divu_source_old () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_divu_source_new () noexcept;
+    amrex::Vector<amrex::MultiFab*> get_divu_source_nph () noexcept;
     //
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_velocity_old_const () const noexcept;
     [[nodiscard]] amrex::Vector<amrex::MultiFab const*> get_velocity_new_const () const noexcept;
@@ -949,12 +985,17 @@ private:
     void fillpatch_temperature (int lev, amrex::Real time, amrex::MultiFab& temperature, int ng);
     void fillpatch_gradp (int lev, amrex::Real time, amrex::MultiFab& gp, int ng);
     void fillpatch_force (amrex::Real time, amrex::Vector<amrex::MultiFab*> const& force, int ng);
+    // Fill mf on level lev from the single-time data src[lev] and src[lev-1]
+    void fillpatch_divu_source (int lev, amrex::Real time, amrex::MultiFab& mf,
+                                amrex::Vector<amrex::MultiFab*> const& src, int ng);
 
     void fillcoarsepatch_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int ng);
     void fillcoarsepatch_density (int lev, amrex::Real time, amrex::MultiFab& density, int ng);
     void fillcoarsepatch_tracer (int lev, amrex::Real time, amrex::MultiFab& tracer, int ng);
     void fillcoarsepatch_temperature (int lev, amrex::Real time, amrex::MultiFab& temperature, int ng);
     void fillcoarsepatch_gradp (int lev, amrex::Real time, amrex::MultiFab& gp, int ng);
+    void fillcoarsepatch_divu_source (int lev, amrex::Real time, amrex::MultiFab& mf,
+                                      amrex::MultiFab& crse, int ng);
 
     void fillphysbc_velocity (int lev, amrex::Real time, amrex::MultiFab& vel, int ng);
     void fillphysbc_density (int lev, amrex::Real time, amrex::MultiFab& density, int ng);
@@ -976,6 +1017,23 @@ private:
     void copy_from_old_to_new_tracer   (         amrex::IntVect const& ng = amrex::IntVect{0});
     void copy_from_old_to_new_tracer   (int lev, amrex::IntVect const& ng = amrex::IntVect{0});
     void copy_from_old_to_new_temperature (      amrex::IntVect const& ng = amrex::IntVect{0});
+    void copy_from_new_to_old_divu_source ();
+    void copy_from_old_to_new_divu_source ();
+
+    ///////////////////////////////////////////////////////////////////////////
+    //
+    // Divergence constraint div(u) = S
+    //
+    ///////////////////////////////////////////////////////////////////////////
+
+    // Compute S from the new-time state into divu_source and average it down
+    void update_divu_source (amrex::Real time);
+    // S^(n+1/2) = S^n + dt/2 dS/dt, with ghost cells filled
+    void compute_divu_source_nph ();
+    // dS/dt = (S^(n+1) - S^n) / dt
+    void compute_dsdt ();
+    // Warn (once) when a closed domain has a non-zero net S
+    void check_divu_source_solvability ();
 
     void Advance (double cur_time);
     [[nodiscard]] bool writeNow () {

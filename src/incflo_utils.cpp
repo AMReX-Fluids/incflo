@@ -296,6 +296,42 @@ Vector<MultiFab*> incflo::get_laps_tem_new () noexcept
     return r;
 }
 
+Vector<MultiFab*> incflo::get_divu_source_old () noexcept
+{
+    Vector<MultiFab*> r;
+    if (m_use_divu_source) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->divu_source_o));
+        }
+    }
+    return r;
+}
+
+Vector<MultiFab*> incflo::get_divu_source_new () noexcept
+{
+    Vector<MultiFab*> r;
+    if (m_use_divu_source) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->divu_source));
+        }
+    }
+    return r;
+}
+
+Vector<MultiFab*> incflo::get_divu_source_nph () noexcept
+{
+    Vector<MultiFab*> r;
+    if (m_use_divu_source) {
+        r.reserve(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            r.push_back(&(m_leveldata[lev]->divu_source_nph));
+        }
+    }
+    return r;
+}
+
 Vector<MultiFab const*> incflo::get_velocity_old_const () const noexcept
 {
     Vector<MultiFab const*> r;
@@ -487,5 +523,23 @@ void incflo::copy_from_old_to_new_temperature (IntVect const& ng)
     for (int lev = 0; lev <= finest_level; ++lev) {
         MultiFab::Copy(m_leveldata[lev]->temperature,
                        m_leveldata[lev]->temperature_o, 0, 0, 1, ng);
+    }
+}
+
+void incflo::copy_from_new_to_old_divu_source ()
+{
+    if (!m_use_divu_source) { return; }
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        MultiFab::Copy(m_leveldata[lev]->divu_source_o,
+                       m_leveldata[lev]->divu_source, 0, 0, 1, 0);
+    }
+}
+
+void incflo::copy_from_old_to_new_divu_source ()
+{
+    if (!m_use_divu_source) { return; }
+    for (int lev = 0; lev <= finest_level; ++lev) {
+        MultiFab::Copy(m_leveldata[lev]->divu_source,
+                       m_leveldata[lev]->divu_source_o, 0, 0, 1, 0);
     }
 }

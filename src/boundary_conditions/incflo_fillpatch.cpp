@@ -312,3 +312,46 @@ void incflo::fillcoarsepatch_gradp (int lev, Real time, MultiFab& gp, int ng)
                                  cphysbc, 0, fphysbc, 0,
                                  refRatio(lev-1), mapper, bcrec, 0);
 }
+
+// S and dS/dt are filled like a forcing term: first-order extrapolation at physical
+// boundaries (or periodic), conservative interpolation from the coarser level.
+void incflo::fillpatch_divu_source (int lev, Real time, MultiFab& mf,
+                                    Vector<MultiFab*> const& src, int ng)
+{
+    const auto& bcrec = get_force_bcrec();
+    if (lev == 0) {
+        PhysBCFunct<GpuBndryFuncFab<IncfloForFill> > physbc
+            (geom[lev], bcrec, IncfloForFill{m_probtype});
+        FillPatchSingleLevel(mf, IntVect(ng), time,
+                             {src[lev]}, {time},
+                             0, 0, 1, geom[lev], physbc, 0);
+    } else {
+        PhysBCFunct<GpuBndryFuncFab<IncfloForFill> > cphysbc
+            (geom[lev-1], bcrec, IncfloForFill{m_probtype});
+        PhysBCFunct<GpuBndryFuncFab<IncfloForFill> > fphysbc
+            (geom[lev], bcrec, IncfloForFill{m_probtype});
+        Interpolater* mapper = &cell_cons_interp;
+        FillPatchTwoLevels(mf, IntVect(ng), time,
+                           {src[lev-1]}, {time},
+                           {src[lev]}, {time},
+                           0, 0, 1, geom[lev-1], geom[lev],
+                           cphysbc, 0, fphysbc, 0,
+                           refRatio(lev-1), mapper, bcrec, 0);
+    }
+}
+
+void incflo::fillcoarsepatch_divu_source (int lev, Real time, MultiFab& mf,
+                                          MultiFab& crse, int ng)
+{
+    const auto& bcrec = get_force_bcrec();
+    PhysBCFunct<GpuBndryFuncFab<IncfloForFill> > cphysbc
+        (geom[lev-1], bcrec, IncfloForFill{m_probtype});
+    PhysBCFunct<GpuBndryFuncFab<IncfloForFill> > fphysbc
+        (geom[lev], bcrec, IncfloForFill{m_probtype});
+    Interpolater* mapper = &cell_cons_interp;
+    amrex::InterpFromCoarseLevel(mf, IntVect(ng), time,
+                                 crse, 0, 0, 1,
+                                 geom[lev-1], geom[lev],
+                                 cphysbc, 0, fphysbc, 0,
+                                 refRatio(lev-1), mapper, bcrec, 0);
+}

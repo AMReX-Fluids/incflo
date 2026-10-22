@@ -277,6 +277,11 @@ incflo::compute_MAC_projected_velocities (
 
     macproj->setUMAC(mac_vec);
 
+    // div(u_mac) = S^(n+1/2)
+    if (m_use_divu_source) {
+        macproj->setDivU(GetVecOfConstPtrs(get_divu_source_nph()));
+    }
+
 #ifdef AMREX_USE_EB
     if (m_eb_flow.enabled) {
        for (int lev=0; lev <= finest_level; ++lev)

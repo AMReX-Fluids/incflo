@@ -138,7 +138,63 @@ void incflo::DiffFromExact (int /*lev*/, Geometry& lev_geom, Real time, Real dt,
                 err(i,j,k,soln_comp) -= exact;
             });
         }
+    // div(u) = S with S = f(t) prod_d cos(2 pi x_d / L_d) in a periodic box: the
+    // potential flow u = f(t) grad(phi0), lap(phi0) = prod_d cos(2 pi x_d / L_d).
+    // Only the velocity is checked.
+    } else if (600 == m_probtype || 601 == m_probtype) {
+        constexpr Real twopi = Real(2.0) * Real(3.1415926535897932);
+        Real const f = (600 == m_probtype) ? Real(1.0) : std::sin(twopi * time);
+        auto const& probhi = lev_geom.ProbHiArray();
+        GpuArray<Real, AMREX_SPACEDIM> kw;
+        Real ksq = Real(0.0);
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            kw[d] = twopi / (probhi[d] - problo[d]);
+            ksq += kw[d] * kw[d];
+        }
+        for(MFIter mfi(error, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            Box bx = mfi.tilebox();
+
+            // When we enter this routine, this holds the computed solution
+            Array4<Real> const& err = error.array(mfi);
+
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                IntVect const iv(AMREX_D_DECL(i,j,k));
+                Real exact = Real(0.0);
+                if (err_comp < AMREX_SPACEDIM) {
+                    exact = f * kw[err_comp] / ksq;
+                    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                        Real const x = (Real(iv[d]) + Real(0.5)) * dx[d];
+                        exact *= (d == err_comp) ? std::sin(kw[d]*x) : std::cos(kw[d]*x);
+                    }
+                }
+                err(i,j,k,soln_comp) -= exact;
+            });
+        }
+
+    // div(u) = 1 in a channel with outflow at both ends in x: u = x - x_center.
+    // Only the velocity is checked.
+    } else if (602 == m_probtype) {
+        auto const& probhi = lev_geom.ProbHiArray();
+        Real const xc = Real(0.5) * (problo[0] + probhi[0]);
+        for(MFIter mfi(error, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        {
+            Box bx = mfi.tilebox();
+
+            // When we enter this routine, this holds the computed solution
+            Array4<Real> const& err = error.array(mfi);
+
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                Real exact = Real(0.0);
+                if (err_comp == 0) {
+                    exact = problo[0] + Real(i+0.5)*dx[0] - xc;
+                }
+                err(i,j,k,soln_comp) -= exact;
+            });
+        }
     } else {
-         amrex::Abort("Currently TGV and Burggraf are the only problems with an exact solution implemented");
+         amrex::Abort("No exact solution implemented for this incflo.probtype");
     }
 }

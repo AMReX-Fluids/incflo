@@ -39,6 +39,11 @@ void incflo::prob_init_fluid (int lev)
         const Box& gbx = mfi.fabbox();
         if (0 == m_probtype || 114 == m_probtype )
         { }
+        else if (600 == m_probtype || 601 == m_probtype || 602 == m_probtype)
+        {
+            // div(u) = S tests: the flow comes from the initial projection with S
+            // (prob_divu_source), so the defaults are all we need
+        }
         else if (1 == m_probtype)
         {
             init_taylor_green(vbx, gbx,

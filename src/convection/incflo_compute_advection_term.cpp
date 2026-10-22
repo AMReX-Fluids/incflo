@@ -606,7 +606,16 @@ incflo::compute_convective_term (Vector<MultiFab*> const& conv_u,
         {
             Box const& bx = mfi.tilebox();
 
-            Array4<Real const> const& divu_arr = divu[lev].const_array(mfi);
+            // With div(u) = S the edge-state prediction uses S^(n+1/2) instead of div(u_mac).
+            // In valid cells the two agree (the MAC projection enforced it), but divu is zero
+            // in the ghost cells at the coarse/fine boundary, while divu_source_nph is filled
+            // there from the coarse level. The convective form below still uses div(u_mac):
+            // it needs no ghost cells, and it must be the discrete divergence of the same u_mac
+            // as the fluxes so that a constant stays exactly constant (with S instead, errors of
+            // the order of the MAC projection tolerance would appear).
+            Array4<Real const> const& divu_arr = (m_use_divu_source)
+                ? m_leveldata[lev]->divu_source_nph.const_array(mfi)
+                : divu[lev].const_array(mfi);
 
             // ************************************************************************
             // Velocity

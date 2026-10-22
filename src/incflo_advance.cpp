@@ -25,6 +25,7 @@ void incflo::Advance(double cur_time)
     copy_from_new_to_old_density(IntVect(ng));
     copy_from_new_to_old_tracer(IntVect(ng));
     copy_from_new_to_old_temperature(IntVect(ng));
+    copy_from_new_to_old_divu_source();
 
     // Compute time step size
     int initialisation = ( m_dt < 0 );
@@ -66,6 +67,9 @@ void incflo::Advance(double cur_time)
 
         ApplyCorrector();
     }
+
+    // dS/dt for the next step's S^(n+1/2)
+    compute_dsdt();
 
 #ifdef INCFLO_USE_PARTICLES
     particleData.Redistribute();

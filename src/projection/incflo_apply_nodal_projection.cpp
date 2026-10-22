@@ -10,11 +10,11 @@ using namespace amrex;
 //
 // Computes the following decomposition:
 //
-//    u + dt grad(phi) / ro = u*,     where div(u) = 0
+//    u + dt grad(phi) / ro = u*,     where div(u) = S
 //
 // where u* is a non-div-free velocity field, stored
-// by components in u, v, and w. The resulting div-free
-// velocity field, u, overwrites the value of u* in u, v, and w.
+// by components in u, v, and w. The resulting velocity field, u, overwrites the value
+// of u* in u, v, and w.  S is zero unless incflo.use_divu_source = 1.
 //
 // phi is an auxiliary function related to the pressure p by the relation:
 //
@@ -75,8 +75,29 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
         vel.push_back(&(m_leveldata[lev]->velocity));
     }
 
-    // Cell-centered divergence constraint source term, which is always zero for now
+    // Cell-centered source term for the divergence constraint div(u) = S.  The nodal
+    // projector solves div(sigma grad(phi)) = div(vel) + S_cc, so S_cc = -S.  When the
+    // projected field is U^* - U^n, the source is the change in S over the step.
+    Vector<MultiFab> neg_S;
     Vector<MultiFab* > Source(finest_level+1, nullptr);
+    if (m_use_divu_source)
+    {
+        check_divu_source_solvability();
+
+        neg_S.resize(finest_level+1);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            auto const& ld = *m_leveldata[lev];
+            neg_S[lev].define(grids[lev], dmap[lev], 1, 0, MFInfo(), Factory(lev));
+            if (proj_for_small_dt || incremental) {
+                MultiFab::LinComb(neg_S[lev], Real(-1.0), ld.divu_source, 0,
+                                  Real(1.0), ld.divu_source_o, 0, 0, 1, 0);
+            } else {
+                MultiFab::Copy(neg_S[lev], ld.divu_source, 0, 0, 1, 0);
+                neg_S[lev].mult(Real(-1.0));
+            }
+            Source[lev] = &neg_S[lev];
+        }
+    }
 
     bool set_inflow_bc = !proj_for_small_dt && !incremental;
     ApplyNodalProjection(density, vel, Source, time, scaling_factor,
@@ -94,7 +115,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> density,
 
 void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
                                    Vector<MultiFab      *>        vel,
-                                   Vector<MultiFab      *> const& /*divu_Source*/, // only incompressible for now
+                                   Vector<MultiFab      *> const& divu_Source,
                                    Real time, Real scaling_factor, bool incremental,
                                    bool set_inflow_bc)
 {
@@ -178,15 +199,21 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
     LPInfo info;
     info.setMaxCoarseningLevel(m_nodal_mg_max_coarsening_level);
 
+    // Cell-centered source, -S (see above); none for div(u) = 0
+    Vector<MultiFab*> S_cc;
+    if (!divu_Source.empty() && divu_Source[0] != nullptr) {
+        S_cc = divu_Source;
+    }
+
     if (m_constant_density)
     {
         Real constant_sigma = scaling_factor / m_ro_0;
         nodal_projector = std::make_unique<Hydro::NodalProjector>(vel, constant_sigma,
-                                         Geom(0,finest_level), info);
+                                         Geom(0,finest_level), info, S_cc);
     } else
     {
         nodal_projector = std::make_unique<Hydro::NodalProjector>(vel, GetVecOfConstPtrs(sigma),
-                                         Geom(0,finest_level), info);
+                                         Geom(0,finest_level), info, S_cc);
     }
     nodal_projector->setDomainBC(bclo, bchi);
 

@@ -32,6 +32,12 @@ incflo::incflo ()
 
     init_bcs();
 
+    if (m_use_divu_source && has_inout_bndry) {
+        // enforceInOutSolvability matches outflow to inflow, which assumes the
+        // integral of S is zero
+        amrex::Abort("incflo.use_divu_source is not yet implemented with direction_dependent boundaries");
+    }
+
     init_advection();
 
     set_background_pressure();
@@ -63,6 +69,15 @@ void incflo::InitData ()
             InitialRedistribution();
         }
 #endif
+
+        // S^0 for the initial projection; dS/dt is estimated by the initial iterations
+        if (m_use_divu_source) {
+            update_divu_source(m_cur_time);
+            copy_from_new_to_old_divu_source();
+            for (int lev = 0; lev <= finest_level; ++lev) {
+                m_leveldata[lev]->dsdt.setVal(0.0);
+            }
+        }
 
         if (m_do_initial_proj) {
             InitialProjection();

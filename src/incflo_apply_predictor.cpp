@@ -61,13 +61,16 @@ using namespace amrex;
 //
 //     Solve Poisson equation for phi:
 //
-//     div( grad(phi) / rho^nph ) = div( u** )
+//     div( grad(phi) / rho^nph ) = div( u** ) - S^(n+1)
+//
+//     where S is the source in the divergence constraint div(u) = S (zero unless
+//     incflo.use_divu_source = 1)
 //
 //     Update pressure:
 //
 //     p = phi / dt
 //
-//     Update velocity, now divergence free
+//     Update velocity, which now satisfies the divergence constraint
 //
 //     vel = u** - dt * grad p / rho^nph
 //
@@ -175,6 +178,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
                        get_density_old_const(), get_tracer_old_const(), get_tracer_old_const(),
                        include_pressure_gradient);
 
+    // *************************************************************************************
+    // S^(n+1/2), for the MAC projection and the edge-state prediction
+    // *************************************************************************************
+    compute_divu_source_nph();
+
     // **********************************************************************************************
     // Compute the MAC-projected velocities at all levels
     // *************************************************************************************
@@ -217,6 +225,11 @@ void incflo::ApplyPredictor (bool incremental_projection)
     // Update velocity
     // **********************************************************************************************
     update_velocity(StepType::Predictor, vel_eta, vel_forces);
+
+    // **********************************************************************************************
+    // S^(n+1) from the new scalars, for the projection
+    // **********************************************************************************************
+    update_divu_source(new_time);
 
     // **********************************************************************************************
     // Project velocity field, update pressure

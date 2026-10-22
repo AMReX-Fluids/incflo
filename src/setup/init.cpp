@@ -214,6 +214,42 @@ void incflo::ReadParameters ()
         pp.query("mu_T", m_mu_T);
         pp.query("cp", m_cp);
 
+        // Divergence constraint div(u) = S
+        pp.query("use_divu_source", m_use_divu_source);
+        if (m_use_divu_source) {
+            if (m_advection_type != "Godunov") {
+                amrex::Abort("incflo.use_divu_source is only implemented for incflo.advection_type = Godunov");
+            }
+            if (m_use_cc_proj) {
+                amrex::Abort("incflo.use_divu_source is not yet implemented with the CC projection");
+            }
+            if (Geom(0).IsRZ()) {
+                amrex::Abort("incflo.use_divu_source is not yet implemented in RZ");
+            }
+#ifdef AMREX_USE_EB
+            if (!geom_type.empty() && geom_type != "all_regular") {
+                amrex::Abort("incflo.use_divu_source is not yet implemented with embedded boundaries");
+            }
+#endif
+            // The face-centered velocities in the ghost cells at the coarse/fine boundary
+            // are filled with the divergence-preserving interpolation, which keeps
+            // div(u_mac) = S there.  It only exists for refinement ratios 2 and 4.
+            for (int lev = 0; lev < max_level; ++lev) {
+                for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                    if (refRatio(lev)[d] != 2 && refRatio(lev)[d] != 4) {
+                        amrex::Abort("incflo.use_divu_source requires refinement ratios of 2 or 4");
+                    }
+                }
+            }
+            // With the density fixed, div(u) = S cannot conserve mass
+            if (m_constant_density) {
+                amrex::Print() << "WARNING: incflo.use_divu_source with incflo.constant_density: "
+                                  "mass is not conserved, because div(u) = S adds mass at the "
+                                  "rate ro_0 S per unit volume.  This is not a low Mach number "
+                                  "model.\n";
+            }
+        }
+
     } // end prefix incflo
 
     ReadIOParameters();
@@ -335,6 +371,11 @@ void incflo::ReadIOParameters()
     if (m_use_temperature) {
         // Add temperature to the default list
         m_plotVars.push_back("temperature");
+    }
+
+    if (m_use_divu_source) {
+        // Add S to the default list
+        m_plotVars.push_back("divu_source");
     }
 
     // Helper function to update m_plotVars according to m_plt_* flags
@@ -515,6 +556,7 @@ void incflo::InitialIterations ()
     copy_from_new_to_old_density(IntVect(ng));
     copy_from_new_to_old_tracer(IntVect(ng));
     copy_from_new_to_old_temperature(IntVect(ng));
+    copy_from_new_to_old_divu_source();
 
     int initialisation = 1;
     bool explicit_diffusion = (m_diff_type == DiffusionType::Explicit);
@@ -540,10 +582,15 @@ void incflo::InitialIterations ()
 
         ApplyPredictor(true);
 
+        // Each iteration improves the estimate of dS/dt used by the next one and by
+        // the first step, as in IAMR
+        compute_dsdt();
+
         copy_from_old_to_new_velocity();
         copy_from_old_to_new_density();
         copy_from_old_to_new_tracer();
         copy_from_old_to_new_temperature();
+        copy_from_old_to_new_divu_source();
     }
 
     // Reset dt to get initial step as specified, otherwise we can see increase to dt
