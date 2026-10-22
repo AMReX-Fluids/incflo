@@ -21,7 +21,7 @@ incflo.cfl              =   0.45        # CFL factor
 #.......................................#
 amr.plot_int            =   100         # Steps between plot files
 amr.check_int           =   1000        # Steps between checkpoint files
-amr.restart             =   "chk00100"  # Checkpoint to restart from 
+amr.restart             =   ""          # Checkpoint to restart from 
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #               PHYSICS                 #
@@ -35,7 +35,7 @@ incflo.ro_0             =   1.          # Reference density
 #.......................................#
 amr.n_cell              =   100 100 10  # Grid cells at coarsest AMRlevel
 amr.max_level           =   0           # Max AMR level in hierarchy 
-amr.blocking_factor     =   4 
+amr.blocking_factor     =   2
 
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #              GEOMETRY                 #

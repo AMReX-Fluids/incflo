@@ -30,6 +30,8 @@ incflo.mu               =   1000.0      # Dynamic viscosity coefficient
 incflo.tau_0            =   8047.0      # Yield stress
 incflo.papa_reg         =   1.0e-4     # Regularisation parameter
 
+incflo.use_tensor_solve = false
+
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #        ADAPTIVE MESH REFINEMENT       #
 #.......................................#
@@ -62,7 +64,7 @@ sphere.center           =   2.  2.  3.
 #¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨¨#
 #           INITIAL CONDITIONS          #
 #.......................................#
-incflo.probtype         =   5
+incflo.probtype         =   0
 incflo.ic_u             =   0.0         #
 incflo.ic_v             =   0.0         #
 incflo.ic_w             =   1.0         #

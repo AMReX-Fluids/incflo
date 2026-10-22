@@ -99,3 +99,4 @@ amr.plotVariables = velx vely velz gpx gpy gpz density tracer vfrac
 
 eb2.small_volfrac = 0.055
 eb2.extend_domain_face = 1
+eb2.cover_multiple_cuts = 1
