@@ -25,8 +25,11 @@ import breathe
 from datetime import datetime
 
 def get_incflo_version():
+    # The development version is named after the next monthly release
     today = datetime.today()
-    return u'%s.%.2d-dev' % (str(today.year)[-2:], (today.month + 1) % 12)
+    year = today.year + today.month // 12
+    month = today.month % 12 + 1
+    return u'%s.%.2d-dev' % (str(year)[-2:], month)
 
 # -- General configuration ------------------------------------------------
 
@@ -46,7 +49,7 @@ extensions = ['sphinx.ext.mathjax',
 intersphinx_mapping = {
     'amrex': ('https://amrex-codes.github.io/amrex/docs_html/', None),
     'hydro': ('https://amrex-fluids.github.io/amrex-hydro/docs_html/', None),
-    'iamr': ('https://amrex-fluids.github.io/IAMR/', None)
+    'iamr': ('https://amrex-fluids.github.io/IAMR/docs_html/', None)
      # 'incflo_tutorials': ('https://incflo-codes.github.io/incflo/tutorials_html/', None)
 }
 
@@ -64,7 +67,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'incflo'
-copyright = u'2017-2018, Incflo Team'
+copyright = u'2017-%d, Incflo Team' % datetime.today().year
 author = u'Incflo Team'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -81,7 +84,7 @@ release = get_incflo_version()
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
