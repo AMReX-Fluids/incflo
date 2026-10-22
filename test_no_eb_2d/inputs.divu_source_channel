@@ -1,0 +1,44 @@
+# div(u) = S with uniform S = 1 (incflo.probtype = 602) in a channel with pressure
+# outflow at both ends.  The exact solution is u = x - 1/2, v = 0, and a density that
+# stays uniform, rho = exp(-t).  error_u and error_v hold the difference from the exact
+# velocity.  The tracer is advected in convective form, so it stays exactly 1.
+#
+# With geometry.is_periodic = 1 1 the domain is closed, the projections remove the mean
+# of S, and incflo warns that the integral of S is not zero.
+
+stop_time               =   0.5
+max_step                =   -1
+
+incflo.cfl              =   0.5
+incflo.init_shrink      =   1.0
+
+amr.plot_int            =   100000
+amr.check_int           =   -1
+amr.plotVariables       =   velx vely density tracer divu_source error_u error_v
+
+incflo.use_divu_source  =   1
+
+incflo.constant_density =   0
+incflo.ro_0             =   1.
+incflo.mu               =   0.01
+incflo.gravity          =   0.  0.
+
+incflo.advect_tracer    =   1
+incflo.trac_is_conservative = 0
+incflo.ic_t             =   1.
+
+amr.n_cell              =   32  16
+amr.max_level           =   0
+
+geometry.prob_lo        =   0.  0.
+geometry.prob_hi        =   1.  0.5
+geometry.is_periodic    =   0   1
+
+xlo.type                =   "po"
+xlo.pressure            =   0.
+xhi.type                =   "po"
+xhi.pressure            =   0.
+
+incflo.probtype         =   602
+
+incflo.verbose          =   1

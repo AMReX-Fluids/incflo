@@ -8,6 +8,7 @@ target_sources(incflo
    incflo_apply_corrector.cpp
    incflo_compute_dt.cpp
    incflo_compute_forces.cpp
+   incflo_compute_divu_source.cpp
    incflo_correct_small_cells.cpp
    incflo_redistribute.cpp
    incflo_explicit_update.cpp

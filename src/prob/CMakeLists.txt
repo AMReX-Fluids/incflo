@@ -8,4 +8,5 @@ target_sources(incflo
    prob_bc.cpp
    prob_init_fluid.cpp
    prob_init_fluid_usr.cpp
+   prob_divu_source.cpp
    )

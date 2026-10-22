@@ -39,6 +39,12 @@ incflo::LevelData::LevelData (amrex::BoxArray const& ba,
 
         conv_temperature_o.define(ba, dm, 1, 0, MFInfo(), fact);
     }
+    if (my_incflo->m_use_divu_source) {
+        divu_source.define    (ba, dm, 1, 0, MFInfo(), fact);
+        divu_source_o.define  (ba, dm, 1, 0, MFInfo(), fact);
+        divu_source_nph.define(ba, dm, 1, incflo::nghost_divu_source_nph(), MFInfo(), fact);
+        dsdt.define           (ba, dm, 1, 0, MFInfo(), fact);
+    }
 #ifdef AMREX_USE_EB
     if (my_incflo->hasEBFlow()) {
         velocity_eb.define(ba, dm, AMREX_SPACEDIM, my_incflo->nghost_state(), MFInfo(), fact);

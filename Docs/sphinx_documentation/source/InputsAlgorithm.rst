@@ -32,6 +32,12 @@ The following inputs must be preceded by "incflo."
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  mu_T                |  thermal conductivity                                                 |  Real(s)    |  0.0         |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+
+|  use_divu_source     |  Use the constraint :math:`\nabla \cdot U = S` instead of             |  bool       |  false       |
+|                      |  :math:`\nabla \cdot U = 0` (see the Fluid Equations section).        |             |              |
+|                      |  Requires advection_type = Godunov and the nodal projection;          |             |              |
+|                      |  not yet implemented with embedded boundaries, RZ, direction          |             |              |
+|                      |  dependent boundaries, or refinement ratios other than 2 or 4         |             |              |
++----------------------+-----------------------------------------------------------------------+-------------+--------------+
 |  use_cc_proj         |  Use cell-centered rather than nodal pressure; this changes the       |  bool       | false        |
 |                      |  which approximate projection we use                                  |             |              |
 +----------------------+-----------------------------------------------------------------------+-------------+--------------+

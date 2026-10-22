@@ -1,0 +1,41 @@
+# div(u) = S in a periodic box, with S = f(t) cos(2 pi x) cos(2 pi y)
+#   incflo.probtype = 600: f = 1, a steady potential flow set by the initial projection
+#   incflo.probtype = 601: f = sin(2 pi t), so u = sin(2 pi t) grad(phi0)
+# The exact velocity is u = f(t) grad(phi0) with lap(phi0) = cos(2 pi x) cos(2 pi y);
+# error_u and error_v hold the difference from it.
+# The density is held constant (incflo.constant_density = 1), so mass is not conserved:
+# div(u) = S adds mass at the rate ro_0 S per unit volume (zero in total here, because S
+# has zero mean), and incflo warns about it. The problem is used for its exact solution,
+# not as a physical low Mach number flow.
+# With incflo.constant_density = 0 the varying density makes the flow rotational
+# (baroclinic torque), and there is no exact solution.
+
+stop_time               =   0.25
+max_step                =   -1
+
+incflo.cfl              =   0.5
+incflo.init_shrink      =   1.0
+
+amr.plot_int            =   100000
+amr.check_int           =   -1
+amr.plotVariables       =   velx vely gpx gpy density divu_source error_u error_v
+
+incflo.use_divu_source  =   1
+
+incflo.constant_density =   1       # not mass conserving, see above
+incflo.ro_0             =   1.
+incflo.mu               =   0.01
+incflo.diffusion_type   =   1       # Crank-Nicolson: grad(p) is 2nd order in time
+incflo.gravity          =   0.  0.
+incflo.advect_tracer    =   0
+
+amr.n_cell              =   32  32
+amr.max_level           =   0
+
+geometry.prob_lo        =   0.  0.
+geometry.prob_hi        =   1.  1.
+geometry.is_periodic    =   1   1
+
+incflo.probtype         =   601
+
+incflo.verbose          =   1

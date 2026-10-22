@@ -36,6 +36,12 @@ void incflo::MakeNewLevelFromCoarse (int lev,
     if (m_use_temperature) {
         fillcoarsepatch_temperature(lev, time, new_leveldata->temperature, 0);
     }
+    if (m_use_divu_source) {
+        fillcoarsepatch_divu_source(lev, time, new_leveldata->divu_source,
+                                    m_leveldata[lev-1]->divu_source, 0);
+        fillcoarsepatch_divu_source(lev, time, new_leveldata->dsdt,
+                                    m_leveldata[lev-1]->dsdt, 0);
+    }
     fillcoarsepatch_gradp(lev, time, new_leveldata->gp, 0);
 
     if (m_use_cc_proj) {
@@ -91,6 +97,16 @@ void incflo::RemakeLevel (int lev, Real time, const BoxArray& ba,
     }
     if (m_use_temperature) {
         fillpatch_temperature(lev, time, new_leveldata->temperature, 0);
+    }
+    if (m_use_divu_source) {
+        // S and dS/dt are interpolated, not recomputed from the regridded state
+        Vector<MultiFab*> divu_source(lev+1), dsdt(lev+1);
+        for (int ilev = 0; ilev <= lev; ++ilev) {
+            divu_source[ilev] = &(m_leveldata[ilev]->divu_source);
+            dsdt[ilev]        = &(m_leveldata[ilev]->dsdt);
+        }
+        fillpatch_divu_source(lev, time, new_leveldata->divu_source, divu_source, 0);
+        fillpatch_divu_source(lev, time, new_leveldata->dsdt, dsdt, 0);
     }
     fillpatch_gradp(lev, time, new_leveldata->gp, 0);
 

@@ -103,6 +103,13 @@ void incflo::WriteCheckPointFile() const
                          amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "temperature"));
         }
 
+        if (m_use_divu_source) {
+            VisMF::Write(m_leveldata[lev]->divu_source,
+                         amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "divu_source"));
+            VisMF::Write(m_leveldata[lev]->dsdt,
+                         amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "dsdt"));
+        }
+
         VisMF::Write(m_leveldata[lev]->gp,
                      amrex::MultiFabFileFullPrefix(lev, checkpointname, level_prefix, "gradp"));
 
@@ -241,6 +248,8 @@ void incflo::ReadCheckpointFile()
      * Load fluid data                                                         *
      ***************************************************************************/
 
+    bool divu_source_in_checkpoint = true;
+
     // Load the field data
     for(int lev = 0; lev <= finest_level; ++lev)
     {
@@ -260,6 +269,17 @@ void incflo::ReadCheckpointFile()
                         amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "temperature"));
         }
 
+        if (m_use_divu_source) {
+            std::string const divu_file =
+                amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "divu_source");
+            divu_source_in_checkpoint = divu_source_in_checkpoint && VisMF::Exist(divu_file);
+            if (divu_source_in_checkpoint) {
+                VisMF::Read(m_leveldata[lev]->divu_source, divu_file);
+                VisMF::Read(m_leveldata[lev]->dsdt,
+                            amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "dsdt"));
+            }
+        }
+
         VisMF::Read(m_leveldata[lev]->gp,
                     amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "gradp"));
 
@@ -269,6 +289,16 @@ void incflo::ReadCheckpointFile()
         } else {
             VisMF::Read(m_leveldata[lev]->p_nd,
                         amrex::MultiFabFileFullPrefix(lev, m_restart_file, level_prefix, "p_nd"));
+        }
+    }
+
+    // A checkpoint written without incflo.use_divu_source has no S: compute it from the
+    // state, with no time derivative to start from
+    if (m_use_divu_source && !divu_source_in_checkpoint) {
+        amrex::Print() << "No S in the checkpoint: computing it from the state\n";
+        update_divu_source(m_cur_time);
+        for (int lev = 0; lev <= finest_level; ++lev) {
+            m_leveldata[lev]->dsdt.setVal(0.0);
         }
     }
 
@@ -536,6 +566,16 @@ void incflo::WritePlotVariables(Vector<std::string> vars, const std::string& plo
                 MultiFab::Copy(mf[lev], m_leveldata[lev]->temperature, 0, icomp, 1, 0);
             }
             pltscaVarsName.push_back("temperature");
+            ++icomp;
+        }
+        else if (vars[n] == "divu_source") {
+            if (!m_use_divu_source) {
+                amrex::Abort("plotfile variable 'divu_source' requires incflo.use_divu_source = 1");
+            }
+            for (int lev = 0; lev <= finest_level; ++lev) {
+                MultiFab::Copy(mf[lev], m_leveldata[lev]->divu_source, 0, icomp, 1, 0);
+            }
+            pltscaVarsName.push_back("divu_source");
             ++icomp;
         }
         else if (vars[n] == "p") {
