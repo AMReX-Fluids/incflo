@@ -10,7 +10,7 @@ Debugging is an art.  Everyone has their own favorite method.  Here we
 offer a few tips we have found to be useful.
 
 Compiling in debug mode (e.g., :cpp:`make DEBUG=TRUE` for gmake users;
-:cpp:`cmake -DDEBUG` for cmake users) and running with
+:cpp:`cmake -DCMAKE_BUILD_TYPE=Debug` for cmake users) and running with
 :cpp:`amrex.fpe_trap_invalid=1` in the inputs file can be helpful.
 In debug mode, many compiler debugging flags are turned on and all
 :cpp:`MultiFab` s are initialized to signaling NaNs.  The
@@ -28,7 +28,7 @@ Several ways to look at the data include:
 
        VisMF::Write(const FabArray<FArrayBox>& mf, const std::string& name);
 
-   and examining it with ``Amrvis`` (section :ref:`sec:amrvis` in the AMReX documentation).
+   and examining it with ``Amrvis`` (section :ref:`amrex:sec:amrvis` in the AMReX documentation).
 
 2) You can also use the :cpp:`print_state` routine:
 
@@ -46,11 +46,11 @@ Several ways to look at the data include:
 
    ::
 
-       fcompare --infile1 plt00000_run1 --infile2 plt00000_run2 --diffvar u_g
+       fcompare --diffvar velx plt00000_run1 plt00000_run2
 
    will print out the maximum absolute and relative differences between the two plotfiles
    for each variable and will also create a new plotfile "diffs" that contains the difference
-   in u_g (in this case) between the two plotfiles.
+   in velx (in this case) between the two plotfiles.
 
    The :cpp:`fcompare` executable can be built in AMReX (go to amrex/Tools/Plotfile and type "make").
 
@@ -62,7 +62,7 @@ files for different processes.  For example,
 
    ::
 
-       mpiexec -n 4 valgrind --leak-check=yes --track-origins=yes --log-file=vallog.%p ./incflo.exe ...
+       mpiexec -n 4 valgrind --leak-check=yes --track-origins=yes --log-file=vallog.%p ./incflo.ex ...
 
 
 Also see AMReX's documentation on :ref:`amrex:sec:basics:debugging` for further suggestions.

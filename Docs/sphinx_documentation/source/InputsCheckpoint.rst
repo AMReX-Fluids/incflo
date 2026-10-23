@@ -12,7 +12,8 @@ The following inputs must be preceded by "amr" and control checkpoint/restart.
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 | plotfile_on_restart | Write a plotfile before taking a time step                            |    bool     | false     |
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
-| regrid_on_restart   | Create new grids, including level 0, on restart                       |    bool     | false     |
+| regrid_on_restart   | Create new grids for the levels above level 0 on restart (the level 0 |    bool     | false     |
+|                     | grids are those of the checkpoint)                                    |             |           |
 +---------------------+-----------------------------------------------------------------------+-------------+-----------+
 | check_int           | Frequency of checkpoint output;                                       |    Int      | -1        |
 |                     | if -1 then no checkpoints will be written                             |             |           |
