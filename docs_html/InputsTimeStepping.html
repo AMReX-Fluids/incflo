@@ -54,7 +54,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="InputsInitialization.html">Initialization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsMultigrid.html">Multigrid Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsPlotFiles.html">Plotfiles and Other Output</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsCheckpoint.html">Checkpoint/Restart</a></li>
@@ -95,12 +95,10 @@
            <div itemprop="articleBody">
              
   <section id="time-stepping">
-<h1>Time Stepping<a class="headerlink" href="#time-stepping" title="Link to this heading"></a></h1>
-<p>The first three inputs below do not take a prefix.  Note that the first two are both specified, both criteria
-are used and the simulation still stop when the first criterion is hit.  In the case of unsteady flow,
-the simulation will stop when either the number of steps reaches max_step or time reaches stop_time.
-In the case of steady flow, the simulation will stop when either the tolerance (difference between
-subsequent steps) is reached or the number of iterations reaches the maximum number specified.</p>
+<span id="sec-inputstimestepping"></span><h1>Time Stepping<a class="headerlink" href="#time-stepping" title="Link to this heading"></a></h1>
+<p>The first three inputs below do not take a prefix.  Note that if the first two are both specified, both criteria
+are used and the simulation will stop when the first criterion is hit, i.e. when either the number of steps
+reaches max_step or time reaches stop_time.</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"></th>
@@ -121,7 +119,8 @@ subsequent steps) is reached or the number of iterations reaches the maximum num
 <td><p>-1.0</p></td>
 </tr>
 <tr class="row-even"><td><p>steady_state</p></td>
-<td><p>Is this a steady state problem?</p></td>
+<td><p>Is this a steady state problem? Not yet implemented: setting it to
+true aborts when the inputs are read</p></td>
 <td><p>Bool</p></td>
 <td><p>False</p></td>
 </tr>
@@ -143,12 +142,14 @@ subsequent steps) is reached or the number of iterations reaches the maximum num
 <td><p>-1.</p></td>
 </tr>
 <tr class="row-odd"><td><p>cfl</p></td>
-<td><p>CFL constraint (dt &lt; cfl * dx / u) if fixed_dt not &gt; 0</p></td>
+<td><p>CFL constraint (dt &lt; cfl * dx / u) if fixed_dt not &gt; 0;
+at most 0.5 for MOL and 1.0 for Godunov and BDS</p></td>
 <td><p>Real</p></td>
 <td><p>0.5</p></td>
 </tr>
 <tr class="row-even"><td><p>dt_change_max</p></td>
-<td><p>maximum percentage dt can increase</p></td>
+<td><p>Maximum factor by which dt can increase from one step to the next;
+must be between 1.0 and 1.1</p></td>
 <td><p>Real</p></td>
 <td><p>1.1</p></td>
 </tr>
@@ -166,10 +167,11 @@ subsequent steps) is reached or the number of iterations reaches the maximum num
 <li><p>If you want to fix the dt, simply set <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">fixed_dt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">XXX</span></code> and the fluid time
 step will always be that number.</p></li>
 <li><p>If you want to let the code determine the appropriate time step using the advective CFL
-condition, then set <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.7</span></code> for example, and the fluid time step will
+condition, then set <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.7</span></code> for example, and (in the absence of forcing
+terms and of explicit diffusion, which further restrict it) the fluid time step will
 be computed to be dt = 0.7 * dx / max(vel).</p></li>
 <li><p>Note that the cfl defaults to 0.5 so it does not have to be set in the inputs file. If neither
-<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span></code> nor <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">fixed_dt</span></code> is set, then default value of cfl will be used.
+<code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span></code> nor <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">fixed_dt</span></code> is set, then default value of cfl will be used.
 If <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">fixed_dt</span></code> is set, then it will override the cfl option whether
 <code class="code highlight cpp c++ docutils literal highlight-c++"><span class="n">incflo</span><span class="p">.</span><span class="n">cfl</span></code> is set or not.</p></li>
 </ul>
@@ -188,7 +190,7 @@ If <code class="code highlight cpp c++ docutils literal highlight-c++"><span cla
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+    <p>&#169; Copyright 2017-2026, Incflo Team.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

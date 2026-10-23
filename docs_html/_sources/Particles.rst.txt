@@ -15,7 +15,8 @@ mesh for post-processing, and as a refinement criterion for adaptive mesh refine
 Particles are organized into species, each of which is an :cpp:`incflo_PC` object held by the
 :cpp:`ParticleData` container in :cpp:`incflo/src/particles`. At present incflo defines a single
 species, ``tracer_particles``, whose run-time parameters are read from the ``tracer_particles.*`` input
-prefix. The particle module is compiled in with the :cpp:`INCFLO_USE_PARTICLES` preprocessor flag.
+prefix. The particle module is compiled in with the :cpp:`INCFLO_USE_PARTICLES` preprocessor flag,
+which is set by building with ``USE_PARTICLES = TRUE`` (GNU Make) or ``-DINCFLO_PARTICLES=yes`` (CMake).
 
 Enabling tracer particles
 --------------------------

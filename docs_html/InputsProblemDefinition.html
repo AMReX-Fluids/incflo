@@ -51,7 +51,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Problem Definition</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsTimeStepping.html">Time Stepping</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsInitialization.html">Initialization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsMultigrid.html">Multigrid Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsPlotFiles.html">Plotfiles and Other Output</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsCheckpoint.html">Checkpoint/Restart</a></li>
@@ -158,9 +158,12 @@
 </thead>
 <tbody>
 <tr class="row-even"><td><p>geometry</p></td>
-<td><p>Which type of EB geometry are we using?</p></td>
+<td><p>Which type of EB geometry are we using? (EB builds only)
+Options are box, cylinder, annulus, sphere, jcap, stl, chkptfile,
+csg (CSG builds), and, in 3D only, twocylinders, spherecube and
+tuscan. If not set (or set to all_regular), there is no EB.</p></td>
 <td><p>String</p></td>
-<td></td>
+<td><p>None</p></td>
 </tr>
 <tr class="row-odd"><td><p>gravity</p></td>
 <td><p>Gravity vector (e.g., incflo.gravity = -9.81  0.0  0.0)</p></td>
@@ -168,13 +171,17 @@
 <td><p>(0, 0, 0)</p></td>
 </tr>
 <tr class="row-even"><td><p>delp</p></td>
-<td><p>Pressure drop (Pa)</p></td>
-<td><p>Real</p></td>
+<td><p>Pressure drop across the domain in each coordinate direction, which
+drives the flow (see <a class="reference internal" href="FluidEquations.html#sec-backgroundpressure"><span class="std std-ref">Background pressure</span></a>). At most one value
+can be non-zero, and not in a direction with gravity or with a pressure
+inflow/outflow pair</p></td>
+<td><p>Reals</p></td>
 <td><p>(0, 0, 0)</p></td>
 </tr>
 </tbody>
 </table>
-<p>Setting basic boundary conditions can be specified by inputs preceded by “xlo”, “xhi”, “ylo”, “yhi”, “zlo”, and “zhi”</p>
+<p>Setting basic boundary conditions can be specified by inputs preceded by “xlo”, “xhi”, “ylo”, “yhi”, “zlo”, and “zhi”.
+No boundary type is given for the faces of a periodic direction (<code class="docutils literal notranslate"><span class="pre">geometry.is_periodic</span></code>).</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"></th>
@@ -190,6 +197,7 @@
 <li><p>‘pi’  or ‘pressure_inflow’</p></li>
 <li><p>‘po’  or ‘pressure_outflow’</p></li>
 <li><p>‘mi’  or ‘mass_inflow’</p></li>
+<li><p>‘dd’  or ‘direction_dependent’</p></li>
 <li><p>‘nsw’ or ‘no_slip_wall’</p></li>
 <li><p>‘sw’ or ‘slip_wall’</p></li>
 <li><p>‘mixed’</p></li>
@@ -199,27 +207,33 @@
 <td><p>None</p></td>
 </tr>
 <tr class="row-odd"><td><p>pressure</p></td>
-<td><p>Sets boundary pressure for pressure inflows, outflows and mass inflows</p></td>
+<td><p>Sets boundary pressure for pressure inflows, pressure outflows and mixed
+boundaries (required for these types)</p></td>
 <td><p>Real</p></td>
 <td><p>None</p></td>
 </tr>
 <tr class="row-even"><td><p>velocity</p></td>
-<td><p>Sets Dirichlet boundary condition for velocity</p></td>
+<td><p>Sets Dirichlet boundary condition for velocity at mass inflow,
+direction-dependent and mixed boundaries. At a no-slip wall, the
+tangential components give the velocity of the wall</p></td>
 <td><p>Reals</p></td>
 <td><p>(0, 0, 0)</p></td>
 </tr>
 <tr class="row-odd"><td><p>density</p></td>
-<td><p>Sets Dirichlet boundary condition for density</p></td>
+<td><p>Sets Dirichlet boundary condition for density at mass inflow,
+direction-dependent and mixed boundaries</p></td>
 <td><p>Real</p></td>
 <td><p>1.0</p></td>
 </tr>
 <tr class="row-even"><td><p>tracer</p></td>
-<td><p>Sets Dirichlet boundary condition for tracer</p></td>
-<td><p>Real</p></td>
+<td><p>Sets Dirichlet boundary condition for tracer (one value per tracer) at
+mass inflow, direction-dependent and mixed boundaries. At a wall, the
+tracer is Dirichlet if this is given, and has zero flux otherwise</p></td>
+<td><p>Reals</p></td>
 <td><p>0.0</p></td>
 </tr>
 <tr class="row-odd"><td><p>temperature</p></td>
-<td><p>Sets Dirichlet boundary condition for temperature</p></td>
+<td><p>Sets Dirichlet boundary condition for temperature, as for tracer</p></td>
 <td><p>Real</p></td>
 <td><p>1.0</p></td>
 </tr>
@@ -228,9 +242,10 @@
 <blockquote>
 <div><p>The ‘mixed’ boundary type allows for inflow and outflow on the same domain face.
 The implementation requires that there is EB separating the inflow and outflow regions,
+requires <code class="docutils literal notranslate"><span class="pre">incflo.advection_type</span> <span class="pre">=</span> <span class="pre">Godunov</span></code>,
 and only currently treats constant viscosity (i.e. requires the inputs file contains  <code class="docutils literal notranslate"><span class="pre">incflo.use_tensor_solve</span> <span class="pre">=</span> <span class="pre">false</span></code>).
 It does allow for non-constant scalar diffusivity. To create a new problem setup with mixed BCs, one must additionally
-specify the Dirchlet and Neumann areas in <code class="docutils literal notranslate"><span class="pre">prob/prob_bc.cpp</span></code> In this file there are functions to set the needed BC info for the diffusion solver, the MAC projection, and with the same function, the nodal projection and advection. Comments in the code provide a detailed explanation for each instance. For additional details on mixed BCs, also see AMReX-Hydro’s documentation (<a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/bcs.html#bcs" title="(in amrex-hydro v26.11-dev)"><span>Boundary conditions</span></a>).</p>
+specify the Dirichlet and Neumann areas in <code class="docutils literal notranslate"><span class="pre">prob/prob_bc.cpp</span></code>. In this file there are functions to set the needed BC info for the diffusion solver, the MAC projection, and with the same function, the nodal projection and advection. Comments in the code provide a detailed explanation for each instance. For additional details on mixed BCs, also see AMReX-Hydro’s documentation (<a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/bcs.html#bcs" title="(in amrex-hydro v26.11-dev)"><span>Boundary conditions</span></a>).</p>
 </div></blockquote>
 </section>
 
@@ -245,7 +260,7 @@ specify the Dirchlet and Neumann areas in <code class="docutils literal notransl
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+    <p>&#169; Copyright 2017-2026, Incflo Team.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

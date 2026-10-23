@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gridding and Load Balancing &mdash; incflo 26.11-dev documentation</title>
+  <title>Gridding and Load Balancing Inputs &mdash; incflo 26.11-dev documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=681a4282" />
@@ -51,7 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="InputsProblemDefinition.html">Problem Definition</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsTimeStepping.html">Time Stepping</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsInitialization.html">Initialization</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Gridding and Load Balancing</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Gridding and Load Balancing Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsMultigrid.html">Multigrid Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsPlotFiles.html">Plotfiles and Other Output</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsCheckpoint.html">Checkpoint/Restart</a></li>
@@ -81,7 +81,7 @@
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="Inputs_Chapter.html">Run-time Inputs</a></li>
-      <li class="breadcrumb-item active">Gridding and Load Balancing</li>
+      <li class="breadcrumb-item active">Gridding and Load Balancing Inputs</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/InputsLoadBalancing.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -91,10 +91,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="gridding-and-load-balancing">
-<span id="chap-inputsloadbalancing"></span><h1>Gridding and Load Balancing<a class="headerlink" href="#gridding-and-load-balancing" title="Link to this heading"></a></h1>
+  <section id="gridding-and-load-balancing-inputs">
+<span id="chap-inputsloadbalancing"></span><h1>Gridding and Load Balancing Inputs<a class="headerlink" href="#gridding-and-load-balancing-inputs" title="Link to this heading"></a></h1>
 <p>The following inputs must be preceded by “amr” and determine how we create the grids and how often we regrid. The most
-commonly used options are listed here. See the AMReX documentation on <span class="xref std std-ref">amrex:Chap:InputsLoadBalancing</span> for additional
+commonly used options are listed here. See the AMReX documentation on <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/RuntimeParameters.html#chap-inputs" title="(in amrex v26.11-dev)"><span>Runtime Parameters</span></a> for additional
 options.</p>
 <table class="docutils align-default">
 <thead>
@@ -112,19 +112,36 @@ if regrid_int = -1 then no regridding will occur</p></td>
 <td><p>-1</p></td>
 </tr>
 <tr class="row-odd"><td><p>max_grid_size_x</p></td>
-<td><p>Maximum number of cells at level 0 in each grid in x-direction</p></td>
+<td><p>Maximum number of cells in each grid in x-direction (on all levels,
+unless one value per level is given)</p></td>
 <td><p>Int</p></td>
-<td><p>32</p></td>
+<td><div class="line-block">
+<div class="line">2D: 128</div>
+<div class="line">3D CPU: 32</div>
+<div class="line">3D GPU: 64</div>
+</div>
+</td>
 </tr>
 <tr class="row-even"><td><p>max_grid_size_y</p></td>
-<td><p>Maximum number of cells at level 0 in each grid in y-direction</p></td>
+<td><p>Maximum number of cells in each grid in y-direction (on all levels,
+unless one value per level is given)</p></td>
 <td><p>Int</p></td>
-<td><p>32</p></td>
+<td><div class="line-block">
+<div class="line">2D: 128</div>
+<div class="line">3D CPU: 32</div>
+<div class="line">3D GPU: 64</div>
+</div>
+</td>
 </tr>
 <tr class="row-odd"><td><p>max_grid_size_z</p></td>
-<td><p>Maximum number of cells at level 0 in each grid in z-direction</p></td>
+<td><p>Maximum number of cells in each grid in z-direction (3D) (on all
+levels, unless one value per level is given)</p></td>
 <td><p>Int</p></td>
-<td><p>32</p></td>
+<td><div class="line-block">
+<div class="line">CPU: 32</div>
+<div class="line">GPU: 64</div>
+</div>
+</td>
 </tr>
 <tr class="row-even"><td><p>blocking_factor_x</p></td>
 <td><p>Each grid must be divisible by blocking_factor_x in x-direction</p></td>
@@ -137,13 +154,13 @@ if regrid_int = -1 then no regridding will occur</p></td>
 <td><p>8</p></td>
 </tr>
 <tr class="row-even"><td><p>blocking_factor_z</p></td>
-<td><p>Each grid must be divisible by blocking_factor_z in z-direction</p></td>
+<td><p>Each grid must be divisible by blocking_factor_z in z-direction (3D)</p></td>
 <td><p>Int</p></td>
 <td><p>8</p></td>
 </tr>
 </tbody>
 </table>
-<p>The following inputs must be preceded by “fabarray_mfiter” and determine how we create the logical tiles:</p>
+<p>The following inputs must be preceded by “fabarray” and determine how we create the logical tiles:</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"></th>
@@ -153,7 +170,7 @@ if regrid_int = -1 then no regridding will occur</p></td>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>tile_size</p></td>
+<tr class="row-even"><td><p>mfiter_tile_size</p></td>
 <td><p>Maximum number of cells in each direction for (logical) tiles</p>
 <p>(3D CPU-only)</p>
 </td>
@@ -177,7 +194,7 @@ if regrid_int = -1 then no regridding will occur</p></td>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+    <p>&#169; Copyright 2017-2026, Incflo Team.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

@@ -97,6 +97,11 @@ approach.
 Here we discuss the basic workflow involved in a time step for each of these approaches.
 For details on how the convective terms are constructed, see the AMReX-Hydro documentation on <a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/Schemes.html#schemes" title="(in amrex-hydro v26.11-dev)"><span>Advection schemes</span></a>.
 For details on the projections, see the AMReX-Hydro documentation on <a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/Projections.html#projections" title="(in amrex-hydro v26.11-dev)"><span>Projection Methods</span></a>.</p>
+<p>The updates below are written for the conservative form of the momentum equation, which is used
+with <code class="docutils literal notranslate"><span class="pre">incflo.advect_momentum</span> <span class="pre">=</span> <span class="pre">true</span></code>. By default, incflo updates the velocity instead: the
+advective term is <span class="math notranslate nohighlight">\(U^{MAC} \cdot \nabla U\)</span>, and the pressure gradient, viscous and forcing terms
+are divided by the density. <span class="math notranslate nohighlight">\({\bf H}_U^{n+1/2}\)</span> is the forcing term evaluated with
+<span class="math notranslate nohighlight">\(\rho^{n+1/2}\)</span>, and the density in the projections is <span class="math notranslate nohighlight">\(\rho^{n+1/2}\)</span>.</p>
 <section id="mol">
 <h2>MOL<a class="headerlink" href="#mol" title="Link to this heading"></a></h2>
 <p>MOL requires predictor-corrector methodology to achieve second order accuracy.
@@ -107,8 +112,12 @@ In the predictor</p>
 </ul>
 <div class="math notranslate nohighlight">
 \[\begin{split}(\rho U)^{\ast} =&amp; (\rho U)^n -
-\Delta t \left( \nabla \cdot (\rho U^{MAC} U) + \nabla {p}^{n-1/2} \right) \\ &amp;+
-\Delta t \left( \nabla \cdot \tau^n + \rho^{n+1/2} {\bf H}_U \right)\end{split}\]</div>
+\Delta t \left( \nabla \cdot (\rho U^{MAC} U)^n + \nabla {p}^{n-1/2} \right) \\ &amp;+
+\Delta t \left( \nabla \cdot \tau^\ast + {\bf H}_U^{n+1/2} \right)\end{split}\]</div>
+<p>for implicit diffusion, which is the default. For Crank-Nicolson diffusion
+(<code class="docutils literal notranslate"><span class="pre">incflo.diffusion_type</span> <span class="pre">=</span> <span class="pre">1</span></code>), <span class="math notranslate nohighlight">\(\Delta t \; \nabla \cdot \tau^\ast\)</span> is replaced by
+<span class="math notranslate nohighlight">\(\frac{\Delta t}{2} ( \nabla \cdot \tau^n + \nabla \cdot \tau^\ast )\)</span>, and for explicit
+diffusion (<code class="docutils literal notranslate"><span class="pre">incflo.diffusion_type</span> <span class="pre">=</span> <span class="pre">0</span></code>) by <span class="math notranslate nohighlight">\(\Delta t \; \nabla \cdot \tau^n\)</span>.</p>
 <ul class="simple">
 <li><p>Project <span class="math notranslate nohighlight">\(U^{\ast}\)</span> by solving</p></li>
 </ul>
@@ -117,7 +126,7 @@ In the predictor</p>
 U^{\ast}+ \frac{1}{\rho} \nabla {p}^{n-1/2} \right)\]</div>
 <p>then defining</p>
 <div class="math notranslate nohighlight">
-\[U^{\ast \ast} = U^{\ast} - \frac{\Delta t}{\rho} \nabla \phi\]</div>
+\[U^{\ast \ast} = U^{\ast} + \frac{\Delta t}{\rho} \left( \nabla {p}^{n-1/2} - \nabla \phi \right)\]</div>
 <p>and</p>
 <div class="math notranslate nohighlight">
 \[{p}^{n+1/2, \ast} = \phi\]</div>
@@ -128,7 +137,10 @@ U^{\ast}+ \frac{1}{\rho} \nabla {p}^{n-1/2} \right)\]</div>
 </ul>
 <div class="math notranslate nohighlight">
 \[\begin{split}(\rho U)^{\ast \ast \ast} =&amp; (\rho U)^n - \frac{\Delta t}{2} \left( \nabla \cdot (\rho U^{MAC} U)^n + \nabla \cdot (\rho U^{MAC} U)^{\ast \ast}\right) \\
-&amp;+ \frac{\Delta t}{2} \left( \nabla \cdot \tau^n + \nabla \cdot \tau^{\ast \ast \ast} \right) + \Delta t \left( - \nabla {p}^{n+1/2,\ast} + \rho^{n+1/2} {\bf H}_U \right)\end{split}\]</div>
+&amp;+ \Delta t \; \nabla \cdot \tau^{\ast \ast \ast} + \Delta t \left( - \nabla {p}^{n+1/2,\ast} + {\bf H}_U^{n+1/2} \right)\end{split}\]</div>
+<p>for implicit diffusion. For Crank-Nicolson diffusion, <span class="math notranslate nohighlight">\(\Delta t \; \nabla \cdot \tau^{\ast \ast \ast}\)</span>
+is replaced by <span class="math notranslate nohighlight">\(\frac{\Delta t}{2} ( \nabla \cdot \tau^n + \nabla \cdot \tau^{\ast \ast \ast} )\)</span>, and
+for explicit diffusion by <span class="math notranslate nohighlight">\(\frac{\Delta t}{2} ( \nabla \cdot \tau^n + \nabla \cdot \tau^{\ast \ast} )\)</span>.</p>
 <ul class="simple">
 <li><p>Project <span class="math notranslate nohighlight">\(U^{\ast \ast \ast}\)</span> by solving</p></li>
 </ul>
@@ -136,7 +148,7 @@ U^{\ast}+ \frac{1}{\rho} \nabla {p}^{n-1/2} \right)\]</div>
 \[\nabla \cdot \frac{1}{\rho} \nabla \phi = \nabla \cdot \left( \frac{1}{\Delta t} U^{\ast \ast \ast} + \frac{1}{\rho} \nabla {p}^{n+1/2,\ast} \right)\]</div>
 <p>then defining</p>
 <div class="math notranslate nohighlight">
-\[U^{n+1} = U^{\ast \ast \ast} - \frac{\Delta t}{\rho} \nabla \phi\]</div>
+\[U^{n+1} = U^{\ast \ast \ast} + \frac{\Delta t}{\rho} \left( \nabla {p}^{n+1/2,\ast} - \nabla \phi \right)\]</div>
 <p>and</p>
 <div class="math notranslate nohighlight">
 \[{p}^{n+1/2} = \phi\]</div>
@@ -147,14 +159,17 @@ U^{\ast}+ \frac{1}{\rho} \nabla {p}^{n-1/2} \right)\]</div>
 we no longer need the predictor and corrector steps.</p>
 <ul>
 <li><p>Define the time-centered face-centered (staggered) MAC velocity which is used for advection: <span class="math notranslate nohighlight">\(U^{MAC,n+1/2}\)</span></p></li>
-<li><p>Define the new-time density, <span class="math notranslate nohighlight">\(\rho^{n+1} = \rho^n - \Delta t (\rho^{n+1/2,pred} U^{MAC,n+1/2})\)</span> by setting</p></li>
+<li><p>Define the new-time density, <span class="math notranslate nohighlight">\(\rho^{n+1} = \rho^n - \Delta t \nabla \cdot (\rho^{n+1/2,pred} U^{MAC,n+1/2})\)</span></p></li>
 <li><p>Define an approximation to the new-time state, <span class="math notranslate nohighlight">\((\rho U)^{\ast}\)</span> by setting</p>
 <div class="math notranslate nohighlight">
 \[\begin{split}(\rho^{n+1} U^{\ast}) &amp;= (\rho^n U^n) -
-\Delta t \left( \nabla \cdot (\rho U^{MAC} U) + \nabla {p}^{n-1/2} \right)  \\
-&amp;+ \frac{\Delta t}{2} ( \nabla \cdot \tau^n +  \nabla \cdot \tau^\ast)
- + \Delta t \; \rho^{n+1/2} {\bf H}_U\end{split}\]</div>
-<p>(for implicit diffusion, which is the current default)</p>
+\Delta t \left( \nabla \cdot (\rho U^{MAC} U)^{n+1/2} + \nabla {p}^{n-1/2} \right)  \\
+&amp;+ \Delta t \; \nabla \cdot \tau^\ast
+ + \Delta t \; {\bf H}_U^{n+1/2}\end{split}\]</div>
+<p>for implicit diffusion, which is the current default. For Crank-Nicolson diffusion
+(<code class="docutils literal notranslate"><span class="pre">incflo.diffusion_type</span> <span class="pre">=</span> <span class="pre">1</span></code>), <span class="math notranslate nohighlight">\(\Delta t \; \nabla \cdot \tau^\ast\)</span> is replaced by
+<span class="math notranslate nohighlight">\(\frac{\Delta t}{2} ( \nabla \cdot \tau^n + \nabla \cdot \tau^\ast )\)</span>, and for explicit
+diffusion (<code class="docutils literal notranslate"><span class="pre">incflo.diffusion_type</span> <span class="pre">=</span> <span class="pre">0</span></code>) by <span class="math notranslate nohighlight">\(\Delta t \; \nabla \cdot \tau^n\)</span>.</p>
 </li>
 <li><p>Project <span class="math notranslate nohighlight">\(U^{\ast}\)</span> by solving</p></li>
 </ul>
@@ -163,10 +178,13 @@ we no longer need the predictor and corrector steps.</p>
 U^{\ast}+ \frac{1}{\rho} \nabla {p}^{n-1/2} \right)\]</div>
 <p>then defining</p>
 <div class="math notranslate nohighlight">
-\[U^{n+1} = U^{\ast} - \frac{\Delta t}{\rho} \nabla \phi\]</div>
+\[U^{n+1} = U^{\ast} + \frac{\Delta t}{\rho} \left( \nabla {p}^{n-1/2} - \nabla \phi \right)\]</div>
 <p>and</p>
 <div class="math notranslate nohighlight">
 \[{p}^{n+1/2} = \phi\]</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">incflo.use_divu_source</span> <span class="pre">=</span> <span class="pre">1</span></code>, the MAC projection enforces
+<span class="math notranslate nohighlight">\(\nabla \cdot U^{MAC,n+1/2} = S^{n+1/2}\)</span>, and <span class="math notranslate nohighlight">\(S^{n+1} / \Delta t\)</span> is subtracted from the
+right-hand side of the nodal projection, so that <span class="math notranslate nohighlight">\(\nabla \cdot U^{n+1} = S^{n+1}\)</span>.</p>
 </section>
 </section>
 
@@ -181,7 +199,7 @@ U^{\ast}+ \frac{1}{\rho} \nabla {p}^{n-1/2} \right)\]</div>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+    <p>&#169; Copyright 2017-2026, Incflo Team.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

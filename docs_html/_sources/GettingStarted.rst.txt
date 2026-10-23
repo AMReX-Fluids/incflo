@@ -58,7 +58,7 @@ Building with GNU Make
 Here, we walk you through compiling an incflo executable.
 Decide whether you want to build the executable in 2-D vs 3-D,
 with or without EB (embedded boundaries / cut cells), and choose the corresponding
-directory: ``test_2d``, ``test_3d``, ``test_no_eb_2d``, or ``test_no_eb``.
+directory: ``test_2d``, ``test_3d``, ``test_no_eb_2d``, or ``test_no_eb_3d``.
 For this example, let's say you want to build in 2-D with cut cells.
 Then to build the code:
 
@@ -71,15 +71,19 @@ Then to build the code:
 
 #. Edit the ``GNUmakefile``:
 
-   Set AMREX_HOME to be the path to the directory where you have put amrex. NOTE: when setting ``AMREX_HOME`` in the ``GNUmakefile``, be aware that ``~`` does not expand, so ``AMREX_HOME=~/amrex/`` will yield an error.
+   Set ``AMREX_HOME`` to be the path to the directory where you have put amrex, and ``AMREX_HYDRO_HOME``
+   to be the path to the directory where you have put AMReX-Hydro. These default to ``../../amrex`` and
+   ``../../AMReX-Hydro``, i.e. to amrex, AMReX-Hydro and incflo having been cloned into the same directory.
+   NOTE: when setting ``AMREX_HOME`` in the ``GNUmakefile``, be aware that ``~`` does not expand, so ``AMREX_HOME=~/amrex/`` will yield an error.
 
-   Alternatively, the path to AMReX can be set up as an environment variable, ``AMREX_HOME``, on your machine to point to the path name where you have put AMReX. For example, if you are using the bash shell, you can add this to your ``.bashrc`` as:
+   Alternatively, the paths can be set up as environment variables, ``AMREX_HOME`` and ``AMREX_HYDRO_HOME``, on your machine to point to the path names where you have put AMReX and AMReX-Hydro. For example, if you are using the bash shell, you can add this to your ``.bashrc`` as:
 
    .. highlight:: bash
 
    ::
 
       export AMREX_HOME=/path/to/amrex
+      export AMREX_HYDRO_HOME=/path/to/AMReX-Hydro
 
    alternatively, in tcsh one can set
 
@@ -88,17 +92,19 @@ Then to build the code:
    ::
 
       setenv AMREX_HOME /path/to/amrex
+      setenv AMREX_HYDRO_HOME /path/to/AMReX-Hydro
 
 
-   Common options that you can set in the GNUMakefile include
+   Common options that you can set in the ``GNUmakefile`` include (the default values shown are
+   those set in the test directories' ``GNUmakefile``, or AMReX's defaults for options not set there)
 
    +-----------------+------------------------------+------------------+-------------+
    | Option name     | Description                  | Possible values  | Default     |
    |                 |                              |                  | value       |
    +=================+==============================+==================+=============+
-   | COMP            | Compiler (gnu or intel)      | gnu / intel      | None        |
+   | COMP            | Compiler (gnu or intel)      | gnu / intel      | gnu         |
    +-----------------+------------------------------+------------------+-------------+
-   | USE_MPI         | Whether to enable MPI        | TRUE / FALSE     | FALSE       |
+   | USE_MPI         | Whether to enable MPI        | TRUE / FALSE     | TRUE        |
    +-----------------+------------------------------+------------------+-------------+
    | USE_OMP         | Whether to enable OpenMP     | TRUE / FALSE     | FALSE       |
    +-----------------+------------------------------+------------------+-------------+
@@ -164,26 +170,27 @@ If the option ``CMAKE_BUILD_TYPE`` is omitted,
 
 There are two modes to build incflo with CMake:
 
-   o **SUPERBUILD (recommended):** AMReX and AMReX-Hydro are built as part
-   of the incflo build process. This method is strongly encouraged as it
-   ensures that the configuration options are consistent.
+* **SUPERBUILD (recommended):** AMReX and AMReX-Hydro are built as part
+  of the incflo build process. This method is strongly encouraged as it
+  ensures that the configuration options are consistent.
 
-   o **STANDALONE:** incflo source code is built separately and linked to an existing
-   AMReX installation. This is ideal for continuous integration severs (CI)
-   and regression testing applications. AMReX library version and configuration options
-   must meet incflo requirements.
+* **STANDALONE:** incflo source code is built separately and linked to an existing
+  AMReX installation (AMReX-Hydro is still built as part of incflo).
+  This is ideal for continuous integration servers (CI)
+  and regression testing applications. AMReX library version and configuration options
+  must meet incflo requirements.
 
 
 
 .. note::
-   **incflo requires CMake 3.14 or higher.**
+   **incflo requires CMake 3.20 or higher.**
 
 .. _sec:build:superbuild:
 
 SUPERBUILD Instructions (recommended)
 -------------------------------------
 
-In this mode, incflo CMake inherents AMReX CMake targets and configuration options, as well as AMReX-Hydro CMake targets; that is, incflo, AMReX and AMReX-Hydro are configured and built as a single entity.
+In this mode, incflo CMake inherits AMReX CMake targets and configuration options, as well as AMReX-Hydro CMake targets; that is, incflo, AMReX and AMReX-Hydro are configured and built as a single entity.
 
 First, make sure you've downloaded all the source codes (see :ref:`sec:Download`).
 
@@ -194,11 +201,15 @@ Next, build the incflo executable:
              > cd incflo
              > mkdir build
              > cd build
-             > cmake -DAMREX_HOME=/path/to/amrex/source/directory [amrex options] -DAMREX_HYDRO_HOME=/path/to/AMReX-Hydro/source/directory -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel] ..
+             > cmake -DAMREX_HOME=/path/to/amrex/source/directory [amrex options] -DAMREX_HYDRO_HOME=/path/to/AMReX-Hydro/source/directory [incflo options] -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel] ..
              > make -j
 
 
-where ``AMREX_HOME`` is a CMake variable pointing to the top-level source directory of the AMReX distribution you downloaded earlier; ``[amrex options]`` is a list of any of the AMReX configuration options listed in the `AMReX user guide - Building with CMake <https://amrex-codes.github.io/amrex/docs_html/BuildingAMReX.html#building-with-cmake>`_; ``AMREX_HYDRO_HOME`` is a CMake variable pointing to the top-level source directory of the AMReX-Hydro distribution you downloaded earlier; and ``..`` is the relative path pointing to the top-level source directory of incflo or this example.
+where ``AMREX_HOME`` is a CMake variable pointing to the top-level source directory of the AMReX distribution you downloaded earlier; ``[amrex options]`` is a list of any of the AMReX configuration options listed in the `AMReX user guide - Building with CMake <https://amrex-codes.github.io/amrex/docs_html/BuildingAMReX.html#building-with-cmake>`_; ``AMREX_HYDRO_HOME`` is a CMake variable pointing to the top-level source directory of the AMReX-Hydro distribution you downloaded earlier; ``[incflo options]`` is a list of the incflo
+configuration options listed in the table below; and ``..`` is the relative path pointing to the top-level source directory of incflo or this example.
+incflo sets AMReX's dimension, MPI, OpenMP, GPU backend, EB and particle options from the
+corresponding incflo options (e.g. ``-DINCFLO_DIM=2``, not ``-DAMReX_SPACEDIM=2``), and always builds
+AMReX in double precision with its linear solvers.
 
 
 .. _sec:build:standalone:
@@ -221,12 +232,15 @@ Next, configure, build and install AMReX as follows:
           > cd /path/to/amrex
           > mkdir build
           > cd build
-          > cmake -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel]  [amrex options] -DCMAKE_INSTALL_PREFIX:PATH=/absolute/path/to/installdir -DAMREX_HYDRO_HOME=/path/to/AMReX-Hydro/source/directory ..
+          > cmake -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel]  [amrex options] -DCMAKE_INSTALL_PREFIX:PATH=/absolute/path/to/installdir ..
           > make install
 
 ``[amrex options]`` is a list of any of the AMReX configuration options listed in the
 `AMReX user guide - Building with CMake <https://amrex-codes.github.io/amrex/docs_html/BuildingAMReX.html#building-with-cmake>`_.
-We suggest to always use the option ``-DUSE_XSDK_DEFAULTS=yes`` when building AMReX for incflo. ``AMREX_HYDRO_HOME`` is a CMake variable pointing to the top-level source directory of the AMReX-Hydro distribution you downloaded earlier
+AMReX must be built with the configuration that incflo will use: the same dimension
+(``AMReX_SPACEDIM``, 3 by default), MPI, OpenMP and GPU backend, EB (``-DAMReX_EB=YES``) and particles
+if incflo uses them, double precision and the linear solvers (AMReX's defaults). CMake checks this
+when configuring incflo.
 
 
 Building incflo
@@ -240,7 +254,7 @@ Build incflo:
     > cd /path/to/incflo
     > mkdir build
     > cd build
-    > cmake -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel] [incflo options] -DAMReX_ROOT=/absolute/path/to/amrex/installdir ..
+    > cmake -DCMAKE_BUILD_TYPE=[Debug|Release|RelWithDebInfo|MinSizeRel] [incflo options] -DAMReX_ROOT=/absolute/path/to/amrex/installdir -DAMREX_HYDRO_HOME=/path/to/AMReX-Hydro/source/directory ..
     > make -j
 
 
@@ -248,6 +262,9 @@ Passing ``-DAMReX_ROOT=/absolute/path/to/amrex/installdir`` instructs CMake to s
 ``/absolute/path/to/amrex/installdir`` before searching system paths
 for an available AMReX installation.
 ``AMReX_ROOT`` can also be set as an environmental variable instead of passing it as a command line option.
+``AMREX_HYDRO_HOME`` is a CMake variable pointing to the top-level source directory of the AMReX-Hydro
+distribution you downloaded earlier; it is required in both modes, since AMReX-Hydro is always built
+as part of incflo.
 
 
 ``[incflo options]`` indicates any of the configuration option listed in the table below.
@@ -274,8 +291,17 @@ for an available AMReX installation.
 | INCFLO\_CUDA    | Enable build with CUDA       | no/yes           | no          |
 |                 |                              |                  |             |
 +-----------------+------------------------------+------------------+-------------+
+| INCFLO\_HIP     | Enable build with HIP        | no/yes           | no          |
+|                 |                              |                  |             |
++-----------------+------------------------------+------------------+-------------+
+| INCFLO\_SYCL    | Enable build with SYCL       | no/yes           | no          |
+|                 |                              |                  |             |
++-----------------+------------------------------+------------------+-------------+
 | INCFLO\_EB      | Build Embedded Boundary      | no/yes           | no          |
 |                 | support                      |                  |             |
++-----------------+------------------------------+------------------+-------------+
+| INCFLO\_CSG     | Build CSG geometry support   | no/yes           | no          |
+|                 | (requires INCFLO_EB)         |                  |             |
 +-----------------+------------------------------+------------------+-------------+
 | INCFLO\_HYPRE   | Enable HYPRE support         | no/yes           | no          |
 |                 |                              |                  |             |
@@ -312,52 +338,20 @@ the environmental variables ``CXXFLAGS`` is set.
 
 
 
-Building incflo for Summit (OLCF)
------------------------------------
-
-For the Summit cluster at OLCF, you first need to load/unload modules required to build incflo.
-
-.. code:: shell
-
-    > module unload xalt
-    > module unload darshan
-    > module load gcc
-    > module load cmake/3.14.0
-
-Now incflo can be built following the :ref:`sec:build:superbuild`.
-
-To build incflo for GPUs, you need to load cuda module:
-
-.. code:: shell
-
-    > module load cuda/10.1.105
-
-To compile for GPUs:
-
-.. code:: shell
-
-    > cd incflo
-    > mdkir build
-    > cd build
-    > cmake -DCMAKE_CXX_COMPILER=g++ -DINCFLO_CUDA=yes
-    > make -j
-
-An example of a *submission_script* for using the GPUs on Summit can be found in ``incflo/summit_script.sh``.
-For more information about Summit cluster: `<https://www.olcf.ornl.gov/for-users/system-user-guides/summit/>`_
-
-
 Running the code
 ================
 incflo takes an input file as its first command-line argument.  The file may
 contain a set of parameter definitions that will override defaults set in the code.
 Many example inputs files can be found in the ``incflo/test_XXX`` directories.
-For example, to run the Taylor-Green vortices example in ``incflo/test_2d``, assuming your executable is named ``incflo.ex``
-and is located in the ``test_2d`` directory, then you can simply type:
+For example, to run the Taylor-Green vortices example in ``incflo/test_2d`` on 4 MPI processes with the
+executable built there with GNU Make (see :ref:`sec:GNUMake`), type:
 
 .. code:: shell
 
           > cd incflo/test_2d
-          > ./incflo.ex benchmark.taylor_green_vortices
+          > mpiexec -n 4 ./incflo2d.gnu.MPI.EB.ex benchmark.taylor_green_vortices
+
+With CMake, the executable is ``incflo.ex`` in the build directory.
 
 
 For more information on inputs options, see the :ref:`Chap:Inputs` section.

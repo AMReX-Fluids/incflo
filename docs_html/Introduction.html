@@ -82,30 +82,31 @@
   <section id="introduction">
 <h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
 <p>incflo is a massively parallel code for solving the incompressible Navier-Stokes
-equations in 2-D or 3-D,  with the option for an embedded boundary (cut cell) representation of
+equations in 2-D or 3-D,  with the option for an embedded boundary (cut cell) representation
 of complex geometries.</p>
 <p>It is built on top of <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/index.html#amrex-doc-indx" title="(in amrex v26.11-dev)"><span class="xref std std-ref">AMReX</span></a>, a publicly available software framework designed for building
 massively parallel block-structured adaptive mesh refinement (AMR)
 applications. It also utilizes <a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/index.html#amrex-hydro-indx" title="(in amrex-hydro v26.11-dev)"><span class="xref std std-ref">AMReX-Hydro</span></a>, a set of routines that support the construction
 of convective terms for incompressible and low Mach number flow modeling in cartesian coordinates
 with (or without) embedded boundaries and R-Z coordinate systems.</p>
-<p>Another AMReX-based code, <span class="xref std std-ref">IAMR</span>, also solves the variable-density incompressible
+<p>Another AMReX-based code, <a class="reference external" href="https://amrex-fluids.github.io/IAMR/docs_html/index.html#iamr-doc-indx" title="(in IAMR v26.11-dev)"><span class="xref std std-ref">IAMR</span></a>, also solves the variable-density incompressible
 Navier-Stokes equations in 2-D or 3-D but is based on a subcycling-in-time approach.</p>
 <p>Key software and algorithmic features of incflo include:</p>
 <ul class="simple">
-<li><p>Fluid velocity, density and tracers are defined at cell centroids; pressure is defined at nodes.</p></li>
+<li><p>Fluid velocity, density and tracers are defined at cell centroids; pressure is defined at nodes
+(or at cell centers with <code class="docutils literal notranslate"><span class="pre">incflo.use_cc_proj</span> <span class="pre">=</span> <span class="pre">1</span></code>).</p></li>
 <li><p>Possible advection algorithms: a Method-Of-Lines (MOL) approach and a Godunov-method algorithm.
 Both use an intermediate MAC projection for face-centered advection velocities</p></li>
 <li><p>Incompressibility of the fluid is imposed through the use of a projection at the end of the time step</p></li>
-<li><p>Implicit or explicit discretization of viscous terms with variable viscosity</p></li>
+<li><p>Implicit, Crank-Nicolson or explicit discretization of viscous terms with variable viscosity</p></li>
 <li><p>The representation of the complex geometry uses the embedded boundary, or cut-cell, approach</p></li>
-<li><p>Hybrid parallelization via MPI+X where X = OpenMP for multicore machines, and CUDA/HIP/DCP++ for CPU/GPU systems</p></li>
-<li><p>Parallel I/O using AMReX native I/O or HDF5.</p></li>
+<li><p>Hybrid parallelization via MPI+X where X = OpenMP for multicore machines, and CUDA/HIP/SYCL for CPU/GPU systems</p></li>
+<li><p>Parallel I/O using AMReX native I/O.</p></li>
 <li><p>Plotfile format supported by AmrVis, VisIt, ParaView, and yt.</p></li>
 </ul>
 <p>The incflo source code can be found at <a class="reference external" href="https://github.com/AMReX-Fluids/incflo/">https://github.com/AMReX-Fluids/incflo/</a>.
-incflo heavily leverages AMReX (see <a class="reference external" href="https://amrex-codes.github.io/">https://amrex-codes.github.io/</a>) which is supported by
-ECP as part of the AMReX Co-Design Center.</p>
+incflo heavily leverages AMReX (see <a class="reference external" href="https://amrex-codes.github.io/">https://amrex-codes.github.io/</a>) which was supported by
+the Exascale Computing Project (ECP) as part of the AMReX Co-Design Center.</p>
 </section>
 
 
@@ -119,7 +120,7 @@ ECP as part of the AMReX Co-Design Center.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+    <p>&#169; Copyright 2017-2026, Incflo Team.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

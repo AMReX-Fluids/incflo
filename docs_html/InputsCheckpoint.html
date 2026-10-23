@@ -51,7 +51,7 @@
 <li class="toctree-l2"><a class="reference internal" href="InputsProblemDefinition.html">Problem Definition</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsTimeStepping.html">Time Stepping</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsInitialization.html">Initialization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsMultigrid.html">Multigrid Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsPlotFiles.html">Plotfiles and Other Output</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Checkpoint/Restart</a></li>
@@ -114,7 +114,8 @@
 <td><p>false</p></td>
 </tr>
 <tr class="row-even"><td><p>regrid_on_restart</p></td>
-<td><p>Create new grids, including level 0, on restart</p></td>
+<td><p>Create new grids for the levels above level 0 on restart (the level 0
+grids are those of the checkpoint)</p></td>
 <td><p>bool</p></td>
 <td><p>false</p></td>
 </tr>
@@ -144,7 +145,7 @@ if -1 then no checkpoints will be written</p></td>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+    <p>&#169; Copyright 2017-2026, Incflo Team.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

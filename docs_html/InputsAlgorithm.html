@@ -52,7 +52,7 @@
 <li class="toctree-l2"><a class="reference internal" href="InputsProblemDefinition.html">Problem Definition</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsTimeStepping.html">Time Stepping</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsInitialization.html">Initialization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsMultigrid.html">Multigrid Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsPlotFiles.html">Plotfiles and Other Output</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsCheckpoint.html">Checkpoint/Restart</a></li>
@@ -105,7 +105,8 @@
 </thead>
 <tbody>
 <tr class="row-even"><td><p>advection_type</p></td>
-<td><p>Advection scheme (options: Godunov, MOL, BDS)</p></td>
+<td><p>Advection scheme (options: Godunov, MOL, BDS). BDS is not available
+with an EB geometry</p></td>
 <td><p>string</p></td>
 <td><p>Godunov</p></td>
 </tr>
@@ -130,7 +131,7 @@
 <td><p>1</p></td>
 </tr>
 <tr class="row-odd"><td><p>use_temperature</p></td>
-<td><p>include temperature equation?</p></td>
+<td><p>include temperature equation? (not available with MOL)</p></td>
 <td><p>bool</p></td>
 <td><p>false</p></td>
 </tr>
@@ -145,7 +146,7 @@
 <td><p>1.0</p></td>
 </tr>
 <tr class="row-even"><td><p>diffusion_type</p></td>
-<td><p>Diffusion type (0 = Explicit, 1 = Crank-Nicholson, 2 = Implicit)</p></td>
+<td><p>Diffusion type (0 = Explicit, 1 = Crank-Nicolson, 2 = Implicit)</p></td>
 <td><p>int</p></td>
 <td><p>2 (Implicit)</p></td>
 </tr>
@@ -161,7 +162,7 @@
 </tr>
 <tr class="row-odd"><td><p>mu_T</p></td>
 <td><p>thermal conductivity</p></td>
-<td><p>Real(s)</p></td>
+<td><p>Real</p></td>
 <td><p>0.0</p></td>
 </tr>
 <tr class="row-even"><td><p>use_divu_source</p></td>
@@ -175,7 +176,7 @@ dependent boundaries, or refinement ratios other than 2 or 4</p></td>
 </tr>
 <tr class="row-odd"><td><p>use_cc_proj</p></td>
 <td><p>Use cell-centered rather than nodal pressure; this changes the
-which approximate projection we use</p></td>
+approximate projection we use</p></td>
 <td><p>bool</p></td>
 <td><p>false</p></td>
 </tr>
@@ -200,7 +201,7 @@ otherwise use separate solves for each velocity component</p></td>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+    <p>&#169; Copyright 2017-2026, Incflo Team.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

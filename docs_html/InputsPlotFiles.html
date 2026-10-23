@@ -52,7 +52,7 @@
 <li class="toctree-l2"><a class="reference internal" href="InputsProblemDefinition.html">Problem Definition</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsTimeStepping.html">Time Stepping</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsInitialization.html">Initialization</a></li>
-<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="InputsLoadBalancing.html">Gridding and Load Balancing Inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsMultigrid.html">Multigrid Inputs</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Plotfiles and Other Output</a></li>
 <li class="toctree-l2"><a class="reference internal" href="InputsCheckpoint.html">Checkpoint/Restart</a></li>
@@ -94,8 +94,7 @@
              
   <section id="plotfiles-and-other-output">
 <span id="chap-inputsplotfiles"></span><h1>Plotfiles and Other Output<a class="headerlink" href="#plotfiles-and-other-output" title="Link to this heading"></a></h1>
-<p>The following inputs must be preceded by “amr” and control frequency and naming of plotfile generation as well
-as whether the EB geometry should be written out.</p>
+<p>The following inputs must be preceded by “amr” and control frequency and naming of plotfile generation.</p>
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"></th>
@@ -105,44 +104,51 @@ as whether the EB geometry should be written out.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>plot_int</p>
-<p>plot_per_exact</p>
-<p>plot_per_approx</p>
-</td>
+<tr class="row-even"><td><p>plot_int</p></td>
 <td><p>Frequency of plotfile output;
-if -1 then no plotfiles will be written at this frequency
-Time period of plotfile output (exact); will modify dt
-if -1 then no plotfiles will be written at this frequency
-Time period of plotfile output (approximate); does not modify dt
 if -1 then no plotfiles will be written at this frequency</p></td>
-<td><p>Int</p>
-<p>Real</p>
-<p>Real</p>
-</td>
-<td><p>-1</p>
-<p>-1</p>
-<p>-1</p>
-</td>
+<td><p>Int</p></td>
+<td><p>-1</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
+<tr class="row-odd"><td><p>plot_per_exact</p></td>
+<td><p>Time period of plotfile output (exact); will modify dt
+if -1 then no plotfiles will be written at this frequency</p></td>
+<td><p>Real</p></td>
+<td><p>-1</p></td>
 </tr>
-<tr class="row-even"><td><p>plotfile_on_restart</p></td>
-<td><p>Should we write a plotfile when we restart (only used if plot_int&gt;0)</p></td>
+<tr class="row-even"><td><p>plot_per_approx</p></td>
+<td><p>Time period of plotfile output (approximate); does not modify dt
+if -1 then no plotfiles will be written at this frequency.
+Only one of plot_int, plot_per_exact and plot_per_approx may be &gt; 0</p></td>
+<td><p>Real</p></td>
+<td><p>-1</p></td>
+</tr>
+<tr class="row-odd"><td><p>plotfile_on_restart</p></td>
+<td><p>Should we write a plotfile when we restart</p></td>
 <td><p>Bool</p></td>
 <td><p>False</p></td>
 </tr>
-<tr class="row-odd"><td><p>plot_file</p></td>
+<tr class="row-even"><td><p>plot_file</p></td>
 <td><p>Prefix to use for plotfile output</p></td>
 <td><p>String</p></td>
 <td><p>plt</p></td>
 </tr>
+</tbody>
+</table>
+<p>The following input must be preceded by “incflo” and controls whether the EB geometry is written out.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+</tr>
+</thead>
+<tbody>
 <tr class="row-even"><td><p>write_eb_surface</p></td>
-<td><p>Should we write out the EB geometry in vtp format
-If true, it will only be written once,after initialization or restart
-NOTE: this key takes the “incflo” prefix (incflo.write_eb_surface)</p></td>
+<td><p>Should we write out the EB geometry in vtp format (3D EB builds only)
+If true, it will only be written once, after initialization or
+restart.</p></td>
 <td><p>Bool</p></td>
 <td><p>False</p></td>
 </tr>
@@ -162,7 +168,7 @@ and if using EB, volume fraction. With <code class="docutils literal notranslate
 </thead>
 <tbody>
 <tr class="row-even"><td><p>plotVariables</p></td>
-<td><p>Space separated list of variable names. <strong>Takes precedent over all</strong>
+<td><p>Space separated list of variable names. <strong>Takes precedence over all</strong>
 <strong>other plotfile options</strong>. Plotfile will contain only this list,
 e.g. “amr.plotVariables = velx density” will result in plotfiles
 containing only the x-component of the velocity and the density.</p></td>
@@ -175,53 +181,64 @@ overwritten by plotVariables or plt_* flags)</p></td>
 <td><p>Int</p></td>
 <td><p>0</p></td>
 </tr>
-<tr class="row-even"><td><p>plt_velx</p></td>
+<tr class="row-even"><td><p>plt_*</p></td>
+<td><p>The plt_* flags below are deprecated in favor of plotVariables.
+Each one adds (1) or removes (0) one variable from the default list.</p></td>
+<td><p>Int</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>plt_velx</p></td>
 <td><p>Save x-velocity to plot file</p></td>
 <td><p>Int</p></td>
 <td><p>1</p></td>
 </tr>
-<tr class="row-odd"><td><p>plt_vely</p></td>
+<tr class="row-even"><td><p>plt_vely</p></td>
 <td><p>Save y-velocity to plot file</p></td>
 <td><p>Int</p></td>
 <td><p>1</p></td>
 </tr>
-<tr class="row-even"><td><p>plt_velz</p></td>
+<tr class="row-odd"><td><p>plt_velz</p></td>
 <td><p>Save z-velocity to plot file</p></td>
 <td><p>Int</p></td>
 <td><p>1</p></td>
 </tr>
-<tr class="row-odd"><td><p>plt_p</p></td>
+<tr class="row-even"><td><p>plt_p</p></td>
 <td><p>Save pressure to plot file</p></td>
 <td><p>Int</p></td>
 <td><p>0</p></td>
 </tr>
-<tr class="row-even"><td><p>plt_rho</p></td>
+<tr class="row-odd"><td><p>plt_rho</p></td>
 <td><p>Save density to plot file</p></td>
 <td><p>Int</p></td>
-<td><p>0</p></td>
+<td><p>1</p></td>
 </tr>
-<tr class="row-odd"><td><p>plt_tracer</p></td>
+<tr class="row-even"><td><p>plt_tracer</p></td>
 <td><p>Save tracer to plot file</p></td>
 <td><p>Int</p></td>
-<td><p>0</p></td>
+<td><p>1</p></td>
 </tr>
-<tr class="row-even"><td><p>plt_eta</p></td>
+<tr class="row-odd"><td><p>plt_eta</p></td>
 <td><p>Save viscosity to plot file</p></td>
 <td><p>Int</p></td>
 <td><p>0</p></td>
 </tr>
-<tr class="row-odd"><td><p>plt_gpx</p></td>
+<tr class="row-even"><td><p>plt_gpx</p></td>
 <td><p>Save dp/dx to plot file</p></td>
 <td><p>Int</p></td>
 <td><p>1</p></td>
 </tr>
-<tr class="row-even"><td><p>plt_gpy</p></td>
+<tr class="row-odd"><td><p>plt_gpy</p></td>
 <td><p>Save dp/dy to plot file</p></td>
 <td><p>Int</p></td>
 <td><p>1</p></td>
 </tr>
-<tr class="row-odd"><td><p>plt_gpz</p></td>
+<tr class="row-even"><td><p>plt_gpz</p></td>
 <td><p>Save dp/dz to plot file</p></td>
+<td><p>Int</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-odd"><td><p>plt_magvel</p></td>
+<td><p>Save velocity magnitude to plot file</p></td>
 <td><p>Int</p></td>
 <td><p>1</p></td>
 </tr>
@@ -246,12 +263,13 @@ overwritten by plotVariables or plt_* flags)</p></td>
 <td><p>0</p></td>
 </tr>
 <tr class="row-even"><td><p>plt_vfrac</p></td>
-<td><p>Save EB volume fraction to plot file</p></td>
+<td><p>Save EB volume fraction to plot file (EB builds only)</p></td>
 <td><p>Int</p></td>
 <td><p>1</p></td>
 </tr>
 </tbody>
 </table>
+<p>If <code class="docutils literal notranslate"><span class="pre">incflo.use_temperature</span> <span class="pre">=</span> <span class="pre">1</span></code>, the temperature is also added to the default list of plotfile variables.</p>
 <p>incflo provides the option to write a user defined selection of variables to a “smallplotfile” at an interval that is
 different than that of the full plotfile.
 The following inputs must be preceded by “amr” and control frequency and naming of smallplotfile generation.</p>
@@ -264,27 +282,21 @@ The following inputs must be preceded by “amr” and control frequency and nam
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>smallplot_int</p>
-<p>smallplot_per_approx</p>
-</td>
+<tr class="row-even"><td><p>smallplot_int</p></td>
 <td><p>Frequency of smallplotfile output;
-if -1 then no plotfiles will be written at this frequency
-Time period of smallplotfile output (approximate); does not modify dt
 if -1 then no smallplotfiles will be written at this frequency</p></td>
-<td><p>Int</p>
-<p>Real</p>
-</td>
-<td><p>-1</p>
-<p>-1</p>
-</td>
+<td><p>Int</p></td>
+<td><p>-1</p></td>
 </tr>
-<tr class="row-odd"><td></td>
-<td></td>
-<td></td>
-<td></td>
+<tr class="row-odd"><td><p>smallplot_per_approx</p></td>
+<td><p>Time period of smallplotfile output (approximate); does not modify dt
+if -1 then no smallplotfiles will be written at this frequency.
+Only one of smallplot_int and smallplot_per_approx may be &gt; 0</p></td>
+<td><p>Real</p></td>
+<td><p>-1</p></td>
 </tr>
 <tr class="row-even"><td><p>smallplotfile_on_restart</p></td>
-<td><p>Write smallplotfile when restarting (only used if smallplot_int&gt;0)</p></td>
+<td><p>Write smallplotfile when restarting</p></td>
 <td><p>Bool</p></td>
 <td><p>False</p></td>
 </tr>
@@ -293,12 +305,7 @@ if -1 then no smallplotfiles will be written at this frequency</p></td>
 <td><p>String</p></td>
 <td><p>smallplt</p></td>
 </tr>
-<tr class="row-even"><td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p>smallplotVariables</p></td>
+<tr class="row-even"><td><p>smallplotVariables</p></td>
 <td><p>Space separated list of variable names.</p></td>
 <td><p>String</p></td>
 <td><p>none</p></td>
@@ -318,7 +325,7 @@ if -1 then no smallplotfiles will be written at this frequency</p></td>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+    <p>&#169; Copyright 2017-2026, Incflo Team.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

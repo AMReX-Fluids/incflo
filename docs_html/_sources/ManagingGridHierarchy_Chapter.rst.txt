@@ -9,8 +9,8 @@ computational domain into individual rectangular grids, and how to distribute
 those grids to MPI ranks.  There can be grids of different sizes,
 more than one grid per MPI rank, and different strategies for distributing the grids to MPI ranks.
 
-AMReX's docmumentation on :ref:`amrex:Chap:ManagingGridHierarchy` contains further details.
-See :ref:`amrex:sec:grid_creation` for grids are created, i.e. how the :cpp:`BoxArray` on which
+AMReX's documentation on :ref:`amrex:Chap:ManagingGridHierarchy` contains further details.
+See :ref:`amrex:sec:grid_creation` for how grids are created, i.e. how the :cpp:`BoxArray` on which
 :cpp:`MultiFabs` will be built is defined at each level.
 See :ref:`amrex:sec:load_balancing` for the strategies AMReX supports for distributing
 grids to MPI ranks, i.e. defining the :cpp:`DistributionMapping` with which

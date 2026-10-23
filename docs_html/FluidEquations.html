@@ -52,7 +52,10 @@
 <li class="toctree-l1"><a class="reference internal" href="ManagingGridHierarchy_Chapter.html">Gridding and Load Balancing</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="Fluids_Chapter.html">Solving the Fluid Equations</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Fluid Variables</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#fluid-equations">Fluid Equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fluid-equations">Fluid Equations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#background-pressure">Background pressure</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="TimeStep.html">Time Step</a></li>
 </ul>
 </li>
@@ -102,8 +105,14 @@
 <tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(U\)</span></p></td>
 <td><p>Fluid velocity</p></td>
 </tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(p\)</span></p></td>
+<td><p>Pressure</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\eta\)</span></p></td>
+<td><p>Viscosity (<code class="docutils literal notranslate"><span class="pre">incflo.mu</span></code> for a Newtonian fluid)</p></td>
+</tr>
 <tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\tau\)</span></p></td>
-<td><p>Viscous stress tensor</p></td>
+<td><p>Viscous stress tensor, <span class="math notranslate nohighlight">\(\eta (\nabla U + (\nabla U)^T)\)</span></p></td>
 </tr>
 <tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(\mu_s\)</span></p></td>
 <td><p>scalar diffusivity</p></td>
@@ -111,16 +120,19 @@
 <tr class="row-even"><td><p><span class="math notranslate nohighlight">\(\mu_T\)</span></p></td>
 <td><p>thermal conductivity</p></td>
 </tr>
-<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\({\bf g}\)</span></p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(c_p\)</span></p></td>
+<td><p>Specific heat (<code class="docutils literal notranslate"><span class="pre">incflo.cp</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\({\bf g}\)</span></p></td>
 <td><p>Gravitational acceleration</p></td>
 </tr>
-<tr class="row-even"><td><p><span class="math notranslate nohighlight">\({\bf H}_U\)</span></p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\({\bf H}_U\)</span></p></td>
 <td><p><span class="math notranslate nohighlight">\(= (H_x , H_y , H_z )\)</span>, External Forces</p></td>
 </tr>
-<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(H_s\)</span></p></td>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(H_s\)</span></p></td>
 <td><p>External sources</p></td>
 </tr>
-<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(H_T\)</span></p></td>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(H_T\)</span></p></td>
 <td><p>External heat sources</p></td>
 </tr>
 </tbody>
@@ -136,7 +148,13 @@
 <div class="math notranslate nohighlight">
 \[\frac{ \partial (\rho U)}{\partial t}
 + \nabla \cdot (\rho U U) + \nabla p = \nabla \cdot \tau  + {\bf H}_U\]</div>
-<p>Incompressibility constraint:</p>
+<p>By default, incflo solves the equivalent convective form,
+<span class="math notranslate nohighlight">\(\rho ( \partial U / \partial t + U \cdot \nabla U ) + \nabla p = \nabla \cdot \tau + {\bf H}_U\)</span>;
+<code class="docutils literal notranslate"><span class="pre">incflo.advect_momentum</span> <span class="pre">=</span> <span class="pre">true</span></code> selects the conservative form above.
+With <code class="docutils literal notranslate"><span class="pre">incflo.use_tensor_solve</span> <span class="pre">=</span> <span class="pre">false</span></code>, the velocity components are diffused separately, with
+<span class="math notranslate nohighlight">\(\nabla \cdot (\eta \nabla U)\)</span> in place of <span class="math notranslate nohighlight">\(\nabla \cdot \tau\)</span> (the two are equal for a
+constant viscosity).</p>
+<p>Velocity constraint:</p>
 <div class="math notranslate nohighlight">
 \[\nabla \cdot U = 0\]</div>
 <p>or, with <code class="docutils literal notranslate"><span class="pre">incflo.use_divu_source</span> <span class="pre">=</span> <span class="pre">1</span></code>, the constraint</p>
@@ -157,14 +175,34 @@ of the thermodynamic pressure, which incflo does not evolve.</p>
 <p>Tracer(s): for conservative,</p>
 <div class="math notranslate nohighlight">
 \[\frac{\partial \rho s}{\partial t} + \nabla \cdot (\rho U s)  =  \nabla \cdot \mu_s \nabla s + \rho H_s\]</div>
-<p>or, for non-conservative,</p>
+<p>or, for non-conservative (see <code class="docutils literal notranslate"><span class="pre">incflo.trac_is_conservative</span></code>),</p>
 <div class="math notranslate nohighlight">
 \[\frac{\partial s}{\partial t} + U \cdot \nabla s  =  \nabla \cdot \mu_s \nabla s + H_s\]</div>
 <p>Optional temperature:</p>
 <div class="math notranslate nohighlight">
 \[\rho c_p \left( \frac{\partial T}{\partial t} + U \cdot \nabla T \right)  =  \nabla \cdot \mu_T \nabla T + H_T\]</div>
 <p>By default, <span class="math notranslate nohighlight">\(H_s = 0\)</span>,  <span class="math notranslate nohighlight">\(H_T = 0\)</span>, and <span class="math notranslate nohighlight">\({\bf H}_U = {\bf 0}\)</span>.
-If gravity is set during runtime, then <span class="math notranslate nohighlight">\({\bf H}_U\)</span> defaults to <span class="math notranslate nohighlight">\(\rho {\bf g}\)</span>.</p>
+If gravity is set (<code class="docutils literal notranslate"><span class="pre">incflo.gravity</span></code>), then <span class="math notranslate nohighlight">\({\bf H}_U = \rho {\bf g}\)</span>, except for the
+Boussinesq problems (<code class="docutils literal notranslate"><span class="pre">incflo.probtype</span></code> = 11, 111, 112, 113 and 500), which use
+<span class="math notranslate nohighlight">\({\bf H}_U = \rho s_0 {\bf g}\)</span>, where <span class="math notranslate nohighlight">\(s_0\)</span> is the first tracer.</p>
+<section id="background-pressure">
+<span id="sec-backgroundpressure"></span><h2>Background pressure<a class="headerlink" href="#background-pressure" title="Link to this heading"></a></h2>
+<p>Except for the Boussinesq problems, incflo writes the pressure as <span class="math notranslate nohighlight">\(p = p_0 + p'\)</span>, where the
+background pressure <span class="math notranslate nohighlight">\(p_0\)</span> has a constant gradient, and solves for <span class="math notranslate nohighlight">\(p'\)</span>:</p>
+<ul class="simple">
+<li><p>in a direction with gravity, <span class="math notranslate nohighlight">\(\nabla p_0 = \rho_0 {\bf g}\)</span>, the hydrostatic pressure gradient
+for the density <span class="math notranslate nohighlight">\(\rho_0\)</span> (<code class="docutils literal notranslate"><span class="pre">incflo.ro_0</span></code>);</p></li>
+<li><p>in the direction in which <code class="docutils literal notranslate"><span class="pre">incflo.delp</span></code> is non-zero, <span class="math notranslate nohighlight">\(\nabla p_0 = - \mathrm{delp} / L\)</span>,
+where <span class="math notranslate nohighlight">\(L\)</span> is the length of the domain in that direction. This pressure drop drives the flow,
+e.g. in a periodic channel;</p></li>
+<li><p>in a direction with a pressure inflow at one end and a pressure outflow at the other,
+<span class="math notranslate nohighlight">\(\nabla p_0 = (p_{hi} - p_{lo}) / L\)</span>, where <span class="math notranslate nohighlight">\(p_{lo}\)</span> and <span class="math notranslate nohighlight">\(p_{hi}\)</span> are the
+boundary pressures.</p></li>
+</ul>
+<p>Only one direction can have a <code class="docutils literal notranslate"><span class="pre">delp</span></code> or a pressure inflow/outflow pair, and gravity cannot be in
+that direction. The pressure written to plotfiles (<code class="docutils literal notranslate"><span class="pre">p</span></code>) is <span class="math notranslate nohighlight">\(p'\)</span>, while the pressure gradient
+(<code class="docutils literal notranslate"><span class="pre">gpx</span></code>, <code class="docutils literal notranslate"><span class="pre">gpy</span></code> and <code class="docutils literal notranslate"><span class="pre">gpz</span></code>) includes <span class="math notranslate nohighlight">\(\nabla p_0\)</span>.</p>
+</section>
 </section>
 
 
@@ -178,7 +216,7 @@ If gravity is set during runtime, then <span class="math notranslate nohighlight
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2017-2018, Incflo Team.</p>
+    <p>&#169; Copyright 2017-2026, Incflo Team.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
