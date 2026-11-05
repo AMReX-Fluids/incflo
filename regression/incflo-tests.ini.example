@@ -1,0 +1,83 @@
+# Starter subset, not the complete upstream nightly suite. See README.md.
+# Replace every /absolute/path/to/regtest-scratch before running.
+# Paths must be absolute; shell variables in this INI are not expanded.
+# Adjust compilers, numMakeJobs, MPIcommand, and numprocs for your machine.
+# Case settings are drawn from the upstream 2026-11-05 configuration.
+
+[main]
+testTopDir = /absolute/path/to/regtest-scratch/test_data/incflo
+webTopDir = /absolute/path/to/regtest-scratch/test_data/incflo/web
+useCmake = 0
+sourceTree = C_Src
+suiteName = incflo
+COMP = g++
+add_to_c_make_command = TEST=TRUE USE_ASSERTION=TRUE
+purge_output = 1
+MAKE = make
+numMakeJobs = 8
+MPIcommand = mpiexec -n @nprocs@ @command@
+MPIhost =
+reportActiveTestsOnly = 1
+goUpLink = 0
+sendEmailWhenFail = 0
+
+[AMReX]
+dir = /absolute/path/to/regtest-scratch/amrex
+branch = development
+
+[source]
+dir = /absolute/path/to/regtest-scratch/incflo
+branch = development
+
+[extra-AMReXHydro]
+dir = /absolute/path/to/regtest-scratch/AMReX-Hydro
+branch = development
+
+[eb_2d_lid_driven_cavity]
+buildDir = test_2d
+inputFile = benchmark.lid_driven_cavity
+target = incflo
+dim = 2
+restartTest = 0
+useMPI = 1
+numprocs = 4
+compileTest = 0
+doVis = 0
+
+[eb_3d_lid_driven_cavity]
+buildDir = test_3d
+inputFile = benchmark.lid_driven_cavity
+target = incflo
+dim = 3
+restartTest = 0
+useMPI = 1
+numprocs = 4
+compileTest = 0
+doVis = 0
+runtime_params = max_step=30
+
+[no_eb_2d_bouss_bubble_god]
+buildDir = test_no_eb_2d
+inputFile = benchmark.bouss_bubble_god
+target = incflo
+dim = 2
+restartTest = 0
+useMPI = 1
+numprocs = 4
+compileTest = 0
+doVis = 0
+runtime_params =
+tolerance = 1.e-10
+
+[no_eb_3d_bouss_bubble_god]
+buildDir = test_no_eb_3d
+inputFile = benchmark.bouss_bubble_god
+target = incflo
+dim = 3
+restartTest = 0
+useMPI = 1
+numprocs = 4
+compileTest = 0
+doVis = 0
+runtime_params =
+tolerance = 1.e-10
