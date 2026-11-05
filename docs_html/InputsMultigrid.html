@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Multigrid Inputs &mdash; incflo 26.11-dev documentation</title>
+  <title>Multigrid Inputs &mdash; incflo 26.12-dev documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/theme_overrides.css?v=681a4282" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=3d8aadd5"></script>
+      <script src="_static/documentation_options.js?v=e16bea5e"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
@@ -98,14 +98,14 @@
   <section id="multigrid-inputs">
 <span id="chap-inputsmultigrid"></span><h1>Multigrid Inputs<a class="headerlink" href="#multigrid-inputs" title="Link to this heading"></a></h1>
 <p>incflo uses AMReX’s multigrid solver, MLMG, for the projections and for the implicit diffusion
-solves. The AMReX documentation on <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/LinearSolvers_Chapter.html#chap-linearsolvers" title="(in amrex v26.11-dev)"><span>Linear Solvers</span></a> describes the solver and its
+solves. The AMReX documentation on <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/LinearSolvers_Chapter.html#chap-linearsolvers" title="(in amrex v26.00-dev)"><span>Linear Solvers</span></a> describes the solver and its
 parameters (e.g. the available bottom solvers).</p>
 <section id="projections">
 <h2>Projections<a class="headerlink" href="#projections" title="Link to this heading"></a></h2>
 <p>The MAC and nodal projections are done by AMReX-Hydro’s <code class="docutils literal notranslate"><span class="pre">MacProjector</span></code> and <code class="docutils literal notranslate"><span class="pre">NodalProjector</span></code>
 classes, which read their own options (verbosity, maximum number of iterations, bottom solver, …)
 with the prefix “mac_proj” or “nodal_proj”. These are documented in AMReX-Hydro’s documentation on
-<a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/Projections.html#projections-inputs" title="(in amrex-hydro v26.11-dev)"><span class="xref std std-ref">projections inputs</span></a>. The cell-centered projection
+<a class="reference external" href="https://amrex-fluids.github.io/amrex-hydro/docs_html/Projections.html#projections-inputs" title="(in amrex-hydro v26.00-dev)"><span class="xref std std-ref">projections inputs</span></a>. The cell-centered projection
 (<code class="docutils literal notranslate"><span class="pre">incflo.use_cc_proj</span> <span class="pre">=</span> <span class="pre">1</span></code>) is also done with the <code class="docutils literal notranslate"><span class="pre">MacProjector</span></code>, so it uses the “mac_proj”
 options.</p>
 <p>In addition, incflo reads the following, which must be preceded by “mac_proj” or “nodal_proj”:</p>
