@@ -18,7 +18,8 @@ jobs:
     if: ${{ github.repository == 'AMReX-Fluids/incflo' || github.event_name != 'schedule' }}
     name: GCC EB 3D
     runs-on: ubuntu-latest
-    env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
+    # We could put -Wnull-dereference back once this uses GCC >= 15.
+    env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout incflo
       uses: actions/checkout@v7
@@ -173,7 +174,8 @@ jobs:
     if: ${{ github.repository == 'AMReX-Fluids/incflo' || github.event_name != 'schedule' }}
     name: GCC EB 2D
     runs-on: ubuntu-latest
-    env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
+    # We could put -Wnull-dereference back once this uses GCC >= 15.
+    env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout incflo
       uses: actions/checkout@v7
