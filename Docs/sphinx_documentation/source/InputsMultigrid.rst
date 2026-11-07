@@ -31,6 +31,9 @@ In addition, incflo reads the following, which must be preceded by "mac_proj" or
 | mg_max_coarsening_level |  Maximum number of coarser levels to allow.                           |    Int      |   100          |
 |                         |  If set to 0, the bottom solver will be called at the current level   |             |                |
 +-------------------------+-----------------------------------------------------------------------+-------------+----------------+
+| mixed_precision         |  Run the multigrid cycles in single precision. See                    |    Bool     |   false        |
+|                         |  Mixed precision below                                                |             |                |
++-------------------------+-----------------------------------------------------------------------+-------------+----------------+
 
 Diffusion
 ---------
@@ -59,6 +62,9 @@ component-wise velocity solve) or "tensor_diffusion" (the velocity solve with
 | mg_max_coarsening_level |  Maximum number of coarser levels to allow.                           |    Int      |   100          |
 |                         |  If set to 0, the bottom solver will be called at the current level   |             |                |
 +-------------------------+-----------------------------------------------------------------------+-------------+----------------+
+| mixed_precision         |  Run the multigrid cycles in single precision. See                    |    Bool     |   false        |
+|                         |  Mixed precision below                                                |             |                |
++-------------------------+-----------------------------------------------------------------------+-------------+----------------+
 | mg_maxorder             |  Maximum order (2, 3 or 4) of the interpolation used at boundaries    |    Int      |   2            |
 +-------------------------+-----------------------------------------------------------------------+-------------+----------------+
 | mg_rtol                 |  Relative tolerance                                                   |  | Real     |  | 1.e-11      |
@@ -82,3 +88,22 @@ The hypre bottom solver requires incflo to be built with HYPRE support (``USE_HY
 ``-DINCFLO_HYPRE=yes``). hypre's own options take the prefix "hypre"; see the
 `External Solvers <https://amrex-codes.github.io/amrex/docs_html/LinearSolvers.html#external-solvers>`_
 section of the AMReX documentation.
+
+Mixed precision
+---------------
+
+With ``mixed_precision = true`` a solve runs its multigrid cycles in single precision, while the
+solution, the right-hand side and the residual stay in double precision. The solve still converges
+to the requested tolerance, typically in the same number of iterations, and it uses less time and
+memory, most of all on GPUs. The option is set for each solve on its own, with the prefix
+"mac_proj", "nodal_proj", "scalar_diffusion" or "tensor_diffusion", e.g.
+
+::
+
+   mac_proj.mixed_precision         = true
+   nodal_proj.mixed_precision       = true
+   tensor_diffusion.mixed_precision = true
+
+It requires incflo built in double precision and without embedded boundaries, and a bottom solver
+that is the smoother, CG or BiCGStab (not hypre). See the AMReX documentation on
+:ref:`amrex:chap:linearsolvers` for details.

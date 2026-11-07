@@ -485,6 +485,7 @@ private:
     Hydro::MacProjector* get_mac_projector ();
 
     int m_mac_mg_max_coarsening_level = 100;
+    bool m_mac_mixed_precision = false;
 
 #ifdef AMREX_USE_FLOAT
     amrex::Real m_mac_mg_rtol = amrex::Real(1.0e-4);
@@ -521,6 +522,7 @@ private:
 
     // Max coarsening level
     int m_nodal_mg_max_coarsening_level = 100;
+    bool m_nodal_mixed_precision = false;
 
     // ***************************************************************
     // ***************************************************************

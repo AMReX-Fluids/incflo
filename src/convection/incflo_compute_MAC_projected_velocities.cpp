@@ -97,6 +97,7 @@ incflo::compute_MAC_projected_velocities (
     {
         LPInfo lp_info;
         lp_info.setMaxCoarseningLevel(m_mac_mg_max_coarsening_level);
+        lp_info.setMixedPrecision(m_mac_mixed_precision);
 #ifndef AMREX_USE_EB
         if (m_constant_density) {
             Vector<BoxArray> ba;

@@ -16,6 +16,7 @@ DiffusionScalarOp::DiffusionScalarOp (incflo* a_incflo)
 
     LPInfo info_solve;
     info_solve.setMaxCoarseningLevel(m_mg_max_coarsening_level);
+    info_solve.setMixedPrecision(m_mixed_precision);
     LPInfo info_apply;
     info_apply.setMaxCoarseningLevel(0);
 #ifdef AMREX_USE_EB
@@ -136,6 +137,7 @@ DiffusionScalarOp::readParameters ()
     pp.query("mg_bottom_maxiter", m_mg_bottom_maxiter);
     pp.query("mg_max_fmg_iter", m_mg_max_fmg_iter);
     pp.query("mg_max_coarsening_level", m_mg_max_coarsening_level);
+    pp.query("mixed_precision", m_mixed_precision);
     pp.query("mg_maxorder", m_mg_maxorder);
     pp.query("mg_rtol", m_mg_rtol);
     pp.query("mg_atol", m_mg_atol);

@@ -260,6 +260,7 @@ void incflo::ReadParameters ()
         pp_mac.query( "mg_rtol"                , m_mac_mg_rtol );
         pp_mac.query( "mg_atol"                , m_mac_mg_atol );
         pp_mac.query( "mg_max_coarsening_level", m_mac_mg_max_coarsening_level );
+        pp_mac.query( "mixed_precision"        , m_mac_mixed_precision );
     } // end prefix mac
 
     { // Prefix nodal
@@ -267,6 +268,7 @@ void incflo::ReadParameters ()
         pp_nodal.query( "mg_max_coarsening_level", m_nodal_mg_max_coarsening_level );
         pp_nodal.query( "mg_rtol"                , m_nodal_mg_rtol );
         pp_nodal.query( "mg_atol"                , m_nodal_mg_atol );
+        pp_nodal.query( "mixed_precision"        , m_nodal_mixed_precision );
     } // end prefix nodal
 
 #ifdef AMREX_USE_EB
