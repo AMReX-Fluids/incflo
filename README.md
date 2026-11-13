@@ -40,6 +40,12 @@ Note that, depending on where you have put the amrex and AMReX-Hydro repos
 in your local working space, you may need to set AMREX_HOME and AMREX_HYDRO_HOME
 either as environment variables or in incflo/test*/GNUmakefile.
 
+# Regression testing
+
+See the [regression testing guide](regression/README.md) for a starter
+configuration covering all four `test*` directories and links to the upstream
+nightly suite.
+
 # Contributing
 
 We welcome contributions in the form of pull-requests from anyone. For more
