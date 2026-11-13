@@ -55,6 +55,7 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Multigrid Inputs</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#projections">Projections</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#diffusion">Diffusion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mixed-precision">Mixed precision</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="InputsPlotFiles.html">Plotfiles and Other Output</a></li>
@@ -150,6 +151,12 @@ If set to 0, the bottom solver will be called at the current level</p></td>
 <td><p>Int</p></td>
 <td><p>100</p></td>
 </tr>
+<tr class="row-odd"><td><p>mixed_precision</p></td>
+<td><p>Run the multigrid cycles in single precision. See
+Mixed precision below</p></td>
+<td><p>Bool</p></td>
+<td><p>false</p></td>
+</tr>
 </tbody>
 </table>
 </section>
@@ -205,12 +212,18 @@ If set to 0, the bottom solver will be called at the current level</p></td>
 <td><p>Int</p></td>
 <td><p>100</p></td>
 </tr>
-<tr class="row-odd"><td><p>mg_maxorder</p></td>
+<tr class="row-odd"><td><p>mixed_precision</p></td>
+<td><p>Run the multigrid cycles in single precision. See
+Mixed precision below</p></td>
+<td><p>Bool</p></td>
+<td><p>false</p></td>
+</tr>
+<tr class="row-even"><td><p>mg_maxorder</p></td>
 <td><p>Maximum order (2, 3 or 4) of the interpolation used at boundaries</p></td>
 <td><p>Int</p></td>
 <td><p>2</p></td>
 </tr>
-<tr class="row-even"><td><p>mg_rtol</p></td>
+<tr class="row-odd"><td><p>mg_rtol</p></td>
 <td><p>Relative tolerance</p></td>
 <td><div class="line-block">
 <div class="line">Real</div>
@@ -223,7 +236,7 @@ If set to 0, the bottom solver will be called at the current level</p></td>
 </div>
 </td>
 </tr>
-<tr class="row-odd"><td><p>mg_atol</p></td>
+<tr class="row-even"><td><p>mg_atol</p></td>
 <td><p>Absolute tolerance</p></td>
 <td><div class="line-block">
 <div class="line">Real</div>
@@ -236,23 +249,23 @@ If set to 0, the bottom solver will be called at the current level</p></td>
 </div>
 </td>
 </tr>
-<tr class="row-even"><td><p>bottom_solver</p></td>
+<tr class="row-odd"><td><p>bottom_solver</p></td>
 <td><p>Which bottom solver to use: smoother or hypre. Any other value
 gives MLMG’s default bottom solver for these operators, BiCGStab</p></td>
 <td><p>String</p></td>
 <td><p>bicgstab</p></td>
 </tr>
-<tr class="row-odd"><td><p>num_pre_smooth</p></td>
+<tr class="row-even"><td><p>num_pre_smooth</p></td>
 <td><p>Number of smoother iterations when going down the V-cycle</p></td>
 <td><p>Int</p></td>
 <td><p>2</p></td>
 </tr>
-<tr class="row-even"><td><p>num_post_smooth</p></td>
+<tr class="row-odd"><td><p>num_post_smooth</p></td>
 <td><p>Number of smoother iterations when going up the V-cycle</p></td>
 <td><p>Int</p></td>
 <td><p>2</p></td>
 </tr>
-<tr class="row-odd"><td><p>use_gauss_seidel</p></td>
+<tr class="row-even"><td><p>use_gauss_seidel</p></td>
 <td><p>“tensor_diffusion” only: use Gauss-Seidel rather than Jacobi
 smoothing (not used when there is an EB)</p></td>
 <td><p>Bool</p></td>
@@ -264,6 +277,22 @@ smoothing (not used when there is an EB)</p></td>
 <code class="docutils literal notranslate"><span class="pre">-DINCFLO_HYPRE=yes</span></code>). hypre’s own options take the prefix “hypre”; see the
 <a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/LinearSolvers.html#external-solvers">External Solvers</a>
 section of the AMReX documentation.</p>
+</section>
+<section id="mixed-precision">
+<h2>Mixed precision<a class="headerlink" href="#mixed-precision" title="Link to this heading"></a></h2>
+<p>With <code class="docutils literal notranslate"><span class="pre">mixed_precision</span> <span class="pre">=</span> <span class="pre">true</span></code> a solve runs its multigrid cycles in single precision, while the
+solution, the right-hand side and the residual stay in double precision. The solve still converges
+to the requested tolerance, typically in the same number of iterations, and it uses less time and
+memory, most of all on GPUs. The option is set for each solve on its own, with the prefix
+“mac_proj”, “nodal_proj”, “scalar_diffusion” or “tensor_diffusion”, e.g.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mac_proj</span><span class="o">.</span><span class="n">mixed_precision</span>         <span class="o">=</span> <span class="n">true</span>
+<span class="n">nodal_proj</span><span class="o">.</span><span class="n">mixed_precision</span>       <span class="o">=</span> <span class="n">true</span>
+<span class="n">tensor_diffusion</span><span class="o">.</span><span class="n">mixed_precision</span> <span class="o">=</span> <span class="n">true</span>
+</pre></div>
+</div>
+<p>It requires incflo built in double precision and without embedded boundaries, and a bottom solver
+that is the smoother, CG or BiCGStab (not hypre). See the AMReX documentation on
+<a class="reference external" href="https://amrex-codes.github.io/amrex/docs_html/LinearSolvers_Chapter.html#chap-linearsolvers" title="(in amrex v26.00-dev)"><span>Linear Solvers</span></a> for details.</p>
 </section>
 </section>
 
