@@ -198,6 +198,7 @@ void incflo::ApplyNodalProjection (Vector<MultiFab const*> const& density,
 
     LPInfo info;
     info.setMaxCoarseningLevel(m_nodal_mg_max_coarsening_level);
+    info.setMixedPrecision(m_nodal_mixed_precision);
 
     // Cell-centered source, -S (see above); none for div(u) = 0
     Vector<MultiFab*> S_cc;
